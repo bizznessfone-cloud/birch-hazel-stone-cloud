@@ -1,0 +1,17 @@
+node_modules/
+.env
+.env.*
+!.env.example
+attachments/
+.vercel/
+.output/
+dist/
+.nitro/
+.tanstack/
+.vite/
+coverage/
+*.log
+.DS_Store
+.grok/preview.log
+recovery-snapshots/
+artifacts/*.zip

@@ -1,0 +1,76 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --color-canvas: var(--aether-canvas);
+  --color-ink: var(--aether-ink);
+  --color-muted: var(--aether-muted);
+  --color-line: var(--aether-line);
+  --color-surface: var(--aether-surface);
+}
+
+:root {
+  color-scheme: light;
+  --aether-canvas: #f7f7f5;
+  --aether-surface: #ffffff;
+  --aether-ink: #111111;
+  --aether-muted: #6b6b6b;
+  --aether-line: #e2e2de;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --aether-canvas: #0c0c0c;
+    --aether-surface: #161616;
+    --aether-ink: #f4f4f2;
+    --aether-muted: #a3a3a3;
+    --aether-line: #2a2a2a;
+  }
+}
+
+html.dark {
+  color-scheme: dark;
+  --aether-canvas: #0c0c0c;
+  --aether-surface: #161616;
+  --aether-ink: #f4f4f2;
+  --aether-muted: #a3a3a3;
+  --aether-line: #2a2a2a;
+}
+
+html.light {
+  color-scheme: light;
+  --aether-canvas: #f7f7f5;
+  --aether-surface: #ffffff;
+  --aether-ink: #111111;
+  --aether-muted: #6b6b6b;
+  --aether-line: #e2e2de;
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: var(--aether-canvas);
+    color: var(--aether-ink);
+    font-family: var(--font-sans);
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+}
