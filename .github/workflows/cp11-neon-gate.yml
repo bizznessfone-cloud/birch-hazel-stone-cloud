@@ -16,17 +16,7 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Correct catalog-owner query for PostgreSQL 18
-        run: python - <<'PY'
-          from pathlib import Path
-          p = Path('scripts/verify-neon-production.mjs')
-          s = p.read_text()
-          old = "pg_get_userbyid(t.tgowner) as owner"
-          new = "pg_get_userbyid(c.relowner) as owner"
-          if old not in s:
-              raise SystemExit('expected verifier catalog query not found')
-          p.write_text(s.replace(old, new, 1))
-          print('Verifier catalog-owner check corrected in workspace only.')
-          PY
+        run: sed -i "s/pg_get_userbyid(t.tgowner) as owner/pg_get_userbyid(c.relowner) as owner/" scripts/verify-neon-production.mjs
       - name: Run CP11 production gate
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
