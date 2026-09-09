@@ -305,7 +305,9 @@ export async function upsertVehicle(
     const rows = await db.query<OpsVehicle>(
       `update vehicles
           set name = $1, capacity = $2, active = $3
-        where id = $4::uuid and operated_by_provider_id = $5::uuid
+        where id = $4::uuid
+          and operated_by_provider_id = $5::uuid
+          and owned_by_provider_id = $5::uuid
         returning id, name, capacity, active`,
       [name, input.capacity, input.active, input.id, scope.providerId],
     );
@@ -354,7 +356,9 @@ export async function upsertDriver(
   if (input.id) {
     const rows = await db.query<OpsDriver>(
       `update drivers set name = $1, active = $2
-        where id = $3::uuid and dispatched_by_provider_id = $4::uuid
+        where id = $3::uuid
+          and dispatched_by_provider_id = $4::uuid
+          and employed_by_provider_id = $4::uuid
         returning id, name, active`,
       [name, input.active, input.id, scope.providerId],
     );

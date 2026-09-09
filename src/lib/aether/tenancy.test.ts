@@ -439,6 +439,132 @@ describe("CP12 tenancy", () => {
     await pg.close();
   });
 
+  test("provider may assign operated assets but may only modify owned/employed ones", async () => {
+    const { db, pg } = await openDb();
+    const hotel = (await db.query<{ id: string }>("select id from hotels where code = 'gate'"))[0]!;
+    const operator = (
+      await db.query<{ id: string }>(
+        "insert into providers (code, name, kind) values ('own-ops', 'Own Ops', 'external') returning id",
+      )
+    )[0]!;
+    const other = (
+      await db.query<{ id: string }>(
+        "insert into providers (code, name, kind) values ('other-own', 'Other Own', 'external') returning id",
+      )
+    )[0]!;
+    await db.query("update hotel_provider_agreements set active = false where hotel_id = $1::uuid", [
+      hotel.id,
+    ]);
+    await db.query(
+      "insert into hotel_provider_agreements (hotel_id, provider_id, active) values ($1::uuid, $2::uuid, true)",
+      [hotel.id, operator.id],
+    );
+    const hotelVan = (
+      await db.query<{ id: string }>(
+        `insert into vehicles (name, owned_by_hotel_id, operated_by_provider_id)
+         values ('Hotel Van', $1::uuid, $2::uuid) returning id`,
+        [hotel.id, operator.id],
+      )
+    )[0]!;
+    const hotelDriver = (
+      await db.query<{ id: string }>(
+        `insert into drivers (name, employed_by_hotel_id, dispatched_by_provider_id)
+         values ('Hotel Driver', $1::uuid, $2::uuid) returning id`,
+        [hotel.id, operator.id],
+      )
+    )[0]!;
+    const disp = await dispatcherScope(db, "own-disp", operator.id);
+    const otherDisp = await dispatcherScope(db, "other-disp", other.id);
+
+    const ownedVan = await upsertVehicle(db, disp, { name: "Ops Van", capacity: 8, active: true });
+    const renamedVan = await upsertVehicle(db, disp, {
+      id: ownedVan.id,
+      name: "Ops Van Mk2",
+      capacity: 9,
+      active: true,
+    });
+    assert.equal(renamedVan.name, "Ops Van Mk2");
+    assert.equal(renamedVan.capacity, 9);
+
+    const ownedDriver = await upsertDriver(db, disp, { name: "Ops Driver", active: true });
+    const renamedDriver = await upsertDriver(db, disp, {
+      id: ownedDriver.id,
+      name: "Ops Driver Mk2",
+      active: false,
+    });
+    assert.equal(renamedDriver.name, "Ops Driver Mk2");
+    assert.equal(renamedDriver.active, false);
+    await upsertDriver(db, disp, { id: ownedDriver.id, name: "Ops Driver Mk2", active: true });
+
+    const fleet = await listOpsVehicles(db, disp);
+    const roster = await listOpsDrivers(db, disp);
+    assert.ok(fleet.some((row) => row.id === hotelVan.id));
+    assert.ok(fleet.some((row) => row.id === ownedVan.id));
+    assert.ok(roster.some((row) => row.id === hotelDriver.id));
+    assert.ok(roster.some((row) => row.id === ownedDriver.id));
+
+    await assert.rejects(
+      () => upsertVehicle(db, disp, { id: hotelVan.id, name: "Hijack Van", capacity: 4, active: false }),
+      (err: unknown) => err instanceof OpsDeskError && err.code === "not_found",
+    );
+    await assert.rejects(
+      () => upsertDriver(db, disp, { id: hotelDriver.id, name: "Hijack Driver", active: false }),
+      (err: unknown) => err instanceof OpsDeskError && err.code === "not_found",
+    );
+    const vanAfter = await db.query<{ name: string; active: boolean }>(
+      "select name, active from vehicles where id = $1::uuid",
+      [hotelVan.id],
+    );
+    const driverAfter = await db.query<{ name: string; active: boolean }>(
+      "select name, active from drivers where id = $1::uuid",
+      [hotelDriver.id],
+    );
+    assert.equal(vanAfter[0]?.name, "Hotel Van");
+    assert.equal(vanAfter[0]?.active, true);
+    assert.equal(driverAfter[0]?.name, "Hotel Driver");
+    assert.equal(driverAfter[0]?.active, true);
+
+    const created = await createBooking(db, { hotelCode: "gate", ...guest, guestEmail: "own@example.com" });
+    const bookingId = (
+      await db.query<{ id: string }>("select id from bookings where confirmation_token = $1", [
+        created.confirmationToken,
+      ])
+    )[0]!.id;
+    await assignVehicle(db, { bookingId, vehicleId: hotelVan.id, scope: disp });
+    await assignDriver(db, { bookingId, driverId: hotelDriver.id, scope: disp });
+
+    await assert.rejects(
+      () => upsertVehicle(db, otherDisp, { id: ownedVan.id, name: "Steal", capacity: 4, active: true }),
+      (err: unknown) => err instanceof OpsDeskError && err.code === "not_found",
+    );
+    await assert.rejects(
+      () => upsertDriver(db, otherDisp, { id: ownedDriver.id, name: "Steal", active: true }),
+      (err: unknown) => err instanceof OpsDeskError && err.code === "not_found",
+    );
+    await assert.rejects(
+      () => upsertVehicle(db, otherDisp, { id: hotelVan.id, name: "Steal Hotel", capacity: 4, active: true }),
+      (err: unknown) => err instanceof OpsDeskError && err.code === "not_found",
+    );
+    await assert.rejects(
+      () => assignVehicle(db, { bookingId, vehicleId: hotelVan.id, scope: otherDisp }),
+      (err: unknown) => err instanceof InventoryError && err.code === "forbidden",
+    );
+    await assert.rejects(
+      () => assignDriver(db, { bookingId, driverId: hotelDriver.id, scope: otherDisp }),
+      (err: unknown) => err instanceof InventoryError && err.code === "forbidden",
+    );
+    const otherVan = await upsertVehicle(db, otherDisp, { name: "Other Van", capacity: 4, active: true });
+    await assert.rejects(
+      () => assignVehicle(db, { bookingId, vehicleId: otherVan.id, scope: otherDisp }),
+      (err: unknown) => err instanceof InventoryError && err.code === "forbidden",
+    );
+    await assert.rejects(
+      () => assignVehicle(db, { bookingId, vehicleId: otherVan.id, scope: disp }),
+      (err: unknown) => err instanceof InventoryError && err.code === "not_found",
+    );
+    await pg.close();
+  });
+
   test("membership failures: missing, inactive, wrong class, ambiguous login", async () => {
     const { db, pg } = await openDb();
     const operator = await createOperator(db, "nomem", "correct-horse", FAST);
