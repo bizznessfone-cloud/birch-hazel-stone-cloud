@@ -25,16 +25,44 @@ jobs:
       - name: Discard lockfile mutation
         run: git checkout -- package-lock.json
 
-      - name: Correct catalog-owner query in runner only
+      - name: Runner-only verifier patches
         run: |
           set -euo pipefail
-          sed -i 's/pg_get_userbyid(t.tgowner) as owner/pg_get_userbyid(c.relowner) as owner/' scripts/verify-neon-production.mjs
-          grep -n 'c.relowner' scripts/verify-neon-production.mjs
-          if grep -n 't.tgowner' scripts/verify-neon-production.mjs; then
-            echo "FAIL: t.tgowner still present after runner-only correction"
+          python3 <<'PY'
+          from pathlib import Path
+          p = Path("scripts/verify-neon-production.mjs")
+          s = p.read_text()
+          a, b = "pg_get_userbyid(t.tgowner) as owner", "pg_get_userbyid(c.relowner) as owner"
+          if a not in s:
+              raise SystemExit("expected t.tgowner catalog query not found")
+          s = s.replace(a, b, 1)
+          opt = "    options: `-c role=${RUNTIME}`,\n"
+          if opt not in s:
+              raise SystemExit("expected runtimePool options role parameter not found")
+          s = s.replace(opt, "", 1)
+          if "options: `-c role=${RUNTIME}`" in s or "t.tgowner" in s:
+              raise SystemExit("runner patch incomplete")
+          if "c.relowner" not in s:
+              raise SystemExit("c.relowner missing after patch")
+          p.write_text(s)
+          print("runtimePool options role parameter: ABSENT")
+          print("trigger owner query: c.relowner")
+          PY
+
+      - name: Verify runner-only patches
+        run: |
+          set -euo pipefail
+          if grep -F -- '-c role=' scripts/verify-neon-production.mjs; then
+            echo "FAIL: runtimePool still has options role parameter"
             exit 1
           fi
-          echo "Runner working tree contains c.relowner; this change is not committed."
+          echo "runtimePool options role parameter: ABSENT"
+          grep -n 'c.relowner' scripts/verify-neon-production.mjs
+          if grep -n 't.tgowner' scripts/verify-neon-production.mjs; then
+            echo "FAIL: t.tgowner still present"
+            exit 1
+          fi
+          echo "trigger owner query: c.relowner"
 
       - name: Run CP11 production gate
         env:
