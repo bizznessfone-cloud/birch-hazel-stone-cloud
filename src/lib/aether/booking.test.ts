@@ -30,6 +30,18 @@ const BOOKING_SQL = readFileSync(
   new URL("../../../migrations/0006_booking_engine.sql", import.meta.url),
   "utf8",
 );
+const GUEST_SQL = readFileSync(
+  new URL("../../../migrations/0008_guest_ux.sql", import.meta.url),
+  "utf8",
+);
+const WHITE_SQL = readFileSync(
+  new URL("../../../migrations/0010_hotel_white_label.sql", import.meta.url),
+  "utf8",
+);
+const TENANCY_SQL = readFileSync(
+  new URL("../../../migrations/0012_cp12_tenancy.sql", import.meta.url),
+  "utf8",
+);
 
 async function openDb(): Promise<{ db: BookingDb; pg: PGlite; hotelCode: string }> {
   const { btree_gist } = await import("@electric-sql/pglite/contrib/btree_gist");
@@ -40,9 +52,9 @@ async function openDb(): Promise<{ db: BookingDb; pg: PGlite; hotelCode: string 
   await pg.exec(AUTH_SQL);
   await pg.exec(TIME_SQL);
   await pg.exec(BOOKING_SQL);
-  await pg.exec(
-    "insert into hotels (code, name) values ('gate', 'Gate Hotel')",
-  );
+  await pg.exec(GUEST_SQL);
+  await pg.exec(WHITE_SQL);
+  await pg.exec(TENANCY_SQL);
 
   const query = async <T>(text: string, params?: unknown[]) => {
     const result = await pg.query<T>(text, params);

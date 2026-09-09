@@ -20,6 +20,7 @@ import {
   requireOps,
   verifyPassword,
 } from "./ops-auth.ts";
+import { ensureLegacyDispatcherMembership } from "./tenancy.ts";
 
 const FOUNDATION_SQL = readFileSync(
   new URL("../../../migrations/0002_foundation.sql", import.meta.url),
@@ -31,6 +32,38 @@ const OCCUPANCY_SQL = readFileSync(
 );
 const AUTH_SQL = readFileSync(
   new URL("../../../migrations/0004_ops_auth.sql", import.meta.url),
+  "utf8",
+);
+const TIME_SQL = readFileSync(
+  new URL("../../../migrations/0005_time_domain.sql", import.meta.url),
+  "utf8",
+);
+const BOOKING_SQL = readFileSync(
+  new URL("../../../migrations/0006_booking_engine.sql", import.meta.url),
+  "utf8",
+);
+const INVENTORY_SQL = readFileSync(
+  new URL("../../../migrations/0007_inventory.sql", import.meta.url),
+  "utf8",
+);
+const GUEST_SQL = readFileSync(
+  new URL("../../../migrations/0008_guest_ux.sql", import.meta.url),
+  "utf8",
+);
+const DESK_SQL = readFileSync(
+  new URL("../../../migrations/0009_ops_desk.sql", import.meta.url),
+  "utf8",
+);
+const WHITE_SQL = readFileSync(
+  new URL("../../../migrations/0010_hotel_white_label.sql", import.meta.url),
+  "utf8",
+);
+const HARDENING_SQL = readFileSync(
+  new URL("../../../migrations/0011_production_hardening.sql", import.meta.url),
+  "utf8",
+);
+const TENANCY_SQL = readFileSync(
+  new URL("../../../migrations/0012_cp12_tenancy.sql", import.meta.url),
   "utf8",
 );
 
@@ -70,6 +103,14 @@ async function openDb(): Promise<{ db: OpsDb; close: () => Promise<void> }> {
   await pg.exec(FOUNDATION_SQL);
   await pg.exec(OCCUPANCY_SQL);
   await pg.exec(AUTH_SQL);
+  await pg.exec(TIME_SQL);
+  await pg.exec(BOOKING_SQL);
+  await pg.exec(INVENTORY_SQL);
+  await pg.exec(GUEST_SQL);
+  await pg.exec(DESK_SQL);
+  await pg.exec(WHITE_SQL);
+  await pg.exec(HARDENING_SQL);
+  await pg.exec(TENANCY_SQL);
   const db: OpsDb = {
     async query<T>(text: string, params?: unknown[]) {
       const result = await pg.query<T>(text, params);
@@ -100,6 +141,12 @@ async function expectCode(fn: () => Promise<unknown>, code: OpsAuthError["code"]
   assert.fail(`expected ${code}`);
 }
 
+async function seededOperator(db: OpsDb, login: string, password: string) {
+  const op = await createOperator(db, login, password, FAST_SCRYPT);
+  await ensureLegacyDispatcherMembership(db, op.id);
+  return op;
+}
+
 describe("Phase 2 operator authentication", () => {
   test("scrypt hash verifies and rejects a wrong password", async () => {
     const stored = await hashPassword("correct-horse", FAST_SCRYPT);
@@ -121,7 +168,7 @@ describe("Phase 2 operator authentication", () => {
 
   test("login sets HttpOnly session cookie and non-HttpOnly CSRF cookie", async () => {
     const { db, close } = await openDb();
-    await createOperator(db, "Ops", "secret-pass", FAST_SCRYPT);
+    await seededOperator(db, "Ops", "secret-pass");
     const jar = memoryJar();
     const result = await loginOperator(envFor(db, jar, { cookieSecure: true }), "ops", "secret-pass");
 
@@ -146,7 +193,7 @@ describe("Phase 2 operator authentication", () => {
 
   test("authenticated ops mutation succeeds; CSRF is required", async () => {
     const { db, close } = await openDb();
-    await createOperator(db, "ops", "secret-pass", FAST_SCRYPT);
+    await seededOperator(db, "ops", "secret-pass");
     const jar = memoryJar();
     await loginOperator(envFor(db, jar), "ops", "secret-pass");
 
@@ -176,7 +223,7 @@ describe("Phase 2 operator authentication", () => {
 
   test("logout revokes the session", async () => {
     const { db, close } = await openDb();
-    await createOperator(db, "ops", "secret-pass", FAST_SCRYPT);
+    await seededOperator(db, "ops", "secret-pass");
     const jar = memoryJar();
     await loginOperator(envFor(db, jar), "ops", "secret-pass");
     const token = jar.get(SESSION_COOKIE);
@@ -203,7 +250,7 @@ describe("Phase 2 operator authentication", () => {
 
   test("logout without a valid CSRF token is rejected", async () => {
     const { db, close } = await openDb();
-    await createOperator(db, "ops", "secret-pass", FAST_SCRYPT);
+    await seededOperator(db, "ops", "secret-pass");
     const jar = memoryJar();
     await loginOperator(envFor(db, jar), "ops", "secret-pass");
     await expectCode(
@@ -219,7 +266,7 @@ describe("Phase 2 operator authentication", () => {
 
   test("expired session is rejected", async () => {
     const { db, close } = await openDb();
-    await createOperator(db, "ops", "secret-pass", FAST_SCRYPT);
+    await seededOperator(db, "ops", "secret-pass");
     const jar = memoryJar();
     const start = new Date("2026-01-01T00:00:00.000Z");
     await loginOperator(envFor(db, jar, { now: start }), "ops", "secret-pass");
@@ -233,7 +280,7 @@ describe("Phase 2 operator authentication", () => {
 
   test("login throttling locks after too many failures", async () => {
     const { db, close } = await openDb();
-    await createOperator(db, "ops", "secret-pass", FAST_SCRYPT);
+    await seededOperator(db, "ops", "secret-pass");
     const jar = memoryJar();
     const t0 = new Date("2026-02-01T00:00:00.000Z");
 
@@ -265,7 +312,7 @@ describe("Phase 2 operator authentication", () => {
 
   test("unknown login and wrong password share the same error", async () => {
     const { db, close } = await openDb();
-    await createOperator(db, "ops", "secret-pass", FAST_SCRYPT);
+    await seededOperator(db, "ops", "secret-pass");
     const jar = memoryJar();
     const missing = await expectCode(
       () => loginOperator(envFor(db, jar), "nobody", "secret-pass"),
@@ -281,7 +328,7 @@ describe("Phase 2 operator authentication", () => {
 
   test("GET requireOps without CSRF still needs a session", async () => {
     const { db, close } = await openDb();
-    await createOperator(db, "ops", "secret-pass", FAST_SCRYPT);
+    await seededOperator(db, "ops", "secret-pass");
     const jar = memoryJar();
     await loginOperator(envFor(db, jar), "ops", "secret-pass");
     const me = await requireOps(

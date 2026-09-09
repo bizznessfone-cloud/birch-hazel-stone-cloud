@@ -37,60 +37,59 @@ async function appDb(): Promise<BookingDb> {
   return asDb(await getAetherDb());
 }
 
-async function operatorId(): Promise<string> {
+async function opsScope() {
   const { requireOps } = await import("./ops-auth.server");
-  const ops = await requireOps({ csrf: true });
-  return ops.operatorId;
+  return requireOps({ csrf: true });
 }
 
 export async function assignVehicleFromRequest(
   bookingId: string,
   vehicleId: string,
 ): Promise<AssignmentSnapshot> {
-  const opsId = await operatorId();
+  const scope = await opsScope();
   return assignVehicleEngine(await appDb(), {
     bookingId,
     vehicleId,
-    operatorId: opsId,
+    scope,
   });
 }
 
 export async function unassignVehicleFromRequest(bookingId: string): Promise<AssignmentSnapshot> {
-  const opsId = await operatorId();
-  return unassignVehicleEngine(await appDb(), { bookingId, operatorId: opsId });
+  const scope = await opsScope();
+  return unassignVehicleEngine(await appDb(), { bookingId, scope });
 }
 
 export async function assignDriverFromRequest(
   bookingId: string,
   driverId: string,
 ): Promise<AssignmentSnapshot> {
-  const opsId = await operatorId();
+  const scope = await opsScope();
   return assignDriverEngine(await appDb(), {
     bookingId,
     driverId,
-    operatorId: opsId,
+    scope,
   });
 }
 
 export async function unassignDriverFromRequest(bookingId: string): Promise<AssignmentSnapshot> {
-  const opsId = await operatorId();
-  return unassignDriverEngine(await appDb(), { bookingId, operatorId: opsId });
+  const scope = await opsScope();
+  return unassignDriverEngine(await appDb(), { bookingId, scope });
 }
 
 export async function cancelBookingFromRequest(bookingId: string): Promise<AssignmentSnapshot> {
-  const opsId = await operatorId();
-  return cancelBookingEngine(await appDb(), { bookingId, operatorId: opsId });
+  const scope = await opsScope();
+  return cancelBookingEngine(await appDb(), { bookingId, scope });
 }
 
 export async function setBookingStatusFromRequest(
   bookingId: string,
   status: string,
 ): Promise<AssignmentSnapshot> {
-  const opsId = await operatorId();
+  const scope = await opsScope();
   return setBookingStatusEngine(await appDb(), {
     bookingId,
     status,
-    operatorId: opsId,
+    scope,
   });
 }
 

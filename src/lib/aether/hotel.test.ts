@@ -11,6 +11,8 @@ import {
 } from "./booking.ts";
 import { hotelBookingPath, hotelIdentity, hotelMarkLetters, normalizeHotelCode } from "./hotel.ts";
 import { listOpsBookings, listOpsHotels, upsertHotel } from "./ops-desk.ts";
+import { createOperator } from "./ops-auth.ts";
+import { legacyDispatcherScope } from "./tenancy.ts";
 
 const SQL_FILES = [
   "0002_foundation.sql",
@@ -22,6 +24,8 @@ const SQL_FILES = [
   "0008_guest_ux.sql",
   "0009_ops_desk.sql",
   "0010_hotel_white_label.sql",
+  "0011_production_hardening.sql",
+  "0012_cp12_tenancy.sql",
 ];
 
 async function openDb() {
@@ -163,10 +167,12 @@ describe("Phase 8 hotel white label", () => {
     assert.equal(ids[1]?.code, "harbor");
     assert.notEqual(ids[0]?.hotel_id, ids[1]?.hotel_id);
 
-    const desk = await listOpsBookings(db);
+    const operator = await createOperator(db, "desk", "desk-pass", { N: 16, r: 8, p: 1 });
+    const scope = await legacyDispatcherScope(db, operator.id, operator.login);
+    const desk = await listOpsBookings(db, scope);
     assert.equal(desk.filter((row) => row.hotelCode === "gate").length, 1);
     assert.equal(desk.filter((row) => row.hotelCode === "harbor").length, 1);
-    const hotels = await listOpsHotels(db);
+    const hotels = await listOpsHotels(db, scope);
     assert.ok(hotels.some((item) => item.code === "gate" && item.bookingPath === "/book/gate"));
     assert.ok(hotels.some((item) => item.code === "harbor" && item.bookingPath === "/book/harbor"));
     await pg.close();
@@ -192,21 +198,17 @@ describe("Phase 8 hotel white label", () => {
 
   test("database enforces hotel code format and uniqueness", async () => {
     const { db, pg } = await openDb();
-    await upsertHotel(db, { code: "Quay", name: "Quay Hotel" });
+    await db.query("insert into hotels (code, name) values ('quay', 'Quay Hotel')");
     const identity = await getPublicHotel(db, "quay");
     assert.equal(identity.bookingPath, "/book/quay");
     assert.equal(identity.mark, "QH");
+    const operator = await createOperator(db, "desk", "desk-pass", { N: 16, r: 8, p: 1 });
+    const scope = await legacyDispatcherScope(db, operator.id, operator.login);
     try {
-      await upsertHotel(db, { code: "gate", name: "Duplicate" });
-      assert.fail("expected unique code reject");
+      await upsertHotel(db, scope, { code: "gate", name: "Duplicate" });
+      assert.fail("expected hotel upsert forbidden");
     } catch (err) {
-      assert.equal((err as { code: string }).code, "conflict");
-    }
-    try {
-      await upsertHotel(db, { code: "-bad", name: "Bad" });
-      assert.fail("expected invalid code reject");
-    } catch (err) {
-      assert.equal((err as { code: string }).code, "invalid");
+      assert.equal((err as { code: string }).code, "forbidden");
     }
     try {
       await db.query("insert into hotels (code, name) values ($1, $2)", ["Nope!", "Bad"]);

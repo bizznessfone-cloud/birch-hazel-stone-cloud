@@ -2,12 +2,17 @@
  * Operator desk queries. Privileged — HTTP adapters must call requireOps.
  * Does not write occupies. Assignment stays in inventory.ts.
  */
-import { hotelIdentity, normalizeHotelCode, type HotelIdentity } from "./hotel.ts";
+import { hotelIdentity, type HotelIdentity } from "./hotel.ts";
 import { athensToday, type TimeDb } from "./time.ts";
+import {
+  isHotelDesk,
+  isProviderDispatcher,
+  type OpsScope,
+} from "./tenancy.ts";
 
 export type OpsDeskDb = TimeDb;
 
-export type OpsDeskErrorCode = "not_found" | "conflict" | "invalid";
+export type OpsDeskErrorCode = "not_found" | "conflict" | "invalid" | "forbidden";
 
 export class OpsDeskError extends Error {
   readonly code: OpsDeskErrorCode;
@@ -121,6 +126,31 @@ function mapBooking(row: Record<string, unknown>): OpsBookingRow {
   };
 }
 
+function assertDeskOrDispatcher(scope: OpsScope): void {
+  if (!isHotelDesk(scope) && !isProviderDispatcher(scope)) {
+    throw new OpsDeskError("forbidden", 403, "Not allowed.");
+  }
+}
+
+function bookingScopeClause(scope: OpsScope): { sql: string; param: string } {
+  if (isHotelDesk(scope) && scope.hotelId) {
+    return { sql: "b.hotel_id = $IDX::uuid", param: scope.hotelId };
+  }
+  if (isProviderDispatcher(scope) && scope.providerId) {
+    return { sql: "b.executing_provider_id = $IDX::uuid", param: scope.providerId };
+  }
+  throw new OpsDeskError("forbidden", 403, "Not allowed.");
+}
+
+function withScope(sql: string, scope: OpsScope, extra: unknown[] = []): { text: string; params: unknown[] } {
+  const clause = bookingScopeClause(scope);
+  const idx = extra.length + 1;
+  return {
+    text: sql.replaceAll("$IDX", `$${idx}`),
+    params: [...extra, clause.param],
+  };
+}
+
 const BOOKING_SELECT = `
   select
     b.id,
@@ -151,25 +181,32 @@ const BOOKING_SELECT = `
   left join drivers d on d.id = b.driver_id
 `;
 
-export async function loadTodayBoard(db: OpsDeskDb): Promise<TodayBoard> {
+export async function loadTodayBoard(db: OpsDeskDb, scope: OpsScope): Promise<TodayBoard> {
+  assertDeskOrDispatcher(scope);
   const athensDate = await athensToday(db);
-  const rows = await db.query<Record<string, unknown>>(
+  const scoped = withScope(
     `${BOOKING_SELECT}
      where b.transfer_date = $1::date
+       and ${bookingScopeClause(scope).sql}
      order by b.pickup_time, b.created_at`,
+    scope,
     [athensDate],
   );
+  const rows = await db.query<Record<string, unknown>>(scoped.text, scoped.params);
   const feed = rows.map(mapBooking);
-  const remaining = await db.query<{ id: string }>(
+  const remainingSql = withScope(
     `select b.id
      from bookings b
      where b.transfer_date = $1::date
        and b.cancelled_at is null
+       and ${bookingScopeClause(scope).sql}
        and aether_athens_instant(b.transfer_date, b.pickup_time) >= now()
      order by b.pickup_time, b.created_at
      limit 1`,
+    scope,
     [athensDate],
   );
+  const remaining = await db.query<{ id: string }>(remainingSql.text, remainingSql.params);
   const nextId = remaining[0]?.id;
   return {
     athensDate,
@@ -183,24 +220,40 @@ export async function loadTodayBoard(db: OpsDeskDb): Promise<TodayBoard> {
   };
 }
 
-export async function listOpsBookings(db: OpsDeskDb): Promise<OpsBookingRow[]> {
-  const rows = await db.query<Record<string, unknown>>(
-    `${BOOKING_SELECT} order by b.transfer_date desc, b.pickup_time, b.created_at`,
+export async function listOpsBookings(db: OpsDeskDb, scope: OpsScope): Promise<OpsBookingRow[]> {
+  assertDeskOrDispatcher(scope);
+  const scoped = withScope(
+    `${BOOKING_SELECT} where ${bookingScopeClause(scope).sql}
+     order by b.transfer_date desc, b.pickup_time, b.created_at`,
+    scope,
   );
+  const rows = await db.query<Record<string, unknown>>(scoped.text, scoped.params);
   return rows.map(mapBooking);
 }
 
-export async function getOpsBooking(db: OpsDeskDb, bookingId: string): Promise<OpsBookingRow> {
-  const rows = await db.query<Record<string, unknown>>(
-    `${BOOKING_SELECT} where b.id = $1::uuid`,
+export async function getOpsBooking(
+  db: OpsDeskDb,
+  scope: OpsScope,
+  bookingId: string,
+): Promise<OpsBookingRow> {
+  assertDeskOrDispatcher(scope);
+  const scoped = withScope(
+    `${BOOKING_SELECT} where b.id = $1::uuid and ${bookingScopeClause(scope).sql}`,
+    scope,
     [bookingId],
   );
+  const rows = await db.query<Record<string, unknown>>(scoped.text, scoped.params);
   const row = rows[0];
   if (!row) throw new OpsDeskError("not_found", 404, "Booking not found.");
   return mapBooking(row);
 }
 
-export async function listOpsAudit(db: OpsDeskDb, bookingId: string): Promise<OpsAudit[]> {
+export async function listOpsAudit(
+  db: OpsDeskDb,
+  scope: OpsScope,
+  bookingId: string,
+): Promise<OpsAudit[]> {
+  await getOpsBooking(db, scope, bookingId);
   const rows = await db.query<{ at: unknown; actor_type: string; action: string; payload: unknown }>(
     `select at, actor_type, action, payload
      from audit_events
@@ -216,9 +269,16 @@ export async function listOpsAudit(db: OpsDeskDb, bookingId: string): Promise<Op
   }));
 }
 
-export async function listOpsVehicles(db: OpsDeskDb): Promise<OpsVehicle[]> {
+export async function listOpsVehicles(db: OpsDeskDb, scope: OpsScope): Promise<OpsVehicle[]> {
+  if (!isProviderDispatcher(scope) || !scope.providerId) {
+    throw new OpsDeskError("forbidden", 403, "Not allowed.");
+  }
   const rows = await db.query<{ id: string; name: string; capacity: number; active: boolean }>(
-    "select id, name, capacity, active from vehicles order by name",
+    `select id, name, capacity, active
+       from vehicles
+      where operated_by_provider_id = $1::uuid
+      order by name`,
+    [scope.providerId],
   );
   return rows.map((row) => ({
     id: row.id,
@@ -230,8 +290,12 @@ export async function listOpsVehicles(db: OpsDeskDb): Promise<OpsVehicle[]> {
 
 export async function upsertVehicle(
   db: OpsDeskDb,
+  scope: OpsScope,
   input: { id?: string | null; name: string; capacity: number; active: boolean },
 ): Promise<OpsVehicle> {
+  if (!isProviderDispatcher(scope) || !scope.providerId) {
+    throw new OpsDeskError("forbidden", 403, "Not allowed.");
+  }
   const name = input.name.trim();
   if (!name) throw new OpsDeskError("invalid", 400, "Vehicle name is required.");
   if (!Number.isInteger(input.capacity) || input.capacity < 1 || input.capacity > 20) {
@@ -240,27 +304,35 @@ export async function upsertVehicle(
   if (input.id) {
     const rows = await db.query<OpsVehicle>(
       `update vehicles
-       set name = $1, capacity = $2, active = $3
-       where id = $4::uuid
-       returning id, name, capacity, active`,
-      [name, input.capacity, input.active, input.id],
+          set name = $1, capacity = $2, active = $3
+        where id = $4::uuid and operated_by_provider_id = $5::uuid
+        returning id, name, capacity, active`,
+      [name, input.capacity, input.active, input.id, scope.providerId],
     );
     if (!rows[0]) throw new OpsDeskError("not_found", 404, "Vehicle not found.");
     return { ...rows[0], capacity: Number(rows[0].capacity), active: rows[0].active !== false };
   }
   const rows = await db.query<OpsVehicle>(
-    `insert into vehicles (name, capacity, active)
-     values ($1, $2, $3)
+    `insert into vehicles (
+       name, capacity, active, owned_by_provider_id, operated_by_provider_id
+     ) values ($1, $2, $3, $4::uuid, $4::uuid)
      returning id, name, capacity, active`,
-    [name, input.capacity, input.active],
+    [name, input.capacity, input.active, scope.providerId],
   );
   const row = rows[0]!;
   return { ...row, capacity: Number(row.capacity), active: row.active !== false };
 }
 
-export async function listOpsDrivers(db: OpsDeskDb): Promise<OpsDriver[]> {
+export async function listOpsDrivers(db: OpsDeskDb, scope: OpsScope): Promise<OpsDriver[]> {
+  if (!isProviderDispatcher(scope) || !scope.providerId) {
+    throw new OpsDeskError("forbidden", 403, "Not allowed.");
+  }
   const rows = await db.query<{ id: string; name: string; active: boolean }>(
-    "select id, name, active from drivers order by name",
+    `select id, name, active
+       from drivers
+      where dispatched_by_provider_id = $1::uuid
+      order by name`,
+    [scope.providerId],
   );
   return rows.map((row) => ({
     id: row.id,
@@ -271,69 +343,59 @@ export async function listOpsDrivers(db: OpsDeskDb): Promise<OpsDriver[]> {
 
 export async function upsertDriver(
   db: OpsDeskDb,
+  scope: OpsScope,
   input: { id?: string | null; name: string; active: boolean },
 ): Promise<OpsDriver> {
+  if (!isProviderDispatcher(scope) || !scope.providerId) {
+    throw new OpsDeskError("forbidden", 403, "Not allowed.");
+  }
   const name = input.name.trim();
   if (!name) throw new OpsDeskError("invalid", 400, "Driver name is required.");
   if (input.id) {
     const rows = await db.query<OpsDriver>(
       `update drivers set name = $1, active = $2
-       where id = $3::uuid
-       returning id, name, active`,
-      [name, input.active, input.id],
+        where id = $3::uuid and dispatched_by_provider_id = $4::uuid
+        returning id, name, active`,
+      [name, input.active, input.id, scope.providerId],
     );
     if (!rows[0]) throw new OpsDeskError("not_found", 404, "Driver not found.");
     return { ...rows[0], active: rows[0].active !== false };
   }
   const rows = await db.query<OpsDriver>(
-    `insert into drivers (name, active) values ($1, $2) returning id, name, active`,
-    [name, input.active],
+    `insert into drivers (name, active, employed_by_provider_id, dispatched_by_provider_id)
+     values ($1, $2, $3::uuid, $3::uuid)
+     returning id, name, active`,
+    [name, input.active, scope.providerId],
   );
   const row = rows[0]!;
   return { ...row, active: row.active !== false };
 }
 
-export async function listOpsHotels(db: OpsDeskDb): Promise<OpsHotel[]> {
+export async function listOpsHotels(db: OpsDeskDb, scope: OpsScope): Promise<OpsHotel[]> {
+  assertDeskOrDispatcher(scope);
+  if (isHotelDesk(scope) && scope.hotelId) {
+    const rows = await db.query<{ id: string; code: string; name: string }>(
+      "select id, code, name from hotels where id = $1::uuid order by name",
+      [scope.hotelId],
+    );
+    return rows.map((row) => ({ id: row.id, ...hotelIdentity(row) }));
+  }
   const rows = await db.query<{ id: string; code: string; name: string }>(
-    "select id, code, name from hotels order by name",
+    `select h.id, h.code, h.name
+       from hotels h
+       join hotel_provider_agreements a on a.hotel_id = h.id
+      where a.provider_id = $1::uuid and a.active
+      order by h.name`,
+    [scope.providerId],
   );
   return rows.map((row) => ({ id: row.id, ...hotelIdentity(row) }));
 }
 
 export async function upsertHotel(
-  db: OpsDeskDb,
-  input: { id?: string | null; code: string; name: string },
+  _db: OpsDeskDb,
+  _scope: OpsScope,
+  _input: { id?: string | null; code: string; name: string },
 ): Promise<OpsHotel> {
-  const name = input.name.trim();
-  const code = normalizeHotelCode(input.code);
-  if (!name) throw new OpsDeskError("invalid", 400, "Hotel name is required.");
-  if (!code) {
-    throw new OpsDeskError(
-      "invalid",
-      400,
-      "Hotel code must be 2–32 letters, numbers or dashes.",
-    );
-  }
-  try {
-    if (input.id) {
-      const rows = await db.query<{ id: string; code: string; name: string }>(
-        `update hotels set code = $1, name = $2
-         where id = $3::uuid
-         returning id, code, name`,
-        [code, name, input.id],
-      );
-      if (!rows[0]) throw new OpsDeskError("not_found", 404, "Hotel not found.");
-      return { id: rows[0].id, ...hotelIdentity(rows[0]) };
-    }
-    const rows = await db.query<{ id: string; code: string; name: string }>(
-      `insert into hotels (code, name) values ($1, $2) returning id, code, name`,
-      [code, name],
-    );
-    return { id: rows[0]!.id, ...hotelIdentity(rows[0]!) };
-  } catch (err) {
-    if ((err as { code?: string }).code === "23505") {
-      throw new OpsDeskError("conflict", 409, "That hotel code is already in use.");
-    }
-    throw err;
-  }
+  throw new OpsDeskError("forbidden", 403, "Not allowed.");
 }
+

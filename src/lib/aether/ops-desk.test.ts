@@ -5,6 +5,7 @@ import { PGlite } from "@electric-sql/pglite";
 import { createBooking, type BookingDb } from "./booking.ts";
 import { assignVehicle, cancelBooking } from "./inventory.ts";
 import { createOperator } from "./ops-auth.ts";
+import { legacyDispatcherScope } from "./tenancy.ts";
 import {
   OpsDeskError,
   listOpsHotels,
@@ -25,6 +26,8 @@ const SQL_FILES = [
   "0008_guest_ux.sql",
   "0009_ops_desk.sql",
   "0010_hotel_white_label.sql",
+  "0011_production_hardening.sql",
+  "0012_cp12_tenancy.sql",
 ];
 
 async function openDb() {
@@ -49,6 +52,11 @@ async function openDb() {
     },
   };
   return { db, pg };
+}
+
+async function dispatcher(db: BookingDb) {
+  const operator = await createOperator(db, "desk", "desk-pass", { N: 16, r: 8, p: 1 });
+  return legacyDispatcherScope(db, operator.id, operator.login);
 }
 
 describe("Phase 7 operations desk", () => {
@@ -81,7 +89,7 @@ describe("Phase 7 operations desk", () => {
       pickupText: "Gate Hotel",
       destinationText: "Piraeus",
     });
-    const board = await loadTodayBoard(db);
+    const board = await loadTodayBoard(db, await dispatcher(db));
     assert.equal(board.athensDate, today);
     assert.equal(board.feed.length, 2);
     assert.equal(board.feed[0]!.pickupTime, "08:00");
@@ -108,25 +116,25 @@ describe("Phase 7 operations desk", () => {
       pickupText: "Gate Hotel",
       destinationText: "ATH",
     });
-    const before = await loadTodayBoard(db);
+    const scope = await dispatcher(db);
+    const before = await loadTodayBoard(db, scope);
     assert.equal(before.attention.unassignedVehicle, 1);
     assert.equal(before.attention.cancelled, 0);
-    const vehicle = (await listOpsVehicles(db))[0];
+    const vehicle = (await listOpsVehicles(db, scope))[0];
     assert.ok(vehicle);
-    const operator = await createOperator(db, "desk", "desk-pass", { N: 16, r: 8, p: 1 });
     await assignVehicle(db, {
       bookingId: before.feed[0]!.id,
       vehicleId: vehicle.id,
-      operatorId: operator.id,
+      scope,
     });
-    const assigned = await loadTodayBoard(db);
+    const assigned = await loadTodayBoard(db, scope);
     assert.equal(assigned.attention.unassignedVehicle, 0);
     assert.equal(assigned.feed[0]!.vehicleName, vehicle.name);
     await cancelBooking(db, {
       bookingId: before.feed[0]!.id,
-      operatorId: operator.id,
+      scope,
     });
-    const cancelled = await loadTodayBoard(db);
+    const cancelled = await loadTodayBoard(db, scope);
     assert.equal(cancelled.attention.cancelled, 1);
     assert.equal(cancelled.attention.unassignedVehicle, 0);
     assert.equal(cancelled.attention.unassignedDriver, 0);
@@ -136,26 +144,25 @@ describe("Phase 7 operations desk", () => {
 
   test("vehicle capacity and hotel unique code are validated", async () => {
     const { db, pg } = await openDb();
-    const vehicle = await upsertVehicle(db, { name: "Coach", capacity: 12, active: true });
+    const scope = await dispatcher(db);
+    const vehicle = await upsertVehicle(db, scope, { name: "Coach", capacity: 12, active: true });
     assert.equal(vehicle.capacity, 12);
     try {
-      await upsertVehicle(db, { name: "Too big", capacity: 99, active: true });
+      await upsertVehicle(db, scope, { name: "Too big", capacity: 99, active: true });
       assert.fail("expected capacity reject");
     } catch (err) {
       assert.ok(err instanceof OpsDeskError);
       assert.equal(err.code, "invalid");
     }
-    const hotel = await upsertHotel(db, { code: "Quay", name: "Quay Hotel" });
-    assert.equal(hotel.code, "quay");
-    assert.equal(hotel.bookingPath, "/book/quay");
     try {
-      await upsertHotel(db, { code: "gate", name: "Duplicate" });
-      assert.fail("expected unique code reject");
+      await upsertHotel(db, scope, { code: "Quay", name: "Quay Hotel" });
+      assert.fail("expected hotel upsert forbidden");
     } catch (err) {
       assert.ok(err instanceof OpsDeskError);
-      assert.equal(err.code, "conflict");
+      assert.equal(err.code, "forbidden");
     }
-    const hotels = await listOpsHotels(db);
+    const hotels = await listOpsHotels(db, scope);
+    assert.ok(hotels.some((item) => item.code === "gate"));
     assert.ok(hotels.some((item) => item.code === "gate"));
     await pg.close();
   });

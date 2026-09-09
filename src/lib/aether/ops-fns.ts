@@ -15,7 +15,9 @@ function fail(err: unknown): { ok: false; code: string; message: string } {
           ? "Too many attempts. Try again later."
           : code === "csrf"
             ? "This request could not be verified."
-            : "Please sign in.";
+            : code === "no_membership" || code === "ambiguous_membership" || code === "forbidden"
+              ? "This action is not allowed."
+              : "Please sign in.";
     return { ok: false, code, message };
   }
   return { ok: false, code: "server_error", message: "Something went wrong. Please try again." };
@@ -65,7 +67,13 @@ export const opsWhoAmI = createServerFn({ method: "GET" }).handler(async () => {
   try {
     const { requireOps } = await import("./ops-auth.server");
     const ops = await requireOps({ csrf: false });
-    return { ok: true as const, login: ops.login };
+    return {
+      ok: true as const,
+      login: ops.login,
+      accessClass: ops.accessClass,
+      hotelId: ops.hotelId,
+      providerId: ops.providerId,
+    };
   } catch (err) {
     return fail(err);
   }

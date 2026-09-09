@@ -13,6 +13,7 @@ import {
   unassignVehicle,
 } from "./inventory.ts";
 import { createOperator } from "./ops-auth.ts";
+import { ensureLegacyDispatcherMembership, type OpsScope } from "./tenancy.ts";
 
 const FOUNDATION_SQL = readFileSync(
   new URL("../../../migrations/0002_foundation.sql", import.meta.url),
@@ -38,6 +39,26 @@ const INVENTORY_SQL = readFileSync(
   new URL("../../../migrations/0007_inventory.sql", import.meta.url),
   "utf8",
 );
+const GUEST_SQL = readFileSync(
+  new URL("../../../migrations/0008_guest_ux.sql", import.meta.url),
+  "utf8",
+);
+const DESK_SQL = readFileSync(
+  new URL("../../../migrations/0009_ops_desk.sql", import.meta.url),
+  "utf8",
+);
+const WHITE_SQL = readFileSync(
+  new URL("../../../migrations/0010_hotel_white_label.sql", import.meta.url),
+  "utf8",
+);
+const HARDENING_SQL = readFileSync(
+  new URL("../../../migrations/0011_production_hardening.sql", import.meta.url),
+  "utf8",
+);
+const TENANCY_SQL = readFileSync(
+  new URL("../../../migrations/0012_cp12_tenancy.sql", import.meta.url),
+  "utf8",
+);
 
 async function openDb() {
   const { btree_gist } = await import("@electric-sql/pglite/contrib/btree_gist");
@@ -49,19 +70,15 @@ async function openDb() {
   await pg.exec(TIME_SQL);
   await pg.exec(BOOKING_SQL);
   await pg.exec(INVENTORY_SQL);
-  await pg.exec("insert into hotels (code, name) values ('gate', 'Gate Hotel')");
-  const v1 = await pg.query<{ id: string }>(
-    "insert into vehicles (name) values ('Van 1') returning id",
-  );
-  const v2 = await pg.query<{ id: string }>(
-    "insert into vehicles (name) values ('Van 2') returning id",
-  );
-  const d1 = await pg.query<{ id: string }>(
-    "insert into drivers (name) values ('Driver 1') returning id",
-  );
-  const d2 = await pg.query<{ id: string }>(
-    "insert into drivers (name) values ('Driver 2') returning id",
-  );
+  await pg.exec(GUEST_SQL);
+  await pg.exec(DESK_SQL);
+  await pg.exec(WHITE_SQL);
+  await pg.exec(HARDENING_SQL);
+  await pg.exec(TENANCY_SQL);
+  const v1 = await pg.query<{ id: string }>("select id from vehicles where name = 'Van 1'");
+  const v2 = await pg.query<{ id: string }>("select id from vehicles where name = 'Saloon 1'");
+  const d1 = await pg.query<{ id: string }>("select id from drivers where name = 'Driver 1'");
+  const d2 = await pg.query<{ id: string }>("select id from drivers where name = 'Driver 2'");
   const db: BookingDb = {
     query: async <T>(text: string, params?: unknown[]) => {
       const result = await pg.query<T>(text, params);
@@ -87,6 +104,17 @@ async function openDb() {
     r: 8,
     p: 1,
   });
+  const membershipId = await ensureLegacyDispatcherMembership(db, operator.id);
+  const provider = await db.query<{ id: string }>("select id from providers where code = 'legacy'");
+  const scope: OpsScope = {
+    operatorId: operator.id,
+    login: operator.login,
+    sessionId: "inventory-test",
+    membershipId,
+    accessClass: "provider_dispatcher",
+    hotelId: null,
+    providerId: provider[0]!.id,
+  };
   return {
     db,
     pg,
@@ -94,7 +122,7 @@ async function openDb() {
     vehicle2: v2.rows[0]!.id,
     driver1: d1.rows[0]!.id,
     driver2: d2.rows[0]!.id,
-    operatorId: operator.id,
+    scope,
   };
 }
 
@@ -142,7 +170,7 @@ describe("Phase 5 inventory assignment", () => {
     const withVehicle = await assignVehicle(ctx.db, {
       bookingId: id,
       vehicleId: ctx.vehicle1,
-      operatorId: ctx.operatorId,
+      scope: ctx.scope,
     });
     assert.equal(withVehicle.vehicleId, ctx.vehicle1);
     assert.equal(withVehicle.driverId, null);
@@ -150,21 +178,21 @@ describe("Phase 5 inventory assignment", () => {
     const withBoth = await assignDriver(ctx.db, {
       bookingId: id,
       driverId: ctx.driver1,
-      operatorId: ctx.operatorId,
+      scope: ctx.scope,
     });
     assert.equal(withBoth.vehicleId, ctx.vehicle1);
     assert.equal(withBoth.driverId, ctx.driver1);
 
     const noVehicle = await unassignVehicle(ctx.db, {
       bookingId: id,
-      operatorId: ctx.operatorId,
+      scope: ctx.scope,
     });
     assert.equal(noVehicle.vehicleId, null);
     assert.equal(noVehicle.driverId, ctx.driver1);
 
     const none = await unassignDriver(ctx.db, {
       bookingId: id,
-      operatorId: ctx.operatorId,
+      scope: ctx.scope,
     });
     assert.equal(none.vehicleId, null);
     assert.equal(none.driverId, null);
@@ -180,7 +208,7 @@ describe("Phase 5 inventory assignment", () => {
         assignVehicle(ctx.db, {
           bookingId: id,
           vehicleId: ctx.vehicle1,
-          operatorId: ctx.operatorId,
+          scope: ctx.scope,
         }),
       "unusable",
     );
@@ -189,7 +217,7 @@ describe("Phase 5 inventory assignment", () => {
         assignVehicle(ctx.db, {
           bookingId: id,
           vehicleId: "00000000-0000-4000-8000-000000000099",
-          operatorId: ctx.operatorId,
+          scope: ctx.scope,
         }),
       "not_found",
     );
@@ -204,12 +232,12 @@ describe("Phase 5 inventory assignment", () => {
     await assignVehicle(ctx.db, {
       bookingId: a,
       vehicleId: ctx.vehicle1,
-      operatorId: ctx.operatorId,
+      scope: ctx.scope,
     });
     const ok = await assignVehicle(ctx.db, {
       bookingId: adjacent,
       vehicleId: ctx.vehicle1,
-      operatorId: ctx.operatorId,
+      scope: ctx.scope,
     });
     assert.equal(ok.vehicleId, ctx.vehicle1);
     const err = await expectCode(
@@ -217,7 +245,7 @@ describe("Phase 5 inventory assignment", () => {
         assignVehicle(ctx.db, {
           bookingId: overlap,
           vehicleId: ctx.vehicle1,
-          operatorId: ctx.operatorId,
+          scope: ctx.scope,
         }),
       "unavailable",
     );
@@ -237,19 +265,19 @@ describe("Phase 5 inventory assignment", () => {
     await assignDriver(ctx.db, {
       bookingId: a,
       driverId: ctx.driver1,
-      operatorId: ctx.operatorId,
+      scope: ctx.scope,
     });
     await assignVehicle(ctx.db, {
       bookingId: b,
       vehicleId: ctx.vehicle2,
-      operatorId: ctx.operatorId,
+      scope: ctx.scope,
     });
     const err = await expectCode(
       () =>
         assignDriver(ctx.db, {
           bookingId: b,
           driverId: ctx.driver1,
-          operatorId: ctx.operatorId,
+          scope: ctx.scope,
         }),
       "unavailable",
     );
@@ -270,25 +298,25 @@ describe("Phase 5 inventory assignment", () => {
     await assignVehicle(ctx.db, {
       bookingId: a,
       vehicleId: ctx.vehicle1,
-      operatorId: ctx.operatorId,
+      scope: ctx.scope,
     });
     await assignDriver(ctx.db, {
       bookingId: a,
       driverId: ctx.driver1,
-      operatorId: ctx.operatorId,
+      scope: ctx.scope,
     });
     await expectCode(
       () =>
         assignVehicle(ctx.db, {
           bookingId: b,
           vehicleId: ctx.vehicle1,
-          operatorId: ctx.operatorId,
+          scope: ctx.scope,
         }),
       "unavailable",
     );
     const cancelled = await cancelBooking(ctx.db, {
       bookingId: a,
-      operatorId: ctx.operatorId,
+      scope: ctx.scope,
     });
     assert.equal(cancelled.cancelled, true);
     const empty = await ctx.db.query<{ empty: boolean }>(
@@ -299,7 +327,7 @@ describe("Phase 5 inventory assignment", () => {
     const reused = await assignVehicle(ctx.db, {
       bookingId: b,
       vehicleId: ctx.vehicle1,
-      operatorId: ctx.operatorId,
+      scope: ctx.scope,
     });
     assert.equal(reused.vehicleId, ctx.vehicle1);
     await expectCode(
@@ -307,7 +335,7 @@ describe("Phase 5 inventory assignment", () => {
         assignVehicle(ctx.db, {
           bookingId: a,
           vehicleId: ctx.vehicle2,
-          operatorId: ctx.operatorId,
+          scope: ctx.scope,
         }),
       "cancelled",
     );
@@ -321,18 +349,18 @@ describe("Phase 5 inventory assignment", () => {
     await assignVehicle(ctx.db, {
       bookingId: a,
       vehicleId: ctx.vehicle1,
-      operatorId: ctx.operatorId,
+      scope: ctx.scope,
     });
     await assignDriver(ctx.db, {
       bookingId: a,
       driverId: ctx.driver1,
-      operatorId: ctx.operatorId,
+      scope: ctx.scope,
     });
-    await unassignVehicle(ctx.db, { bookingId: a, operatorId: ctx.operatorId });
+    await unassignVehicle(ctx.db, { bookingId: a, scope: ctx.scope });
     const reused = await assignVehicle(ctx.db, {
       bookingId: b,
       vehicleId: ctx.vehicle1,
-      operatorId: ctx.operatorId,
+      scope: ctx.scope,
     });
     assert.equal(reused.vehicleId, ctx.vehicle1);
     await expectCode(
@@ -340,7 +368,7 @@ describe("Phase 5 inventory assignment", () => {
         assignDriver(ctx.db, {
           bookingId: b,
           driverId: ctx.driver1,
-          operatorId: ctx.operatorId,
+          scope: ctx.scope,
         }),
       "unavailable",
     );
@@ -353,7 +381,7 @@ describe("Phase 5 inventory assignment", () => {
     const updated = await setBookingStatus(ctx.db, {
       bookingId: id,
       status: "confirmed",
-      operatorId: ctx.operatorId,
+      scope: ctx.scope,
     });
     assert.equal(updated.status, "confirmed");
     const audit = await ctx.db.query<{ action: string; actor_type: string }>(
@@ -371,15 +399,15 @@ describe("Phase 5 inventory assignment", () => {
     await assignVehicle(ctx.db, {
       bookingId: id,
       vehicleId: ctx.vehicle1,
-      operatorId: ctx.operatorId,
+      scope: ctx.scope,
     });
-    await unassignVehicle(ctx.db, { bookingId: id, operatorId: ctx.operatorId });
+    await unassignVehicle(ctx.db, { bookingId: id, scope: ctx.scope });
     await assignDriver(ctx.db, {
       bookingId: id,
       driverId: ctx.driver1,
-      operatorId: ctx.operatorId,
+      scope: ctx.scope,
     });
-    await unassignDriver(ctx.db, { bookingId: id, operatorId: ctx.operatorId });
+    await unassignDriver(ctx.db, { bookingId: id, scope: ctx.scope });
     const actions = await ctx.db.query<{ action: string }>(
       "select action from audit_events where booking_id = $1 and actor_type = 'operator'",
       [id],
@@ -401,14 +429,14 @@ describe("Phase 5 inventory assignment", () => {
     await assignVehicle(ctx.db, {
       bookingId: a,
       vehicleId: ctx.vehicle1,
-      operatorId: ctx.operatorId,
+      scope: ctx.scope,
     });
     await expectCode(
       () =>
         assignVehicle(ctx.db, {
           bookingId: b,
           vehicleId: ctx.vehicle1,
-          operatorId: ctx.operatorId,
+          scope: ctx.scope,
         }),
       "unavailable",
     );

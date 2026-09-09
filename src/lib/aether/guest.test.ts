@@ -48,6 +48,10 @@ const WHITE_LABEL_SQL = readFileSync(
   new URL("../../../migrations/0010_hotel_white_label.sql", import.meta.url),
   "utf8",
 );
+const TENANCY_SQL = readFileSync(
+  new URL("../../../migrations/0012_cp12_tenancy.sql", import.meta.url),
+  "utf8",
+);
 
 async function openDb() {
   const { btree_gist } = await import("@electric-sql/pglite/contrib/btree_gist");
@@ -61,6 +65,7 @@ async function openDb() {
   await pg.exec(INVENTORY_SQL);
   await pg.exec(GUEST_SQL);
   await pg.exec(WHITE_LABEL_SQL);
+  await pg.exec(TENANCY_SQL);
   const db: BookingDb = {
     query: async <T>(text: string, params?: unknown[]) => (await pg.query<T>(text, params)).rows,
     async transaction<T>(fn: (inner: BookingDb) => Promise<T>) {

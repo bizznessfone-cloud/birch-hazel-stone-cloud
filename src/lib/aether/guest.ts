@@ -75,6 +75,8 @@ export function touristMessage(code: string, fallback?: string): string {
       return "Please add a pickup and destination.";
     case "not_found":
       return "We could not find that booking.";
+    case "no_provider":
+      return "Transfers are not available for this hotel yet.";
     case "idempotency_conflict":
       return "This request does not match a booking already started. Please review and try again.";
     case "server_error":

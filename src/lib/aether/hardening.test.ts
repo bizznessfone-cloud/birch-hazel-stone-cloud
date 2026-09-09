@@ -18,6 +18,7 @@ import {
   unassignVehicle,
 } from "./inventory.ts";
 import { createOperator } from "./ops-auth.ts";
+import { legacyDispatcherScope } from "./tenancy.ts";
 import { AETHER_DATABASE_OWNER_URL_ENV, AETHER_RUNTIME_ROLE } from "./runtime-role.ts";
 
 const SQL_FILES = [
@@ -31,6 +32,7 @@ const SQL_FILES = [
   "0009_ops_desk.sql",
   "0010_hotel_white_label.sql",
   "0011_production_hardening.sql",
+  "0012_cp12_tenancy.sql",
 ] as const;
 
 type Pg = PGlite;
@@ -156,8 +158,8 @@ describe("Phase 10 production hardening", () => {
       "select key, value from aether_meta",
     );
     const map = Object.fromEntries(meta.rows.map((row) => [row.key, row.value]));
-    assert.equal(map.schema_phase, "10");
-    assert.equal(map.checkpoint, "10");
+    assert.equal(map.schema_phase, "12");
+    assert.equal(map.checkpoint, "12");
     assert.equal(map.runtime_role, AETHER_RUNTIME_ROLE);
     assert.equal(map.db_owner, "postgres");
 
@@ -301,11 +303,12 @@ describe("Phase 10 production hardening", () => {
 
       const spoof = await pg.query<{ occupies: string }>(
         `insert into bookings (
-           hotel_id, transfer_date, pickup_time, duration_minutes,
+           hotel_id, executing_provider_id, transfer_date, pickup_time, duration_minutes,
            guest_name, guest_phone, guest_email, pickup_text, destination_text,
            human_reference, confirmation_token, occupies
          ) values (
            (select id from hotels where code = 'gate'),
+           (select id from providers where code = 'legacy'),
            '2026-01-15', '11:00', 60,
            'Ben', '+1', 'ben@example.com', 'A', 'B',
            'PT-SPOOFTEST', 'spoof-token-hardening-aaaa',
@@ -320,6 +323,7 @@ describe("Phase 10 production hardening", () => {
         r: 8,
         p: 1,
       });
+      const scope = await legacyDispatcherScope(db, operator.id, operator.login);
       const vehicles = await pg.query<{ id: string }>(
         "select id from vehicles where active = true order by name limit 1",
       );
@@ -327,7 +331,7 @@ describe("Phase 10 production hardening", () => {
       await assignVehicle(db, {
         bookingId: row.rows[0]!.id,
         vehicleId,
-        operatorId: operator.id,
+        scope,
       });
 
       const other = await createBooking(
@@ -342,7 +346,7 @@ describe("Phase 10 production hardening", () => {
         await assignVehicle(db, {
           bookingId: otherId.rows[0]!.id,
           vehicleId,
-          operatorId: operator.id,
+          scope,
         });
         assert.fail("overlap must fail");
       } catch (err) {
@@ -368,6 +372,7 @@ describe("Phase 10 production hardening", () => {
         r: 8,
         p: 1,
       });
+      const scope = await legacyDispatcherScope(db, operator.id, operator.login);
       const vehicles = await pg.query<{ id: string }>(
         "select id from vehicles where active = true order by name limit 1",
       );
@@ -383,9 +388,9 @@ describe("Phase 10 production hardening", () => {
       await assignVehicle(db, {
         bookingId: firstId,
         vehicleId,
-        operatorId: operator.id,
+        scope,
       });
-      await unassignVehicle(db, { bookingId: firstId, operatorId: operator.id });
+      await unassignVehicle(db, { bookingId: firstId, scope });
 
       const second = await createBooking(db, bookingInput("two@example.com", "13:00"));
       const secondId = (
@@ -397,11 +402,11 @@ describe("Phase 10 production hardening", () => {
       const assigned = await assignVehicle(db, {
         bookingId: secondId,
         vehicleId,
-        operatorId: operator.id,
+        scope,
       });
       assert.equal(assigned.vehicleId, vehicleId);
 
-      await cancelBooking(db, { bookingId: secondId, operatorId: operator.id });
+      await cancelBooking(db, { bookingId: secondId, scope });
       const empty = await pg.query<{ empty: boolean }>(
         "select isempty(occupies) as empty from bookings where id = $1",
         [secondId],
@@ -411,7 +416,7 @@ describe("Phase 10 production hardening", () => {
       const reused = await assignVehicle(db, {
         bookingId: firstId,
         vehicleId,
-        operatorId: operator.id,
+        scope,
       });
       assert.equal(reused.vehicleId, vehicleId);
     });

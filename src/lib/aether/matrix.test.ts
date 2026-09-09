@@ -28,6 +28,7 @@ import {
   unassignVehicle,
 } from "./inventory.ts";
 import { createOperator } from "./ops-auth.ts";
+import { legacyDispatcherScope } from "./tenancy.ts";
 import {
   getOpsBooking,
   listOpsAudit,
@@ -49,6 +50,7 @@ const SQL_FILES = [
   "0009_ops_desk.sql",
   "0010_hotel_white_label.sql",
   "0011_production_hardening.sql",
+  "0012_cp12_tenancy.sql",
 ] as const;
 
 const PUBLIC_DTO_KEYS = [
@@ -315,7 +317,7 @@ describe("Phase 9 full test reconstruction", () => {
     assert.match(occupancy, /tstzrange/);
     assert.match(occupancy, /'\[\)'/);
 
-    const later = ["0008_guest_ux.sql", "0009_ops_desk.sql", "0010_hotel_white_label.sql", "0011_production_hardening.sql"]
+    const later = ["0008_guest_ux.sql", "0009_ops_desk.sql", "0010_hotel_white_label.sql", "0011_production_hardening.sql", "0012_cp12_tenancy.sql"]
       .map((name) => readAether(`../../../migrations/${name}`))
       .join("\n");
     assert.doesNotMatch(later, /drop trigger|drop function aether_athens|drop constraint bookings_/i);
@@ -340,7 +342,7 @@ describe("Phase 9 full test reconstruction", () => {
     assert.equal(process.env.DATABASE_URL || "", "", "DATABASE_URL must stay unset here");
   });
 
-  test("migrations 0002–0011 apply; occupancy engine remains authority", async () => {
+  test("migrations 0002–0012 apply; occupancy engine remains authority", async () => {
     const { db, pg } = await openDb();
     const meta = await db.query<{ key: string; value: string }>(
       "select key, value from aether_meta",
@@ -348,8 +350,8 @@ describe("Phase 9 full test reconstruction", () => {
     const map = Object.fromEntries(meta.map((row) => [row.key, row.value]));
     assert.equal(map.product, "Aether Transfer");
     assert.equal(map.blueprint, "v2");
-    assert.equal(map.schema_phase, "10");
-    assert.equal(map.checkpoint, "10");
+    assert.equal(map.schema_phase, "12");
+    assert.equal(map.checkpoint, "12");
     assert.equal(map.runtime_role, "aether_runtime");
 
     const objects = await db.query<{ n: number }>(`
@@ -443,57 +445,58 @@ describe("Phase 9 full test reconstruction", () => {
     const { db, pg } = await openDb();
     const created = await createBooking(db, bookingInput("gate"));
     const id = await bookingId(db, created.confirmationToken);
-    const list = await listOpsBookings(db);
+    const operator = await createOperator(db, "desk", "desk-pass", { N: 16, r: 8, p: 1 });
+    const scope = await legacyDispatcherScope(db, operator.id, operator.login);
+    const list = await listOpsBookings(db, scope);
     const listed = list.find((row) => row.id === id);
     assert.ok(listed);
     assert.equal(listed.hotelCode, "gate");
     assert.equal(listed.needsVehicle, true);
     assert.equal(listed.needsDriver, true);
 
-    const detail = await getOpsBooking(db, id);
+    const detail = await getOpsBooking(db, scope, id);
     assert.equal(detail.humanReference, created.humanReference);
     assert.equal(detail.guestName, "Ada Guest");
 
-    const vehicles = await listOpsVehicles(db);
-    const drivers = await listOpsDrivers(db);
-    const hotels = await listOpsHotels(db);
+    const vehicles = await listOpsVehicles(db, scope);
+    const drivers = await listOpsDrivers(db, scope);
+    const hotels = await listOpsHotels(db, scope);
     assert.ok(vehicles.length >= 2);
     assert.ok(drivers.length >= 2);
     assert.ok(hotels.some((row) => row.code === "gate" && row.bookingPath === "/book/gate"));
     assert.ok(hotels.some((row) => row.code === "harbor" && row.bookingPath === "/book/harbor"));
 
-    const extraDriver = await upsertDriver(db, { name: "Driver Extra", active: true });
+    const extraDriver = await upsertDriver(db, scope, { name: "Driver Extra", active: true });
     assert.equal(extraDriver.active, true);
 
-    const operator = await createOperator(db, "desk", "desk-pass", { N: 16, r: 8, p: 1 });
     const withVehicle = await assignVehicle(db, {
       bookingId: id,
       vehicleId: vehicles[0]!.id,
-      operatorId: operator.id,
+      scope,
     });
     assert.equal(withVehicle.vehicleId, vehicles[0]!.id);
     const withDriver = await assignDriver(db, {
       bookingId: id,
       driverId: drivers[0]!.id,
-      operatorId: operator.id,
+      scope,
     });
     assert.equal(withDriver.driverId, drivers[0]!.id);
     const labelled = await setBookingStatus(db, {
       bookingId: id,
       status: "confirmed",
-      operatorId: operator.id,
+      scope,
     });
     assert.equal(labelled.status, "confirmed");
 
-    const audit = await listOpsAudit(db, id);
+    const audit = await listOpsAudit(db, scope, id);
     const actions = audit.map((row) => row.action);
     assert.ok(actions.includes("booking.create"));
     assert.ok(actions.includes("vehicle.assign"));
     assert.ok(actions.includes("driver.assign"));
     assert.ok(actions.includes("booking.status"));
 
-    await unassignVehicle(db, { bookingId: id, operatorId: operator.id });
-    const afterUnassign = await getOpsBooking(db, id);
+    await unassignVehicle(db, { bookingId: id, scope });
+    const afterUnassign = await getOpsBooking(db, scope, id);
     assert.equal(afterUnassign.vehicleId, null);
     assert.equal(afterUnassign.driverId, drivers[0]!.id);
 
@@ -505,11 +508,11 @@ describe("Phase 9 full test reconstruction", () => {
     await assignVehicle(db, {
       bookingId: otherId,
       vehicleId: vehicles[0]!.id,
-      operatorId: operator.id,
+      scope,
     });
 
-    await cancelBooking(db, { bookingId: id, operatorId: operator.id });
-    const cancelled = await getOpsBooking(db, id);
+    await cancelBooking(db, { bookingId: id, scope });
+    const cancelled = await getOpsBooking(db, scope, id);
     assert.equal(cancelled.cancelled, true);
     const empty = await db.query<{ empty: boolean }>(
       "select isempty(occupies) as empty from bookings where id = $1",
@@ -523,8 +526,9 @@ describe("Phase 9 full test reconstruction", () => {
     assert.equal(process.env.DATABASE_URL || "", "");
     const { db, pg } = await openDb();
     const operator = await createOperator(db, "desk", "desk-pass", { N: 16, r: 8, p: 1 });
-    const vehicles = await listOpsVehicles(db);
-    const drivers = await listOpsDrivers(db);
+    const scope = await legacyDispatcherScope(db, operator.id, operator.login);
+    const vehicles = await listOpsVehicles(db, scope);
+    const drivers = await listOpsDrivers(db, scope);
     const vehicleId = vehicles[0]!.id;
     const driverId = drivers[0]!.id;
 
@@ -534,8 +538,8 @@ describe("Phase 9 full test reconstruction", () => {
     const idB = await bookingId(db, b.confirmationToken);
 
     const vehicleSettled = await Promise.allSettled([
-      assignVehicle(db, { bookingId: idA, vehicleId, operatorId: operator.id }),
-      assignVehicle(db, { bookingId: idB, vehicleId, operatorId: operator.id }),
+      assignVehicle(db, { bookingId: idA, vehicleId, scope }),
+      assignVehicle(db, { bookingId: idB, vehicleId, scope }),
     ]);
     const vehicleWins = vehicleSettled.filter((row) => row.status === "fulfilled");
     const vehicleLosses = vehicleSettled.filter((row) => row.status === "rejected");
@@ -552,8 +556,8 @@ describe("Phase 9 full test reconstruction", () => {
     const idD = await bookingId(db, d.confirmationToken);
 
     const driverSettled = await Promise.allSettled([
-      assignDriver(db, { bookingId: idC, driverId, operatorId: operator.id }),
-      assignDriver(db, { bookingId: idD, driverId, operatorId: operator.id }),
+      assignDriver(db, { bookingId: idC, driverId, scope }),
+      assignDriver(db, { bookingId: idD, driverId, scope }),
     ]);
     const driverWins = driverSettled.filter((row) => row.status === "fulfilled");
     const driverLosses = driverSettled.filter((row) => row.status === "rejected");

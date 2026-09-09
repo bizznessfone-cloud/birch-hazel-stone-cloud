@@ -17,11 +17,30 @@ export interface HotelsTable {
   created_at: Generated<Date>;
 }
 
+export interface ProvidersTable {
+  id: Generated<string>;
+  code: string;
+  name: string;
+  kind: Generated<string>;
+  created_at: Generated<Date>;
+}
+
+export interface HotelProviderAgreementsTable {
+  id: Generated<string>;
+  hotel_id: string;
+  provider_id: string;
+  active: Generated<boolean>;
+  created_at: Generated<Date>;
+}
+
 export interface VehiclesTable {
   id: Generated<string>;
   name: string;
   active: Generated<boolean>;
   capacity: Generated<number>;
+  owned_by_hotel_id: string | null;
+  owned_by_provider_id: string | null;
+  operated_by_provider_id: string;
   created_at: Generated<Date>;
 }
 
@@ -29,6 +48,9 @@ export interface DriversTable {
   id: Generated<string>;
   name: string;
   active: Generated<boolean>;
+  employed_by_hotel_id: string | null;
+  employed_by_provider_id: string | null;
+  dispatched_by_provider_id: string;
   created_at: Generated<Date>;
 }
 
@@ -39,9 +61,21 @@ export interface OperatorsTable {
   created_at: Generated<Date>;
 }
 
+export interface OperatorMembershipsTable {
+  id: Generated<string>;
+  operator_id: string;
+  org_kind: string;
+  hotel_id: string | null;
+  provider_id: string | null;
+  access_class: string;
+  active: Generated<boolean>;
+  created_at: Generated<Date>;
+}
+
 export interface SessionsTable {
   id: Generated<string>;
   operator_id: string;
+  membership_id: string;
   token_hash: string;
   csrf_hash: Generated<string>;
   expires_at: Date;
@@ -52,6 +86,7 @@ export interface SessionsTable {
 export interface BookingsTable {
   id: Generated<string>;
   hotel_id: string;
+  executing_provider_id: string;
   transfer_date: string;
   pickup_time: string;
   duration_minutes: number;
@@ -103,9 +138,12 @@ export interface LoginAttemptsTable {
 export interface AetherDatabase {
   aether_meta: AetherMetaTable;
   hotels: HotelsTable;
+  providers: ProvidersTable;
+  hotel_provider_agreements: HotelProviderAgreementsTable;
   vehicles: VehiclesTable;
   drivers: DriversTable;
   operators: OperatorsTable;
+  operator_memberships: OperatorMembershipsTable;
   sessions: SessionsTable;
   bookings: BookingsTable;
   audit_events: AuditEventsTable;

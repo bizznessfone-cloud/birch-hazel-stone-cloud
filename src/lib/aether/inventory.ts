@@ -4,6 +4,12 @@
  * Map 23P01 to a readable unavailable error — never return raw SQL.
  */
 import type { BookingDb } from "./booking.ts";
+import {
+  auditOrgPayload,
+  isHotelDesk,
+  isProviderDispatcher,
+  type OpsScope,
+} from "./tenancy.ts";
 
 export type InventoryDb = BookingDb;
 
@@ -12,7 +18,8 @@ export type InventoryErrorCode =
   | "cancelled"
   | "unusable"
   | "unavailable"
-  | "invalid_status";
+  | "invalid_status"
+  | "forbidden";
 
 export class InventoryError extends Error {
   readonly code: InventoryErrorCode;
@@ -35,6 +42,8 @@ export type AssignmentSnapshot = {
 
 type BookingLock = {
   id: string;
+  hotel_id: string;
+  executing_provider_id: string;
   vehicle_id: string | null;
   driver_id: string | null;
   status: string;
@@ -55,7 +64,7 @@ function throwUnavailable(kind: "vehicle" | "driver"): never {
 
 async function audit(
   db: InventoryDb,
-  operatorId: string,
+  scope: OpsScope,
   action: string,
   bookingId: string,
   payload: Record<string, unknown>,
@@ -63,7 +72,7 @@ async function audit(
   await db.query(
     `insert into audit_events (actor_type, actor_id, action, booking_id, payload)
      values ('operator', $1::uuid, $2, $3::uuid, $4::jsonb)`,
-    [operatorId, action, bookingId, JSON.stringify(payload)],
+    [scope.operatorId, action, bookingId, JSON.stringify({ ...auditOrgPayload(scope), ...payload })],
   );
 }
 
@@ -92,7 +101,7 @@ async function loadSnapshot(db: InventoryDb, bookingId: string): Promise<Assignm
 
 async function lockBooking(db: InventoryDb, bookingId: string): Promise<BookingLock> {
   const rows = await db.query<BookingLock>(
-    `select id, vehicle_id, driver_id, status, cancelled_at
+    `select id, hotel_id, executing_provider_id, vehicle_id, driver_id, status, cancelled_at
      from bookings where id = $1::uuid for update`,
     [bookingId],
   );
@@ -101,31 +110,55 @@ async function lockBooking(db: InventoryDb, bookingId: string): Promise<BookingL
   return row;
 }
 
+function assertDispatcher(scope: OpsScope, booking: BookingLock): void {
+  if (!isProviderDispatcher(scope) || booking.executing_provider_id !== scope.providerId) {
+    throw new InventoryError("forbidden", 403, "Not allowed.");
+  }
+}
+
+function assertCancel(scope: OpsScope, booking: BookingLock): void {
+  if (isHotelDesk(scope) && booking.hotel_id === scope.hotelId) return;
+  if (isProviderDispatcher(scope) && booking.executing_provider_id === scope.providerId) return;
+  throw new InventoryError("not_found", 404, "Booking not found.");
+}
+
 function assertNotCancelled(row: BookingLock): void {
   if (row.cancelled_at != null) {
     throw new InventoryError("cancelled", 409, "This booking is cancelled.");
   }
 }
 
-async function requireVehicle(db: InventoryDb, vehicleId: string): Promise<void> {
-  const rows = await db.query<{ id: string; active: boolean }>(
-    "select id, active from vehicles where id = $1::uuid",
+async function requireVehicle(
+  db: InventoryDb,
+  vehicleId: string,
+  providerId: string,
+): Promise<void> {
+  const rows = await db.query<{ id: string; active: boolean; operated_by_provider_id: string }>(
+    "select id, active, operated_by_provider_id from vehicles where id = $1::uuid",
     [vehicleId],
   );
   const row = rows[0];
-  if (!row) throw new InventoryError("not_found", 404, "Vehicle not found.");
+  if (!row || row.operated_by_provider_id !== providerId) {
+    throw new InventoryError("not_found", 404, "Vehicle not found.");
+  }
   if (row.active === false) {
     throw new InventoryError("unusable", 409, "That vehicle is not available.");
   }
 }
 
-async function requireDriver(db: InventoryDb, driverId: string): Promise<void> {
-  const rows = await db.query<{ id: string; active: boolean }>(
-    "select id, active from drivers where id = $1::uuid",
+async function requireDriver(
+  db: InventoryDb,
+  driverId: string,
+  providerId: string,
+): Promise<void> {
+  const rows = await db.query<{ id: string; active: boolean; dispatched_by_provider_id: string }>(
+    "select id, active, dispatched_by_provider_id from drivers where id = $1::uuid",
     [driverId],
   );
   const row = rows[0];
-  if (!row) throw new InventoryError("not_found", 404, "Driver not found.");
+  if (!row || row.dispatched_by_provider_id !== providerId) {
+    throw new InventoryError("not_found", 404, "Driver not found.");
+  }
   if (row.active === false) {
     throw new InventoryError("unusable", 409, "That driver is not available.");
   }
@@ -133,12 +166,13 @@ async function requireDriver(db: InventoryDb, driverId: string): Promise<void> {
 
 export async function assignVehicle(
   db: InventoryDb,
-  args: { bookingId: string; vehicleId: string; operatorId: string },
+  args: { bookingId: string; vehicleId: string; scope: OpsScope },
 ): Promise<AssignmentSnapshot> {
   return db.transaction(async (txn) => {
     const booking = await lockBooking(txn, args.bookingId);
+    assertDispatcher(args.scope, booking);
     assertNotCancelled(booking);
-    await requireVehicle(txn, args.vehicleId);
+    await requireVehicle(txn, args.vehicleId, args.scope.providerId!);
     try {
       await txn.query(
         "update bookings set vehicle_id = $1::uuid where id = $2::uuid",
@@ -148,7 +182,7 @@ export async function assignVehicle(
       if (isOverlap(err)) throwUnavailable("vehicle");
       throw err;
     }
-    await audit(txn, args.operatorId, "vehicle.assign", args.bookingId, {
+    await audit(txn, args.scope, "vehicle.assign", args.bookingId, {
       vehicle_id: args.vehicleId,
     });
     return loadSnapshot(txn, args.bookingId);
@@ -157,15 +191,16 @@ export async function assignVehicle(
 
 export async function unassignVehicle(
   db: InventoryDb,
-  args: { bookingId: string; operatorId: string },
+  args: { bookingId: string; scope: OpsScope },
 ): Promise<AssignmentSnapshot> {
   return db.transaction(async (txn) => {
     const booking = await lockBooking(txn, args.bookingId);
+    assertDispatcher(args.scope, booking);
     assertNotCancelled(booking);
     await txn.query("update bookings set vehicle_id = null where id = $1::uuid", [
       args.bookingId,
     ]);
-    await audit(txn, args.operatorId, "vehicle.unassign", args.bookingId, {
+    await audit(txn, args.scope, "vehicle.unassign", args.bookingId, {
       vehicle_id: booking.vehicle_id,
     });
     return loadSnapshot(txn, args.bookingId);
@@ -174,12 +209,13 @@ export async function unassignVehicle(
 
 export async function assignDriver(
   db: InventoryDb,
-  args: { bookingId: string; driverId: string; operatorId: string },
+  args: { bookingId: string; driverId: string; scope: OpsScope },
 ): Promise<AssignmentSnapshot> {
   return db.transaction(async (txn) => {
     const booking = await lockBooking(txn, args.bookingId);
+    assertDispatcher(args.scope, booking);
     assertNotCancelled(booking);
-    await requireDriver(txn, args.driverId);
+    await requireDriver(txn, args.driverId, args.scope.providerId!);
     try {
       await txn.query(
         "update bookings set driver_id = $1::uuid where id = $2::uuid",
@@ -189,7 +225,7 @@ export async function assignDriver(
       if (isOverlap(err)) throwUnavailable("driver");
       throw err;
     }
-    await audit(txn, args.operatorId, "driver.assign", args.bookingId, {
+    await audit(txn, args.scope, "driver.assign", args.bookingId, {
       driver_id: args.driverId,
     });
     return loadSnapshot(txn, args.bookingId);
@@ -198,15 +234,16 @@ export async function assignDriver(
 
 export async function unassignDriver(
   db: InventoryDb,
-  args: { bookingId: string; operatorId: string },
+  args: { bookingId: string; scope: OpsScope },
 ): Promise<AssignmentSnapshot> {
   return db.transaction(async (txn) => {
     const booking = await lockBooking(txn, args.bookingId);
+    assertDispatcher(args.scope, booking);
     assertNotCancelled(booking);
     await txn.query("update bookings set driver_id = null where id = $1::uuid", [
       args.bookingId,
     ]);
-    await audit(txn, args.operatorId, "driver.unassign", args.bookingId, {
+    await audit(txn, args.scope, "driver.unassign", args.bookingId, {
       driver_id: booking.driver_id,
     });
     return loadSnapshot(txn, args.bookingId);
@@ -215,16 +252,17 @@ export async function unassignDriver(
 
 export async function cancelBooking(
   db: InventoryDb,
-  args: { bookingId: string; operatorId: string },
+  args: { bookingId: string; scope: OpsScope },
 ): Promise<AssignmentSnapshot> {
   return db.transaction(async (txn) => {
     const booking = await lockBooking(txn, args.bookingId);
+    assertCancel(args.scope, booking);
     if (booking.cancelled_at == null) {
       await txn.query(
         "update bookings set cancelled_at = now() where id = $1::uuid",
         [args.bookingId],
       );
-      await audit(txn, args.operatorId, "booking.cancel", args.bookingId, {});
+      await audit(txn, args.scope, "booking.cancel", args.bookingId, {});
     }
     return loadSnapshot(txn, args.bookingId);
   });
@@ -232,19 +270,20 @@ export async function cancelBooking(
 
 export async function setBookingStatus(
   db: InventoryDb,
-  args: { bookingId: string; status: string; operatorId: string },
+  args: { bookingId: string; status: string; scope: OpsScope },
 ): Promise<AssignmentSnapshot> {
   const status = args.status.trim();
   if (!status || status.length > 40) {
     throw new InventoryError("invalid_status", 400, "Invalid status.");
   }
   return db.transaction(async (txn) => {
-    await lockBooking(txn, args.bookingId);
+    const booking = await lockBooking(txn, args.bookingId);
+    assertDispatcher(args.scope, booking);
     await txn.query("update bookings set status = $1 where id = $2::uuid", [
       status,
       args.bookingId,
     ]);
-    await audit(txn, args.operatorId, "booking.status", args.bookingId, {
+    await audit(txn, args.scope, "booking.status", args.bookingId, {
       status,
     });
     return loadSnapshot(txn, args.bookingId);

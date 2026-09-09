@@ -27,45 +27,53 @@ function asDb(exec: Kysely<AetherDatabase>): OpsDeskDb {
   };
 }
 
-async function requireRead(): Promise<OpsDeskDb> {
+async function requireRead() {
   const { requireOps } = await import("./ops-auth.server");
-  await requireOps({ csrf: false });
-  return asDb(await getAetherDb());
+  const scope = await requireOps({ csrf: false });
+  return { db: asDb(await getAetherDb()), scope };
 }
 
-async function requireMutate(): Promise<OpsDeskDb> {
+async function requireMutate() {
   const { requireOps } = await import("./ops-auth.server");
-  await requireOps({ csrf: true });
-  return asDb(await getAetherDb());
+  const scope = await requireOps({ csrf: true });
+  return { db: asDb(await getAetherDb()), scope };
 }
 
 export async function todayBoardFromRequest() {
-  return loadTodayBoard(await requireRead());
+  const { db, scope } = await requireRead();
+  return loadTodayBoard(db, scope);
 }
 
 export async function listBookingsFromRequest() {
-  return listOpsBookings(await requireRead());
+  const { db, scope } = await requireRead();
+  return listOpsBookings(db, scope);
 }
 
 export async function getBookingFromRequest(bookingId: string) {
-  const db = await requireRead();
-  const booking = await getOpsBooking(db, bookingId);
-  const audit = await listOpsAudit(db, bookingId);
-  const vehicles = await listOpsVehicles(db);
-  const drivers = await listOpsDrivers(db);
+  const { db, scope } = await requireRead();
+  const booking = await getOpsBooking(db, scope, bookingId);
+  const audit = await listOpsAudit(db, scope, bookingId);
+  if (scope.accessClass === "hotel_desk") {
+    return { booking, audit, vehicles: [], drivers: [] };
+  }
+  const vehicles = await listOpsVehicles(db, scope);
+  const drivers = await listOpsDrivers(db, scope);
   return { booking, audit, vehicles, drivers };
 }
 
 export async function listVehiclesFromRequest() {
-  return listOpsVehicles(await requireRead());
+  const { db, scope } = await requireRead();
+  return listOpsVehicles(db, scope);
 }
 
 export async function listDriversFromRequest() {
-  return listOpsDrivers(await requireRead());
+  const { db, scope } = await requireRead();
+  return listOpsDrivers(db, scope);
 }
 
 export async function listHotelsFromRequest() {
-  return listOpsHotels(await requireRead());
+  const { db, scope } = await requireRead();
+  return listOpsHotels(db, scope);
 }
 
 export async function upsertVehicleFromRequest(input: {
@@ -74,7 +82,8 @@ export async function upsertVehicleFromRequest(input: {
   capacity: number;
   active: boolean;
 }) {
-  return upsertVehicle(await requireMutate(), input);
+  const { db, scope } = await requireMutate();
+  return upsertVehicle(db, scope, input);
 }
 
 export async function upsertDriverFromRequest(input: {
@@ -82,7 +91,8 @@ export async function upsertDriverFromRequest(input: {
   name: string;
   active: boolean;
 }) {
-  return upsertDriver(await requireMutate(), input);
+  const { db, scope } = await requireMutate();
+  return upsertDriver(db, scope, input);
 }
 
 export async function upsertHotelFromRequest(input: {
@@ -90,5 +100,6 @@ export async function upsertHotelFromRequest(input: {
   code: string;
   name: string;
 }) {
-  return upsertHotel(await requireMutate(), input);
+  const { db, scope } = await requireMutate();
+  return upsertHotel(db, scope, input);
 }

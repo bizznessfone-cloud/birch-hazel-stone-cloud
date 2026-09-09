@@ -9,6 +9,10 @@ import {
   scrypt as scryptCallback,
   timingSafeEqual,
 } from "node:crypto";
+import {
+  ensureLegacyDispatcherMembership,
+  type AccessClass,
+} from "./tenancy.ts";
 
 function scrypt(
   password: string,
@@ -75,13 +79,20 @@ export type OpsContext = {
   operatorId: string;
   login: string;
   sessionId: string;
+  membershipId: string;
+  accessClass: "hotel_desk" | "provider_dispatcher";
+  hotelId: string | null;
+  providerId: string | null;
 };
 
 export type OpsAuthCode =
   | "unauthenticated"
   | "csrf"
   | "throttled"
-  | "invalid_credentials";
+  | "invalid_credentials"
+  | "no_membership"
+  | "ambiguous_membership"
+  | "forbidden";
 
 export class OpsAuthError extends Error {
   readonly status: number;
@@ -233,12 +244,16 @@ export async function ensureOperatorFromEnv(db: OpsDb): Promise<void> {
       password_hash,
       existing[0].id,
     ]);
+    await ensureLegacyDispatcherMembership(db, existing[0].id);
     return;
   }
-  await db.query(
-    "insert into operators (login, password_hash) values ($1, $2)",
+  const inserted = await db.query<{ id: string }>(
+    "insert into operators (login, password_hash) values ($1, $2) returning id",
     [normalized, password_hash],
   );
+  const id = inserted[0]?.id;
+  if (!id) throw new Error("operator insert failed");
+  await ensureLegacyDispatcherMembership(db, id);
 }
 
 async function failureCount(
@@ -302,13 +317,30 @@ export async function loginOperator(
     throw new OpsAuthError("invalid_credentials", 401, "Invalid credentials");
   }
 
+  const hats = await env.db.query<{ id: string }>(
+    `select id from operator_memberships
+      where operator_id = $1::uuid and active`,
+    [operator.id],
+  );
+  if (hats.length === 0) {
+    throw new OpsAuthError("no_membership", 403, "No organisational membership");
+  }
+  if (hats.length > 1) {
+    throw new OpsAuthError(
+      "ambiguous_membership",
+      403,
+      "Multiple memberships; sign-in cannot choose automatically",
+    );
+  }
+  const membershipId = hats[0]!.id;
+
   const sessionToken = newSecretToken();
   const csrfToken = newSecretToken();
   const expires = new Date(at.getTime() + SESSION_TTL_MS);
   await env.db.query(
-    `insert into sessions (operator_id, token_hash, csrf_hash, expires_at)
-     values ($1, $2, $3, $4)`,
-    [operator.id, hashToken(sessionToken), hashToken(csrfToken), expires.toISOString()],
+    `insert into sessions (operator_id, membership_id, token_hash, csrf_hash, expires_at)
+     values ($1, $2, $3, $4, $5)`,
+    [operator.id, membershipId, hashToken(sessionToken), hashToken(csrfToken), expires.toISOString()],
   );
 
   env.cookies.set(SESSION_COOKIE, sessionToken, cookieBase(env, true));
@@ -334,11 +366,18 @@ export async function requireOps(
     csrf_hash: string;
     expires_at: string;
     revoked_at: string | null;
+    membership_id: string;
+    access_class: AccessClass | null;
+    hotel_id: string | null;
+    provider_id: string | null;
+    membership_active: boolean | null;
   }>(
-    `select s.id, s.operator_id, o.login, s.csrf_hash, s.expires_at, s.revoked_at
-     from sessions s
-     join operators o on o.id = s.operator_id
-     where s.token_hash = $1`,
+    `select s.id, s.operator_id, o.login, s.csrf_hash, s.expires_at, s.revoked_at,
+            s.membership_id, m.access_class, m.hotel_id, m.provider_id, m.active as membership_active
+       from sessions s
+       join operators o on o.id = s.operator_id
+       left join operator_memberships m on m.id = s.membership_id
+      where s.token_hash = $1`,
     [hashToken(sessionToken)],
   );
   const session = rows[0];
@@ -347,6 +386,15 @@ export async function requireOps(
   }
   if (new Date(session.expires_at).getTime() <= at.getTime()) {
     throw new OpsAuthError("unauthenticated", 401, "Unauthorized");
+  }
+  if (
+    !session.membership_id ||
+    !session.membership_active ||
+    !session.access_class ||
+    (session.access_class === "hotel_desk" && !session.hotel_id) ||
+    (session.access_class === "provider_dispatcher" && !session.provider_id)
+  ) {
+    throw new OpsAuthError("no_membership", 403, "No organisational membership");
   }
 
   if (options.csrf) {
@@ -367,6 +415,10 @@ export async function requireOps(
     operatorId: session.operator_id,
     login: session.login,
     sessionId: session.id,
+    membershipId: session.membership_id,
+    accessClass: session.access_class,
+    hotelId: session.hotel_id,
+    providerId: session.provider_id,
   };
 }
 

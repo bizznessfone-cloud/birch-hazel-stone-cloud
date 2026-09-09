@@ -29,7 +29,8 @@ export type BookingErrorCode =
   | "invalid_contact"
   | "invalid_location"
   | "idempotency_conflict"
-  | "not_found";
+  | "not_found"
+  | "no_provider";
 
 export class BookingError extends Error {
   readonly code: BookingErrorCode;
@@ -292,28 +293,34 @@ async function loadById(db: BookingDb, id: string): Promise<PublicBooking> {
   return toPublic(row);
 }
 
-async function insertBooking(db: BookingDb, hotelId: string, v: Validated): Promise<string> {
+async function insertBooking(
+  db: BookingDb,
+  hotelId: string,
+  providerId: string,
+  v: Validated,
+): Promise<string> {
   for (let attempt = 0; attempt < 5; attempt += 1) {
     const human = newHumanReference();
     const token = newConfirmationToken();
     try {
       const rows = await db.query<{ id: string }>(
         `insert into bookings (
-           hotel_id, transfer_date, pickup_time, duration_minutes,
+           hotel_id, executing_provider_id, transfer_date, pickup_time, duration_minutes,
            guest_name, guest_phone, guest_email,
            passenger_count, luggage_count,
            pickup_text, destination_text, special_requirements,
            human_reference, confirmation_token
          ) values (
-           $1, $2::date, $3::time, $4,
-           $5, $6, $7,
-           $8, $9,
-           $10, $11, $12::text,
-           $13, $14
+           $1, $2, $3::date, $4::time, $5,
+           $6, $7, $8,
+           $9, $10,
+           $11, $12, $13::text,
+           $14, $15
          )
          returning id`,
         [
           hotelId,
+          providerId,
           v.transferDate,
           v.pickupTime,
           v.durationMinutes,
@@ -349,6 +356,17 @@ async function createFresh(db: BookingDb, v: Validated): Promise<string> {
   const hotel = hotels[0];
   if (!hotel) throw new BookingError("hotel_not_found", 404, "hotel not found");
 
+  const provider = await db.query<{ provider_id: string }>(
+    `select provider_id
+       from hotel_provider_agreements
+      where hotel_id = $1::uuid and active
+      limit 1`,
+    [hotel.id],
+  );
+  if (!provider[0]) {
+    throw new BookingError("no_provider", 409, "no active executing provider");
+  }
+
   try {
     await athensInstant(db, v.transferDate, v.pickupTime);
   } catch (err) {
@@ -359,7 +377,7 @@ async function createFresh(db: BookingDb, v: Validated): Promise<string> {
     throw err;
   }
 
-  const id = await insertBooking(db, hotel.id, v);
+  const id = await insertBooking(db, hotel.id, provider[0].provider_id, v);
   await db.query(
     `insert into audit_events (actor_type, action, booking_id, payload)
      values ('guest', 'booking.create', $1::uuid, jsonb_build_object('hotel_code', $2::text))`,
