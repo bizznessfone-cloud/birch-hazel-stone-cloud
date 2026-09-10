@@ -14,6 +14,7 @@ import {
   type OpsDb,
   OpsAuthError,
   createOperator,
+  ensureOperatorFromEnv,
   hashPassword,
   loginOperator,
   logoutOperator,
@@ -127,6 +128,7 @@ function envFor(db: OpsDb, jar: CookieJar, extra?: Partial<AuthEnv>): AuthEnv {
     headers: extra?.headers ?? headersFrom(jar),
     cookieSecure: extra?.cookieSecure ?? false,
     now: extra?.now,
+    production: extra?.production,
   };
 }
 
@@ -339,7 +341,7 @@ describe("Phase 2 operator authentication", () => {
     await close();
   });
 
-  test("ops-fns never return a session token and public health stays open", async () => {
+  test("ops-fns never return a session token and public health stays open", () => {
     const fns = readFileSync(new URL("./ops-fns.ts", import.meta.url), "utf8");
     assert.match(fns, /requireOps\(\{ csrf: true \}\)/);
     assert.match(fns, /loginOperatorFromRequest/);
@@ -350,5 +352,49 @@ describe("Phase 2 operator authentication", () => {
     const health = readFileSync(new URL("./health.ts", import.meta.url), "utf8");
     assert.doesNotMatch(health, /requireOps/);
     assert.doesNotMatch(health, /opsLogin/);
+  });
+
+  test("preview desk/desk-pass cannot seed or login in production", async () => {
+    const { db, close } = await openDb();
+    await assert.rejects(
+      () =>
+        ensureOperatorFromEnv(db, {
+          NODE_ENV: "production",
+          AETHER_OPS_LOGIN: "desk",
+          AETHER_OPS_PASSWORD: "desk-pass",
+        }),
+      /Preview operator credentials/,
+    );
+    const seeded = await db.query<{ n: number }>("select count(*)::int as n from operators");
+    assert.equal(seeded[0]!.n, 0);
+
+    await seededOperator(db, "desk", "desk-pass");
+    const previewJar = memoryJar();
+    const preview = await loginOperator(
+      envFor(db, previewJar, { production: false }),
+      "desk",
+      "desk-pass",
+    );
+    assert.equal(preview.login, "desk");
+
+    const jar = memoryJar();
+    await expectCode(
+      () => loginOperator(envFor(db, jar, { production: true }), "desk", "desk-pass"),
+      "invalid_credentials",
+    );
+
+    const prodJar = memoryJar();
+    await ensureOperatorFromEnv(db, {
+      NODE_ENV: "production",
+      AETHER_OPS_LOGIN: "prod-desk",
+      AETHER_OPS_PASSWORD: "a-real-production-pass",
+    });
+    const result = await loginOperator(
+      envFor(db, prodJar, { production: true }),
+      "prod-desk",
+      "a-real-production-pass",
+    );
+    assert.equal(result.login, "prod-desk");
+    await close();
   });
 });

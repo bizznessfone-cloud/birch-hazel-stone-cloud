@@ -95,7 +95,7 @@ export function GuestBook({
       }
       await navigate({
         to: "/confirmed/$token",
-        params: { token: result.booking.confirmationToken },
+        params: { token: lookupToken.trim() },
       });
     } catch {
       setLookupError(touristMessage("server_error"));

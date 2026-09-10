@@ -3,6 +3,7 @@
  * Does not call requireOps — guest create/lookup is unauthenticated.
  */
 import { CompiledQuery, type Kysely, type Transaction } from "kysely";
+import { getRequest } from "@tanstack/react-start/server";
 import { getAetherDb } from "./kysely";
 import type { AetherDatabase } from "./schema";
 import {
@@ -11,8 +12,10 @@ import {
   getPublicHotel as getPublicHotelEngine,
   type BookingDb,
   type CreateBookingInput,
+  type CreatedBooking,
   type PublicBooking,
 } from "./booking";
+import { assertGuestCreateRateLimit, hashGuestClientKey } from "./guest-rate-limit";
 
 type Executable = Kysely<AetherDatabase> | Transaction<AetherDatabase>;
 
@@ -35,10 +38,28 @@ async function appDb(): Promise<BookingDb> {
   return asBookingDb(await getAetherDb());
 }
 
+function requestClientHint(): string {
+  try {
+    const request = getRequest();
+    const forwarded = request?.headers.get("x-forwarded-for");
+    if (forwarded) {
+      const first = forwarded.split(",")[0]?.trim();
+      if (first) return first;
+    }
+    const real = request?.headers.get("x-real-ip")?.trim();
+    if (real) return real;
+  } catch {
+    /* no request context (tests) */
+  }
+  return "unknown";
+}
+
 export async function createBookingFromRequest(
   input: CreateBookingInput,
-): Promise<PublicBooking> {
-  return createBookingEngine(await appDb(), input);
+): Promise<CreatedBooking> {
+  const db = await appDb();
+  await assertGuestCreateRateLimit(db, hashGuestClientKey(requestClientHint()));
+  return createBookingEngine(db, input);
 }
 
 export async function getPublicBookingFromRequest(token: string): Promise<PublicBooking> {
@@ -50,5 +71,4 @@ export async function getPublicHotelFromRequest(hotelCode: string) {
 }
 
 export { BookingError } from "./booking";
-export type { CreateBookingInput, PublicBooking } from "./booking";
-
+export type { CreateBookingInput, CreatedBooking, PublicBooking } from "./booking";

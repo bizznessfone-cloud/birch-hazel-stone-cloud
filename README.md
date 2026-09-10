@@ -12,9 +12,11 @@ inventory integrity.
 
 Read `docs/RECOVERY_MANIFEST.md` first.
 
-Checkpoint **7** — Phase 7 operations UX is complete. Occupancy, auth, time,
-booking, inventory, guest UX, and the ops desk are in this tree. Hotel
-white-label, production hardening, and deployment are later phases.
+Checkpoint **12b** — CP12B pre-Vercel production hardening. Occupancy, auth,
+time, booking, inventory, guest UX, ops desk, hotel white-label, CP12 tenancy,
+and CP12A ownership boundaries are in this tree. Neon verification and Vercel
+connection are **not** part of this checkpoint.
+
 
 ## Restore
 

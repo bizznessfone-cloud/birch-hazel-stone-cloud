@@ -48,7 +48,7 @@ Workspace root. Application code:
 - `src/routes/book.$hotelCode.tsx` — guest booking
 - `src/routes/confirmed.$token.tsx` — confirmation
 - `src/routes/ops*.tsx` — operations desk
-- `src/lib/db.ts` — PGLite / Neon + `SET ROLE aether_runtime`
+- `src/lib/db.ts` — PGLite preview / Neon runtime (`aether_runtime` LOGIN; no startup role option)
 
 ## 4. Where is the database schema?
 
@@ -68,12 +68,14 @@ SQL migrations in `migrations/`, applied in filename order. Platform `migrations
 | 8 | `0009_ops_desk.sql` | 7 |
 | 9 | `0010_hotel_white_label.sql` | 8 |
 | 10 | `0011_production_hardening.sql` | 10 |
+| 11 | `0012_cp12_tenancy.sql` | 12 |
+| 12 | `0013_cp12b_runtime_login.sql` | 12b |
 
-`aether_meta.schema_phase = 10`, checkpoint = 10 after 0011.
+`aether_meta.schema_phase = 12`, checkpoint = 12b after 0013.
 
-Preview: `src/lib/db.ts` applies these to PGLite at startup.
+Preview: `src/lib/db.ts` applies these to PGLite at startup, then SET ROLE `aether_runtime`.
 
-Production: `scripts/migrate.mjs` uses `AETHER_DATABASE_OWNER_URL` (or `DATABASE_URL` if owner URL unset). The deployed app must connect as `aether_runtime`, not as the owner.
+Production: `scripts/migrate.mjs` uses `AETHER_DATABASE_OWNER_URL` **only**. Missing owner URL fails. `DATABASE_URL` is never a migrate fallback. The deployed app must connect as `aether_runtime` LOGIN, not as the owner, and must not SET ROLE.
 
 ## 6. Required environment variable names (never commit values)
 
@@ -106,13 +108,14 @@ npm run test:aether
 npm run typecheck
 ```
 
-Last known-good: **101 passed / 0 failed** on Checkpoint 10 (PGLite). Neon tests remain unverified.
+Last known-good: CP12A source + CP12B local hardening (PGLite). Neon remains unverified.
 
 ## 9. How is it deployed?
 
-Phase 11 is **not started**. Production deploy is blocked until Neon role-split and Neon concurrency are proven. Platform injects `DATABASE_URL` on deploy; it must be the runtime role.
+CP12B is local/repository hardening. Production deploy is blocked until Neon
+owner/runtime verification PASSes. Do not connect Vercel from this checkpoint.
 
-Do not call `init_or_update_app` / provision / reset / replace-app. That class of operation previously destroyed the live workspace.
+Do not call `init_or_update_app` / provision / reset / replace-app.
 
 ## 10. What must NEVER be done?
 
@@ -128,9 +131,11 @@ Do not call `init_or_update_app` / provision / reset / replace-app. That class o
 
 ## 11. Latest known-good checkpoint
 
-**Checkpoint 10** — Phase 10 production hardening — 2026-09-05.
+**Checkpoint 12b** — CP12B pre-Vercel production hardening.
 
-This restore created **Checkpoint 10A** (persistence protocol). 10A does not replace 10.
+Historical trusted occupancy baseline remains **Checkpoint 10**. CP12/CP12A added tenancy. CP12B does not rewrite occupancy.
+
+Do not start CP13 from restore. Do not connect Vercel until Neon is verified.
 
 ## 12. How do you restore it?
 
@@ -141,17 +146,18 @@ This restore created **Checkpoint 10A** (persistence protocol). 10A does not rep
 5. Run `sh scripts/restore_aether.sh`.
 6. If the script fails, **stop**. Do not invent workarounds.
 7. Start the app with `sh startup.sh` in this sandbox (serves the live preview).
-8. Do not start Phase 11 without Neon credentials.
+8. Do not start CP13. Do not connect Vercel until Neon verification PASSes.
 
 Alternatively: `sh scripts/restore_aether.sh` after extract.
 
 ## 13. What remains blocked?
 
-- Neon production runtime role separate from migration owner
-- Neon `DATABASE_URL` proven as `aether_runtime`
+- Neon application of 0012 / 0013 (credentials unavailable here)
+- Neon `DATABASE_URL` proven as `aether_runtime` LOGIN (`session_user` = `current_user`)
 - Neon concurrency (overlapping vehicle and driver assignments)
 - Production Secure cookie verification on a real HTTPS deployment
-- GitHub remote (no repository at restore time)
+- Vercel project connection / env injection
+- Out-of-band `aether_runtime` password on Neon
 
 ## 14. What credentials are still required?
 

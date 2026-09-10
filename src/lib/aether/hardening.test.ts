@@ -33,6 +33,7 @@ const SQL_FILES = [
   "0010_hotel_white_label.sql",
   "0011_production_hardening.sql",
   "0012_cp12_tenancy.sql",
+  "0013_cp12b_runtime_login.sql",
 ] as const;
 
 type Pg = PGlite;
@@ -152,14 +153,14 @@ describe("Phase 10 production hardening", () => {
     );
     assert.equal(role.rows.length, 1);
     assert.equal(role.rows[0]!.rolsuper, false);
-    assert.equal(role.rows[0]!.rolcanlogin, false);
+    assert.equal(role.rows[0]!.rolcanlogin, true);
 
     const meta = await pg.query<{ key: string; value: string }>(
       "select key, value from aether_meta",
     );
     const map = Object.fromEntries(meta.rows.map((row) => [row.key, row.value]));
     assert.equal(map.schema_phase, "12");
-    assert.equal(map.checkpoint, "12");
+    assert.equal(map.checkpoint, "12b");
     assert.equal(map.runtime_role, AETHER_RUNTIME_ROLE);
     assert.equal(map.db_owner, "postgres");
 
@@ -479,24 +480,35 @@ describe("Phase 10 production hardening", () => {
 
     const dto = readSrc("./booking.ts");
     assert.match(dto, /export type PublicBooking/);
+    assert.match(dto, /export type CreatedBooking/);
     assert.doesNotMatch(
       dto.slice(dto.indexOf("export type PublicBooking"), dto.indexOf("type Validated")),
-      /occupies|vehicleId|driverId|internalNotes|status/,
+      /occupies|vehicleId|driverId|internalNotes|status|guestPhone|guestEmail|specialRequirements/,
     );
 
     const dbSrc = readSrc("../../lib/db.ts");
     assert.match(dbSrc, /set role aether_runtime/);
     assert.match(dbSrc, /reset role/);
-    assert.match(dbSrc, /pgRuntimeRoleOptions/);
+    assert.match(dbSrc, /assertProductionDatabaseUrl/);
+    assert.match(dbSrc, /getPgPool/);
+    assert.doesNotMatch(dbSrc, /pgRuntimeRoleOptions/);
+    assert.doesNotMatch(dbSrc, /options:\s*pgRuntimeRoleOptions/);
+    assert.doesNotMatch(dbSrc, /options:\s*`-c role=/);
     assert.doesNotMatch(dbSrc, /AETHER_DATABASE_OWNER_URL/);
 
     const kysely = readSrc("./kysely.ts");
-    assert.match(kysely, /pgRuntimeRoleOptions/);
+    assert.match(kysely, /getPgPool/);
+    assert.doesNotMatch(kysely, /pgRuntimeRoleOptions/);
+    assert.doesNotMatch(kysely, /-c role=/);
 
     const migrate = readFileSync(new URL("../../../scripts/migrate.mjs", import.meta.url), "utf8");
     assert.match(migrate, /AETHER_DATABASE_OWNER_URL/);
-    assert.match(migrate, /ownerUrl/);
+    assert.match(migrate, /resolveMigratePlan/);
     assert.doesNotMatch(migrate, /set role aether_runtime/);
+    assert.doesNotMatch(
+      migrate,
+      /AETHER_DATABASE_OWNER_URL\s*\|\|/,
+    );
 
     const occupancy = readFileSync(
       new URL("../../../migrations/0003_occupancy.sql", import.meta.url),

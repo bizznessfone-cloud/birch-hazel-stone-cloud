@@ -135,6 +135,12 @@ export interface LoginAttemptsTable {
   attempted_at: Generated<Date>;
 }
 
+export interface PublicBookingAttemptsTable {
+  id: Generated<string>;
+  client_key: string;
+  attempted_at: Generated<Date>;
+}
+
 export interface AetherDatabase {
   aether_meta: AetherMetaTable;
   hotels: HotelsTable;
@@ -149,4 +155,5 @@ export interface AetherDatabase {
   audit_events: AuditEventsTable;
   idempotency_keys: IdempotencyKeysTable;
   login_attempts: LoginAttemptsTable;
+  public_booking_attempts: PublicBookingAttemptsTable;
 }

@@ -22,6 +22,9 @@ startup.sh
 src/lib/db.ts
 src/lib/aether/constants.ts
 src/lib/aether/runtime-role.ts
+src/lib/aether/runtime-config.ts
+scripts/migrate.mjs
+scripts/migrate-policy.mjs
 src/routes/book.\$hotelCode.tsx
 src/routes/confirmed.\$token.tsx
 src/routes/ops.login.tsx
@@ -35,6 +38,8 @@ migrations/0008_guest_ux.sql
 migrations/0009_ops_desk.sql
 migrations/0010_hotel_white_label.sql
 migrations/0011_production_hardening.sql
+migrations/0012_cp12_tenancy.sql
+migrations/0013_cp12b_runtime_login.sql
 "
 for f in $REQUIRED; do
   if [ ! -e "$ROOT/$f" ]; then
@@ -44,8 +49,8 @@ done
 if [ "$FAIL" -ne 0 ]; then
   say "Failure: RESTORE FAILURE"
   say "Evidence: required source/migration files missing"
-  say "Last known-good checkpoint: 10"
-  say "Safe recovery action: re-extract Checkpoint 10 or 10A over the workspace"
+  say "Last known-good checkpoint: 12b"
+  say "Safe recovery action: re-extract the CP12B source tree over the workspace"
   exit 1
 fi
 
@@ -87,7 +92,7 @@ if [ "$TARGET" = "production" ]; then
     say "Evidence: production restore requires DATABASE_URL (runtime) AND AETHER_DATABASE_OWNER_URL (owner)"
     say "Likely cause: Neon credentials not injected into this environment"
     say "Affected component: production database"
-    say "Last known-good checkpoint: 10"
+    say "Last known-good checkpoint: 12b"
     say "Safe recovery action: supply both URLs, then re-run. Do not substitute PGLite."
     exit 1
   fi
@@ -102,16 +107,17 @@ else
 fi
 
 # 5. migrations
-if [ "$TARGET" = "production" ]; then
-  say "applying owner migrations via scripts/migrate.mjs"
+if [ "$owner_set" -eq 1 ]; then
+  say "applying owner migrations via scripts/migrate.mjs
+scripts/migrate-policy.mjs (AETHER_DATABASE_OWNER_URL only)"
   npm run db:migrate
 else
-  if [ "$db_set" -eq 1 ] || [ "$owner_set" -eq 1 ]; then
-    say "applying migrations via scripts/migrate.mjs (preview target, URL present)"
-    npm run db:migrate
-  else
-    say "preview migrations: skipped here; PGLite applies 0002-0011 at application startup (labelled substitute)"
+  if [ "$TARGET" = "production" ]; then
+    say "Failure: CREDENTIAL FAILURE"
+    say "production migrate requires AETHER_DATABASE_OWNER_URL"
+    exit 1
   fi
+  say "preview migrations: skipped here; PGLite applies 0002-0013 at application startup (labelled substitute)"
 fi
 
 # 6. typecheck

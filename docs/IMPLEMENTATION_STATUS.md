@@ -2,9 +2,9 @@
 
 Product: **Aether Transfer**
 
-Build: **NEW CP11 — Production Infrastructure — BLOCKED**
+Build: **CP12B — Pre-Vercel production hardening**
 
-Trusted baseline: **CP10**. Previous abandoned CP11 was **not** used.
+Trusted occupancy baseline: **CP10**. CP12/CP12A tenancy is in the tree. Previous abandoned original CP11 was **not** used.
 
 Never mark a phase PASS merely because the UI renders.
 
@@ -20,33 +20,27 @@ Never mark a phase PASS merely because the UI renders.
 | 7 | Operations UX | **PASS** |
 | 8 | Hotel white label | **PASS** |
 | 9 | Full test reconstruction | **PASS** |
-| 10 | Production hardening | **PASS** (PGLite; Neon **BLOCKED**) |
+| 10 | Production hardening (PGLite privilege split) | **PASS** (PGLite) |
 | 10A | Persistence / controlled restore | **PASS** (preview) |
-| 11 | NEW CP11 Production Infrastructure | **BLOCKED** — Neon credentials unavailable |
-| 11A | Guest Experience Layer | NOT STARTED |
-| 11B | Guest/Ops Integration | NOT STARTED |
+| 11 | NEW CP11 Production Infrastructure | Historical — Neon verifier exists; live Neon **BLOCKED** here |
+| 12 | Multi-tenant hotel/provider foundation | **PASS** (PGLite; Neon schema **UNVERIFIED**) |
+| 12A | Resource ownership administration boundaries | **PASS** (PGLite) |
+| 12B | Pre-Vercel production hardening | **LOCAL** — Neon **BLOCKED** |
 
-## NEW CP11 (2026-09-06)
+## CP12B (current)
 
-Inspected CP10 source and docs. Occupancy trigger, `aether_athens_instant()`, GiST EXCLUDE, `requireOps()`, HttpOnly session, guest `/book/{hotelCode}`, ops `/ops` unchanged.
-
-Added fail-closed `scripts/verify-neon-production.mjs`. Did **not** call the platform provisioner. Did **not** substitute PGLite as Neon evidence.
-
-- [x] CP10 baseline inspected
-- [x] Previous abandoned CP11 unused
-- [x] Destructive reset avoided
-- [x] Secrets audit (no `.env`, no committed URLs)
-- [ ] Neon owner/runtime separation — **BLOCKED** (`DATABASE_URL` and `AETHER_DATABASE_OWNER_URL` unset)
-- [ ] Neon privilege gate — **BLOCKED**
-- [ ] Neon concurrency — **BLOCKED**
-- [ ] Production deployment — **BLOCKED**
-
-## Phase 10 gate (unchanged; PGLite only)
-
-See CP10 record. Neon boxes remain unchecked.
+- [x] Production without DATABASE_URL fails closed (no silent PGLite)
+- [x] Production migrate uses AETHER_DATABASE_OWNER_URL only
+- [x] aether_runtime LOGIN (0013); app does not send a startup role option
+- [x] Public confirmation JSON no longer exposes phone/email/token/notes
+- [x] Guest-create rate limit (SQL, no Redis, fail-open)
+- [x] Preview desk/desk-pass refused in production
+- [x] Shared capped pg.Pool
+- [ ] Neon 0012/0013 applied and verified — **BLOCKED** (credentials unavailable)
+- [ ] Vercel — **NOT CONNECTED**
 
 ## Next
 
-Supply Neon owner URL + `aether_runtime` LOGIN URL, then `npm run verify:neon`.
-Do not start CP11A until NEW CP11 Neon gates PASS.
+Supply Neon owner URL + `aether_runtime` LOGIN URL, set the runtime password out of band, then `npm run verify:neon`.
+Do not start CP13. Do not connect Vercel until that gate PASSes.
 Do not call the platform app provisioner.

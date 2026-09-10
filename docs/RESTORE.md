@@ -4,8 +4,10 @@ Canonical restore instructions for this workspace: **`/RESTORE.md`** (repo root)
 Use **`scripts/restore_aether.sh`**. Machine-readable state: **`AETHER_RECOVERY_MANIFEST.json`**.
 Live status: **`BUILD_STATE.md`**.
 
-Checkpoint 10 is immutable. This restore created Checkpoint **10A** (persistence).
+Checkpoint 10 is the immutable occupancy baseline. Current source is **CP12B**.
 Do not overwrite Checkpoint 10. Do not call the platform app provisioner.
+Do not connect Vercel until Neon verification PASSes.
+
 
 ---
 

@@ -9,37 +9,38 @@ original conversation. No secrets.
 |---|---|
 | Product | Aether Transfer |
 | Guest lockup | SCAN. BOOK. GO. |
-| Current build version / checkpoint | **11-BLOCKED** (NEW CP11 Production Infrastructure) |
-| Trusted baseline | **CP10** |
-| Previous abandoned CP11 used | **NO** |
-| Current phase | **NEW CP11 — BLOCKED on Neon credentials** |
-| Phase status | **BLOCKED** |
-| Completed phases | 0–10 (PGLite). 11 incomplete. |
-| Date | 2026-09-06 |
-| Snapshot | `AETHER_CHECKPOINT_CP_11_BLOCKED_NEON_2026-09-06.zip` |
+| Current build version / checkpoint | **12b** (CP12B pre-Vercel production hardening) |
+| Trusted occupancy baseline | **CP10** |
+| Previous abandoned original CP11 used | **NO** |
+| Current phase | **CP12B — local/repository hardening; Neon UNVERIFIED** |
+| Phase status | **PARTIAL** — Neon credentials unavailable |
+| Completed phases | 0–10 (PGLite), 12, 12A (PGLite). 12B local. Neon unverified. |
+| Date | 2026-09-10 |
 
-Do not claim production readiness. Schema phase remains **10**.
+Do not claim production readiness. Schema phase is **12**. Checkpoint is **12b**.
+Vercel is **NOT CONNECTED**.
 
 ## Current implementation state
 
-NEW CP11 added a fail-closed Neon verifier only. Occupancy trigger, EXCLUDE,
-and `aether_athens_instant()` were not rewritten. Guest and ops UX were not
-redesigned.
+CP12/CP12A tenancy is in source. CP12B hardens production fail-closed behaviour.
+Occupancy trigger, EXCLUDE, and `aether_athens_instant()` were not rewritten.
 
-- `scripts/verify-neon-production.mjs` / `npm run verify:neon`
-- `DATABASE_URL` and `AETHER_DATABASE_OWNER_URL` unset → verifier exits 2
-- CP10 PGLite privilege proof is **not** Neon verification
-- Preview operator: **desk** / **desk-pass** via startup.sh only
+- Production without `DATABASE_URL` fails closed
+- Production migrate: `AETHER_DATABASE_OWNER_URL` only
+- `aether_runtime` is LOGIN after 0013; production must not SET ROLE
+- Preview operator `desk` / `desk-pass` refused in production
+- `DATABASE_URL` and `AETHER_DATABASE_OWNER_URL` unset here → `verify:neon` exits 2
 
 ## Database migration state
 
-Last schema migration: `migrations/0011_production_hardening.sql`.
-`aether_meta.schema_phase = 10`. No 0012.
+Last schema migration: `migrations/0013_cp12b_runtime_login.sql`.
+`aether_meta.schema_phase = 12`, `checkpoint = 12b`.
+Neon application of 0012/0013: **BLOCKED / UNVERIFIED**.
 
 ## Current test status
 
-Aether tests (PGLite): **101 passed / 0 failed**. Typecheck PASS. Build PASS.
-`npm run verify:neon`: **BLOCKED** (credentials).
+See CP12B report after `npm run test:aether`. Typecheck/lint/build are required
+before claiming local completion.
 
 **NEON CONCURRENCY NOT VERIFIED.**
 **NEON PRODUCTION-ROLE SPLIT BLOCKED / UNVERIFIED.**
@@ -47,9 +48,10 @@ Aether tests (PGLite): **101 passed / 0 failed**. Typecheck PASS. Build PASS.
 ## Next exact development action
 
 1. Provide two distinct Neon URLs (owner vs `aether_runtime` LOGIN).
-2. Re-run `npm run verify:neon` until it PASSes.
-3. Then — and only then — CP11A Guest Experience Layer.
-4. Never call the platform app provisioner.
+2. Set the runtime role password out of band. Never commit it.
+3. Re-run `npm run verify:neon` until it PASSes.
+4. Do not connect Vercel and do not start CP13 until then.
+5. Never call the platform app provisioner.
 
 ## Required environment-variable names
 

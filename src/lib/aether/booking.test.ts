@@ -232,7 +232,11 @@ describe("Phase 4 booking engine", () => {
     const created = await createBooking(db, validInput(hotelCode));
     const found = await getPublicBookingByToken(db, created.confirmationToken);
     assert.equal(found.humanReference, created.humanReference);
-    assert.equal(found.confirmationToken, created.confirmationToken);
+    assert.equal("confirmationToken" in found, false);
+    assert.equal("guestPhone" in found, false);
+    assert.equal("guestEmail" in found, false);
+    assert.equal("specialRequirements" in found, false);
+    assert.equal(found.guestName, "Ada Guest");
 
     await expectCode(
       () => getPublicBookingByToken(db, created.humanReference),

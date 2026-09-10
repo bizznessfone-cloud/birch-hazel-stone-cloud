@@ -2,7 +2,22 @@
 
 Two sections. Never mix them.
 
-## CURRENT — NEW CP11 (2026-09-06)
+## CURRENT — CP12B (2026-09-10)
+
+Phase: **CP12B — Pre-Vercel production hardening**
+Baseline: CP12A (`2283746187e7fc4a98987775ac54c28037e06948`). Occupancy SQL unchanged.
+
+| Check | Engine | Result |
+|---|---|---|
+| `npm run test:aether` | PGLite | **120 passed / 0 failed** (119 + TZ) |
+| `scripts/migrate-policy.test.mjs` | n/a | **6 passed** |
+| `npm run build` | local | **PASS** (migrate skipped: no owner URL) |
+| `npm run verify:neon` | Neon | **BLOCKED** — credentials unavailable (exit 2). Not skipped as a pass. |
+
+**NEON PRODUCTION-ROLE SPLIT BLOCKED / UNVERIFIED** (`DATABASE_URL` unset).
+A local build is not Vercel readiness.
+
+## HISTORICAL — NEW CP11 (2026-09-06)
 
 Phase: **NEW CP11 — Production Infrastructure**
 Baseline: CP10. Previous abandoned CP11 unused.

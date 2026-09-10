@@ -3,7 +3,7 @@
  * Guest booking and the product shell stay public.
  */
 import { createServerFn } from "@tanstack/react-start";
-import { dbSource, getSql } from "@/lib/db";
+import { getDbSource, getSql } from "@/lib/db";
 import { getAetherDb } from "./kysely";
 
 export type FoundationStatus =
@@ -41,7 +41,7 @@ export const getFoundationStatus = createServerFn({ method: "GET" }).handler(
 
       return {
         ok: true,
-        backend: dbSource,
+        backend: getDbSource(),
         product: meta.product ?? "",
         schemaPhase: meta.schema_phase ?? "",
         checkpoint: meta.checkpoint ?? "",
@@ -52,7 +52,7 @@ export const getFoundationStatus = createServerFn({ method: "GET" }).handler(
       const message = err instanceof Error ? err.message : "Database unavailable";
       return {
         ok: false,
-        backend: dbSource,
+        backend: getDbSource(),
         error: message,
       };
     }

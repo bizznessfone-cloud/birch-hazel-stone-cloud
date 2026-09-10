@@ -30,7 +30,8 @@ export type BookingErrorCode =
   | "invalid_location"
   | "idempotency_conflict"
   | "not_found"
-  | "no_provider";
+  | "no_provider"
+  | "rate_limited";
 
 export class BookingError extends Error {
   readonly code: BookingErrorCode;
@@ -71,22 +72,23 @@ export type CreateBookingInput = {
 
 export type PublicBooking = {
   humanReference: string;
-  confirmationToken: string;
   hotelCode: string;
   hotelName: string;
   transferDate: string;
   pickupTime: string;
   durationMinutes: number;
   guestName: string;
-  guestPhone: string;
-  guestEmail: string;
   passengerCount: number;
   luggageCount: number;
   pickupText: string;
   destinationText: string;
-  specialRequirements: string | null;
   cancelled: boolean;
   pricing: PriceQuote;
+};
+
+/** Create response may include the confirmation token so the client can redirect. */
+export type CreatedBooking = PublicBooking & {
+  confirmationToken: string;
 };
 
 type Validated = {
@@ -244,22 +246,25 @@ function toPublic(row: BookingRow): PublicBooking {
   const pickup = String(row.pickup_time);
   return {
     humanReference: row.human_reference,
-    confirmationToken: row.confirmation_token,
     hotelCode: row.hotel_code,
     hotelName: row.hotel_name,
     transferDate: String(row.transfer_date).slice(0, 10),
     pickupTime: pickup.length >= 5 ? pickup.slice(0, 5) : pickup,
     durationMinutes: Number(row.duration_minutes),
     guestName: row.guest_name,
-    guestPhone: row.guest_phone,
-    guestEmail: row.guest_email,
     passengerCount: Number(row.passenger_count),
     luggageCount: Number(row.luggage_count),
     pickupText: row.pickup_text,
     destinationText: row.destination_text,
-    specialRequirements: row.special_requirements,
     cancelled: row.cancelled_at != null,
     pricing: quoteBooking(),
+  };
+}
+
+function toCreated(row: BookingRow): CreatedBooking {
+  return {
+    ...toPublic(row),
+    confirmationToken: row.confirmation_token,
   };
 }
 
@@ -286,11 +291,11 @@ const PUBLIC_SELECT = `
   join hotels h on h.id = b.hotel_id
 `;
 
-async function loadById(db: BookingDb, id: string): Promise<PublicBooking> {
+async function loadCreatedById(db: BookingDb, id: string): Promise<CreatedBooking> {
   const rows = await db.query<BookingRow>(`${PUBLIC_SELECT} where b.id = $1`, [id]);
   const row = rows[0];
   if (!row) throw new BookingError("not_found", 404, "booking not found");
-  return toPublic(row);
+  return toCreated(row);
 }
 
 async function insertBooking(
@@ -389,7 +394,7 @@ async function createFresh(db: BookingDb, v: Validated): Promise<string> {
 export async function createBooking(
   db: BookingDb,
   input: CreateBookingInput,
-): Promise<PublicBooking> {
+): Promise<CreatedBooking> {
   const v = validateInput(input);
   const key = input.idempotencyKey?.trim() || null;
   if (key && key.length > 200) {
@@ -440,7 +445,7 @@ export async function createBooking(
   };
 
   const id = key ? await db.transaction(run) : await run(db);
-  return loadById(db, id);
+  return loadCreatedById(db, id);
 }
 
 export async function getPublicBookingByToken(

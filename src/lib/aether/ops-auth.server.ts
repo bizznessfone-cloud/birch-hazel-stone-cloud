@@ -23,6 +23,7 @@ import {
   requireOps as requireOpsEngine,
   OpsAuthError,
 } from "./ops-auth";
+import { isProductionOpsGuard } from "./runtime-config";
 
 function sqlDb(sql: {
   query<T = Record<string, unknown>>(
@@ -77,6 +78,7 @@ function requestEnv(): AuthEnv {
       get: (name) => header(name) ?? null,
     },
     cookieSecure: cookieSecure(),
+    production: isProductionOpsGuard(),
   };
 }
 

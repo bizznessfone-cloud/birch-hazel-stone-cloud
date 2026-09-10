@@ -79,6 +79,8 @@ export function touristMessage(code: string, fallback?: string): string {
       return "Transfers are not available for this hotel yet.";
     case "idempotency_conflict":
       return "This request does not match a booking already started. Please review and try again.";
+    case "rate_limited":
+      return "Please wait a moment and try again.";
     case "server_error":
       return "Something went wrong. Please try again.";
     default:

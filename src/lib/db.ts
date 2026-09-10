@@ -1,29 +1,31 @@
 import { pendingMigrations } from "../../scripts/migration-plan.mjs";
+import {
+  AETHER_RUNTIME_ROLE,
+  assertProductionDatabaseUrl,
+  isProductionRuntime,
+  neonPoolSettings,
+  readTrimmedEnv,
+} from "@/lib/aether/runtime-config";
 
-/** Application DML role from migrations/0011_production_hardening.sql. */
-export const AETHER_RUNTIME_ROLE = "aether_runtime";
-
-export function pgRuntimeRoleOptions(): string {
-  return `-c role=${AETHER_RUNTIME_ROLE}`;
-}
+export { AETHER_RUNTIME_ROLE } from "@/lib/aether/runtime-config";
 
 /** Which database backend is active. */
 export type DbSource = "neon" | "pglite";
 
-// An empty/whitespace DATABASE_URL (an easy misconfig in deploy UIs) must mean
-// "unset" — otherwise production would silently run on the PGLite fallback.
-const rawDatabaseUrl =
-  typeof process !== "undefined" ? process.env.DATABASE_URL : undefined;
-const databaseUrl =
-  rawDatabaseUrl && rawDatabaseUrl.trim() ? rawDatabaseUrl : undefined;
+function readDatabaseUrl(): string | undefined {
+  return readTrimmedEnv("DATABASE_URL");
+}
 
 /**
- * Active backend: real **Neon** when `DATABASE_URL` is set (deployed / configured
- * sandbox), otherwise a local embedded **PGLite** (Postgres compiled to WASM) so
- * the app has a working database even with nothing configured — the live preview
- * included. Swap in Neon later by just setting `DATABASE_URL`; no code changes.
+ * Live backend selection. Production never returns PGLite — missing
+ * DATABASE_URL fails closed at getSql()/ensureDbReady(), not at module eval
+ * (Vite may bundle this file with NODE_ENV=production and an empty URL).
  */
-export const dbSource: DbSource = databaseUrl ? "neon" : "pglite";
+export function getDbSource(): DbSource {
+  if (readDatabaseUrl()) return "neon";
+  if (isProductionRuntime()) return "neon";
+  return "pglite";
+}
 
 /**
  * Minimal shared SQL surface, satisfied by both Neon and PGLite. Both the
@@ -53,6 +55,7 @@ export interface Sql {
  */
 const globalRef = globalThis as typeof globalThis & {
   __pgSqlPromise__?: Promise<Sql>;
+  __pgPoolPromise__?: Promise<import("pg").Pool>;
   __pgliteInstance__?: Promise<import("@electric-sql/pglite").PGlite>;
   __pgliteMigrateChain__?: Promise<void>;
 };
@@ -92,20 +95,37 @@ function toSql(run: Run): Sql {
   return sql;
 }
 
-function createNeonSql(): Promise<Sql> {
-  globalRef.__pgSqlPromise__ ??= (async () => {
-    // Regular Postgres driver: node-postgres (`pg`) — works directly with Neon's
-    // pooled endpoint. One pool per process; warm serverless instances reuse it.
+/**
+ * Shared node-postgres Pool for Neon/PostgreSQL. One pool per isolate, max 2.
+ * Production authenticates as aether_runtime LOGIN. Do not pass a startup
+ * role option — SET ROLE from a non-runtime login would make RESET ROLE
+ * restore the owner.
+ */
+export async function getPgPool(): Promise<import("pg").Pool> {
+  assertProductionDatabaseUrl();
+  const databaseUrl = readDatabaseUrl();
+  if (!databaseUrl) {
+    throw new Error("DATABASE_URL is required for the PostgreSQL pool.");
+  }
+  globalRef.__pgPoolPromise__ ??= (async () => {
     const { Pool, types } = await import("pg");
     types.setTypeParser(OID_INT8, Number);
     types.setTypeParser(OID_DATE, identity);
     types.setTypeParser(OID_INTERVAL, identity);
-    const pool = new Pool({
+    return new Pool({
       connectionString: databaseUrl,
-      // Drop to the DML role at backend start. Occupancy objects stay owned
-      // by the migrator. Compromised SQL as current_user cannot DISABLE TRIGGER.
-      options: pgRuntimeRoleOptions(),
+      ...neonPoolSettings(),
     });
+  })().catch((err) => {
+    globalRef.__pgPoolPromise__ = undefined;
+    throw err;
+  });
+  return globalRef.__pgPoolPromise__;
+}
+
+function createNeonSql(): Promise<Sql> {
+  globalRef.__pgSqlPromise__ ??= (async () => {
+    const pool = await getPgPool();
     return toSql(async <T>(text: string, params: unknown[]) => {
       const res = await pool.query(text, params);
       return res.rows as T[];
@@ -118,6 +138,11 @@ function createNeonSql(): Promise<Sql> {
 }
 
 async function createPgliteSql(): Promise<Sql> {
+  if (isProductionRuntime()) {
+    throw new Error(
+      "Aether production must not open the embedded preview database.",
+    );
+  }
   // Embedded Postgres, imported on demand so it never loads on the Neon path.
   // One in-memory instance per process, shared across HMR module instances, so
   // data survives source edits (it resets on dev-server restart).
@@ -155,7 +180,8 @@ async function createPgliteSql(): Promise<Sql> {
   // double-apply.
   const migrate = async (): Promise<void> => {
     // Migrations must run as the table owner. The live SQL surface then
-    // SET ROLE aether_runtime so occupancy DDL is denied.
+    // SET ROLE aether_runtime so occupancy DDL is denied. Preview only:
+    // production authenticates as aether_runtime LOGIN and must not SET ROLE.
     try {
       await pg.exec("reset role");
     } catch {
@@ -207,15 +233,18 @@ async function createSql(): Promise<Sql> {
         "or a server route loader, never from client code.",
     );
   }
-  return dbSource === "neon" ? createNeonSql() : createPgliteSql();
+  assertProductionDatabaseUrl();
+  return readDatabaseUrl() ? createNeonSql() : createPgliteSql();
 }
 
 /**
  * Get the shared, **server-only** SQL client. Neon when `DATABASE_URL` is set,
- * otherwise the local PGLite fallback. Memoized — safe to call per request.
+ * otherwise the local PGLite fallback (preview only). Production without
+ * DATABASE_URL fails closed. Memoized — safe to call per request.
  *
  * Schema comes from `migrations/*.sql`, auto-applied before the first query on
- * both backends — define tables there, never inline in server functions.
+ * PGLite — define tables there, never inline in server functions. Production
+ * schema is applied by the owner migrator, never by this runtime module.
  */
 export function getSql(): Promise<Sql> {
   sqlPromise ??= createSql().catch((err) => {
@@ -228,11 +257,12 @@ export function getSql(): Promise<Sql> {
 /**
  * The shared PGLite instance (preview only), with `migrations/*.sql` applied.
  * Lets Better Auth persist to the SAME embedded DB as app data in preview (via a
- * Kysely dialect). Throws when `DATABASE_URL` is set (that path uses Neon).
+ * Kysely dialect). Throws when `DATABASE_URL` is set (that path uses Neon) and
+ * in production.
  */
 export async function getPglite(): Promise<import("@electric-sql/pglite").PGlite> {
-  if (dbSource !== "pglite") {
-    throw new Error("getPglite() is only available on the PGLite fallback (no DATABASE_URL)");
+  if (readDatabaseUrl() || isProductionRuntime()) {
+    throw new Error("getPglite() is only available on the PGLite preview fallback");
   }
   await getSql();
   const pg = await globalRef.__pgliteInstance__;
@@ -246,21 +276,23 @@ export async function getPglite(): Promise<import("@electric-sql/pglite").PGlite
  * - **PGLite** (preview / no `DATABASE_URL`): open the in-memory DB and apply
  *   `migrations/*.sql`. Idempotent — concurrent callers share one promise.
  * - **Neon**: no-op (pool is created lazily on first query).
+ * - **Production without DATABASE_URL**: fails closed.
  *
- * Vite `configureServer` awaits this at dev startup; production imports of this
- * module kick it off immediately (see bottom of file).
+ * Vite `configureServer` awaits this at dev startup. Production must never
+ * boot PGLite.
  */
 export function ensureDbReady(): Promise<void> {
-  if (dbSource !== "pglite") return Promise.resolve();
+  assertProductionDatabaseUrl();
+  if (readDatabaseUrl()) return Promise.resolve();
   return getSql().then(() => undefined);
 }
 
-// Server-only eager start: kick PGLite bootstrap as soon as this module loads in
-// Node. Client bundles never hit this path (`getSql` throws in the browser).
+// Preview-only eager start. Production never boots PGLite, including when
+// NODE_ENV is inlined as "production" during `vite build` with an empty URL.
 const globalBoot = globalThis as typeof globalThis & {
   __pgBootstrapPromise__?: Promise<void>;
 };
-if (typeof window === "undefined" && dbSource === "pglite") {
+if (typeof window === "undefined" && !isProductionRuntime() && !readDatabaseUrl()) {
   globalBoot.__pgBootstrapPromise__ ??= ensureDbReady().catch((err) => {
     globalBoot.__pgBootstrapPromise__ = undefined;
     console.error("[db] PGLite bootstrap failed:", err);

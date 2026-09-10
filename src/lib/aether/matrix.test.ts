@@ -12,6 +12,7 @@ import {
   getPublicBookingByToken,
   newConfirmationToken,
   type BookingDb,
+  type CreatedBooking,
   type PublicBooking,
 } from "./booking.ts";
 import {
@@ -51,16 +52,14 @@ const SQL_FILES = [
   "0010_hotel_white_label.sql",
   "0011_production_hardening.sql",
   "0012_cp12_tenancy.sql",
+  "0013_cp12b_runtime_login.sql",
 ] as const;
 
 const PUBLIC_DTO_KEYS = [
   "cancelled",
-  "confirmationToken",
   "destinationText",
   "durationMinutes",
-  "guestEmail",
   "guestName",
-  "guestPhone",
   "hotelCode",
   "hotelName",
   "humanReference",
@@ -69,9 +68,10 @@ const PUBLIC_DTO_KEYS = [
   "pickupText",
   "pickupTime",
   "pricing",
-  "specialRequirements",
   "transferDate",
 ] as const;
+
+const CREATED_DTO_KEYS = [...PUBLIC_DTO_KEYS, "confirmationToken"] as const;
 
 /** Current-rebuild registry. Titles must exist as test("…") in the named file. */
 const MATRIX: Array<{ file: string; titles: string[] }> = [
@@ -145,6 +145,7 @@ const MATRIX: Array<{ file: string; titles: string[] }> = [
       "logout revokes the session",
       "login throttling locks after too many failures",
       "ops-fns never return a session token and public health stays open",
+      "preview desk/desk-pass cannot seed or login in production",
     ],
   },
   {
@@ -185,6 +186,15 @@ const MATRIX: Array<{ file: string; titles: string[] }> = [
       "runtime cancellation and unassignment still release occupancy",
       "table owner can disable the occupancy trigger — production DATABASE_URL must not be that owner",
       "Neon production-role split is BLOCKED when DATABASE_URL is unset",
+    ],
+  },
+  {
+    file: "cp12b.test.ts",
+    titles: [
+      "production without DATABASE_URL fails closed; preview and build do not",
+      "0013 makes aether_runtime LOGIN; occupancy objects stay owner-owned",
+      "valid public booking still works; lookup DTO omits PII and token",
+      "guest create rate limit trips then fail-opens without the table",
     ],
   },
 ];
@@ -317,7 +327,7 @@ describe("Phase 9 full test reconstruction", () => {
     assert.match(occupancy, /tstzrange/);
     assert.match(occupancy, /'\[\)'/);
 
-    const later = ["0008_guest_ux.sql", "0009_ops_desk.sql", "0010_hotel_white_label.sql", "0011_production_hardening.sql", "0012_cp12_tenancy.sql"]
+    const later = ["0008_guest_ux.sql", "0009_ops_desk.sql", "0010_hotel_white_label.sql", "0011_production_hardening.sql", "0012_cp12_tenancy.sql", "0013_cp12b_runtime_login.sql"]
       .map((name) => readAether(`../../../migrations/${name}`))
       .join("\n");
     assert.doesNotMatch(later, /drop trigger|drop function aether_athens|drop constraint bookings_/i);
@@ -342,7 +352,7 @@ describe("Phase 9 full test reconstruction", () => {
     assert.equal(process.env.DATABASE_URL || "", "", "DATABASE_URL must stay unset here");
   });
 
-  test("migrations 0002–0012 apply; occupancy engine remains authority", async () => {
+  test("migrations 0002–0013 apply; occupancy engine remains authority", async () => {
     const { db, pg } = await openDb();
     const meta = await db.query<{ key: string; value: string }>(
       "select key, value from aether_meta",
@@ -351,7 +361,7 @@ describe("Phase 9 full test reconstruction", () => {
     assert.equal(map.product, "Aether Transfer");
     assert.equal(map.blueprint, "v2");
     assert.equal(map.schema_phase, "12");
-    assert.equal(map.checkpoint, "12");
+    assert.equal(map.checkpoint, "12b");
     assert.equal(map.runtime_role, "aether_runtime");
 
     const objects = await db.query<{ n: number }>(`
@@ -415,7 +425,9 @@ describe("Phase 9 full test reconstruction", () => {
     assert.equal(created.hotelCode, "gate");
     assert.equal(created.hotelName, "Gate Hotel");
     assert.equal(created.guestName, "Nikos Guest");
-    assert.equal(created.specialRequirements, "Flight A3 400");
+    assert.equal("specialRequirements" in created, false);
+    assert.equal("guestPhone" in created, false);
+    assert.equal("guestEmail" in created, false);
     assert.equal(created.pricing.priced, false);
 
     const found = await getPublicBookingByToken(db, created.confirmationToken);
@@ -423,6 +435,8 @@ describe("Phase 9 full test reconstruction", () => {
     assert.equal("occupies" in found, false);
     assert.equal("vehicleId" in found, false);
     assert.equal("internalNotes" in found, false);
+    assert.equal("confirmationToken" in found, false);
+    assert.equal("specialRequirements" in found, false);
 
     try {
       await getPublicBookingByToken(db, created.humanReference);
@@ -573,19 +587,27 @@ describe("Phase 9 full test reconstruction", () => {
     const { db, pg } = await openDb();
     const created = await createBooking(db, bookingInput("gate"));
     const keys = Object.keys(created).sort();
-    assert.deepEqual(keys, [...PUBLIC_DTO_KEYS].sort());
+    assert.deepEqual(keys, [...CREATED_DTO_KEYS].sort());
     assert.equal("occupies" in created, false);
     assert.equal("vehicleId" in created, false);
     assert.equal("driverId" in created, false);
     assert.equal("internalNotes" in created, false);
     assert.equal("id" in created, false);
     assert.equal("status" in created, false);
+    assert.equal("guestPhone" in created, false);
+    assert.equal("guestEmail" in created, false);
+    assert.equal("specialRequirements" in created, false);
     const payload = JSON.stringify(created);
     assert.doesNotMatch(payload, /occupies|internal_notes|vehicle_id|driver_id/);
 
-    const typed: PublicBooking = created;
+    const typed: CreatedBooking = created;
     assert.ok(typed.confirmationToken.length >= 40);
     assert.match(typed.humanReference, /^PT-[A-Z2-9]{10}$/);
+
+    const looked = await getPublicBookingByToken(db, created.confirmationToken);
+    const publicTyped: PublicBooking = looked;
+    assert.deepEqual(Object.keys(looked).sort(), [...PUBLIC_DTO_KEYS].sort());
+    assert.equal("confirmationToken" in publicTyped, false);
 
     const tokens = new Set<string>();
     for (let i = 0; i < 32; i += 1) {

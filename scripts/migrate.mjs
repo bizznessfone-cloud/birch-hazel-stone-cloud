@@ -2,38 +2,34 @@
 /**
  * Deploy-time database migrator (node-postgres, `pg`).
  *
- * Runs during `npm run build` — on every Vercel deploy — applying pending files
- * in ../migrations to DATABASE_URL. Each file is applied in one transaction and
- * recorded in a `_migrations` table, so it runs once and is safe to re-run.
+ * Runs during `npm run build`. Production uses AETHER_DATABASE_OWNER_URL only.
+ * DATABASE_URL is never a fallback. Missing owner URL in production fails.
+ * Preview without owner URL skips (exit 0); PGLite applies the same files
+ * at startup (see src/lib/db.ts).
  *
  * The read is non-recursive, so the opt-in auth schema under migrations/auth/
  * is not applied to an app that never asked for sign-in.
  *
- * Owner/migration connection: AETHER_DATABASE_OWNER_URL if set, else
- * DATABASE_URL. The application runtime uses DATABASE_URL and SET ROLE
- * aether_runtime (see src/lib/db.ts). Never log these URLs.
- *
- * No DATABASE_URL and no AETHER_DATABASE_OWNER_URL (local / preview
- * builds) -> skip; the PGLite fallback applies the same files at startup
- * instead (see src/lib/db.ts).
+ * Never log connection strings or passwords. Never SET ROLE aether_runtime.
  */
 import { readdir, readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import pg from "pg";
 import { pendingMigrations } from "./migration-plan.mjs";
+import { resolveMigratePlan } from "./migrate-policy.mjs";
 
-const ownerUrl = (
-  process.env.AETHER_DATABASE_OWNER_URL ||
-  process.env.DATABASE_URL ||
-  ""
-).trim();
-if (!ownerUrl) {
-  console.log(
-    "[migrate] DATABASE_URL / AETHER_DATABASE_OWNER_URL not set — skipping (the PGLite fallback migrates itself).",
-  );
+const plan = resolveMigratePlan(process.env);
+if (plan.action === "skip") {
+  console.log(`[migrate] ${plan.reason}`);
   process.exit(0);
 }
+if (plan.action === "fail") {
+  console.error(`[migrate] ${plan.reason}`);
+  process.exit(1);
+}
+
+const ownerUrl = plan.ownerUrl;
 
 const migrationsDir = join(dirname(fileURLToPath(import.meta.url)), "..", "migrations");
 

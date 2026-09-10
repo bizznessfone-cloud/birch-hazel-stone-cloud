@@ -212,13 +212,17 @@ src/lib/aether/hotel.test.ts     Phase 8 gate
 src/routes/ops.hotels.tsx        reception cards + QR-ready URL
 migrations/0010_hotel_white_label.sql code format, seed harbor, schema_phase 8
 src/lib/aether/matrix.test.ts    Phase 9 Blueprint matrix reconstruction
-migrations/0011_production_hardening.sql aether_runtime DML role, schema_phase 10
+migrations/0011_production_hardening.sql aether_runtime DML role (NOLOGIN at create)
+migrations/0012_cp12_tenancy.sql providers, agreements, memberships, executing_provider_id
+migrations/0013_cp12b_runtime_login.sql aether_runtime LOGIN, public_booking_attempts
 src/lib/aether/runtime-role.ts   role name + owner URL env
-src/lib/aether/hardening.test.ts Phase 10 privilege + security audit
+src/lib/aether/runtime-config.ts production fail-closed + pool + preview-cred policy
+src/lib/aether/hardening.test.ts privilege + security audit
+src/lib/aether/cp12b.test.ts     CP12B production hardening
 ```
 
-ICS, payment, and Neon concurrency are not built. Phase 10 added the runtime
-DML role; occupancy SQL is unchanged. `schema_phase` is **10**.
+ICS, payment, and Neon concurrency are not built. Occupancy SQL is unchanged.
+`schema_phase` is **12**. `checkpoint` is **12b**.
 
 ## Hotel white label (Phase 8)
 
@@ -264,31 +268,39 @@ Results: `docs/TEST_RESULTS.md`.
 
 | Name | When |
 |---|---|
-| `DATABASE_URL` | application runtime (Neon). Must not be the table owner in production. |
-| `AETHER_DATABASE_OWNER_URL` | optional. migrate.mjs uses this when set; otherwise `DATABASE_URL`. |
-| `AETHER_OPS_LOGIN` | optional operator bootstrap |
-| `AETHER_OPS_PASSWORD` | optional operator bootstrap |
+| `DATABASE_URL` | production runtime. Must authenticate as `aether_runtime` LOGIN, not the owner. Production without this URL fails closed. |
+| `AETHER_DATABASE_OWNER_URL` | required for production migrations. `scripts/migrate.mjs` uses this URL only. Never a runtime connection. |
+| `AETHER_OPS_LOGIN` | optional operator bootstrap. Preview pair `desk` is refused in production. |
+| `AETHER_OPS_PASSWORD` | optional operator bootstrap. Preview pair `desk-pass` is refused in production. |
+| `AETHER_RESTORE_TARGET` | `preview` or `production` |
 
 No `.env` files. No session HMAC secret: tokens are unguessable random values
 hashed at rest.
 
-## Production hardening (Phase 10)
+## Production hardening (Phase 10 → CP12B)
 
 PostgreSQL privilege split. Occupancy SQL is unchanged.
 
 ```
-migration owner (applies 0011, owns tables/functions/extensions)
+migration owner (applies 0011–0013, owns tables/functions/extensions)
         ↓
 GRANT DML/EXECUTE to aether_runtime
         ↓
-application SET ROLE aether_runtime  (current_user)
+0013: ALTER ROLE aether_runtime LOGIN  (password out of band, never in SQL)
+        ↓
+production DATABASE_URL authenticates as aether_runtime
+        (session_user = current_user = aether_runtime; no SET ROLE)
         ↓
 DISABLE/DROP trigger, DROP EXCLUDE, DROP aether_athens_instant,
 CREATE/DROP btree_gist  →  42501
 ```
 
-- Role `aether_runtime`: `NOLOGIN` `NOSUPERUSER`. DML on domain tables, EXECUTE
-  on functions, SELECT on `aether_meta`. No TRIGGER, TRUNCATE, schema CREATE.
+- Role `aether_runtime`: `LOGIN` `NOSUPERUSER` after 0013. DML on domain tables,
+  EXECUTE on functions, SELECT on `aether_meta`. No TRIGGER, TRUNCATE, schema
+  CREATE. Must not own occupancy objects.
+- 0011 still *creates* the role as NOLOGIN (frozen historical file). 0013
+  enables LOGIN. The runtime role is not a schema owner and receives no extra
+  DDL.
 - Occupancy objects stay owned by the migrator (`postgres` on PGLite).
 - Runtime **cannot** ALTER/DROP/DISABLE `bookings_occupies_before`, DROP/ALTER
   EXCLUDE constraints, DROP/replace `aether_athens_instant()`, or DROP
@@ -296,14 +308,63 @@ CREATE/DROP btree_gist  →  42501
 - Runtime **may** insert/assign/cancel; occupies stays trigger-maintained;
   overlap still `23P01`.
 - The table owner **can** still disable the trigger. That is why production
-  `DATABASE_URL` must not be the owner. `SET ROLE` from an owner connection is
-  defense in depth: `RESET ROLE` restores the connecting owner.
-- migrate.mjs uses `AETHER_DATABASE_OWNER_URL` if set, else `DATABASE_URL`, and
-  never SET ROLE. Preview PGLite resets to owner, applies migrations, then
-  `SET ROLE aether_runtime`. Neon pools pass `options=-c role=aether_runtime`.
+  `DATABASE_URL` must not be the owner.
+- Preview PGLite still RESET ROLE, applies migrations as owner, then
+  `SET ROLE aether_runtime`. Production pools must **not** send a startup role
+  option — RESET ROLE would otherwise restore a non-runtime login.
+- migrate.mjs uses `AETHER_DATABASE_OWNER_URL` only. Production without that
+  URL fails (no silent skip, no `DATABASE_URL` fallback).
+- Production without `DATABASE_URL` fails closed. PGLite is never a production
+  substitute.
+- Serverless: one shared `pg.Pool` per isolate (`max: 2`, idle 10s, connect 8s).
 - **Neon production-role split is BLOCKED / UNVERIFIED** in this environment
   (`DATABASE_URL` unset). Neon concurrency remains **NOT VERIFIED**.
 
-Source: `migrations/0011_production_hardening.sql`, `src/lib/db.ts`,
-`scripts/migrate.mjs`.
-Tests: `src/lib/aether/hardening.test.ts`.
+Source: `migrations/0011_production_hardening.sql`,
+`migrations/0013_cp12b_runtime_login.sql`, `src/lib/db.ts`,
+`scripts/migrate.mjs`, `scripts/migrate-policy.mjs`.
+Tests: `src/lib/aether/hardening.test.ts`, `src/lib/aether/cp12b.test.ts`.
+
+## CP12 / CP12A / CP12B
+
+| Checkpoint | Meaning |
+|---|---|
+| CP11 | Historical Neon verifier. Not the current product phase. |
+| CP12 | Multi-tenant hotel/provider foundation (`0012`). |
+| CP12A | Resource ownership administration boundaries (operate AND own / dispatch AND employ). |
+| CP12B | Pre-Vercel production hardening (this document's current source). |
+
+Vercel is not connected at CP12B.
+
+## V1 geographic / timezone constraint
+
+V1 operational timezone is **Europe/Athens**. This is a deliberate V1 operating
+constraint, not the intended long-term global architecture.
+
+Future architecture (not implemented):
+
+```
+hotel/location-specific IANA timezone
+        ↓
+local civil time validation
+        ↓
+absolute instant
+        ↓
+timestamptz / tstzrange
+```
+
+ONE GLOBAL BOOKING ENGINE + LOCALLY CONFIGURED OPERATIONAL ENVIRONMENTS.
+
+Future local configuration may include operational location, IANA timezone,
+currency, country, city, transport hubs, local pricing, and fleet
+configuration. None of that is implemented in CP12B.
+
+## 100-hotel strategic data (document only)
+
+Build the transfer platform now. Capture legitimate operational intelligence
+correctly from day one. At 100 hotels, evaluate additional commercial
+opportunities using appropriately aggregated/anonymised data.
+
+Do not build a mobility marketplace, fleet procurement, leasing, OEM
+relationships, EV/charging/supplier marketplaces, or commercial data products
+in this checkpoint.

@@ -1,5 +1,5 @@
 import { Kysely, PostgresDialect } from "kysely";
-import { dbSource, getPglite, pgRuntimeRoleOptions } from "@/lib/db";
+import { getDbSource, getPgPool, getPglite } from "@/lib/db";
 import { pgliteDialect } from "@/lib/auth/pglite-dialect";
 import type { AetherDatabase } from "./schema";
 
@@ -14,17 +14,8 @@ async function createAetherDb(): Promise<Kysely<AetherDatabase>> {
     );
   }
 
-  if (dbSource === "neon") {
-    const pg = await import("pg");
-    const url =
-      typeof process !== "undefined" ? process.env.DATABASE_URL?.trim() : undefined;
-    if (!url) {
-      throw new Error("DATABASE_URL is required for the Neon Kysely dialect.");
-    }
-    const pool = new pg.default.Pool({
-      connectionString: url,
-      options: pgRuntimeRoleOptions(),
-    });
+  if (getDbSource() === "neon") {
+    const pool = await getPgPool();
     return new Kysely<AetherDatabase>({
       dialect: new PostgresDialect({ pool }),
     });
@@ -37,7 +28,8 @@ async function createAetherDb(): Promise<Kysely<AetherDatabase>> {
 
 /**
  * Shared Kysely instance against the same PGLite/Neon database as getSql().
- * PGLite uses the existing embedded instance so preview data stays consistent.
+ * Neon reuses the capped pg.Pool from getPgPool(). PGLite uses the existing
+ * embedded instance so preview data stays consistent.
  */
 export function getAetherDb(): Promise<Kysely<AetherDatabase>> {
   globalRef.__aetherKyselyPromise__ ??= createAetherDb().catch((err) => {

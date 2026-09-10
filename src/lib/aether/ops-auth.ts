@@ -13,6 +13,11 @@ import {
   ensureLegacyDispatcherMembership,
   type AccessClass,
 } from "./tenancy.ts";
+import {
+  assertProductionOpsCredentials,
+  isForbiddenPreviewOpsCredential,
+  isProductionOpsGuard,
+} from "./runtime-config.ts";
 
 function scrypt(
   password: string,
@@ -73,6 +78,7 @@ export type AuthEnv = {
   headers?: { get(name: string): string | null | undefined };
   cookieSecure?: boolean;
   now?: Date;
+  production?: boolean;
 };
 
 export type OpsContext = {
@@ -229,10 +235,14 @@ export async function createOperator(
   return row;
 }
 
-export async function ensureOperatorFromEnv(db: OpsDb): Promise<void> {
-  const login = process.env.AETHER_OPS_LOGIN?.trim();
-  const password = process.env.AETHER_OPS_PASSWORD;
+export async function ensureOperatorFromEnv(
+  db: OpsDb,
+  env: NodeJS.ProcessEnv | Record<string, string | undefined> = process.env,
+): Promise<void> {
+  const login = env.AETHER_OPS_LOGIN?.trim();
+  const password = env.AETHER_OPS_PASSWORD;
   if (!login || !password) return;
+  assertProductionOpsCredentials(login, password, env);
   const normalized = normalizeLogin(login);
   const password_hash = await hashPassword(password);
   const existing = await db.query<{ id: string }>(
@@ -293,6 +303,20 @@ export async function loginOperator(
   const at = nowOf(env);
   const loginKey = normalizeLogin(login);
   if (!loginKey || !password) {
+    throw new OpsAuthError("invalid_credentials", 401, "Invalid credentials");
+  }
+
+  const production =
+    env.production === true ||
+    (env.production !== false && isProductionOpsGuard());
+  if (production && isForbiddenPreviewOpsCredential(login, password)) {
+    const since = new Date(at.getTime() - THROTTLE_WINDOW_MS);
+    const failures = await failureCount(env.db, loginKey, since);
+    if (failures >= THROTTLE_MAX_FAILURES) {
+      throw new OpsAuthError("throttled", 429, "Too many attempts");
+    }
+    await verifyPassword(password, await dummyStoredHash());
+    await recordAttempt(env.db, loginKey, false, at);
     throw new OpsAuthError("invalid_credentials", 401, "Invalid credentials");
   }
 
