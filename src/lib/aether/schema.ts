@@ -14,6 +14,10 @@ export interface HotelsTable {
   id: Generated<string>;
   code: string;
   name: string;
+  locality: Generated<string>;
+  iana_timezone: Generated<string>;
+  currency: Generated<string>;
+  status: Generated<string>;
   created_at: Generated<Date>;
 }
 
@@ -30,6 +34,17 @@ export interface HotelProviderAgreementsTable {
   hotel_id: string;
   provider_id: string;
   active: Generated<boolean>;
+  created_at: Generated<Date>;
+}
+
+export interface HotelDestinationsTable {
+  id: Generated<string>;
+  hotel_id: string;
+  kind: string;
+  name: string;
+  active: Generated<boolean>;
+  sort_order: Generated<number>;
+  amount_minor: number;
   created_at: Generated<Date>;
 }
 
@@ -102,6 +117,9 @@ export interface BookingsTable {
   luggage_count: Generated<number>;
   pickup_text: string;
   destination_text: string;
+  destination_id: string | null;
+  quoted_amount_minor: number | null;
+  quoted_currency: string | null;
   special_requirements: string | null;
   internal_notes: string | null;
   human_reference: string;
@@ -146,6 +164,7 @@ export interface AetherDatabase {
   hotels: HotelsTable;
   providers: ProvidersTable;
   hotel_provider_agreements: HotelProviderAgreementsTable;
+  hotel_destinations: HotelDestinationsTable;
   vehicles: VehiclesTable;
   drivers: DriversTable;
   operators: OperatorsTable;
