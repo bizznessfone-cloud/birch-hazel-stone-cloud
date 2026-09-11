@@ -8,6 +8,7 @@ import { touristMessage } from "./guest";
 
 const createInput = z.object({
   hotelCode: z.string(),
+  destinationId: z.string(),
   transferDate: z.string(),
   pickupTime: z.string(),
   durationMinutes: z.number(),
@@ -17,7 +18,7 @@ const createInput = z.object({
   passengerCount: z.number(),
   luggageCount: z.number(),
   pickupText: z.string(),
-  destinationText: z.string(),
+  destinationText: z.string().nullable().optional(),
   specialRequirements: z.string().nullable().optional(),
   idempotencyKey: z.string().nullable().optional(),
 });
@@ -47,7 +48,6 @@ function fail(err: unknown): { ok: false; code: string; message: string } {
     message: touristMessage("server_error"),
   };
 }
-
 
 export const createPublicBooking = createServerFn({ method: "POST" })
   .validator(createInput)

@@ -13,6 +13,7 @@ import { hotelBookingPath, hotelIdentity, hotelMarkLetters, normalizeHotelCode }
 import { listOpsBookings, listOpsHotels, upsertHotel } from "./ops-desk.ts";
 import { createOperator } from "./ops-auth.ts";
 import { legacyDispatcherScope } from "./tenancy.ts";
+import { applyCp14LiveCatalog } from "./cp14-fixture.ts";
 
 const SQL_FILES = [
   "0002_foundation.sql",
@@ -28,13 +29,14 @@ const SQL_FILES = [
   "0012_cp12_tenancy.sql",
 ];
 
-async function openDb() {
+async function openDb(opts: { live?: boolean } = {}) {
   const { btree_gist } = await import("@electric-sql/pglite/contrib/btree_gist");
   const pg = new PGlite({ extensions: { btree_gist } });
   await pg.waitReady;
   for (const name of SQL_FILES) {
     await pg.exec(readFileSync(new URL(`../../../migrations/${name}`, import.meta.url), "utf8"));
   }
+  const destinations = opts.live ? await applyCp14LiveCatalog(pg) : ({} as Record<string, string>);
   const db: BookingDb = {
     query: async <T>(text: string, params?: unknown[]) => (await pg.query<T>(text, params)).rows,
     async transaction<T>(fn: (inner: BookingDb) => Promise<T>) {
@@ -49,12 +51,13 @@ async function openDb() {
       });
     },
   };
-  return { db, pg };
+  return { db, pg, destinations };
 }
 
-function bookingInput(hotelCode: string, guestName: string) {
+function bookingInput(hotelCode: string, guestName: string, destinationId: string) {
   return {
     hotelCode,
+    destinationId,
     transferDate: "2026-01-15",
     pickupTime: "09:00",
     durationMinutes: 60,
@@ -70,7 +73,7 @@ function bookingInput(hotelCode: string, guestName: string) {
 
 describe("Phase 8 hotel white label", () => {
   test("valid hotel code resolves with generated HotelMark and QR-ready path", async () => {
-    const { db, pg } = await openDb();
+    const { db, pg } = await openDb({ live: true });
     const hotel = await getPublicHotel(db, "GATE");
     assert.equal(hotel.code, "gate");
     assert.equal(hotel.name, "Gate Hotel");
@@ -100,8 +103,8 @@ describe("Phase 8 hotel white label", () => {
   });
 
   test("booking is attributed to the hotel from the booking code", async () => {
-    const { db, pg } = await openDb();
-    const created = await createBooking(db, bookingInput("gate", "Nikos Gate"));
+    const { db, pg, destinations } = await openDb({ live: true });
+    const created = await createBooking(db, bookingInput("gate", "Nikos Gate", destinations.gate!));
     assert.equal(created.hotelCode, "gate");
     assert.equal(created.hotelName, "Gate Hotel");
     const rows = await db.query<{ hotel_code: string; hotel_name: string }>(
@@ -120,7 +123,7 @@ describe("Phase 8 hotel white label", () => {
   });
 
   test("unknown hotel remains non-disclosing", async () => {
-    const { db, pg } = await openDb();
+    const { db, pg, destinations } = await openDb({ live: true });
     try {
       await getPublicHotel(db, "missing-hotel");
       assert.fail("expected missing hotel to fail");
@@ -130,7 +133,7 @@ describe("Phase 8 hotel white label", () => {
       assert.doesNotMatch(err.message, /gate|harbor|list|sql|select/i);
     }
     try {
-      await createBooking(db, bookingInput("missing-hotel", "Ghost Guest"));
+      await createBooking(db, bookingInput("missing-hotel", "Ghost Guest", destinations.gate!));
       assert.fail("expected missing hotel create to fail");
     } catch (err) {
       assert.ok(err instanceof BookingError);
@@ -141,9 +144,9 @@ describe("Phase 8 hotel white label", () => {
   });
 
   test("two hotel codes remain isolated at booking-attribution level", async () => {
-    const { db, pg } = await openDb();
-    const gate = await createBooking(db, bookingInput("gate", "Ada Gate"));
-    const harbor = await createBooking(db, bookingInput("harbor", "Ben Harbor"));
+    const { db, pg, destinations } = await openDb({ live: true });
+    const gate = await createBooking(db, bookingInput("gate", "Ada Gate", destinations.gate!));
+    const harbor = await createBooking(db, bookingInput("harbor", "Ben Harbor", destinations.harbor!));
     assert.equal(gate.hotelCode, "gate");
     assert.equal(gate.hotelName, "Gate Hotel");
     assert.equal(harbor.hotelCode, "harbor");
@@ -199,6 +202,7 @@ describe("Phase 8 hotel white label", () => {
   test("database enforces hotel code format and uniqueness", async () => {
     const { db, pg } = await openDb();
     await db.query("insert into hotels (code, name) values ('quay', 'Quay Hotel')");
+    await applyCp14LiveCatalog(pg);
     const identity = await getPublicHotel(db, "quay");
     assert.equal(identity.bookingPath, "/book/quay");
     assert.equal(identity.mark, "QH");

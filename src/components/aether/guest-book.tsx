@@ -4,6 +4,7 @@ import { createPublicBooking, getPublicBooking } from "@/lib/aether/booking-fns"
 import {
   applyDirection,
   emptyDraft,
+  formatQuotedPrice,
   placeKindLabel,
   touristMessage,
   vehicleHint,
@@ -19,12 +20,24 @@ type Step = "landing" | "find" | "journey" | "when" | "party" | "contact" | "rev
 
 const PLACE_KINDS: PlaceKind[] = ["airport", "port", "hotel", "other"];
 
+type CatalogueDestination = {
+  id: string;
+  kind: PlaceKind;
+  name: string;
+  amountMinor: number;
+  sortOrder: number;
+};
+
 export function GuestBook({
   hotelCode,
   hotelName,
+  currency,
+  destinations,
 }: {
   hotelCode: string;
   hotelName: string;
+  currency: string;
+  destinations: CatalogueDestination[];
 }) {
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>("landing");
@@ -52,9 +65,14 @@ export function GuestBook({
     setSubmitError(null);
     setSubmitting(true);
     try {
+      if (!draft.destinationId) {
+        setSubmitError(touristMessage("invalid_destination"));
+        return;
+      }
       const result = await createPublicBooking({
         data: {
           hotelCode,
+          destinationId: draft.destinationId,
           transferDate: draft.transferDate,
           pickupTime: draft.pickupTime,
           durationMinutes: draft.durationMinutes,
@@ -125,13 +143,45 @@ export function GuestBook({
             {step === "journey" ? (
               <JourneyStep
                 hotelName={hotelName}
+                currency={currency}
+                destinations={destinations}
                 draft={draft}
                 onDirection={(direction) =>
-                  setDraft((current) => applyDirection(current, direction, hotelName))
+                  setDraft((current) => {
+                    const selected = destinations.find((item) => item.id === current.destinationId);
+                    return applyDirection(current, direction, hotelName, selected?.name);
+                  })
                 }
-                onKind={(placeKind) => patch({ placeKind })}
+                onKind={(placeKind) =>
+                  setDraft((current) => {
+                    const selected = destinations.find((item) => item.id === current.destinationId);
+                    if (selected && selected.kind !== placeKind) {
+                      return applyDirection(
+                        { ...current, placeKind, destinationId: null, destinationText: "" },
+                        current.direction,
+                        hotelName,
+                        "",
+                      );
+                    }
+                    return { ...current, placeKind };
+                  })
+                }
                 onPickup={(pickupText) => patch({ pickupText })}
-                onDestination={(destinationText) => patch({ destinationText })}
+                onDestination={(destination) =>
+                  setDraft((current) =>
+                    applyDirection(
+                      {
+                        ...current,
+                        destinationId: destination.id,
+                        destinationText: destination.name,
+                        placeKind: destination.kind,
+                      },
+                      current.direction,
+                      hotelName,
+                      destination.name,
+                    ),
+                  )
+                }
                 onNext={() => setStep("when")}
                 onBack={() => setStep("landing")}
               />
@@ -170,6 +220,8 @@ export function GuestBook({
             {step === "review" ? (
               <ReviewStep
                 hotelName={hotelName}
+                currency={currency}
+                destinations={destinations}
                 draft={draft}
                 error={submitError}
                 busy={submitting}
@@ -251,15 +303,22 @@ function FindStep(props: {
 
 function JourneyStep(props: {
   hotelName: string;
+  currency: string;
+  destinations: CatalogueDestination[];
   draft: GuestDraft;
   onDirection: (direction: Direction) => void;
   onKind: (kind: PlaceKind) => void;
   onPickup: (value: string) => void;
-  onDestination: (value: string) => void;
+  onDestination: (destination: CatalogueDestination) => void;
   onNext: () => void;
   onBack: () => void;
 }) {
-  const ready = props.draft.pickupText.trim() && props.draft.destinationText.trim();
+  const choices = props.destinations
+    .filter((item) => item.kind === props.draft.placeKind)
+    .slice()
+    .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
+  const selected = props.destinations.find((item) => item.id === props.draft.destinationId);
+  const ready = Boolean(props.draft.destinationId) && Boolean(props.draft.pickupText.trim());
   return (
     <form
       className="flex flex-1 flex-col gap-6"
@@ -268,7 +327,7 @@ function JourneyStep(props: {
         if (ready) props.onNext();
       }}
     >
-      <StepTitle title="Journey" note="Where should we collect you, and where should we take you?" />
+      <StepTitle title="Journey" note="Choose a destination from this hotel's list. Pickup is the collection point." />
       <ChoiceRow
         label="Direction"
         options={[
@@ -284,6 +343,31 @@ function JourneyStep(props: {
         value={props.draft.placeKind}
         onChange={(id) => props.onKind(id as PlaceKind)}
       />
+      <fieldset>
+        <legend className="mb-2 text-xs tracking-widest text-muted uppercase">Destination</legend>
+        {choices.length === 0 ? (
+          <p className="border border-line bg-surface px-4 py-3 text-sm text-muted">
+            No destinations of this type are available.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {choices.map((item) => {
+              const active = item.id === props.draft.destinationId;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`flex min-h-14 items-center justify-between border px-4 text-left text-sm font-medium ${active ? "border-ink bg-ink text-canvas" : "border-line bg-surface text-ink"}`}
+                  onClick={() => props.onDestination(item)}
+                >
+                  <span>{item.name}</span>
+                  <span className="tabular-nums">{formatQuotedPrice(props.currency, item.amountMinor)}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </fieldset>
       <Field label="Pickup">
         <input
           className={inputClass}
@@ -291,13 +375,11 @@ function JourneyStep(props: {
           onChange={(event) => props.onPickup(event.target.value)}
         />
       </Field>
-      <Field label="Destination">
-        <input
-          className={inputClass}
-          value={props.draft.destinationText}
-          onChange={(event) => props.onDestination(event.target.value)}
-        />
-      </Field>
+      {selected ? (
+        <p className="text-sm text-muted">
+          Quoted price {formatQuotedPrice(props.currency, selected.amountMinor)}
+        </p>
+      ) : null}
       <Actions back={props.onBack} nextDisabled={!ready} />
     </form>
   );
@@ -430,12 +512,19 @@ function ContactStep(props: {
 
 function ReviewStep(props: {
   hotelName: string;
+  currency: string;
+  destinations: CatalogueDestination[];
   draft: GuestDraft;
   error: string | null;
   busy: boolean;
   onSubmit: () => void;
   onBack: () => void;
 }) {
+  const selected = props.destinations.find((item) => item.id === props.draft.destinationId);
+  const destinationName = selected?.name ?? props.draft.destinationText;
+  const priceLabel = selected
+    ? formatQuotedPrice(props.currency, selected.amountMinor)
+    : "To be confirmed";
   return (
     <form
       className="flex flex-1 flex-col gap-6"
@@ -444,22 +533,22 @@ function ReviewStep(props: {
         props.onSubmit();
       }}
     >
-      <StepTitle title="Review" note="Check the details. Price is confirmed by the hotel." />
+      <StepTitle title="Review" note="Check the details. The price is the hotel's quoted rate for this destination." />
       <dl className="divide-y divide-line border border-line">
         <ReviewRow label="Hotel" value={props.hotelName} />
         <ReviewRow label="Direction" value={props.draft.direction === "from_hotel" ? `From ${props.hotelName}` : `To ${props.hotelName}`} />
         <ReviewRow label="Pickup" value={props.draft.pickupText} />
-        <ReviewRow label="Destination" value={props.draft.destinationText} />
+        <ReviewRow label="Destination" value={destinationName} />
         <ReviewRow label="When" value={`${props.draft.transferDate} · ${props.draft.pickupTime} · ${props.draft.durationMinutes} min`} />
         <ReviewRow label="Party" value={`${props.draft.passengerCount} passengers · ${props.draft.luggageCount} bags`} />
         <ReviewRow label="Guest" value={props.draft.guestName} />
-        <ReviewRow label="Price" value="To be confirmed" />
+        <ReviewRow label="Price" value={priceLabel} />
       </dl>
       {props.error ? <ErrorText>{props.error}</ErrorText> : null}
       <Actions
         back={props.onBack}
         nextLabel={props.busy ? "Booking…" : "Confirm booking"}
-        nextDisabled={props.busy}
+        nextDisabled={props.busy || !props.draft.destinationId}
       />
     </form>
   );

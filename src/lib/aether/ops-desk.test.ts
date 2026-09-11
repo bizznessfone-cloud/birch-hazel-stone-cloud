@@ -15,6 +15,7 @@ import {
   upsertVehicle,
 } from "./ops-desk.ts";
 import { athensToday } from "./time.ts";
+import { applyCp14LiveCatalog } from "./cp14-fixture.ts";
 
 const SQL_FILES = [
   "0002_foundation.sql",
@@ -37,6 +38,7 @@ async function openDb() {
   for (const name of SQL_FILES) {
     await pg.exec(readFileSync(new URL(`../../../migrations/${name}`, import.meta.url), "utf8"));
   }
+  const destinations = await applyCp14LiveCatalog(pg);
   const db: BookingDb = {
     query: async <T>(text: string, params?: unknown[]) => (await pg.query<T>(text, params)).rows,
     async transaction<T>(fn: (inner: BookingDb) => Promise<T>) {
@@ -51,7 +53,7 @@ async function openDb() {
       });
     },
   };
-  return { db, pg };
+  return { db, pg, destinations };
 }
 
 async function dispatcher(db: BookingDb) {
@@ -61,10 +63,11 @@ async function dispatcher(db: BookingDb) {
 
 describe("Phase 7 operations desk", () => {
   test("Today board is Athens date, chronological, with attention flags", async () => {
-    const { db, pg } = await openDb();
+    const { db, pg, destinations } = await openDb();
     const today = await athensToday(db);
     await createBooking(db, {
       hotelCode: "gate",
+      destinationId: destinations.gate!,
       transferDate: today,
       pickupTime: "18:00",
       durationMinutes: 60,
@@ -78,6 +81,7 @@ describe("Phase 7 operations desk", () => {
     });
     await createBooking(db, {
       hotelCode: "gate",
+      destinationId: destinations.gate!,
       transferDate: today,
       pickupTime: "08:00",
       durationMinutes: 45,
@@ -101,10 +105,11 @@ describe("Phase 7 operations desk", () => {
   });
 
   test("Today board reflects assignment and cancellation", async () => {
-    const { db, pg } = await openDb();
+    const { db, pg, destinations } = await openDb();
     const today = await athensToday(db);
     await createBooking(db, {
       hotelCode: "gate",
+      destinationId: destinations.gate!,
       transferDate: today,
       pickupTime: "18:00",
       durationMinutes: 60,

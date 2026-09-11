@@ -1,7 +1,8 @@
 /**
  * Public booking engine. Hotel-scoped create + token lookup.
  * Does not write bookings.occupies — the PostgreSQL trigger does.
- * Does not assign vehicles or drivers. Charges are out of scope. No guest accounts.
+ * Does not assign vehicles or drivers. No guest accounts.
+ * CP14.2: LIVE hotel + catalogue destination; server stamps the quote.
  */
 import { createHash, randomBytes } from "node:crypto";
 import { hotelIdentity, type HotelIdentity } from "./hotel.ts";
@@ -21,6 +22,7 @@ export type BookingDb = TimeDb & {
 
 export type BookingErrorCode =
   | "hotel_not_found"
+  | "hotel_not_live"
   | "invalid_time"
   | "invalid_duration"
   | "nonexistent"
@@ -28,6 +30,7 @@ export type BookingErrorCode =
   | "invalid_party"
   | "invalid_contact"
   | "invalid_location"
+  | "invalid_destination"
   | "idempotency_conflict"
   | "not_found"
   | "no_provider"
@@ -44,18 +47,34 @@ export class BookingError extends Error {
   }
 }
 
-export type PriceQuote = {
-  priced: false;
-  currency: null;
-  amount: null;
-};
+export type PriceQuote =
+  | { priced: false; currency: null; amountMinor: null }
+  | { priced: true; currency: string; amountMinor: number };
 
 export function quoteBooking(): PriceQuote {
-  return { priced: false, currency: null, amount: null };
+  return { priced: false, currency: null, amountMinor: null };
 }
+
+export function formatQuotedPrice(currency: string, amountMinor: number): string {
+  return `${currency} ${(amountMinor / 100).toFixed(2)}`;
+}
+
+export type PublicDestination = {
+  id: string;
+  kind: "airport" | "port" | "hotel" | "other";
+  name: string;
+  amountMinor: number;
+  sortOrder: number;
+};
+
+export type PublicHotel = HotelIdentity & {
+  currency: string;
+  destinations: PublicDestination[];
+};
 
 export type CreateBookingInput = {
   hotelCode: string;
+  destinationId: string;
   transferDate: string;
   pickupTime: string;
   durationMinutes: number;
@@ -65,9 +84,14 @@ export type CreateBookingInput = {
   passengerCount: number;
   luggageCount: number;
   pickupText: string;
-  destinationText: string;
+  destinationText?: string | null;
   specialRequirements?: string | null;
   idempotencyKey?: string | null;
+  quotedAmountMinor?: unknown;
+  quotedCurrency?: unknown;
+  amountMinor?: unknown;
+  currency?: unknown;
+  amount?: unknown;
 };
 
 export type PublicBooking = {
@@ -82,6 +106,7 @@ export type PublicBooking = {
   luggageCount: number;
   pickupText: string;
   destinationText: string;
+  destinationId: string | null;
   cancelled: boolean;
   pricing: PriceQuote;
 };
@@ -93,6 +118,7 @@ export type CreatedBooking = PublicBooking & {
 
 type Validated = {
   hotelCode: string;
+  destinationId: string;
   transferDate: string;
   pickupTime: string;
   durationMinutes: number;
@@ -102,13 +128,23 @@ type Validated = {
   passengerCount: number;
   luggageCount: number;
   pickupText: string;
-  destinationText: string;
   specialRequirements: string | null;
+};
+
+type ResolvedQuote = {
+  hotelId: string;
+  hotelCode: string;
+  currency: string;
+  providerId: string;
+  destinationId: string;
+  destinationName: string;
+  amountMinor: number;
 };
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_RE = /^\d{2}:\d{2}(:\d{2})?$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const CROCKFORD = "ABCDEFGHJKMNPQRSTVWXYZ23456789";
 
 function trimRequired(value: unknown, code: BookingErrorCode, message: string): string {
@@ -138,11 +174,15 @@ export function newConfirmationToken(): string {
   return randomBytes(32).toString("base64url");
 }
 
-function requestHash(v: Validated): string {
+function requestHash(v: Validated, quote: ResolvedQuote): string {
   return createHash("sha256")
     .update(
       JSON.stringify({
         hotelCode: v.hotelCode,
+        destinationId: quote.destinationId,
+        quotedAmountMinor: quote.amountMinor,
+        quotedCurrency: quote.currency,
+        destinationName: quote.destinationName,
         transferDate: v.transferDate,
         pickupTime: v.pickupTime,
         durationMinutes: v.durationMinutes,
@@ -152,7 +192,6 @@ function requestHash(v: Validated): string {
         passengerCount: v.passengerCount,
         luggageCount: v.luggageCount,
         pickupText: v.pickupText,
-        destinationText: v.destinationText,
         specialRequirements: v.specialRequirements,
       }),
     )
@@ -161,6 +200,14 @@ function requestHash(v: Validated): string {
 
 function validateInput(input: CreateBookingInput): Validated {
   const hotelCode = trimRequired(input.hotelCode, "hotel_not_found", "hotel is required").toLowerCase();
+  const destinationId = trimRequired(
+    input.destinationId,
+    "invalid_destination",
+    "destination is required",
+  ).toLowerCase();
+  if (!UUID_RE.test(destinationId)) {
+    throw new BookingError("invalid_destination", 400, "destination is required");
+  }
   const transferDate = trimRequired(input.transferDate, "invalid_time", "transfer date is required");
   if (!DATE_RE.test(transferDate)) {
     throw new BookingError("invalid_time", 400, "invalid transfer date");
@@ -195,11 +242,6 @@ function validateInput(input: CreateBookingInput): Validated {
   }
 
   const pickupText = trimRequired(input.pickupText, "invalid_location", "pickup is required");
-  const destinationText = trimRequired(
-    input.destinationText,
-    "invalid_location",
-    "destination is required",
-  );
 
   let specialRequirements: string | null = null;
   if (input.specialRequirements != null && String(input.specialRequirements).trim()) {
@@ -208,6 +250,7 @@ function validateInput(input: CreateBookingInput): Validated {
 
   return {
     hotelCode,
+    destinationId,
     transferDate,
     pickupTime,
     durationMinutes: input.durationMinutes,
@@ -217,7 +260,6 @@ function validateInput(input: CreateBookingInput): Validated {
     passengerCount: input.passengerCount,
     luggageCount: input.luggageCount,
     pickupText,
-    destinationText,
     specialRequirements,
   };
 }
@@ -236,11 +278,25 @@ type BookingRow = {
   luggage_count: number;
   pickup_text: string;
   destination_text: string;
+  destination_id: string | null;
+  quoted_amount_minor: number | null;
+  quoted_currency: string | null;
   special_requirements: string | null;
   human_reference: string;
   confirmation_token: string;
   cancelled_at: string | null;
 };
+
+function toPriceQuote(row: BookingRow): PriceQuote {
+  if (row.quoted_amount_minor == null || row.quoted_currency == null) {
+    return quoteBooking();
+  }
+  return {
+    priced: true,
+    currency: String(row.quoted_currency).trim(),
+    amountMinor: Number(row.quoted_amount_minor),
+  };
+}
 
 function toPublic(row: BookingRow): PublicBooking {
   const pickup = String(row.pickup_time);
@@ -256,8 +312,9 @@ function toPublic(row: BookingRow): PublicBooking {
     luggageCount: Number(row.luggage_count),
     pickupText: row.pickup_text,
     destinationText: row.destination_text,
+    destinationId: row.destination_id,
     cancelled: row.cancelled_at != null,
-    pricing: quoteBooking(),
+    pricing: toPriceQuote(row),
   };
 }
 
@@ -283,6 +340,9 @@ const PUBLIC_SELECT = `
     b.luggage_count,
     b.pickup_text,
     b.destination_text,
+    b.destination_id,
+    b.quoted_amount_minor,
+    btrim(b.quoted_currency) as quoted_currency,
     b.special_requirements,
     b.human_reference,
     b.confirmation_token,
@@ -298,68 +358,42 @@ async function loadCreatedById(db: BookingDb, id: string): Promise<CreatedBookin
   return toCreated(row);
 }
 
-async function insertBooking(
-  db: BookingDb,
-  hotelId: string,
-  providerId: string,
-  v: Validated,
-): Promise<string> {
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    const human = newHumanReference();
-    const token = newConfirmationToken();
-    try {
-      const rows = await db.query<{ id: string }>(
-        `insert into bookings (
-           hotel_id, executing_provider_id, transfer_date, pickup_time, duration_minutes,
-           guest_name, guest_phone, guest_email,
-           passenger_count, luggage_count,
-           pickup_text, destination_text, special_requirements,
-           human_reference, confirmation_token
-         ) values (
-           $1, $2, $3::date, $4::time, $5,
-           $6, $7, $8,
-           $9, $10,
-           $11, $12, $13::text,
-           $14, $15
-         )
-         returning id`,
-        [
-          hotelId,
-          providerId,
-          v.transferDate,
-          v.pickupTime,
-          v.durationMinutes,
-          v.guestName,
-          v.guestPhone,
-          v.guestEmail,
-          v.passengerCount,
-          v.luggageCount,
-          v.pickupText,
-          v.destinationText,
-          v.specialRequirements,
-          human,
-          token,
-        ],
-      );
-      const id = rows[0]?.id;
-      if (!id) throw new Error("booking insert failed");
-      return id;
-    } catch (err) {
-      const code = (err as { code?: string }).code;
-      if (code === "23505") continue;
-      throw err;
-    }
-  }
-  throw new Error("could not allocate unique reference/token");
-}
-
-async function createFresh(db: BookingDb, v: Validated): Promise<string> {
-  const hotels = await db.query<{ id: string }>(
-    "select id from hotels where lower(code) = $1",
+async function resolveLiveQuote(db: BookingDb, v: Validated): Promise<ResolvedQuote> {
+  const hotels = await db.query<{
+    id: string;
+    code: string;
+    currency: string;
+    status: string;
+  }>(
+    `select id, code, btrim(currency) as currency, status
+       from hotels
+      where lower(code) = $1`,
     [v.hotelCode],
   );
   const hotel = hotels[0];
   if (!hotel) throw new BookingError("hotel_not_found", 404, "hotel not found");
+  if (hotel.status !== "live") {
+    throw new BookingError("hotel_not_live", 409, "hotel is not live");
+  }
+
+  const dest = await db.query<{
+    id: string;
+    name: string;
+    amount_minor: number;
+    active: boolean;
+  }>(
+    `select id, name, amount_minor, active
+       from hotel_destinations
+      where id = $1::uuid and hotel_id = $2::uuid`,
+    [v.destinationId, hotel.id],
+  );
+  const destination = dest[0];
+  if (!destination) {
+    throw new BookingError("invalid_destination", 400, "destination is not available");
+  }
+  if (!destination.active) {
+    throw new BookingError("invalid_destination", 400, "destination is not available");
+  }
 
   const provider = await db.query<{ provider_id: string }>(
     `select provider_id
@@ -376,17 +410,92 @@ async function createFresh(db: BookingDb, v: Validated): Promise<string> {
     await athensInstant(db, v.transferDate, v.pickupTime);
   } catch (err) {
     if (err instanceof CivilTimeError) {
-      const status = err.code === "invalid_duration" ? 400 : 400;
-      throw new BookingError(err.code, status, err.message);
+      throw new BookingError(err.code, 400, err.message);
     }
     throw err;
   }
 
-  const id = await insertBooking(db, hotel.id, provider[0].provider_id, v);
+  return {
+    hotelId: hotel.id,
+    hotelCode: hotel.code,
+    currency: hotel.currency,
+    providerId: provider[0].provider_id,
+    destinationId: destination.id,
+    destinationName: destination.name.trim(),
+    amountMinor: Number(destination.amount_minor),
+  };
+}
+
+async function insertBooking(
+  db: BookingDb,
+  quote: ResolvedQuote,
+  v: Validated,
+): Promise<string> {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const human = newHumanReference();
+    const token = newConfirmationToken();
+    try {
+      const rows = await db.query<{ id: string }>(
+        `insert into bookings (
+           hotel_id, executing_provider_id, transfer_date, pickup_time, duration_minutes,
+           guest_name, guest_phone, guest_email,
+           passenger_count, luggage_count,
+           pickup_text, destination_text, special_requirements,
+           human_reference, confirmation_token,
+           destination_id, quoted_amount_minor, quoted_currency
+         ) values (
+           $1, $2, $3::date, $4::time, $5,
+           $6, $7, $8,
+           $9, $10,
+           $11, $12, $13::text,
+           $14, $15,
+           $16::uuid, $17, $18
+         )
+         returning id`,
+        [
+          quote.hotelId,
+          quote.providerId,
+          v.transferDate,
+          v.pickupTime,
+          v.durationMinutes,
+          v.guestName,
+          v.guestPhone,
+          v.guestEmail,
+          v.passengerCount,
+          v.luggageCount,
+          v.pickupText,
+          quote.destinationName,
+          v.specialRequirements,
+          human,
+          token,
+          quote.destinationId,
+          quote.amountMinor,
+          quote.currency,
+        ],
+      );
+      const id = rows[0]?.id;
+      if (!id) throw new Error("booking insert failed");
+      return id;
+    } catch (err) {
+      const code = (err as { code?: string }).code;
+      if (code === "23505") continue;
+      throw err;
+    }
+  }
+  throw new Error("could not allocate unique reference/token");
+}
+
+async function createFresh(db: BookingDb, v: Validated, quote: ResolvedQuote): Promise<string> {
+  const id = await insertBooking(db, quote, v);
   await db.query(
     `insert into audit_events (actor_type, action, booking_id, payload)
-     values ('guest', 'booking.create', $1::uuid, jsonb_build_object('hotel_code', $2::text))`,
-    [id, v.hotelCode],
+     values ('guest', 'booking.create', $1::uuid, jsonb_build_object(
+       'hotel_code', $2::text,
+       'destination_id', $3::text,
+       'quoted_amount_minor', $4::int,
+       'quoted_currency', $5::text
+     ))`,
+    [id, v.hotelCode, quote.destinationId, quote.amountMinor, quote.currency],
   );
   return id;
 }
@@ -400,10 +509,11 @@ export async function createBooking(
   if (key && key.length > 200) {
     throw new BookingError("idempotency_conflict", 400, "invalid idempotency key");
   }
-  const hash = requestHash(v);
 
   const run = async (txn: BookingDb): Promise<string> => {
-    if (!key) return createFresh(txn, v);
+    const quote = await resolveLiveQuote(txn, v);
+    const hash = requestHash(v, quote);
+    if (!key) return createFresh(txn, v, quote);
 
     const claimed = await txn.query<{ id: string }>(
       `insert into idempotency_keys (scope, key, request_hash)
@@ -414,7 +524,7 @@ export async function createBooking(
     );
 
     if (claimed[0]) {
-      const bookingId = await createFresh(txn, v);
+      const bookingId = await createFresh(txn, v, quote);
       await txn.query(
         `update idempotency_keys set booking_id = $1 where id = $2`,
         [bookingId, claimed[0].id],
@@ -434,7 +544,7 @@ export async function createBooking(
       throw new BookingError("idempotency_conflict", 409, "idempotency conflict");
     }
     if (row.booking_id) return row.booking_id;
-    const bookingId = await createFresh(txn, v);
+    const bookingId = await createFresh(txn, v, quote);
     await txn.query(
       `update idempotency_keys
        set booking_id = $1
@@ -463,22 +573,52 @@ export async function getPublicBookingByToken(
   return toPublic(row);
 }
 
-export async function getPublicHotel(
-  db: TimeDb,
-  hotelCode: string,
-): Promise<HotelIdentity> {
+export async function getPublicHotel(db: TimeDb, hotelCode: string): Promise<PublicHotel> {
   const code = typeof hotelCode === "string" ? hotelCode.trim().toLowerCase() : "";
   if (!code) throw new BookingError("hotel_not_found", 404, "hotel not found");
-  const rows = await db.query<{ code: string; name: string }>(
-    "select code, name from hotels where lower(code) = $1",
+  const rows = await db.query<{
+    id: string;
+    code: string;
+    name: string;
+    currency: string;
+    status: string;
+  }>(
+    `select id, code, name, btrim(currency) as currency, status
+       from hotels
+      where lower(code) = $1`,
     [code],
   );
   const row = rows[0];
   if (!row) throw new BookingError("hotel_not_found", 404, "hotel not found");
+  if (row.status !== "live") {
+    throw new BookingError("hotel_not_live", 409, "hotel is not live");
+  }
+  const destinations = await db.query<{
+    id: string;
+    kind: PublicDestination["kind"];
+    name: string;
+    amount_minor: number;
+    sort_order: number;
+  }>(
+    `select id, kind, name, amount_minor, sort_order
+       from hotel_destinations
+      where hotel_id = $1::uuid and active
+      order by sort_order, name`,
+    [row.id],
+  );
   try {
-    return hotelIdentity(row);
+    return {
+      ...hotelIdentity(row),
+      currency: row.currency,
+      destinations: destinations.map((dest) => ({
+        id: dest.id,
+        kind: dest.kind,
+        name: dest.name,
+        amountMinor: Number(dest.amount_minor),
+        sortOrder: Number(dest.sort_order),
+      })),
+    };
   } catch {
     throw new BookingError("hotel_not_found", 404, "hotel not found");
   }
 }
-

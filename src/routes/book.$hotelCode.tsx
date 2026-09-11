@@ -17,7 +17,14 @@ function BookHotel() {
   if (!result.ok) {
     return <UnknownHotel message={result.message || touristMessage("hotel_not_found")} />;
   }
-  return <GuestBook hotelCode={result.hotel.code} hotelName={result.hotel.name} />;
+  return (
+    <GuestBook
+      hotelCode={result.hotel.code}
+      hotelName={result.hotel.name}
+      currency={result.hotel.currency}
+      destinations={result.hotel.destinations}
+    />
+  );
 }
 
 function HotelLoading() {

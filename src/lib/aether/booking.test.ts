@@ -9,6 +9,11 @@ import {
   getPublicBookingByToken,
   type BookingDb,
 } from "./booking.ts";
+import {
+  CP14_DEFAULT_AMOUNT_MINOR,
+  CP14_DEFAULT_DESTINATION_NAME,
+  applyCp14LiveCatalog,
+} from "./cp14-fixture.ts";
 
 const FOUNDATION_SQL = readFileSync(
   new URL("../../../migrations/0002_foundation.sql", import.meta.url),
@@ -55,6 +60,7 @@ async function openDb(): Promise<{ db: BookingDb; pg: PGlite; hotelCode: string 
   await pg.exec(GUEST_SQL);
   await pg.exec(WHITE_SQL);
   await pg.exec(TENANCY_SQL);
+  const destinationIdByCode = await applyCp14LiveCatalog(pg);
 
   const query = async <T>(text: string, params?: unknown[]) => {
     const result = await pg.query<T>(text, params);
@@ -77,12 +83,13 @@ async function openDb(): Promise<{ db: BookingDb; pg: PGlite; hotelCode: string 
       });
     },
   };
-  return { db, pg, hotelCode: "gate" };
+  return { db, pg, hotelCode: "gate", destinationIdByCode };
 }
 
-function validInput(hotelCode: string, extra: Record<string, unknown> = {}) {
+function validInput(hotelCode: string, destinationId: string, extra: Record<string, unknown> = {}) {
   return {
     hotelCode,
+    destinationId,
     transferDate: "2026-01-15",
     pickupTime: "09:00",
     durationMinutes: 60,
@@ -92,7 +99,7 @@ function validInput(hotelCode: string, extra: Record<string, unknown> = {}) {
     passengerCount: 2,
     luggageCount: 1,
     pickupText: "Hotel lobby",
-    destinationText: "ATH airport",
+    destinationText: "client-supplied destination",
     ...extra,
   };
 }
@@ -110,14 +117,17 @@ async function expectCode(fn: () => Promise<unknown>, code: BookingError["code"]
 
 describe("Phase 4 booking engine", () => {
   test("unknown hotel is rejected", async () => {
-    const { db, pg } = await openDb();
-    await expectCode(() => createBooking(db, validInput("missing")), "hotel_not_found");
+    const { db, pg, destinationIdByCode } = await openDb();
+    await expectCode(
+      () => createBooking(db, validInput("missing", destinationIdByCode.gate!)),
+      "hotel_not_found",
+    );
     await pg.close();
   });
 
   test("valid booking persists with PT- reference and high-entropy token", async () => {
-    const { db, pg, hotelCode } = await openDb();
-    const created = await createBooking(db, validInput(hotelCode));
+    const { db, pg, hotelCode, destinationIdByCode } = await openDb();
+    const created = await createBooking(db, validInput(hotelCode, destinationIdByCode[hotelCode]!));
     assert.match(created.humanReference, /^PT-[A-Z2-9]{10}$/);
     assert.ok(created.confirmationToken.length >= 40);
     assert.equal(created.hotelCode, "gate");
@@ -126,9 +136,13 @@ describe("Phase 4 booking engine", () => {
     assert.equal(created.pickupTime, "09:00");
     assert.equal(created.durationMinutes, 60);
     assert.equal(created.cancelled, false);
-    assert.equal(created.pricing.priced, false);
-    assert.equal(created.pricing.currency, null);
-    assert.equal(created.pricing.amount, null);
+    assert.equal(created.destinationId, destinationIdByCode[hotelCode]);
+    assert.equal(created.destinationText, CP14_DEFAULT_DESTINATION_NAME);
+    assert.deepEqual(created.pricing, {
+      priced: true,
+      currency: "EUR",
+      amountMinor: CP14_DEFAULT_AMOUNT_MINOR,
+    });
     assert.equal("occupies" in created, false);
     assert.equal("vehicleId" in created, false);
     assert.equal("driverId" in created, false);
@@ -166,16 +180,17 @@ describe("Phase 4 booking engine", () => {
   });
 
   test("Athens civil-time validation uses the existing time domain", async () => {
-    const { db, pg, hotelCode } = await openDb();
+    const { db, pg, hotelCode, destinationIdByCode } = await openDb();
+    const destinationId = destinationIdByCode[hotelCode]!;
     await expectCode(
-      () => createBooking(db, validInput(hotelCode, { pickupTime: "24:00" })),
+      () => createBooking(db, validInput(hotelCode, destinationId, { pickupTime: "24:00" })),
       "invalid_time",
     );
     await expectCode(
       () =>
         createBooking(
           db,
-          validInput(hotelCode, { transferDate: "2026-03-29", pickupTime: "03:30" }),
+          validInput(hotelCode, destinationId, { transferDate: "2026-03-29", pickupTime: "03:30" }),
         ),
       "nonexistent",
     );
@@ -183,7 +198,7 @@ describe("Phase 4 booking engine", () => {
       () =>
         createBooking(
           db,
-          validInput(hotelCode, { transferDate: "2026-10-25", pickupTime: "03:30" }),
+          validInput(hotelCode, destinationId, { transferDate: "2026-10-25", pickupTime: "03:30" }),
         ),
       "ambiguous",
     );
@@ -191,45 +206,46 @@ describe("Phase 4 booking engine", () => {
   });
 
   test("duration 0 and >1440 reject; passenger/luggage/contact/location reject", async () => {
-    const { db, pg, hotelCode } = await openDb();
+    const { db, pg, hotelCode, destinationIdByCode } = await openDb();
+    const destinationId = destinationIdByCode[hotelCode]!;
     await expectCode(
-      () => createBooking(db, validInput(hotelCode, { durationMinutes: 0 })),
+      () => createBooking(db, validInput(hotelCode, destinationId, { durationMinutes: 0 })),
       "invalid_duration",
     );
     await expectCode(
-      () => createBooking(db, validInput(hotelCode, { durationMinutes: 1441 })),
+      () => createBooking(db, validInput(hotelCode, destinationId, { durationMinutes: 1441 })),
       "invalid_duration",
     );
     await expectCode(
-      () => createBooking(db, validInput(hotelCode, { passengerCount: 0 })),
+      () => createBooking(db, validInput(hotelCode, destinationId, { passengerCount: 0 })),
       "invalid_party",
     );
     await expectCode(
-      () => createBooking(db, validInput(hotelCode, { luggageCount: -1 })),
+      () => createBooking(db, validInput(hotelCode, destinationId, { luggageCount: -1 })),
       "invalid_party",
     );
     await expectCode(
-      () => createBooking(db, validInput(hotelCode, { guestEmail: "not-an-email" })),
+      () => createBooking(db, validInput(hotelCode, destinationId, { guestEmail: "not-an-email" })),
       "invalid_contact",
     );
     await expectCode(
-      () => createBooking(db, validInput(hotelCode, { guestPhone: "abc" })),
+      () => createBooking(db, validInput(hotelCode, destinationId, { guestPhone: "abc" })),
       "invalid_contact",
     );
     await expectCode(
-      () => createBooking(db, validInput(hotelCode, { pickupText: "  " })),
+      () => createBooking(db, validInput(hotelCode, destinationId, { pickupText: "  " })),
       "invalid_location",
     );
     await expectCode(
-      () => createBooking(db, validInput(hotelCode, { destinationText: "" })),
-      "invalid_location",
+      () => createBooking(db, validInput(hotelCode, destinationId, { destinationId: "" })),
+      "invalid_destination",
     );
     await pg.close();
   });
 
   test("public lookup is token-only; reference-only lookup fails", async () => {
-    const { db, pg, hotelCode } = await openDb();
-    const created = await createBooking(db, validInput(hotelCode));
+    const { db, pg, hotelCode, destinationIdByCode } = await openDb();
+    const created = await createBooking(db, validInput(hotelCode, destinationIdByCode[hotelCode]!));
     const found = await getPublicBookingByToken(db, created.confirmationToken);
     assert.equal(found.humanReference, created.humanReference);
     assert.equal("confirmationToken" in found, false);
@@ -247,8 +263,9 @@ describe("Phase 4 booking engine", () => {
   });
 
   test("idempotent create returns the same booking and does not duplicate", async () => {
-    const { db, pg, hotelCode } = await openDb();
-    const input = validInput(hotelCode, { idempotencyKey: "guest-key-1" });
+    const { db, pg, hotelCode, destinationIdByCode } = await openDb();
+    const destinationId = destinationIdByCode[hotelCode]!;
+    const input = validInput(hotelCode, destinationId, { idempotencyKey: "guest-key-1" });
     const first = await createBooking(db, input);
     const second = await createBooking(db, input);
     assert.equal(second.confirmationToken, first.confirmationToken);
@@ -260,7 +277,7 @@ describe("Phase 4 booking engine", () => {
       () =>
         createBooking(
           db,
-          validInput(hotelCode, {
+          validInput(hotelCode, destinationId, {
             idempotencyKey: "guest-key-1",
             pickupTime: "10:00",
           }),
@@ -273,9 +290,10 @@ describe("Phase 4 booking engine", () => {
   });
 
   test("two creates without a key are distinct; tokens unique", async () => {
-    const { db, pg, hotelCode } = await openDb();
-    const a = await createBooking(db, validInput(hotelCode));
-    const b = await createBooking(db, validInput(hotelCode));
+    const { db, pg, hotelCode, destinationIdByCode } = await openDb();
+    const destinationId = destinationIdByCode[hotelCode]!;
+    const a = await createBooking(db, validInput(hotelCode, destinationId));
+    const b = await createBooking(db, validInput(hotelCode, destinationId));
     assert.notEqual(a.confirmationToken, b.confirmationToken);
     assert.notEqual(a.humanReference, b.humanReference);
     assert.ok(a.humanReference.startsWith(HUMAN_REFERENCE_PREFIX));

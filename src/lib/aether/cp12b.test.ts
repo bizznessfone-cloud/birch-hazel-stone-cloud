@@ -24,6 +24,7 @@ import {
   neonPoolSettings,
 } from "./runtime-config.ts";
 import { AETHER_RUNTIME_ROLE } from "./runtime-role.ts";
+import { applyCp14LiveCatalog } from "./cp14-fixture.ts";
 
 const SQL_FILES = [
   "0002_foundation.sql",
@@ -159,8 +160,10 @@ describe("CP12B production hardening", () => {
 
   test("valid public booking still works; lookup DTO omits PII and token", async () => {
     const { db, pg } = await openDb();
+    const destinations = await applyCp14LiveCatalog(pg);
     const created = await createBooking(db, {
       hotelCode: "gate",
+      destinationId: destinations.gate!,
       transferDate: "2026-01-15",
       pickupTime: "09:00",
       durationMinutes: 60,
@@ -181,6 +184,7 @@ describe("CP12B production hardening", () => {
 
     const again = await createBooking(db, {
       hotelCode: "gate",
+      destinationId: destinations.gate!,
       transferDate: "2026-01-15",
       pickupTime: "09:00",
       durationMinutes: 60,

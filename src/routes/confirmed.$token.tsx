@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { getPublicBooking } from "@/lib/aether/booking-fns";
-import { touristMessage } from "@/lib/aether/guest";
+import { formatQuotedPrice, touristMessage } from "@/lib/aether/guest";
 import { GuestHeader } from "@/components/aether/guest-header";
 import { ThemeToggle } from "@/components/aether/theme-toggle";
 import type { PublicBooking } from "@/lib/aether/booking";
@@ -47,6 +47,11 @@ function MissingBooking({ message }: { message: string }) {
   );
 }
 
+function priceLabel(booking: PublicBooking): string {
+  if (!booking.pricing.priced) return "To be confirmed";
+  return formatQuotedPrice(booking.pricing.currency, booking.pricing.amountMinor);
+}
+
 function ConfirmationCard({ booking }: { booking: PublicBooking }) {
   return (
     <div className="flex min-h-dvh flex-col bg-canvas text-ink">
@@ -68,10 +73,7 @@ function ConfirmationCard({ booking }: { booking: PublicBooking }) {
           <Row label="Destination" value={booking.destinationText} />
           <Row label="Party" value={`${booking.passengerCount} passengers · ${booking.luggageCount} bags`} />
           <Row label="Guest" value={booking.guestName} />
-          <Row
-            label="Price"
-            value={booking.pricing.priced ? "Confirmed" : "To be confirmed"}
-          />
+          <Row label="Price" value={priceLabel(booking)} />
         </dl>
         <Link
           to="/book/$hotelCode"

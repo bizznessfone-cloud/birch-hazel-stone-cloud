@@ -20,6 +20,7 @@ import {
 import { createOperator } from "./ops-auth.ts";
 import { legacyDispatcherScope } from "./tenancy.ts";
 import { AETHER_DATABASE_OWNER_URL_ENV, AETHER_RUNTIME_ROLE } from "./runtime-role.ts";
+import { applyCp14LiveCatalog } from "./cp14-fixture.ts";
 
 const SQL_FILES = [
   "0002_foundation.sql",
@@ -127,9 +128,10 @@ async function occupancyIntact(pg: Pg): Promise<void> {
   assert.equal(objects.rows[0]!.n, 5);
 }
 
-function bookingInput(email: string, pickupTime = "09:00") {
+function bookingInput(email: string, destinationId: string, pickupTime = "09:00") {
   return {
     hotelCode: "gate",
+    destinationId,
     transferDate: "2026-01-15",
     pickupTime,
     durationMinutes: 60,
@@ -296,11 +298,12 @@ describe("Phase 10 production hardening", () => {
 
   test("runtime role may DML; occupies trigger and 23P01 remain authority", async () => {
     const { pg, db } = await openDb();
+    const destinations = await applyCp14LiveCatalog(pg);
     await asRuntime(pg, async () => {
       const who = await pg.query<{ current_user: string }>("select current_user");
       assert.equal(who.rows[0]!.current_user, AETHER_RUNTIME_ROLE);
 
-      const created = await createBooking(db, bookingInput("ada@example.com"));
+      const created = await createBooking(db, bookingInput("ada@example.com", destinations.gate!));
       const row = await pg.query<{ occupies: string; id: string }>(
         "select id, occupies::text as occupies from bookings where confirmation_token = $1",
         [created.confirmationToken],
@@ -343,7 +346,7 @@ describe("Phase 10 production hardening", () => {
 
       const other = await createBooking(
         db,
-        bookingInput("other@example.com", "09:00"),
+        bookingInput("other@example.com", destinations.gate!, "09:00"),
       );
       const otherId = await pg.query<{ id: string }>(
         "select id from bookings where confirmation_token = $1",
@@ -373,6 +376,7 @@ describe("Phase 10 production hardening", () => {
 
   test("runtime cancellation and unassignment still release occupancy", async () => {
     const { pg, db } = await openDb();
+    const destinations = await applyCp14LiveCatalog(pg);
     await asRuntime(pg, async () => {
       const operator = await createOperator(db, "desk", "desk-pass", {
         N: 16,
@@ -385,7 +389,7 @@ describe("Phase 10 production hardening", () => {
       );
       const vehicleId = vehicles.rows[0]!.id;
 
-      const first = await createBooking(db, bookingInput("one@example.com", "13:00"));
+      const first = await createBooking(db, bookingInput("one@example.com", destinations.gate!, "13:00"));
       const firstId = (
         await pg.query<{ id: string }>(
           "select id from bookings where confirmation_token = $1",
@@ -399,7 +403,7 @@ describe("Phase 10 production hardening", () => {
       });
       await unassignVehicle(db, { bookingId: firstId, scope });
 
-      const second = await createBooking(db, bookingInput("two@example.com", "13:00"));
+      const second = await createBooking(db, bookingInput("two@example.com", destinations.gate!, "13:00"));
       const secondId = (
         await pg.query<{ id: string }>(
           "select id from bookings where confirmation_token = $1",

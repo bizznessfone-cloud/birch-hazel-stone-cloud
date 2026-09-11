@@ -37,6 +37,7 @@ import {
   grantProviderDispatcher,
   type OpsScope,
 } from "./tenancy.ts";
+import { applyCp14LiveCatalog } from "./cp14-fixture.ts";
 
 const SQL_FILES = [
   "0002_foundation.sql",
@@ -70,13 +71,14 @@ function memoryJar(): CookieJar & { store: Map<string, StoredCookie> } {
   };
 }
 
-async function openDb() {
+async function openDb(opts: { live?: boolean } = {}) {
   const { btree_gist } = await import("@electric-sql/pglite/contrib/btree_gist");
   const pg = new PGlite({ extensions: { btree_gist } });
   await pg.waitReady;
   for (const name of SQL_FILES) {
     await pg.exec(readFileSync(new URL(`../../../migrations/${name}`, import.meta.url), "utf8"));
   }
+  const destinations = opts.live ? await applyCp14LiveCatalog(pg) : ({} as Record<string, string>);
   const db: BookingDb = {
     query: async <T>(text: string, params?: unknown[]) => (await pg.query<T>(text, params)).rows,
     async transaction<T>(fn: (inner: BookingDb) => Promise<T>) {
@@ -91,7 +93,7 @@ async function openDb() {
       });
     },
   };
-  return { db, pg };
+  return { db, pg, destinations };
 }
 
 function envFor(db: BookingDb, jar: CookieJar): AuthEnv {
@@ -133,18 +135,27 @@ async function deskScope(db: BookingDb, login: string, hotelId: string): Promise
   };
 }
 
-const guest = {
-  transferDate: "2026-03-10",
-  pickupTime: "10:00",
-  durationMinutes: 60,
-  guestName: "Nikos",
-  guestPhone: "+302101111111",
-  guestEmail: "n@example.com",
-  passengerCount: 1,
-  luggageCount: 0,
-  pickupText: "Hotel",
-  destinationText: "ATH",
-};
+function guestInput(
+  hotelCode: string,
+  destinations: Record<string, string>,
+  extra: Record<string, unknown> = {},
+) {
+  return {
+    hotelCode,
+    destinationId: destinations[hotelCode],
+    transferDate: "2026-03-10",
+    pickupTime: "10:00",
+    durationMinutes: 60,
+    guestName: "Nikos",
+    guestPhone: "+302101111111",
+    guestEmail: "n@example.com",
+    passengerCount: 1,
+    luggageCount: 0,
+    pickupText: "Hotel",
+    destinationText: "ATH",
+    ...extra,
+  };
+}
 
 describe("CP12 tenancy", () => {
   test("0012 backfills legacy provider, agreements, and fleet without inventing hotel ownership", async () => {
@@ -173,8 +184,8 @@ describe("CP12 tenancy", () => {
   });
 
   test("public booking stamps executing_provider_id; hotel without agreement fails", async () => {
-    const { db, pg } = await openDb();
-    const created = await createBooking(db, { hotelCode: "gate", ...guest });
+    const { db, pg, destinations } = await openDb({ live: true });
+    const created = await createBooking(db, guestInput("gate", destinations));
     const row = await db.query<{ executing_provider_id: string; hotel_code: string }>(
       `select b.executing_provider_id, h.code as hotel_code
          from bookings b join hotels h on h.id = b.hotel_id
@@ -187,24 +198,39 @@ describe("CP12 tenancy", () => {
     assert.equal("executingProviderId" in created, false);
 
     await db.query("insert into hotels (code, name) values ('orphan', 'Orphan Hotel')");
+    await db.query("update hotels set status = 'live' where code = 'orphan'");
+    const orphan = (await db.query<{ id: string }>("select id from hotels where code = 'orphan'"))[0]!;
+    const orphanDest = (
+      await db.query<{ id: string }>(
+        `insert into hotel_destinations (hotel_id, kind, name, sort_order, amount_minor)
+         values ($1::uuid, 'airport', 'ORPHAN', 10, 1000)
+         returning id`,
+        [orphan.id],
+      )
+    )[0]!;
     await assert.rejects(
-      () => createBooking(db, { hotelCode: "orphan", ...guest, guestEmail: "o@example.com" }),
+      () =>
+        createBooking(
+          db,
+          guestInput("orphan", { orphan: orphanDest.id }, { guestEmail: "o@example.com" }),
+        ),
       (err: unknown) => err instanceof Error && (err as { code?: string }).code === "no_provider",
     );
     await pg.close();
   });
 
   test("hotel A desk cannot see hotel B PII or list fleet", async () => {
-    const { db, pg } = await openDb();
+    const { db, pg, destinations } = await openDb({ live: true });
     const hotels = await db.query<{ id: string; code: string }>("select id, code from hotels");
     const gate = hotels.find((h) => h.code === "gate")!;
-    const a = await createBooking(db, { hotelCode: "gate", ...guest });
-    const b = await createBooking(db, {
-      hotelCode: "harbor",
-      ...guest,
-      guestName: "Harbor Guest",
-      guestEmail: "harbor@example.com",
-    });
+    const a = await createBooking(db, guestInput("gate", destinations));
+    const b = await createBooking(
+      db,
+      guestInput("harbor", destinations, {
+        guestName: "Harbor Guest",
+        guestEmail: "harbor@example.com",
+      }),
+    );
     const aId = (
       await db.query<{ id: string }>("select id from bookings where confirmation_token = $1", [
         a.confirmationToken,
@@ -245,7 +271,7 @@ describe("CP12 tenancy", () => {
   });
 
   test("provider X cannot use provider Y assets or see Y bookings", async () => {
-    const { db, pg } = await openDb();
+    const { db, pg, destinations } = await openDb({ live: true });
     const other = await db.query<{ id: string }>(
       "insert into providers (code, name, kind) values ('otherops', 'Other Ops', 'external') returning id",
     );
@@ -260,7 +286,10 @@ describe("CP12 tenancy", () => {
        values ('Y Driver', $1::uuid, $1::uuid) returning id`,
       [otherId],
     );
-    const created = await createBooking(db, { hotelCode: "gate", ...guest, guestEmail: "xy@example.com" });
+    const created = await createBooking(
+      db,
+      guestInput("gate", destinations, { guestEmail: "xy@example.com" }),
+    );
     const bookingId = (
       await db.query<{ id: string }>("select id from bookings where confirmation_token = $1", [
         created.confirmationToken,
@@ -302,12 +331,12 @@ describe("CP12 tenancy", () => {
   });
 
   test("one provider serving A/B still isolates hotel desks", async () => {
-    const { db, pg } = await openDb();
+    const { db, pg, destinations } = await openDb({ live: true });
     const hotels = await db.query<{ id: string; code: string }>("select id, code from hotels");
     const gate = hotels.find((h) => h.code === "gate")!;
     const harbor = hotels.find((h) => h.code === "harbor")!;
-    await createBooking(db, { hotelCode: "gate", ...guest, guestEmail: "ga@example.com" });
-    await createBooking(db, { hotelCode: "harbor", ...guest, guestEmail: "hb@example.com" });
+    await createBooking(db, guestInput("gate", destinations, { guestEmail: "ga@example.com" }));
+    await createBooking(db, guestInput("harbor", destinations, { guestEmail: "hb@example.com" }));
     const legacy = (await db.query<{ id: string }>("select id from providers where code = 'legacy'"))[0]!.id;
     const dispatcher = await dispatcherScope(db, "shared-disp", legacy);
     const board = await loadTodayBoard(db, dispatcher);
@@ -325,7 +354,7 @@ describe("CP12 tenancy", () => {
   });
 
   test("ownership models 1–3 allow dispatch only for the operating provider", async () => {
-    const { db, pg } = await openDb();
+    const { db, pg, destinations } = await openDb({ live: true });
     const hotel = (await db.query<{ id: string }>("select id from hotels where code = 'gate'"))[0]!;
     const inHouse = (
       await db.query<{ id: string }>(
@@ -386,7 +415,10 @@ describe("CP12 tenancy", () => {
         [external.id],
       )
     )[0]!;
-    const created = await createBooking(db, { hotelCode: "gate", ...guest, guestEmail: "m@example.com" });
+    const created = await createBooking(
+      db,
+      guestInput("gate", destinations, { guestEmail: "m@example.com" }),
+    );
     const bookingId = (
       await db.query<{ id: string }>("select id from bookings where confirmation_token = $1", [
         created.confirmationToken,
@@ -411,12 +443,13 @@ describe("CP12 tenancy", () => {
       "insert into hotel_provider_agreements (hotel_id, provider_id, active) values ($1::uuid, $2::uuid, true)",
       [hotel.id, external.id],
     );
-    const created2 = await createBooking(db, {
-      hotelCode: "gate",
-      ...guest,
-      guestEmail: "m2@example.com",
-      pickupTime: "12:00",
-    });
+    const created2 = await createBooking(
+      db,
+      guestInput("gate", destinations, {
+        guestEmail: "m2@example.com",
+        pickupTime: "12:00",
+      }),
+    );
     const bookingId2 = (
       await db.query<{ id: string }>("select id from bookings where confirmation_token = $1", [
         created2.confirmationToken,
@@ -440,7 +473,7 @@ describe("CP12 tenancy", () => {
   });
 
   test("provider may assign operated assets but may only modify owned/employed ones", async () => {
-    const { db, pg } = await openDb();
+    const { db, pg, destinations } = await openDb({ live: true });
     const hotel = (await db.query<{ id: string }>("select id from hotels where code = 'gate'"))[0]!;
     const operator = (
       await db.query<{ id: string }>(
@@ -524,7 +557,10 @@ describe("CP12 tenancy", () => {
     assert.equal(driverAfter[0]?.name, "Hotel Driver");
     assert.equal(driverAfter[0]?.active, true);
 
-    const created = await createBooking(db, { hotelCode: "gate", ...guest, guestEmail: "own@example.com" });
+    const created = await createBooking(
+      db,
+      guestInput("gate", destinations, { guestEmail: "own@example.com" }),
+    );
     const bookingId = (
       await db.query<{ id: string }>("select id from bookings where confirmation_token = $1", [
         created.confirmationToken,
@@ -566,7 +602,7 @@ describe("CP12 tenancy", () => {
   });
 
   test("membership failures: missing, inactive, wrong class, ambiguous login", async () => {
-    const { db, pg } = await openDb();
+    const { db, pg, destinations } = await openDb({ live: true });
     const operator = await createOperator(db, "nomem", "correct-horse", FAST);
     const jar = memoryJar();
     await assert.rejects(
@@ -588,7 +624,10 @@ describe("CP12 tenancy", () => {
       (err: unknown) => err instanceof OpsAuthError && err.code === "ambiguous_membership",
     );
     const desk = await deskScope(db, "status-desk", hotel.id);
-    const created = await createBooking(db, { hotelCode: "gate", ...guest, guestEmail: "st@example.com" });
+    const created = await createBooking(
+      db,
+      guestInput("gate", destinations, { guestEmail: "st@example.com" }),
+    );
     const bookingId = (
       await db.query<{ id: string }>("select id from bookings where confirmation_token = $1", [
         created.confirmationToken,
@@ -608,9 +647,12 @@ describe("CP12 tenancy", () => {
   });
 
   test("hotel desk can cancel own booking; occupancy still releases; login binds single membership", async () => {
-    const { db, pg } = await openDb();
+    const { db, pg, destinations } = await openDb({ live: true });
     const hotel = (await db.query<{ id: string }>("select id from hotels where code = 'gate'"))[0]!;
-    const created = await createBooking(db, { hotelCode: "gate", ...guest, guestEmail: "cx@example.com" });
+    const created = await createBooking(
+      db,
+      guestInput("gate", destinations, { guestEmail: "cx@example.com" }),
+    );
     const bookingId = (
       await db.query<{ id: string }>("select id from bookings where confirmation_token = $1", [
         created.confirmationToken,
@@ -635,16 +677,20 @@ describe("CP12 tenancy", () => {
   });
 
   test("occupancy EXCLUDE still rejects overlapping dispatch on same vehicle", async () => {
-    const { db, pg } = await openDb();
+    const { db, pg, destinations } = await openDb({ live: true });
     const legacy = (await db.query<{ id: string }>("select id from providers where code = 'legacy'"))[0]!;
     const van = (await db.query<{ id: string }>("select id from vehicles limit 1"))[0]!;
-    const a = await createBooking(db, { hotelCode: "gate", ...guest, guestEmail: "oa@example.com" });
-    const b = await createBooking(db, {
-      hotelCode: "gate",
-      ...guest,
-      guestEmail: "ob@example.com",
-      pickupTime: "10:30",
-    });
+    const a = await createBooking(
+      db,
+      guestInput("gate", destinations, { guestEmail: "oa@example.com" }),
+    );
+    const b = await createBooking(
+      db,
+      guestInput("gate", destinations, {
+        guestEmail: "ob@example.com",
+        pickupTime: "10:30",
+      }),
+    );
     const idA = (
       await db.query<{ id: string }>("select id from bookings where confirmation_token = $1", [
         a.confirmationToken,

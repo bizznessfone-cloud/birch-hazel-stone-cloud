@@ -14,6 +14,7 @@ import {
 } from "./inventory.ts";
 import { createOperator } from "./ops-auth.ts";
 import { ensureLegacyDispatcherMembership, type OpsScope } from "./tenancy.ts";
+import { applyCp14LiveCatalog } from "./cp14-fixture.ts";
 
 const FOUNDATION_SQL = readFileSync(
   new URL("../../../migrations/0002_foundation.sql", import.meta.url),
@@ -75,6 +76,7 @@ async function openDb() {
   await pg.exec(WHITE_SQL);
   await pg.exec(HARDENING_SQL);
   await pg.exec(TENANCY_SQL);
+  const destinations = await applyCp14LiveCatalog(pg);
   const v1 = await pg.query<{ id: string }>("select id from vehicles where name = 'Van 1'");
   const v2 = await pg.query<{ id: string }>("select id from vehicles where name = 'Saloon 1'");
   const d1 = await pg.query<{ id: string }>("select id from drivers where name = 'Driver 1'");
@@ -123,15 +125,18 @@ async function openDb() {
     driver1: d1.rows[0]!.id,
     driver2: d2.rows[0]!.id,
     scope,
+    destinations,
   };
 }
 
 async function book(
   db: BookingDb,
+  destinationId: string,
   extra: Record<string, unknown> = {},
 ): Promise<string> {
   const created = await createBooking(db, {
     hotelCode: "gate",
+    destinationId,
     transferDate: "2026-01-15",
     pickupTime: "09:00",
     durationMinutes: 60,
@@ -166,7 +171,7 @@ async function expectCode(fn: () => Promise<unknown>, code: InventoryError["code
 describe("Phase 5 inventory assignment", () => {
   test("vehicle and driver assign/unassign independently", async () => {
     const ctx = await openDb();
-    const id = await book(ctx.db);
+    const id = await book(ctx.db, ctx.destinations.gate!);
     const withVehicle = await assignVehicle(ctx.db, {
       bookingId: id,
       vehicleId: ctx.vehicle1,
@@ -201,7 +206,7 @@ describe("Phase 5 inventory assignment", () => {
 
   test("inactive or missing resources are rejected", async () => {
     const ctx = await openDb();
-    const id = await book(ctx.db);
+    const id = await book(ctx.db, ctx.destinations.gate!);
     await ctx.pg.exec(`update vehicles set active = false where id = '${ctx.vehicle1}'`);
     await expectCode(
       () =>
@@ -226,9 +231,9 @@ describe("Phase 5 inventory assignment", () => {
 
   test("vehicle overlap is unavailable; [) adjacency is allowed", async () => {
     const ctx = await openDb();
-    const a = await book(ctx.db, { pickupTime: "09:00" });
-    const adjacent = await book(ctx.db, { pickupTime: "10:00" });
-    const overlap = await book(ctx.db, { pickupTime: "09:59" });
+    const a = await book(ctx.db, ctx.destinations.gate!, { pickupTime: "09:00" });
+    const adjacent = await book(ctx.db, ctx.destinations.gate!, { pickupTime: "10:00" });
+    const overlap = await book(ctx.db, ctx.destinations.gate!, { pickupTime: "09:59" });
     await assignVehicle(ctx.db, {
       bookingId: a,
       vehicleId: ctx.vehicle1,
@@ -260,8 +265,8 @@ describe("Phase 5 inventory assignment", () => {
 
   test("driver overlap is independent of vehicle", async () => {
     const ctx = await openDb();
-    const a = await book(ctx.db, { pickupTime: "11:00" });
-    const b = await book(ctx.db, { pickupTime: "11:00" });
+    const a = await book(ctx.db, ctx.destinations.gate!, { pickupTime: "11:00" });
+    const b = await book(ctx.db, ctx.destinations.gate!, { pickupTime: "11:00" });
     await assignDriver(ctx.db, {
       bookingId: a,
       driverId: ctx.driver1,
@@ -293,8 +298,8 @@ describe("Phase 5 inventory assignment", () => {
 
   test("cancellation releases occupancy so the resource can be reused", async () => {
     const ctx = await openDb();
-    const a = await book(ctx.db);
-    const b = await book(ctx.db);
+    const a = await book(ctx.db, ctx.destinations.gate!);
+    const b = await book(ctx.db, ctx.destinations.gate!);
     await assignVehicle(ctx.db, {
       bookingId: a,
       vehicleId: ctx.vehicle1,
@@ -344,8 +349,8 @@ describe("Phase 5 inventory assignment", () => {
 
   test("unassignment releases only the unassigned resource", async () => {
     const ctx = await openDb();
-    const a = await book(ctx.db);
-    const b = await book(ctx.db);
+    const a = await book(ctx.db, ctx.destinations.gate!);
+    const b = await book(ctx.db, ctx.destinations.gate!);
     await assignVehicle(ctx.db, {
       bookingId: a,
       vehicleId: ctx.vehicle1,
@@ -377,7 +382,7 @@ describe("Phase 5 inventory assignment", () => {
 
   test("status change is an operational label with an audit row", async () => {
     const ctx = await openDb();
-    const id = await book(ctx.db);
+    const id = await book(ctx.db, ctx.destinations.gate!);
     const updated = await setBookingStatus(ctx.db, {
       bookingId: id,
       status: "confirmed",
@@ -395,7 +400,7 @@ describe("Phase 5 inventory assignment", () => {
 
   test("assignment mutations write operator audit events", async () => {
     const ctx = await openDb();
-    const id = await book(ctx.db);
+    const id = await book(ctx.db, ctx.destinations.gate!);
     await assignVehicle(ctx.db, {
       bookingId: id,
       vehicleId: ctx.vehicle1,
@@ -424,8 +429,8 @@ describe("Phase 5 inventory assignment", () => {
 
   test("PGLite (not Neon): overlapping assign rolls back; EXCLUDE remains authority", async () => {
     const ctx = await openDb();
-    const a = await book(ctx.db, { pickupTime: "14:00" });
-    const b = await book(ctx.db, { pickupTime: "14:00" });
+    const a = await book(ctx.db, ctx.destinations.gate!, { pickupTime: "14:00" });
+    const b = await book(ctx.db, ctx.destinations.gate!, { pickupTime: "14:00" });
     await assignVehicle(ctx.db, {
       bookingId: a,
       vehicleId: ctx.vehicle1,

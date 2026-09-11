@@ -14,6 +14,7 @@ import {
   type CreateBookingInput,
   type CreatedBooking,
   type PublicBooking,
+  type PublicHotel,
 } from "./booking";
 import { assertGuestCreateRateLimit, hashGuestClientKey } from "./guest-rate-limit";
 
@@ -66,9 +67,9 @@ export async function getPublicBookingFromRequest(token: string): Promise<Public
   return getPublicBookingByTokenEngine(await appDb(), token);
 }
 
-export async function getPublicHotelFromRequest(hotelCode: string) {
+export async function getPublicHotelFromRequest(hotelCode: string): Promise<PublicHotel> {
   return getPublicHotelEngine(await appDb(), hotelCode);
 }
 
 export { BookingError } from "./booking";
-export type { CreateBookingInput, CreatedBooking, PublicBooking } from "./booking";
+export type { CreateBookingInput, CreatedBooking, PublicBooking, PublicHotel } from "./booking";

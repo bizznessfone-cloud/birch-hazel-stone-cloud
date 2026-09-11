@@ -1,6 +1,6 @@
 /**
  * Guest UX helpers. No operator auth. Token is the only booking credential.
- * Pricing stays unpriced. Vehicle cards are informational, not inventory SKUs.
+ * Vehicle cards are informational, not inventory SKUs.
  */
 import type { BookingErrorCode } from "./booking.ts";
 
@@ -13,6 +13,7 @@ export type Direction = "from_hotel" | "to_hotel";
 export type GuestDraft = {
   direction: Direction;
   placeKind: PlaceKind;
+  destinationId: string | null;
   pickupText: string;
   destinationText: string;
   transferDate: string;
@@ -30,6 +31,7 @@ export function emptyDraft(hotelName: string): GuestDraft {
   return {
     direction: "from_hotel",
     placeKind: "airport",
+    destinationId: null,
     pickupText: hotelName,
     destinationText: "",
     transferDate: "",
@@ -48,17 +50,21 @@ export function applyDirection(
   draft: GuestDraft,
   direction: Direction,
   hotelName: string,
+  destinationName?: string,
 ): GuestDraft {
+  const other = (destinationName ?? draft.destinationText).trim();
   if (direction === "from_hotel") {
-    return { ...draft, direction, pickupText: hotelName, destinationText: "" };
+    return { ...draft, direction, pickupText: hotelName, destinationText: other };
   }
-  return { ...draft, direction, pickupText: "", destinationText: hotelName };
+  return { ...draft, direction, pickupText: other, destinationText: hotelName };
 }
 
 export function touristMessage(code: string, fallback?: string): string {
   switch (code as BookingErrorCode | "server_error") {
     case "hotel_not_found":
       return "We could not find this booking page.";
+    case "hotel_not_live":
+      return "Transfers are not available for this hotel yet.";
     case "invalid_time":
       return "Please choose a valid date and time.";
     case "nonexistent":
@@ -73,6 +79,8 @@ export function touristMessage(code: string, fallback?: string): string {
       return "Please check name, phone and email.";
     case "invalid_location":
       return "Please add a pickup and destination.";
+    case "invalid_destination":
+      return "Please choose a destination from the list.";
     case "not_found":
       return "We could not find that booking.";
     case "no_provider":
@@ -111,6 +119,10 @@ export function vehicleHint(passengers: number, luggage: number): VehicleHint {
     title: "Saloon",
     note: "A standard car is usually comfortable for this party. The hotel assigns the actual car.",
   };
+}
+
+export function formatQuotedPrice(currency: string, amountMinor: number): string {
+  return `${currency} ${(amountMinor / 100).toFixed(2)}`;
 }
 
 export { hotelMarkLetters } from "./hotel.ts";

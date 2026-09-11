@@ -39,6 +39,7 @@ import {
   listOpsVehicles,
   upsertDriver,
 } from "./ops-desk.ts";
+import { applyCp14LiveCatalog } from "./cp14-fixture.ts";
 
 const SQL_FILES = [
   "0002_foundation.sql",
@@ -58,6 +59,7 @@ const SQL_FILES = [
 
 const PUBLIC_DTO_KEYS = [
   "cancelled",
+  "destinationId",
   "destinationText",
   "durationMinutes",
   "guestName",
@@ -208,6 +210,24 @@ const MATRIX: Array<{ file: string; titles: string[] }> = [
       "aether_app has production DML and is denied occupancy DDL and meta writes",
     ],
   },
+  {
+    file: "cp14.1.test.ts",
+    titles: [
+      "0011–0014 remain byte-identical; 0015 does not rewrite occupancy",
+      "existing hotels migrate unconfigured with Athens/EUR defaults",
+    ],
+  },
+  {
+    file: "cp14.2.test.ts",
+    titles: [
+      "LIVE hotel + active destination creates a quoted booking",
+      "client cannot spoof amount or currency",
+      "destination is hotel-scoped; inactive and foreign destinations reject",
+      "non-LIVE hotel cannot create a public booking",
+      "idempotency distinguishes destination and quote changes",
+      "confirmation DTO exposes price; legacy unquoted lookup remains valid",
+    ],
+  },
 ];
 
 async function openDb() {
@@ -240,9 +260,14 @@ async function openDb() {
   return { db, pg };
 }
 
-function bookingInput(hotelCode: string, extra: Record<string, unknown> = {}) {
+function bookingInput(
+  hotelCode: string,
+  destinationId: string,
+  extra: Record<string, unknown> = {},
+) {
   return {
     hotelCode,
+    destinationId,
     transferDate: "2026-01-15",
     pickupTime: "09:00",
     durationMinutes: 60,
@@ -343,10 +368,13 @@ describe("Phase 9 full test reconstruction", () => {
     assert.match(occupancy, /tstzrange/);
     assert.match(occupancy, /'\[\)'/);
 
-    const later = ["0008_guest_ux.sql", "0009_ops_desk.sql", "0010_hotel_white_label.sql", "0011_production_hardening.sql", "0012_cp12_tenancy.sql", "0013_cp12b_runtime_login.sql", "0014_cp13a_production_app_role.sql"]
+    const later = ["0008_guest_ux.sql", "0009_ops_desk.sql", "0010_hotel_white_label.sql", "0011_production_hardening.sql", "0012_cp12_tenancy.sql", "0013_cp12b_runtime_login.sql", "0014_cp13a_production_app_role.sql", "0015_cp14_hotel_configuration.sql"]
       .map((name) => readAether(`../../../migrations/${name}`))
       .join("\n");
-    assert.doesNotMatch(later, /drop trigger|drop function aether_athens|drop constraint bookings_/i);
+    assert.doesNotMatch(
+      later,
+      /drop trigger bookings_occupies_before|drop function aether_athens|drop constraint bookings_vehicle_occupancy_excl|drop constraint bookings_driver_occupancy_excl/i,
+    );
 
     const bookingInsert = readAether("./booking.ts");
     const insert = bookingInsert.slice(
@@ -405,6 +433,7 @@ describe("Phase 9 full test reconstruction", () => {
 
   test("guest complete journey persists and token confirmation works", async () => {
     const { db, pg } = await openDb();
+    const destinations = await applyCp14LiveCatalog(pg);
     let draft = emptyDraft("Gate Hotel");
     assert.equal(draft.direction, "from_hotel");
     assert.equal(draft.pickupText, "Gate Hotel");
@@ -414,6 +443,7 @@ describe("Phase 9 full test reconstruction", () => {
     draft = {
       ...draft,
       placeKind: "airport",
+      destinationId: destinations.gate!,
       destinationText: "ATH airport",
       transferDate: "2026-01-15",
       pickupTime: "09:00",
@@ -428,6 +458,7 @@ describe("Phase 9 full test reconstruction", () => {
 
     const created = await createBooking(db, {
       hotelCode: "gate",
+      destinationId: destinations.gate!,
       transferDate: draft.transferDate,
       pickupTime: draft.pickupTime,
       durationMinutes: draft.durationMinutes,
@@ -446,7 +477,8 @@ describe("Phase 9 full test reconstruction", () => {
     assert.equal("specialRequirements" in created, false);
     assert.equal("guestPhone" in created, false);
     assert.equal("guestEmail" in created, false);
-    assert.equal(created.pricing.priced, false);
+    assert.equal(created.pricing.priced, true);
+    assert.equal(created.destinationId, destinations.gate);
 
     const found = await getPublicBookingByToken(db, created.confirmationToken);
     assert.equal(found.humanReference, created.humanReference);
@@ -475,7 +507,8 @@ describe("Phase 9 full test reconstruction", () => {
 
   test("ops desk list/detail/audit/fleet and Phase 7 assignment cycle", async () => {
     const { db, pg } = await openDb();
-    const created = await createBooking(db, bookingInput("gate"));
+    const destinations = await applyCp14LiveCatalog(pg);
+    const created = await createBooking(db, bookingInput("gate", destinations.gate!));
     const id = await bookingId(db, created.confirmationToken);
     const operator = await createOperator(db, "desk", "desk-pass", { N: 16, r: 8, p: 1 });
     const scope = await legacyDispatcherScope(db, operator.id, operator.login);
@@ -534,7 +567,7 @@ describe("Phase 9 full test reconstruction", () => {
 
     const other = await createBooking(
       db,
-      bookingInput("harbor", { guestName: "Ben Harbor", guestEmail: "ben@example.com" }),
+      bookingInput("harbor", destinations.harbor!, { guestName: "Ben Harbor", guestEmail: "ben@example.com" }),
     );
     const otherId = await bookingId(db, other.confirmationToken);
     await assignVehicle(db, {
@@ -557,6 +590,7 @@ describe("Phase 9 full test reconstruction", () => {
   test("PGLite concurrent overlapping assigns yield one winner; Neon unverified", async () => {
     assert.equal(process.env.DATABASE_URL || "", "");
     const { db, pg } = await openDb();
+    const destinations = await applyCp14LiveCatalog(pg);
     const operator = await createOperator(db, "desk", "desk-pass", { N: 16, r: 8, p: 1 });
     const scope = await legacyDispatcherScope(db, operator.id, operator.login);
     const vehicles = await listOpsVehicles(db, scope);
@@ -564,8 +598,8 @@ describe("Phase 9 full test reconstruction", () => {
     const vehicleId = vehicles[0]!.id;
     const driverId = drivers[0]!.id;
 
-    const a = await createBooking(db, bookingInput("gate", { pickupTime: "14:00", guestEmail: "a@example.com" }));
-    const b = await createBooking(db, bookingInput("gate", { pickupTime: "14:00", guestEmail: "b@example.com" }));
+    const a = await createBooking(db, bookingInput("gate", destinations.gate!, { pickupTime: "14:00", guestEmail: "a@example.com" }));
+    const b = await createBooking(db, bookingInput("gate", destinations.gate!, { pickupTime: "14:00", guestEmail: "b@example.com" }));
     const idA = await bookingId(db, a.confirmationToken);
     const idB = await bookingId(db, b.confirmationToken);
 
@@ -582,8 +616,8 @@ describe("Phase 9 full test reconstruction", () => {
     assert.equal(vehicleErr.code, "unavailable");
     assert.doesNotMatch(vehicleErr.message, /23P01|EXCLUDE|SQLSTATE/i);
 
-    const c = await createBooking(db, bookingInput("gate", { pickupTime: "16:00", guestEmail: "c@example.com" }));
-    const d = await createBooking(db, bookingInput("gate", { pickupTime: "16:00", guestEmail: "d@example.com" }));
+    const c = await createBooking(db, bookingInput("gate", destinations.gate!, { pickupTime: "16:00", guestEmail: "c@example.com" }));
+    const d = await createBooking(db, bookingInput("gate", destinations.gate!, { pickupTime: "16:00", guestEmail: "d@example.com" }));
     const idC = await bookingId(db, c.confirmationToken);
     const idD = await bookingId(db, d.confirmationToken);
 
@@ -603,7 +637,8 @@ describe("Phase 9 full test reconstruction", () => {
 
   test("public DTO is minimised; confirmation tokens are high-entropy and unique", async () => {
     const { db, pg } = await openDb();
-    const created = await createBooking(db, bookingInput("gate"));
+    const destinations = await applyCp14LiveCatalog(pg);
+    const created = await createBooking(db, bookingInput("gate", destinations.gate!));
     const keys = Object.keys(created).sort();
     assert.deepEqual(keys, [...CREATED_DTO_KEYS].sort());
     assert.equal("occupies" in created, false);

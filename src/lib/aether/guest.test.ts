@@ -15,6 +15,7 @@ import {
   touristMessage,
   vehicleHint,
 } from "./guest.ts";
+import { applyCp14LiveCatalog } from "./cp14-fixture.ts";
 
 const FOUNDATION_SQL = readFileSync(
   new URL("../../../migrations/0002_foundation.sql", import.meta.url),
@@ -66,6 +67,7 @@ async function openDb() {
   await pg.exec(GUEST_SQL);
   await pg.exec(WHITE_LABEL_SQL);
   await pg.exec(TENANCY_SQL);
+  const destinations = await applyCp14LiveCatalog(pg);
   const db: BookingDb = {
     query: async <T>(text: string, params?: unknown[]) => (await pg.query<T>(text, params)).rows,
     async transaction<T>(fn: (inner: BookingDb) => Promise<T>) {
@@ -80,7 +82,7 @@ async function openDb() {
       });
     },
   };
-  return { db, pg };
+  return { db, pg, destinations };
 }
 
 describe("Phase 6 guest UX helpers", () => {
@@ -100,9 +102,10 @@ describe("Phase 6 guest UX helpers", () => {
   });
 
   test("token lookup works and reference-only lookup fails", async () => {
-    const { db, pg } = await openDb();
+    const { db, pg, destinations } = await openDb();
     const created = await createBooking(db, {
       hotelCode: "gate",
+      destinationId: destinations.gate!,
       transferDate: "2026-01-15",
       pickupTime: "09:00",
       durationMinutes: 60,
@@ -129,6 +132,8 @@ describe("Phase 6 guest UX helpers", () => {
   test("HotelMark, tourist copy, informational vehicle hint", () => {
     assert.equal(hotelMarkLetters("Gate Hotel"), "GH");
     assert.match(touristMessage("hotel_not_found"), /could not find this booking page/i);
+    assert.match(touristMessage("hotel_not_live"), /not available for this hotel yet/i);
+    assert.match(touristMessage("invalid_destination"), /choose a destination from the list/i);
     assert.equal(vehicleHint(1, 0).title, "Saloon");
     assert.equal(vehicleHint(4, 2).title, "Estate");
     assert.equal(vehicleHint(6, 1).title, "Minivan");
@@ -155,6 +160,9 @@ describe("Phase 6 guest UX helpers", () => {
     assert.match(wizard, /Book transfer/);
     assert.match(wizard, /View my booking/);
     assert.match(wizard, /Comfort guide/);
-    assert.match(wizard, /To be confirmed/);
+    assert.match(wizard, /destinationId/);
+    assert.match(wizard, /formatQuotedPrice/);
+    assert.match(wizard, /Quoted price/);
+    assert.doesNotMatch(wizard, /<Field label="Destination">[\s\S]*<input/);
   });
 });
