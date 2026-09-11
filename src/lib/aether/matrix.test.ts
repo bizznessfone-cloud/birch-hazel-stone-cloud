@@ -53,6 +53,7 @@ const SQL_FILES = [
   "0011_production_hardening.sql",
   "0012_cp12_tenancy.sql",
   "0013_cp12b_runtime_login.sql",
+  "0014_cp13a_production_app_role.sql",
 ] as const;
 
 const PUBLIC_DTO_KEYS = [
@@ -197,12 +198,27 @@ const MATRIX: Array<{ file: string; titles: string[] }> = [
       "guest create rate limit trips then fail-opens without the table",
     ],
   },
+  {
+    file: "cp13a.test.ts",
+    titles: [
+      "0011–0013 remain byte-identical and never mention aether_app",
+      "0014 creates aether_app LOGIN without a password or neon_superuser grant",
+      "production identity is aether_app; preview SET ROLE remains aether_runtime",
+      "0014 applies: aether_app is least-privilege LOGIN; occupancy stays owner-owned",
+      "aether_app has production DML and is denied occupancy DDL and meta writes",
+    ],
+  },
 ];
 
 async function openDb() {
   const { btree_gist } = await import("@electric-sql/pglite/contrib/btree_gist");
   const pg = new PGlite({ extensions: { btree_gist } });
   await pg.waitReady;
+  try {
+    await pg.exec("create database neondb");
+  } catch {
+    /* already exists on a reused instance */
+  }
   for (const name of SQL_FILES) {
     await pg.exec(readFileSync(new URL(`../../../migrations/${name}`, import.meta.url), "utf8"));
   }
@@ -327,7 +343,7 @@ describe("Phase 9 full test reconstruction", () => {
     assert.match(occupancy, /tstzrange/);
     assert.match(occupancy, /'\[\)'/);
 
-    const later = ["0008_guest_ux.sql", "0009_ops_desk.sql", "0010_hotel_white_label.sql", "0011_production_hardening.sql", "0012_cp12_tenancy.sql", "0013_cp12b_runtime_login.sql"]
+    const later = ["0008_guest_ux.sql", "0009_ops_desk.sql", "0010_hotel_white_label.sql", "0011_production_hardening.sql", "0012_cp12_tenancy.sql", "0013_cp12b_runtime_login.sql", "0014_cp13a_production_app_role.sql"]
       .map((name) => readAether(`../../../migrations/${name}`))
       .join("\n");
     assert.doesNotMatch(later, /drop trigger|drop function aether_athens|drop constraint bookings_/i);
@@ -352,7 +368,7 @@ describe("Phase 9 full test reconstruction", () => {
     assert.equal(process.env.DATABASE_URL || "", "", "DATABASE_URL must stay unset here");
   });
 
-  test("migrations 0002–0013 apply; occupancy engine remains authority", async () => {
+  test("migrations 0002–0014 apply; occupancy engine remains authority", async () => {
     const { db, pg } = await openDb();
     const meta = await db.query<{ key: string; value: string }>(
       "select key, value from aether_meta",
@@ -360,9 +376,11 @@ describe("Phase 9 full test reconstruction", () => {
     const map = Object.fromEntries(meta.map((row) => [row.key, row.value]));
     assert.equal(map.product, "Aether Transfer");
     assert.equal(map.blueprint, "v2");
-    assert.equal(map.schema_phase, "12");
-    assert.equal(map.checkpoint, "12b");
+    assert.equal(map.schema_phase, "13");
+    assert.equal(map.checkpoint, "13a");
     assert.equal(map.runtime_role, "aether_runtime");
+    assert.equal(map.production_role, "aether_app");
+    assert.equal(map.runtime_login, "aether_app");
 
     const objects = await db.query<{ n: number }>(`
       select count(*)::int as n from (

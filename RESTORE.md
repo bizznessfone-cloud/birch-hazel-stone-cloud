@@ -35,7 +35,10 @@ Guest lockup: **SCAN. BOOK. GO.**
 - Occupancy: trigger-maintained `occupies` + `tstzrange [)` + vehicle/driver GiST EXCLUDE
 - Time: `aether_athens_instant()` only (Europe/Athens civil time)
 - Operator auth: scrypt + HttpOnly session `aether_ops_session` + CSRF cookie `aether_ops_csrf`
-- Application DML role: `aether_runtime` (must not own occupancy objects)
+- Application DML roles:
+  - `neondb_owner` — migration / schema owner
+  - `aether_runtime` — PGLite/preview SET ROLE identity (must not own occupancy objects)
+  - `aether_app` — SQL-created production LOGIN (must not own occupancy objects; must not be a Neon Console / `neon_superuser` role)
 - Migrations use a separate owner connection: `AETHER_DATABASE_OWNER_URL`
 
 Authoritative architecture notes: `docs/ARCHITECTURE.md`
@@ -48,7 +51,7 @@ Workspace root. Application code:
 - `src/routes/book.$hotelCode.tsx` — guest booking
 - `src/routes/confirmed.$token.tsx` — confirmation
 - `src/routes/ops*.tsx` — operations desk
-- `src/lib/db.ts` — PGLite preview / Neon runtime (`aether_runtime` LOGIN; no startup role option)
+- `src/lib/db.ts` — PGLite preview SET ROLE `aether_runtime` / Neon runtime (`aether_app` LOGIN; no startup role option)
 
 ## 4. Where is the database schema?
 
@@ -70,12 +73,13 @@ SQL migrations in `migrations/`, applied in filename order. Platform `migrations
 | 10 | `0011_production_hardening.sql` | 10 |
 | 11 | `0012_cp12_tenancy.sql` | 12 |
 | 12 | `0013_cp12b_runtime_login.sql` | 12b |
+| 13 | `0014_cp13a_production_app_role.sql` | 13a |
 
-`aether_meta.schema_phase = 12`, checkpoint = 12b after 0013.
+`aether_meta.schema_phase = 13`, checkpoint = 13a after 0014.
 
 Preview: `src/lib/db.ts` applies these to PGLite at startup, then SET ROLE `aether_runtime`.
 
-Production: `scripts/migrate.mjs` uses `AETHER_DATABASE_OWNER_URL` **only**. Missing owner URL fails. `DATABASE_URL` is never a migrate fallback. The deployed app must connect as `aether_runtime` LOGIN, not as the owner, and must not SET ROLE.
+Production: `scripts/migrate.mjs` uses `AETHER_DATABASE_OWNER_URL` **only**. Missing owner URL fails. `DATABASE_URL` is never a migrate fallback. The deployed app must connect as `aether_app` LOGIN, not as the owner, not as a Neon Console role, and must not SET ROLE. The `aether_app` password is supplied out of band; never in SQL.
 
 ## 6. Required environment variable names (never commit values)
 
@@ -108,12 +112,12 @@ npm run test:aether
 npm run typecheck
 ```
 
-Last known-good: CP12A source + CP12B local hardening (PGLite). Neon remains unverified.
+Last known-good: CP12B committed source + CP13A local role split (PGLite). Neon remains unverified.
 
 ## 9. How is it deployed?
 
-CP12B is local/repository hardening. Production deploy is blocked until Neon
-owner/runtime verification PASSes. Do not connect Vercel from this checkpoint.
+CP13A is source-only production-role work. Production deploy is blocked until Neon
+owner/`aether_app` verification PASSes. Do not connect Vercel from this checkpoint.
 
 Do not call `init_or_update_app` / provision / reset / replace-app.
 
@@ -131,11 +135,11 @@ Do not call `init_or_update_app` / provision / reset / replace-app.
 
 ## 11. Latest known-good checkpoint
 
-**Checkpoint 12b** — CP12B pre-Vercel production hardening.
+**Checkpoint 13a** — CP13A SQL-created production LOGIN `aether_app`.
 
-Historical trusted occupancy baseline remains **Checkpoint 10**. CP12/CP12A added tenancy. CP12B does not rewrite occupancy.
+Historical trusted occupancy baseline remains **Checkpoint 10**. CP12/CP12A added tenancy. CP12B hardened fail-closed production. CP13A does not rewrite occupancy.
 
-Do not start CP13 from restore. Do not connect Vercel until Neon is verified.
+Do not start CP13B from restore. Do not connect Vercel until Neon is verified.
 
 ## 12. How do you restore it?
 
@@ -146,25 +150,26 @@ Do not start CP13 from restore. Do not connect Vercel until Neon is verified.
 5. Run `sh scripts/restore_aether.sh`.
 6. If the script fails, **stop**. Do not invent workarounds.
 7. Start the app with `sh startup.sh` in this sandbox (serves the live preview).
-8. Do not start CP13. Do not connect Vercel until Neon verification PASSes.
+8. Do not start CP13B. Do not connect Vercel until Neon verification PASSes.
 
 Alternatively: `sh scripts/restore_aether.sh` after extract.
 
 ## 13. What remains blocked?
 
-- Neon application of 0012 / 0013 (credentials unavailable here)
-- Neon `DATABASE_URL` proven as `aether_runtime` LOGIN (`session_user` = `current_user`)
+- Neon application of 0012 / 0013 / 0014 (credentials unavailable here)
+- Neon `DATABASE_URL` proven as `aether_app` LOGIN (`session_user` = `current_user`)
+- `aether_app` proven not a `neon_superuser` member
 - Neon concurrency (overlapping vehicle and driver assignments)
 - Production Secure cookie verification on a real HTTPS deployment
 - Vercel project connection / env injection
-- Out-of-band `aether_runtime` password on Neon
+- Out-of-band `aether_app` password on Neon (SQL-created role, never Console)
 
 ## 14. What credentials are still required?
 
 Values are not stored here.
 
-- Neon runtime `DATABASE_URL` (role `aether_runtime`)
-- Neon owner `AETHER_DATABASE_OWNER_URL`
+- Neon runtime `DATABASE_URL` (role `aether_app`, SQL-created LOGIN)
+- Neon owner `AETHER_DATABASE_OWNER_URL` (`neondb_owner`)
 - Production operator credentials if preview `desk` / `desk-pass` must not be used
 
 If those are unavailable: **PRODUCTION VERIFICATION: BLOCKED. REASON: credentials unavailable.**

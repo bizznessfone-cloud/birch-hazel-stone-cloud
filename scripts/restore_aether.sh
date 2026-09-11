@@ -40,6 +40,7 @@ migrations/0010_hotel_white_label.sql
 migrations/0011_production_hardening.sql
 migrations/0012_cp12_tenancy.sql
 migrations/0013_cp12b_runtime_login.sql
+migrations/0014_cp13a_production_app_role.sql
 "
 for f in $REQUIRED; do
   if [ ! -e "$ROOT/$f" ]; then
@@ -49,8 +50,8 @@ done
 if [ "$FAIL" -ne 0 ]; then
   say "Failure: RESTORE FAILURE"
   say "Evidence: required source/migration files missing"
-  say "Last known-good checkpoint: 12b"
-  say "Safe recovery action: re-extract the CP12B source tree over the workspace"
+  say "Last known-good checkpoint: 13a"
+  say "Safe recovery action: re-extract the CP13A source tree over the workspace"
   exit 1
 fi
 
@@ -92,7 +93,7 @@ if [ "$TARGET" = "production" ]; then
     say "Evidence: production restore requires DATABASE_URL (runtime) AND AETHER_DATABASE_OWNER_URL (owner)"
     say "Likely cause: Neon credentials not injected into this environment"
     say "Affected component: production database"
-    say "Last known-good checkpoint: 12b"
+    say "Last known-good checkpoint: 13a"
     say "Safe recovery action: supply both URLs, then re-run. Do not substitute PGLite."
     exit 1
   fi
@@ -117,7 +118,7 @@ else
     say "production migrate requires AETHER_DATABASE_OWNER_URL"
     exit 1
   fi
-  say "preview migrations: skipped here; PGLite applies 0002-0013 at application startup (labelled substitute)"
+  say "preview migrations: skipped here; PGLite applies 0002-0014 at application startup (labelled substitute)"
 fi
 
 # 6. typecheck

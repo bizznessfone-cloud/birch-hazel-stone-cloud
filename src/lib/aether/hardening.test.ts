@@ -34,6 +34,7 @@ const SQL_FILES = [
   "0011_production_hardening.sql",
   "0012_cp12_tenancy.sql",
   "0013_cp12b_runtime_login.sql",
+  "0014_cp13a_production_app_role.sql",
 ] as const;
 
 type Pg = PGlite;
@@ -64,6 +65,11 @@ async function openDb(): Promise<{ pg: Pg; db: BookingDb }> {
   const { btree_gist } = await import("@electric-sql/pglite/contrib/btree_gist");
   const pg = new PGlite({ extensions: { btree_gist } });
   await pg.waitReady;
+  try {
+    await pg.exec("create database neondb");
+  } catch {
+    /* already exists on a reused instance */
+  }
   for (const name of SQL_FILES) {
     await pg.exec(
       readFileSync(new URL(`../../../migrations/${name}`, import.meta.url), "utf8"),
@@ -159,8 +165,8 @@ describe("Phase 10 production hardening", () => {
       "select key, value from aether_meta",
     );
     const map = Object.fromEntries(meta.rows.map((row) => [row.key, row.value]));
-    assert.equal(map.schema_phase, "12");
-    assert.equal(map.checkpoint, "12b");
+    assert.equal(map.schema_phase, "13");
+    assert.equal(map.checkpoint, "13a");
     assert.equal(map.runtime_role, AETHER_RUNTIME_ROLE);
     assert.equal(map.db_owner, "postgres");
 

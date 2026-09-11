@@ -2,27 +2,28 @@
 
 This file describes reality, not intended future state.
 
-Current phase: **CP12B — Pre-Vercel production hardening**
+Current phase: **CP13A — SQL-created production application role (source only)**
 
-Current checkpoint: **12b** (does not overwrite CP10, CP11, CP12, or CP12A)
+Current checkpoint: **13a** (does not overwrite CP10, CP11, CP12, CP12A, or CP12B)
 
-Last known-good source checkpoint: **CP12A** (`2283746187e7fc4a98987775ac54c28037e06948`) before this work.
+Last known-good committed checkpoint: **CP12B** (`e3a7caf7ca32fe5326dbf9e89785215643ac7bd2`) before this work.
 
-Current status: CP12 / CP12A source is in the tree. CP12B adds production fail-closed behaviour, owner-only migrations, `aether_runtime LOGIN`, public DTO/PII reduction, guest-create rate limiting, preview-credential refusal, and a capped shared `pg.Pool`.
+Current status: CP13A adds SQL-created production LOGIN `aether_app` (0014). `aether_runtime` remains the PGLite/preview SET ROLE identity. 0011–0013 are immutable. This is source-only: Neon has not been contacted.
 
 Production status: **NOT PRODUCTION-READY** — Neon schema is **BLOCKED / UNVERIFIED** (credentials unavailable in this environment). Vercel is **NOT CONNECTED**.
 
 Credential injection:
 
-- `DATABASE_URL`: **MISSING**
-- `AETHER_DATABASE_OWNER_URL`: **MISSING**
+- `DATABASE_URL`: **MISSING** (must be `aether_app` LOGIN when present)
+- `AETHER_DATABASE_OWNER_URL`: **MISSING** (must be `neondb_owner` / schema owner)
 - No `.env` / secret mount / Neon connector with those names
 - `npm run verify:neon` exits **2** (credentials unavailable) — not treated as a pass
 
 Known blockers:
 
-- Neon owner URL unavailable — 0012 / 0013 not applied or verified on Neon
-- Neon `aether_runtime` LOGIN password must be set out of band (never in git)
+- Neon owner URL unavailable — 0012 / 0013 / 0014 not applied or verified on Neon
+- Neon `aether_app` LOGIN password must be set out of band (never in git). Do not create `aether_app` via Neon Console (that grants `neon_superuser`).
+- Existing Neon Console `aether_runtime` is unsuitable as the production login
 - Vercel project not connected
 - Neon concurrency: **NOT VERIFIED** on Neon (PGLite only)
 
@@ -32,15 +33,16 @@ Historical:
 - NEW CP11: Neon verifier (PASS historically with runner-only patch; this tree keeps the committed verifier, now without startup role options)
 - CP12: multi-tenant hotel/provider foundation
 - CP12A: resource ownership administration boundaries
+- CP12B: pre-Vercel production hardening (`aether_runtime LOGIN` for the then-intended production identity)
 - Previous abandoned original CP11: **not used**
 
 Next safe action:
 
-1. Inject two distinct Neon URLs (owner + `aether_runtime` LOGIN). Set the runtime role password out of band.
-2. Apply pending migrations (0012, 0013) via owner URL only.
-3. Re-run `npm run verify:neon`.
-4. Do not connect Vercel until Neon verification PASSes.
-5. Do not start CP13.
+1. Do **not** start CP13B until this source checkpoint is accepted.
+2. Inject two distinct Neon URLs (owner + SQL-created `aether_app` LOGIN). Set the `aether_app` password out of band. Never create `aether_app` in Neon Console.
+3. Apply pending migrations (0012, 0013, 0014) via owner URL only.
+4. Re-run `npm run verify:neon`.
+5. Do not connect Vercel until Neon verification PASSes.
 
 ## What must not be claimed
 

@@ -1,18 +1,18 @@
 #!/usr/bin/env node
 /**
- * Neon production-infrastructure gate (CP11 identity + CP12B runtime LOGIN).
+ * Neon production-infrastructure gate (CP11 identity + CP13A SQL-created LOGIN).
  *
  * Fail closed. Never print connection strings or passwords.
  * Does not use PGLite. Does not claim production if this process cannot
  * connect to Neon with a runtime role distinct from the schema owner.
  *
  * Required env (names only):
- *   DATABASE_URL                 runtime LOGIN — must be aether_runtime, not owner
+ *   DATABASE_URL                 runtime LOGIN — must be aether_app, not owner
  *   AETHER_DATABASE_OWNER_URL    migration/schema-owner login
  *
- * The runtime pool must authenticate as aether_runtime LOGIN.
+ * The runtime pool must authenticate as aether_app LOGIN (SQL-created).
  * Do not pass a startup role option. session_user and current_user
- * must both be aether_runtime.
+ * must both be aether_app. aether_app must not be a neon_superuser member.
  */
 import pg from "pg";
 import { pendingMigrations } from "./migration-plan.mjs";
@@ -20,7 +20,8 @@ import { readdir, readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const RUNTIME = "aether_runtime";
+const RUNTIME = "aether_app";
+const PREVIEW_ROLE = "aether_runtime";
 const runtimeUrl = (process.env.DATABASE_URL || "").trim();
 const ownerUrl = (process.env.AETHER_DATABASE_OWNER_URL || "").trim();
 
@@ -108,7 +109,7 @@ async function main() {
   say("URLs differ: yes");
 
   const ownerPool = new pg.Pool({ connectionString: ownerUrl, max: 1 });
-  // Production runtime authenticates as aether_runtime LOGIN. Do not SET ROLE.
+  // Production runtime authenticates as aether_app LOGIN. Do not SET ROLE.
   const runtimePool = new pg.Pool({
     connectionString: runtimeUrl,
     max: 2,
@@ -120,7 +121,13 @@ async function main() {
     const ownerId = await identity(owner);
     say(`owner session_user=${ownerId.session} current_user=${ownerId.current}`);
     if (ownerId.session === RUNTIME) {
-      blocked("AETHER_DATABASE_OWNER_URL authenticated as aether_runtime — owner/runtime reversed");
+      blocked("AETHER_DATABASE_OWNER_URL authenticated as aether_app — owner/runtime reversed");
+    }
+    if (ownerId.session === PREVIEW_ROLE) {
+      blocked("AETHER_DATABASE_OWNER_URL authenticated as aether_runtime — owner URL is not the schema owner");
+    }
+    if (ownerId.session === ownerId.current && ownerId.session === RUNTIME) {
+      blocked("schema owner is aether_app — migration/schema owner must be distinct from runtime");
     }
 
     const tenancy = await owner.query(
@@ -135,13 +142,23 @@ async function main() {
     say("PASS  0012 tenancy objects present");
 
     const login = await owner.query(
-      `select rolcanlogin from pg_roles where rolname = $1`,
+      `select rolcanlogin, rolsuper, rolcreatedb, rolcreaterole, rolreplication, rolbypassrls
+         from pg_roles where rolname = $1`,
       [RUNTIME],
     );
-    if (!login.rows[0]?.rolcanlogin) {
-      blocked("aether_runtime is NOLOGIN — production DATABASE_URL cannot authenticate as the runtime role");
+    const attrs = login.rows[0];
+    if (!attrs) {
+      blocked("aether_app role missing — 0014 not applied");
     }
-    say("PASS  aether_runtime LOGIN");
+    if (!attrs.rolcanlogin) {
+      blocked("aether_app is NOLOGIN — production DATABASE_URL cannot authenticate as the app role");
+    }
+    if (attrs.rolsuper) blocked("aether_app is SUPERUSER");
+    if (attrs.rolcreatedb) blocked("aether_app has CREATEDB");
+    if (attrs.rolcreaterole) blocked("aether_app has CREATEROLE");
+    if (attrs.rolreplication) blocked("aether_app has REPLICATION");
+    if (attrs.rolbypassrls) blocked("aether_app has BYPASSRLS");
+    say("PASS  aether_app LOGIN with least-privilege attributes");
   } finally {
     owner.release();
   }
@@ -153,16 +170,68 @@ async function main() {
     say(`runtime session_user=${runtimeId.session} current_user=${runtimeId.current}`);
     if (runtimeId.current !== RUNTIME) {
       blocked(
-        `runtime current_user is ${runtimeId.current}, not ${RUNTIME} — DATABASE_URL is not the restricted runtime role`,
+        `runtime current_user is ${runtimeId.current}, not ${RUNTIME} — DATABASE_URL is not the restricted aether_app LOGIN`,
       );
     }
-    if (runtimeId.session === runtimeId.current && runtimeId.session === RUNTIME) {
-      say("PASS  runtime login is aether_runtime (session_user and current_user)");
-    } else if (runtimeId.current === RUNTIME && runtimeId.session !== RUNTIME) {
+    if (runtimeId.session !== runtimeId.current) {
       blocked(
-        "runtime is SET ROLE from a non-runtime login (session_user is not aether_runtime). RESET ROLE would restore the owner. Production DATABASE_URL must be an aether_runtime LOGIN, not the owner.",
+        "runtime is SET ROLE from a non-app login (session_user is not current_user). RESET ROLE would restore the connecting role. Production DATABASE_URL must be an aether_app LOGIN, not SET ROLE.",
       );
     }
+    if (runtimeId.session !== RUNTIME) {
+      blocked(
+        `runtime session_user is ${runtimeId.session}, not ${RUNTIME}. Production DATABASE_URL must authenticate as aether_app.`,
+      );
+    }
+    say("PASS  runtime login is aether_app (session_user and current_user)");
+
+    const roleRow = (
+      await runtime.query(
+        `select rolcanlogin, rolsuper, rolcreatedb, rolcreaterole, rolreplication, rolbypassrls
+           from pg_roles where rolname = current_user`,
+      )
+    ).rows[0];
+    if (!roleRow?.rolcanlogin) blocked("connected role is NOLOGIN");
+    if (roleRow.rolsuper) blocked("connected role is SUPERUSER");
+    if (roleRow.rolcreatedb) blocked("connected role has CREATEDB");
+    if (roleRow.rolcreaterole) blocked("connected role has CREATEROLE");
+    if (roleRow.rolreplication) blocked("connected role has REPLICATION");
+    if (roleRow.rolbypassrls) blocked("connected role has BYPASSRLS");
+    say("PASS  connected aether_app attributes are least-privilege");
+
+    const neonSuExists = (
+      await runtime.query(
+        `select exists (select 1 from pg_roles where rolname = 'neon_superuser') as ok`,
+      )
+    ).rows[0];
+    const directSuper = (
+      await runtime.query(
+        `select exists (
+           select 1
+             from pg_auth_members m
+             join pg_roles g on g.oid = m.roleid
+             join pg_roles u on u.oid = m.member
+            where g.rolname = 'neon_superuser'
+              and u.rolname = $1
+         ) as member`,
+        [RUNTIME],
+      )
+    ).rows[0];
+    if (directSuper.member) {
+      blocked("aether_app is a member of neon_superuser — production login must be SQL-created, never a Neon Console role");
+    }
+    if (neonSuExists.ok) {
+      const inherited = (
+        await runtime.query(
+          `select pg_has_role($1, 'neon_superuser', 'member') as member`,
+          [RUNTIME],
+        )
+      ).rows[0];
+      if (inherited.member) {
+        blocked("aether_app inherits neon_superuser");
+      }
+    }
+    say("PASS  aether_app is not a neon_superuser member");
 
     const triggerOwner = (
       await runtime.query(
@@ -173,10 +242,10 @@ async function main() {
       )
     ).rows[0];
     if (!triggerOwner) throw new Error("bookings_occupies_before missing");
-    if (triggerOwner.owner === RUNTIME) {
-      blocked("aether_runtime owns bookings_occupies_before");
+    if (triggerOwner.owner === RUNTIME || triggerOwner.owner === PREVIEW_ROLE) {
+      blocked(`${triggerOwner.owner} owns bookings_occupies_before — application roles must not own occupancy objects`);
     }
-    say(`PASS  occupancy trigger owned by ${triggerOwner.owner}, not runtime`);
+    say(`PASS  occupancy trigger owned by ${triggerOwner.owner}, not aether_app`);
 
     await expectDenied("ALTER/DISABLE occupancy trigger", () =>
       runtime.query("alter table bookings disable trigger bookings_occupies_before"),

@@ -7,7 +7,10 @@ import {
   readTrimmedEnv,
 } from "@/lib/aether/runtime-config";
 
-export { AETHER_RUNTIME_ROLE } from "@/lib/aether/runtime-config";
+export {
+  AETHER_RUNTIME_ROLE,
+  AETHER_APP_ROLE,
+} from "@/lib/aether/runtime-config";
 
 /** Which database backend is active. */
 export type DbSource = "neon" | "pglite";
@@ -97,8 +100,8 @@ function toSql(run: Run): Sql {
 
 /**
  * Shared node-postgres Pool for Neon/PostgreSQL. One pool per isolate, max 2.
- * Production authenticates as aether_runtime LOGIN. Do not pass a startup
- * role option — SET ROLE from a non-runtime login would make RESET ROLE
+ * Production authenticates as aether_app LOGIN. Do not pass a startup
+ * role option — SET ROLE from a non-app login would make RESET ROLE
  * restore the owner.
  */
 export async function getPgPool(): Promise<import("pg").Pool> {
@@ -161,6 +164,13 @@ async function createPgliteSql(): Promise<Sql> {
       },
     });
     await pg.waitReady;
+    try {
+      // 0014 grants CONNECT on database neondb (Neon production name).
+      // Create it so the same parser-safe GRANT applies on preview PGLite.
+      await pg.exec("create database neondb");
+    } catch {
+      /* already exists on a reused preview instance */
+    }
     await pg.exec(
       "create table if not exists _migrations (name text primary key, applied_at timestamptz not null default now())",
     );
@@ -181,7 +191,7 @@ async function createPgliteSql(): Promise<Sql> {
   const migrate = async (): Promise<void> => {
     // Migrations must run as the table owner. The live SQL surface then
     // SET ROLE aether_runtime so occupancy DDL is denied. Preview only:
-    // production authenticates as aether_runtime LOGIN and must not SET ROLE.
+    // production authenticates as aether_app LOGIN and must not SET ROLE.
     try {
       await pg.exec("reset role");
     } catch {

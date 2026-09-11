@@ -4,7 +4,7 @@ Canonical restore instructions for this workspace: **`/RESTORE.md`** (repo root)
 Use **`scripts/restore_aether.sh`**. Machine-readable state: **`AETHER_RECOVERY_MANIFEST.json`**.
 Live status: **`BUILD_STATE.md`**.
 
-Checkpoint 10 is the immutable occupancy baseline. Current source is **CP12B**.
+Checkpoint 10 is the immutable occupancy baseline. Current source is **CP13A**.
 Do not overwrite Checkpoint 10. Do not call the platform app provisioner.
 Do not connect Vercel until Neon verification PASSes.
 
@@ -43,7 +43,7 @@ the snapshot is incomplete.
 9. Do not call `init_or_update_app` or any provision/reset operation.
 10. Do not create `.env` files with secrets.
 11. `DATABASE_URL` is unset in preview (PGLite, labelled development substitute).
-    Production injects it and it must be the `aether_runtime` role.
+    Production injects it and it must be the `aether_app` role (SQL-created LOGIN).
 12. After Checkpoint 10 / 10A, the next phase is **11 — Deployment**. Do not
     start it until Neon credentials exist. Do not claim production readiness
     while Neon role-split and Neon concurrency remain unverified.

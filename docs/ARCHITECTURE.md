@@ -215,14 +215,16 @@ src/lib/aether/matrix.test.ts    Phase 9 Blueprint matrix reconstruction
 migrations/0011_production_hardening.sql aether_runtime DML role (NOLOGIN at create)
 migrations/0012_cp12_tenancy.sql providers, agreements, memberships, executing_provider_id
 migrations/0013_cp12b_runtime_login.sql aether_runtime LOGIN, public_booking_attempts
-src/lib/aether/runtime-role.ts   role name + owner URL env
+migrations/0014_cp13a_production_app_role.sql aether_app SQL-created production LOGIN
+src/lib/aether/runtime-role.ts   preview role + production app role + owner URL env
 src/lib/aether/runtime-config.ts production fail-closed + pool + preview-cred policy
 src/lib/aether/hardening.test.ts privilege + security audit
 src/lib/aether/cp12b.test.ts     CP12B production hardening
+src/lib/aether/cp13a.test.ts     CP13A aether_app production LOGIN
 ```
 
 ICS, payment, and Neon concurrency are not built. Occupancy SQL is unchanged.
-`schema_phase` is **12**. `checkpoint` is **12b**.
+`schema_phase` is **13**. `checkpoint` is **13a**.
 
 ## Hotel white label (Phase 8)
 
@@ -268,7 +270,7 @@ Results: `docs/TEST_RESULTS.md`.
 
 | Name | When |
 |---|---|
-| `DATABASE_URL` | production runtime. Must authenticate as `aether_runtime` LOGIN, not the owner. Production without this URL fails closed. |
+| `DATABASE_URL` | production runtime. Must authenticate as `aether_app` LOGIN (SQL-created), not the owner and not a Neon Console role. Production without this URL fails closed. |
 | `AETHER_DATABASE_OWNER_URL` | required for production migrations. `scripts/migrate.mjs` uses this URL only. Never a runtime connection. |
 | `AETHER_OPS_LOGIN` | optional operator bootstrap. Preview pair `desk` is refused in production. |
 | `AETHER_OPS_PASSWORD` | optional operator bootstrap. Preview pair `desk-pass` is refused in production. |
@@ -325,16 +327,50 @@ Source: `migrations/0011_production_hardening.sql`,
 `scripts/migrate.mjs`, `scripts/migrate-policy.mjs`.
 Tests: `src/lib/aether/hardening.test.ts`, `src/lib/aether/cp12b.test.ts`.
 
-## CP12 / CP12A / CP12B
+## CP13A production application role
+
+Neon Console-created roles inherit `neon_superuser`. The existing Neon
+`aether_runtime` namesake is therefore unsuitable as the production login.
+CP13A introduces a SQL-created LOGIN that never receives that membership.
+
+```
+neondb_owner          migration/schema owner (AETHER_DATABASE_OWNER_URL)
+aether_runtime        PGLite/preview SET ROLE identity (unchanged; 0011–0013)
+aether_app            SQL-created production LOGIN (0014; DATABASE_URL)
+```
+
+- `CREATE ROLE aether_app` `LOGIN` `NOSUPERUSER` `NOCREATEDB` `NOCREATEROLE`
+  `NOREPLICATION` `NOBYPASSRLS` `INHERIT`. Password is out of band, never in SQL.
+- Never `GRANT neon_superuser`. Never `ALTER` `aether_runtime`. SQL does not
+  manipulate `neon_superuser` membership. The production verifier still denies it.
+- `GRANT CONNECT` is issued on both `postgres` (PGLite preview) and `neondb` (Neon).
+  Static names keep 0014 parser-safe. Do not use `current_database()` (that needs a `DO` block).
+- DML on application tables including `providers`, `hotel_provider_agreements`,
+  `operator_memberships`. `public_booking_attempts` is SELECT/INSERT/DELETE
+  (no UPDATE). `aether_meta` is SELECT only. `_migrations` has zero privileges.
+- No schema CREATE, TRUNCATE, REFERENCES, TRIGGER, ownership, or migration rights.
+- Default privileges are implicit `FOR` the migration/schema owner, `TO aether_app`.
+- 0014 is Neon-parser-safe: no `DO` blocks, no dollar quoting, no `COMMENT ON ROLE`.
+  Neon migration-preparation splits on raw semicolons and does not track quotes.
+- Production authenticates as `aether_app` (`session_user` = `current_user`).
+  Application pools must not SET ROLE. Preview still SET ROLE `aether_runtime`.
+- Occupancy objects stay owned by the migrator. `aether_app` must never own them.
+
+Source: `migrations/0014_cp13a_production_app_role.sql`,
+`src/lib/aether/runtime-config.ts`, `scripts/verify-neon-production.mjs`.
+Tests: `src/lib/aether/cp13a.test.ts`.
+
+## CP12 / CP12A / CP12B / CP13A
 
 | Checkpoint | Meaning |
 |---|---|
 | CP11 | Historical Neon verifier. Not the current product phase. |
 | CP12 | Multi-tenant hotel/provider foundation (`0012`). |
 | CP12A | Resource ownership administration boundaries (operate AND own / dispatch AND employ). |
-| CP12B | Pre-Vercel production hardening (this document's current source). |
+| CP12B | Pre-Vercel production hardening (`aether_runtime LOGIN`, fail-closed, pool cap). |
+| CP13A | SQL-created production LOGIN `aether_app` (this document's current source). |
 
-Vercel is not connected at CP12B.
+Vercel is not connected at CP13A.
 
 ## V1 geographic / timezone constraint
 

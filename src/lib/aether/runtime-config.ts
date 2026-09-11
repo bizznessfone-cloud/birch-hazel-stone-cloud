@@ -3,7 +3,8 @@
  * PGLite is a local preview substitute only. Production must fail closed.
  */
 
-export const AETHER_RUNTIME_ROLE = "aether_runtime";
+export const AETHER_RUNTIME_ROLE = "aether_runtime"; // PGLite/preview SET ROLE
+export const AETHER_APP_ROLE = "aether_app"; // production LOGIN (SQL-created)
 export const AETHER_DATABASE_OWNER_URL_ENV = "AETHER_DATABASE_OWNER_URL";
 
 /** Known preview bootstrap pair from startup.sh. Forbidden in production. */

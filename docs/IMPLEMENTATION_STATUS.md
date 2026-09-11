@@ -2,7 +2,7 @@
 
 Product: **Aether Transfer**
 
-Build: **CP12B — Pre-Vercel production hardening**
+Build: **CP13A — SQL-created production application role (source only)**
 
 Trusted occupancy baseline: **CP10**. CP12/CP12A tenancy is in the tree. Previous abandoned original CP11 was **not** used.
 
@@ -26,8 +26,19 @@ Never mark a phase PASS merely because the UI renders.
 | 12 | Multi-tenant hotel/provider foundation | **PASS** (PGLite; Neon schema **UNVERIFIED**) |
 | 12A | Resource ownership administration boundaries | **PASS** (PGLite) |
 | 12B | Pre-Vercel production hardening | **LOCAL** — Neon **BLOCKED** |
+| 13A | SQL-created production LOGIN `aether_app` | **LOCAL** — Neon **BLOCKED** |
 
-## CP12B (current)
+## CP13A (current)
+
+- [x] `aether_app` SQL-created LOGIN (0014); password out of band
+- [x] `aether_runtime` retained for PGLite SET ROLE
+- [x] 0011–0013 immutable
+- [x] Production verifier requires `session_user` = `current_user` = `aether_app`
+- [x] Verifier denies `neon_superuser` membership
+- [ ] Neon 0012/0013/0014 applied and verified — **BLOCKED** (credentials unavailable)
+- [ ] Vercel — **NOT CONNECTED**
+
+## CP12B (historical, still in tree)
 
 - [x] Production without DATABASE_URL fails closed (no silent PGLite)
 - [x] Production migrate uses AETHER_DATABASE_OWNER_URL only
@@ -41,6 +52,7 @@ Never mark a phase PASS merely because the UI renders.
 
 ## Next
 
-Supply Neon owner URL + `aether_runtime` LOGIN URL, set the runtime password out of band, then `npm run verify:neon`.
-Do not start CP13. Do not connect Vercel until that gate PASSes.
+Do not start CP13B until this source checkpoint is accepted.
+Supply Neon owner URL + SQL-created `aether_app` LOGIN URL, set the app password out of band (never Neon Console), then `npm run verify:neon`.
+Do not connect Vercel until that gate PASSes.
 Do not call the platform app provisioner.

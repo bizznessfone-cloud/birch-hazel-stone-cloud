@@ -1,9 +1,9 @@
 {
   "project": "Aether Transfer",
   "guest_lockup": "SCAN. BOOK. GO.",
-  "restore_checkpoint_id": "12b",
-  "last_known_good_checkpoint": "12a",
-  "phase": "CP12B pre-Vercel production hardening (local). Neon UNVERIFIED. Vercel NOT CONNECTED.",
+  "restore_checkpoint_id": "13a",
+  "last_known_good_checkpoint": "12b",
+  "phase": "CP13A SQL-created production LOGIN aether_app (source only). Neon UNVERIFIED. Vercel NOT CONNECTED.",
   "timestamp": "2026-09-05T16:14:00+03:00",
   "source_tree_hash_sha256": "07539bc2de4d64c93e580c1bd3d82400df1943d76e3ea0594c8eabbbc27817ba",
   "source_file_count": 164,
@@ -40,6 +40,7 @@
     "migrations/0011_production_hardening.sql",
     "migrations/0012_cp12_tenancy.sql",
     "migrations/0013_cp12b_runtime_login.sql",
+    "migrations/0014_cp13a_production_app_role.sql",
     "migrations/auth/0001_auth.sql",
     "package-lock.json",
     "package.json",
@@ -77,6 +78,8 @@
     "src/lib/aether/booking.test.ts",
     "src/lib/aether/booking.ts",
     "src/lib/aether/constants.ts",
+    "src/lib/aether/cp12b.test.ts",
+    "src/lib/aether/cp13a.test.ts",
     "src/lib/aether/csrf-client.ts",
     "src/lib/aether/foundation.test.ts",
     "src/lib/aether/guest.test.ts",
@@ -100,6 +103,7 @@
     "src/lib/aether/ops-desk.test.ts",
     "src/lib/aether/ops-desk.ts",
     "src/lib/aether/ops-fns.ts",
+    "src/lib/aether/runtime-config.ts",
     "src/lib/aether/runtime-role.ts",
     "src/lib/aether/schema.ts",
     "src/lib/aether/time-process-tz.test.ts",
@@ -270,7 +274,7 @@
     {
       "name": "DATABASE_URL",
       "secret": true,
-      "when": "production runtime; must be aether_runtime not owner"
+      "when": "production runtime; must be aether_app LOGIN (SQL-created), not owner, not a Neon Console role"
     },
     {
       "name": "AETHER_DATABASE_OWNER_URL",
@@ -294,7 +298,7 @@
     }
   ],
   "database_migration_state": {
-    "preview": "PGLite applies 0002-0011 at startup; labelled DEVELOPMENT SUBSTITUTE",
+    "preview": "PGLite applies 0002-0014 at startup; labelled DEVELOPMENT SUBSTITUTE",
     "production": "UNVERIFIED \u2014 credentials unavailable in this workspace"
   },
   "external_dependencies": [
@@ -308,14 +312,14 @@
   ],
   "known_blockers": [
     "Neon production runtime role separate from migration owner: BLOCKED/UNVERIFIED",
-    "DATABASE_URL as aether_runtime: BLOCKED/UNVERIFIED",
+    "DATABASE_URL as aether_app: BLOCKED/UNVERIFIED",
     "Neon concurrent overlapping vehicle assignments: NOT VERIFIED",
     "Neon concurrent overlapping driver assignments: NOT VERIFIED",
     "No GitHub remote",
     "Platform provisioner can replace the workspace"
   ],
-  "current_phase": "10 complete; 10A persistence; 11 not started",
-  "current_checkpoint": "10A",
+  "current_phase": "13A source complete; Neon unverified; 13B not started",
+  "current_checkpoint": "13a",
   "production_status": "NOT PRODUCTION-READY",
   "source_of_truth_order": [
     "1. Database schema and migrations",
