@@ -228,6 +228,19 @@ const MATRIX: Array<{ file: string; titles: string[] }> = [
       "confirmation DTO exposes price; legacy unquoted lookup remains valid",
     ],
   },
+  {
+    file: "cp14.3.test.ts",
+    titles: [
+      "new hotel defaults to unconfigured",
+      "hotel can be configured with valid identity data",
+      "destination cannot be mutated through another hotel's scope",
+      "hotel cannot become LIVE without destination and agreement",
+      "hotel can become LIVE once all prerequisites are present",
+      "unconfigured to live fails closed without the configured transition",
+      "upsertHotel remains forbidden to ops",
+      "gate harbor and legacy remain unconfigured",
+    ],
+  },
 ];
 
 async function openDb() {
