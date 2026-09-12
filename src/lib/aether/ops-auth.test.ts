@@ -21,7 +21,7 @@ import {
   requireOps,
   verifyPassword,
 } from "./ops-auth.ts";
-import { ensureLegacyDispatcherMembership } from "./tenancy.ts";
+import { ensureLegacyDispatcherMembership, grantHotelDesk } from "./tenancy.ts";
 
 const FOUNDATION_SQL = readFileSync(
   new URL("../../../migrations/0002_foundation.sql", import.meta.url),
@@ -389,12 +389,88 @@ describe("Phase 2 operator authentication", () => {
       AETHER_OPS_LOGIN: "prod-desk",
       AETHER_OPS_PASSWORD: "a-real-production-pass",
     });
-    const result = await loginOperator(
-      envFor(db, prodJar, { production: true }),
-      "prod-desk",
-      "a-real-production-pass",
+    const prodHats = await db.query<{ n: number }>(
+      `select count(*)::int as n
+         from operator_memberships
+        where active
+          and operator_id = (select id from operators where login = 'prod-desk')`,
     );
-    assert.equal(result.login, "prod-desk");
+    assert.equal(prodHats[0]!.n, 0);
+    await expectCode(
+      () =>
+        loginOperator(
+          envFor(db, prodJar, { production: true }),
+          "prod-desk",
+          "a-real-production-pass",
+        ),
+      "no_membership",
+    );
+    await close();
+  });
+
+  test("ensureOperatorFromEnv does not attach legacy dispatcher to a hotel_desk operator", async () => {
+    const { db, close } = await openDb();
+    const op = await createOperator(db, "quay-desk", "hotel-pass", FAST_SCRYPT);
+    const hotel = (await db.query<{ id: string }>("select id from hotels where code = 'gate'"))[0]!;
+    const membershipId = await grantHotelDesk(db, op.id, hotel.id);
+    await ensureOperatorFromEnv(db, {
+      AETHER_OPS_LOGIN: "quay-desk",
+      AETHER_OPS_PASSWORD: "hotel-pass",
+    });
+    const hats = await db.query<{ access_class: string; hotel_id: string | null; provider_id: string | null }>(
+      `select access_class, hotel_id, provider_id
+         from operator_memberships
+        where operator_id = $1::uuid and active`,
+      [op.id],
+    );
+    assert.equal(hats.length, 1);
+    assert.equal(hats[0]!.access_class, "hotel_desk");
+    assert.equal(hats[0]!.hotel_id, hotel.id);
+    assert.equal(hats[0]!.provider_id, null);
+
+    const jar = memoryJar();
+    await loginOperator(envFor(db, jar), "quay-desk", "hotel-pass");
+    const ctx = await requireOps(envFor(db, jar), { csrf: true });
+    assert.equal(ctx.accessClass, "hotel_desk");
+    assert.equal(ctx.hotelId, hotel.id);
+    assert.equal(ctx.providerId, null);
+    assert.equal(ctx.membershipId, membershipId);
+    await close();
+  });
+
+  test("ensureOperatorFromEnv still grants legacy dispatcher to an unaffiliated operator", async () => {
+    const { db, close } = await openDb();
+    await ensureOperatorFromEnv(db, {
+      AETHER_OPS_LOGIN: "sandbox-desk",
+      AETHER_OPS_PASSWORD: "sandbox-pass",
+    });
+    const hats = await db.query<{ access_class: string; code: string | null }>(
+      `select m.access_class, p.code
+         from operator_memberships m
+         left join providers p on p.id = m.provider_id
+        where m.active
+          and m.operator_id = (select id from operators where login = 'sandbox-desk')`,
+    );
+    assert.equal(hats.length, 1);
+    assert.equal(hats[0]!.access_class, "provider_dispatcher");
+    assert.equal(hats[0]!.code, "legacy");
+    await close();
+  });
+
+  test("ensureOperatorFromEnv does not attach legacy dispatcher to an unaffiliated production operator", async () => {
+    const { db, close } = await openDb();
+    await ensureOperatorFromEnv(db, {
+      NODE_ENV: "production",
+      AETHER_OPS_LOGIN: "prod-unaffiliated",
+      AETHER_OPS_PASSWORD: "a-real-production-pass",
+    });
+    const hats = await db.query<{ n: number }>(
+      `select count(*)::int as n
+         from operator_memberships
+        where active
+          and operator_id = (select id from operators where login = 'prod-unaffiliated')`,
+    );
+    assert.equal(hats[0]!.n, 0);
     await close();
   });
 });

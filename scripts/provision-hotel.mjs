@@ -13,7 +13,7 @@
  *
  * Commands: create-hotel | configure-hotel | upsert-destination |
  *           ensure-provider | establish-agreement | validate |
- *           promote-configured | promote-live | provision
+ *           promote-configured | promote-live | provision | grant-hotel-desk
  *
  * JSON may be an argument, stdin, or @path. `provision` goLive defaults to false.
  */
@@ -41,8 +41,11 @@ function usage() {
   return `owner-only hotel provisioner
 commands: create-hotel | configure-hotel | upsert-destination | ensure-provider
           establish-agreement | validate | promote-configured | promote-live | provision
+          grant-hotel-desk
 pass JSON as the second argument, via stdin, or as @file
-provision goLive defaults to false — LIVE requires an explicit goLive:true`;
+provision goLive defaults to false — LIVE requires an explicit goLive:true
+grant-hotel-desk requires hotelId or hotelCode, and operatorId or login
+the operator must already exist; existing hats are not overridden`;
 }
 
 async function readPayload(raw) {
@@ -110,14 +113,34 @@ async function main() {
     upsertHotelDestination,
     validateHotelForLive,
   } = await import("../src/lib/aether/provision.ts");
+  const { normalizeLogin } = await import("../src/lib/aether/ops-auth.ts");
+  const { grantHotelDesk } = await import("../src/lib/aether/tenancy.ts");
 
   async function resolveHotelId(db, body) {
-    if (body.hotelId) return body.hotelId;
+    if (body.hotelId) {
+      const hotel = await loadHotel(db, body.hotelId);
+      return hotel.id;
+    }
     if (body.hotelCode) {
       const hotel = await loadHotelByCode(db, body.hotelCode);
       return hotel.id;
     }
     throw new Error("hotelId or hotelCode is required");
+  }
+
+  async function resolveOperatorId(db, body) {
+    if (body.operatorId) {
+      const rows = await db.query("select id from operators where id = $1::uuid", [
+        body.operatorId,
+      ]);
+      if (!rows[0]) throw new Error("operator not found");
+      return rows[0].id;
+    }
+    const login = normalizeLogin(String(body.login ?? ""));
+    if (!login) throw new Error("operatorId or login is required");
+    const existing = await db.query("select id from operators where login = $1", [login]);
+    if (!existing[0]) throw new Error("operator not found");
+    return existing[0].id;
   }
 
   async function dispatch(db, op, body) {
@@ -169,6 +192,39 @@ async function main() {
         return body.hotelId
           ? loadHotel(db, body.hotelId)
           : loadHotelByCode(db, body.hotelCode);
+      case "grant-hotel-desk": {
+        const hotelId = await resolveHotelId(db, body);
+        const operatorId = await resolveOperatorId(db, body);
+        const hats = await db.query(
+          `select id, access_class, hotel_id
+             from operator_memberships
+            where operator_id = $1::uuid and active`,
+          [operatorId],
+        );
+        const same = hats.find(
+          (row) => row.access_class === "hotel_desk" && row.hotel_id === hotelId,
+        );
+        if (same) {
+          return {
+            operatorId,
+            membershipId: same.id,
+            hotelId,
+            accessClass: "hotel_desk",
+            alreadyHeld: true,
+          };
+        }
+        if (hats.length > 0) {
+          throw new Error("operator already has an active membership");
+        }
+        const membershipId = await grantHotelDesk(db, operatorId, hotelId);
+        return {
+          operatorId,
+          membershipId,
+          hotelId,
+          accessClass: "hotel_desk",
+          alreadyHeld: false,
+        };
+      }
       default:
         throw new Error(usage());
     }

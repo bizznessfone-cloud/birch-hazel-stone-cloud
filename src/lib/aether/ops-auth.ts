@@ -235,6 +235,24 @@ export async function createOperator(
   return row;
 }
 
+/** Legacy dispatcher only for unaffiliated preview operators. */
+async function attachLegacyDispatcherIfUnaffiliated(
+  db: OpsDb,
+  operatorId: string,
+  env: NodeJS.ProcessEnv | Record<string, string | undefined>,
+): Promise<void> {
+  const hats = await db.query<{ n: number }>(
+    `select count(*)::int as n
+       from operator_memberships
+      where operator_id = $1::uuid
+        and active`,
+    [operatorId],
+  );
+  if ((hats[0]?.n ?? 0) > 0) return;
+  if (isProductionOpsGuard(env)) return;
+  await ensureLegacyDispatcherMembership(db, operatorId);
+}
+
 export async function ensureOperatorFromEnv(
   db: OpsDb,
   env: NodeJS.ProcessEnv | Record<string, string | undefined> = process.env,
@@ -254,7 +272,7 @@ export async function ensureOperatorFromEnv(
       password_hash,
       existing[0].id,
     ]);
-    await ensureLegacyDispatcherMembership(db, existing[0].id);
+    await attachLegacyDispatcherIfUnaffiliated(db, existing[0].id, env);
     return;
   }
   const inserted = await db.query<{ id: string }>(
@@ -263,7 +281,7 @@ export async function ensureOperatorFromEnv(
   );
   const id = inserted[0]?.id;
   if (!id) throw new Error("operator insert failed");
-  await ensureLegacyDispatcherMembership(db, id);
+  await attachLegacyDispatcherIfUnaffiliated(db, id, env);
 }
 
 async function failureCount(
