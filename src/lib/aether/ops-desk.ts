@@ -200,7 +200,7 @@ export async function loadTodayBoard(db: OpsDeskDb, scope: OpsScope): Promise<To
      where b.transfer_date = $1::date
        and b.cancelled_at is null
        and ${bookingScopeClause(scope).sql}
-       and aether_athens_instant(b.transfer_date, b.pickup_time) >= now()
+       and lower(b.occupies) >= now()
      order by b.pickup_time, b.created_at
      limit 1`,
     scope,

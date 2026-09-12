@@ -52,6 +52,7 @@ const SQL_FILES = [
   "0013_cp12b_runtime_login.sql",
   "0014_cp13a_production_app_role.sql",
   "0015_cp14_hotel_configuration.sql",
+  "0016_cp14_hotel_timezone.sql",
 ] as const;
 
 const IMMUTABLE = {

@@ -8,6 +8,10 @@ const MIGRATION_0015 = readFileSync(
   new URL("../../../migrations/0015_cp14_hotel_configuration.sql", import.meta.url),
   "utf8",
 );
+const MIGRATION_0016 = readFileSync(
+  new URL("../../../migrations/0016_cp14_hotel_timezone.sql", import.meta.url),
+  "utf8",
+);
 
 export const CP14_DEFAULT_DESTINATION_NAME = "ATH";
 export const CP14_DEFAULT_AMOUNT_MINOR = 4500;
@@ -19,6 +23,7 @@ type PgLike = {
 
 export async function applyCp14LiveCatalog(pg: PgLike): Promise<Record<string, string>> {
   await pg.exec(MIGRATION_0015);
+  await pg.exec(MIGRATION_0016);
   await pg.exec("update hotels set status = 'live'");
   const hotels = await pg.query<{ id: string; code: string }>("select id, code from hotels");
   const destinationIdByCode: Record<string, string> = {};

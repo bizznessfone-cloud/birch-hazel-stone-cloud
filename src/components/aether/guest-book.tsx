@@ -402,7 +402,7 @@ function WhenStep(props: {
         if (ready) props.onNext();
       }}
     >
-      <StepTitle title="When" note="Athens civil time. Times that do not exist, including some DST hours, cannot be booked." />
+      <StepTitle title="When" note="Hotel local civil time. Times that do not exist, including some DST hours, cannot be booked." />
       <Field label="Date">
         <input
           type="date"

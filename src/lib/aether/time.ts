@@ -1,10 +1,8 @@
 /**
- * Application time domain. Civil Athens date+time is converted only by
- * PostgreSQL aether_athens_instant(). Never use the browser timezone or the
- * PostgreSQL session TimeZone as the business-time authority.
- *
- * Occupies remains trigger-maintained. This module may preview the same
- * [) bounds the trigger writes; it must not write bookings.occupies.
+ * Application time domain. Civil date+time is converted only by PostgreSQL.
+ * Hotel booking conversion uses aether_civil_instant(date, time, iana_timezone).
+ * Never use the browser timezone or the PostgreSQL session TimeZone as the
+ * business-time authority. Occupies remains trigger-maintained.
  */
 import {
   BUSINESS_TIMEZONE,
@@ -77,7 +75,44 @@ function wrapSqlError(err: unknown): never {
   if (/civil time required/i.test(message)) {
     throw new CivilTimeError("invalid_time", "civil time required");
   }
+  if (/time zone is invalid|hotel timezone is invalid|not recognized/i.test(message)) {
+    throw new CivilTimeError("invalid_time", "time zone is invalid");
+  }
   throw err;
+}
+
+function requireTimezone(ianaTimezone: unknown): string {
+  if (typeof ianaTimezone !== "string") {
+    throw new CivilTimeError("invalid_time", "time zone is invalid");
+  }
+  const tz = ianaTimezone.trim();
+  if (!tz) throw new CivilTimeError("invalid_time", "time zone is invalid");
+  return tz;
+}
+
+/**
+ * Absolute UTC instant for a hotel-local civil date+time.
+ * SQL aether_civil_instant is the authority. No Athens fallback.
+ */
+export async function civilInstant(
+  db: TimeDb,
+  transferDate: string,
+  pickupTime: string,
+  ianaTimezone: string,
+): Promise<string> {
+  const tz = requireTimezone(ianaTimezone);
+  try {
+    const rows = await db.query<{ instant: unknown }>(
+      "select aether_civil_instant($1::date, $2::time, $3::text) as instant",
+      [transferDate, pickupTime, tz],
+    );
+    const value = rows[0]?.instant;
+    if (value == null) throw new CivilTimeError("invalid_time", "civil time required");
+    return toIsoUtc(value);
+  } catch (err) {
+    if (err instanceof CivilTimeError) throw err;
+    wrapSqlError(err);
+  }
 }
 
 /** Absolute UTC instant for an Athens civil date+time. SQL is the authority. */
@@ -104,22 +139,33 @@ export async function athensInstant(
  * Occupancy bounds matching the trigger formula:
  * tstzrange(instant, instant + make_interval(mins => duration), '[)')
  * Does not write bookings.occupies.
+ * Pass ianaTimezone for hotel conversion; omit for the Athens 2-arg entry.
  */
 export async function occupancyBounds(
   db: TimeDb,
   transferDate: string,
   pickupTime: string,
   durationMinutes: number,
+  ianaTimezone?: string,
 ): Promise<OccupancyBounds> {
   assertDurationMinutes(durationMinutes);
+  const tz = ianaTimezone != null ? requireTimezone(ianaTimezone) : null;
   try {
-    const rows = await db.query<{ start: unknown; end_at: unknown }>(
-      `select
-         aether_athens_instant($1::date, $2::time) as start,
-         aether_athens_instant($1::date, $2::time)
-           + make_interval(mins => $3::int) as end_at`,
-      [transferDate, pickupTime, durationMinutes],
-    );
+    const rows = tz
+      ? await db.query<{ start: unknown; end_at: unknown }>(
+          `select
+             aether_civil_instant($1::date, $2::time, $4::text) as start,
+             aether_civil_instant($1::date, $2::time, $4::text)
+               + make_interval(mins => $3::int) as end_at`,
+          [transferDate, pickupTime, durationMinutes, tz],
+        )
+      : await db.query<{ start: unknown; end_at: unknown }>(
+          `select
+             aether_athens_instant($1::date, $2::time) as start,
+             aether_athens_instant($1::date, $2::time)
+               + make_interval(mins => $3::int) as end_at`,
+          [transferDate, pickupTime, durationMinutes],
+        );
     const row = rows[0];
     if (!row) throw new CivilTimeError("invalid_time", "civil time required");
     return { start: toIsoUtc(row.start), end: toIsoUtc(row.end_at) };

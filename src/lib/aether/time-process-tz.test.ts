@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { describe, test } from "node:test";
 import { PGlite } from "@electric-sql/pglite";
-import { athensInstant, type TimeDb } from "./time.ts";
+import { athensInstant, civilInstant, type TimeDb } from "./time.ts";
 
 const FOUNDATION_SQL = readFileSync(
   new URL("../../../migrations/0002_foundation.sql", import.meta.url),
@@ -58,6 +58,42 @@ describe("Phase 3 process timezone mismatch", () => {
     assert.equal(
       await athensInstant(db, "2026-01-15", "00:00"),
       "2026-01-14T22:00:00.000Z",
+    );
+    await pg.close();
+  });
+
+  test("Pacific/Auckland process TZ does not change a New York hotel instant", async () => {
+    assert.equal(process.env.TZ, "Pacific/Auckland");
+    const naive = new Date("2026-01-15T09:00");
+    assert.notEqual(naive.toISOString(), "2026-01-15T14:00:00.000Z");
+
+    const { btree_gist } = await import("@electric-sql/pglite/contrib/btree_gist");
+    const pg = new PGlite({ extensions: { btree_gist } });
+    await pg.waitReady;
+    await pg.exec(FOUNDATION_SQL);
+    await pg.exec(OCCUPANCY_SQL);
+    await pg.exec(AUTH_SQL);
+    await pg.exec(TIME_SQL);
+    await pg.exec(
+      readFileSync(new URL("../../../migrations/0015_cp14_hotel_configuration.sql", import.meta.url), "utf8"),
+    );
+    await pg.exec(
+      readFileSync(new URL("../../../migrations/0016_cp14_hotel_timezone.sql", import.meta.url), "utf8"),
+    );
+    const db: TimeDb = {
+      async query<T>(text: string, params?: unknown[]) {
+        const result = await pg.query<T>(text, params);
+        return result.rows;
+      },
+    };
+
+    assert.equal(
+      await civilInstant(db, "2026-01-15", "09:00", "America/New_York"),
+      "2026-01-15T14:00:00.000Z",
+    );
+    assert.equal(
+      await athensInstant(db, "2026-01-15", "09:00"),
+      "2026-01-15T07:00:00.000Z",
     );
     await pg.close();
   });

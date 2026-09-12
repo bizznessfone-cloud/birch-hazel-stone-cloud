@@ -7,7 +7,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { hotelIdentity, type HotelIdentity } from "./hotel.ts";
 import {
-  athensInstant,
+  civilInstant,
   CivilTimeError,
   assertDurationMinutes,
   type TimeDb,
@@ -364,8 +364,10 @@ async function resolveLiveQuote(db: BookingDb, v: Validated): Promise<ResolvedQu
     code: string;
     currency: string;
     status: string;
+    iana_timezone: string;
   }>(
-    `select id, code, btrim(currency) as currency, status
+    `select id, code, btrim(currency) as currency, status,
+            btrim(iana_timezone) as iana_timezone
        from hotels
       where lower(code) = $1`,
     [v.hotelCode],
@@ -407,7 +409,7 @@ async function resolveLiveQuote(db: BookingDb, v: Validated): Promise<ResolvedQu
   }
 
   try {
-    await athensInstant(db, v.transferDate, v.pickupTime);
+    await civilInstant(db, v.transferDate, v.pickupTime, hotel.iana_timezone);
   } catch (err) {
     if (err instanceof CivilTimeError) {
       throw new BookingError(err.code, 400, err.message);

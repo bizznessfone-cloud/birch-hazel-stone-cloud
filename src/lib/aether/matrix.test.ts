@@ -241,6 +241,16 @@ const MATRIX: Array<{ file: string; titles: string[] }> = [
       "gate harbor and legacy remain unconfigured",
     ],
   },
+  {
+    file: "cp14.4.test.ts",
+    titles: [
+      "0011–0015 remain byte-identical; 0003 occupancy tests stay 0003-only",
+      "Europe/Athens winter booking occupies the Athens instant",
+      "America/New_York DST gap and fold reject",
+      "same civil time in Athens London and New York yields different instants",
+      "invalid IANA timezone fails closed without Athens fallback",
+    ],
+  },
 ];
 
 async function openDb() {
@@ -381,7 +391,7 @@ describe("Phase 9 full test reconstruction", () => {
     assert.match(occupancy, /tstzrange/);
     assert.match(occupancy, /'\[\)'/);
 
-    const later = ["0008_guest_ux.sql", "0009_ops_desk.sql", "0010_hotel_white_label.sql", "0011_production_hardening.sql", "0012_cp12_tenancy.sql", "0013_cp12b_runtime_login.sql", "0014_cp13a_production_app_role.sql", "0015_cp14_hotel_configuration.sql"]
+    const later = ["0008_guest_ux.sql", "0009_ops_desk.sql", "0010_hotel_white_label.sql", "0011_production_hardening.sql", "0012_cp12_tenancy.sql", "0013_cp12b_runtime_login.sql", "0014_cp13a_production_app_role.sql", "0015_cp14_hotel_configuration.sql", "0016_cp14_hotel_timezone.sql"]
       .map((name) => readAether(`../../../migrations/${name}`))
       .join("\n");
     assert.doesNotMatch(
