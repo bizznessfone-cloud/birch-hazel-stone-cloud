@@ -1,5 +1,43 @@
 # RESTORE.md — reconstruct Aether without this conversation
 
+## Source of truth
+
+GitHub is authoritative for application source.
+
+| Field | Value |
+|---|---|
+| Repository | `https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud` |
+| Branch | `main` |
+| Known-good application source | `45e171a23037b7c94005018cd2126033a449d6f0` |
+| Tag | `cp17-known-good` |
+
+`cp17-known-good` is an immutable tag on that commit. When the tag was created,
+`main` pointed at it. Later documentation-only commits on `main` do not change
+the CP16C/CP17 application baseline.
+
+Recovery ZIPs are **secondary disaster-recovery artifacts**. The CP10 ZIP in
+`attachments/` is historical and **MUST NOT** be extracted over a newer Git
+tree without explicit human approval.
+
+A Grok workspace is disposable and is never authoritative.
+
+Source-code state and production database state **must** be reported separately.
+Every future production-readiness audit **must** name the exact Git commit
+audited. Do **not** claim Neon production readiness merely because the source
+repository is current.
+
+**CP19** currently refers to production Neon binding/verification. It is **not**
+yet a completed production checkpoint and is **not** a source-code commit.
+
+### Source of truth order
+
+1. GitHub repository + exact commit SHA (authoritative application source)
+2. Checkpoint tag (`cp17-known-good` = known-good CP16C/CP17 source)
+3. Recovery ZIP — secondary disaster-recovery artifact only
+4. Grok workspace — disposable working environment
+5. Chat — architectural / operational context, not source
+6. Platform-generated/deployed state — **not** authoritative
+
 ## 1. What is Aether?
 
 Aether Transfer is a guest-first hotel transfer service.
@@ -33,7 +71,7 @@ Guest lockup: **SCAN. BOOK. GO.**
 - Preview/dev database: PGLite (embedded PostgreSQL) with `btree_gist` — **development substitute only**
 - Production database: Neon PostgreSQL
 - Occupancy: trigger-maintained `occupies` + `tstzrange [)` + vehicle/driver GiST EXCLUDE
-- Time: `aether_athens_instant()` only (Europe/Athens civil time)
+- Time: `aether_athens_instant()` for Athens civil booking instants; hotel-local Ops Today uses `civilToday` / hotel IANA timezone
 - Operator auth: scrypt + HttpOnly session `aether_ops_session` + CSRF cookie `aether_ops_csrf`
 - Application DML roles:
   - `neondb_owner` — migration / schema owner
@@ -45,17 +83,33 @@ Authoritative architecture notes: `docs/ARCHITECTURE.md`
 
 ## 3. Where is the source?
 
-Workspace root. Application code:
+**GitHub**, not the workspace disk and not a ZIP.
+
+```
+git clone https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud.git
+cd birch-hazel-stone-cloud
+git checkout cp17-known-good
+# equivalent: git checkout 45e171a23037b7c94005018cd2126033a449d6f0
+```
+
+Before modifying the application, identify: repository, branch, `HEAD` SHA, and
+checkpoint tag. Confirm `HEAD` against `45e171a23037b7c94005018cd2126033a449d6f0`
+or a later documented commit.
+
+Application code (once checked out):
 
 - `src/lib/aether/` — domain
 - `src/routes/book.$hotelCode.tsx` — guest booking
 - `src/routes/confirmed.$token.tsx` — confirmation
 - `src/routes/ops*.tsx` — operations desk
-- `src/lib/db.ts` — PGLite preview SET ROLE `aether_runtime` / Neon runtime (`aether_app` LOGIN; no startup role option)
+- `src/lib/db.ts` — PGLite preview SET ROLE `aether_runtime` / Neon runtime (`aether_app` LOGIN; no production SET ROLE)
 
 ## 4. Where is the database schema?
 
 SQL migrations in `migrations/`, applied in filename order. Platform `migrations/auth/` is unused (Better Auth is not the operator model).
+
+Source tree includes `0002` through `0017`. That is **source** state. Production
+Neon may lag until CP19 binding/verification completes.
 
 ## 5. What migrations must run?
 
@@ -74,8 +128,12 @@ SQL migrations in `migrations/`, applied in filename order. Platform `migrations
 | 11 | `0012_cp12_tenancy.sql` | 12 |
 | 12 | `0013_cp12b_runtime_login.sql` | 12b |
 | 13 | `0014_cp13a_production_app_role.sql` | 13a |
+| 14 | `0015_cp14_hotel_configuration.sql` | 14 |
+| 15 | `0016_cp14_hotel_timezone.sql` | 14 |
+| 16 | `0017_cp16_runtime_privilege_hardening.sql` | 16 |
 
-`aether_meta.schema_phase = 13`, checkpoint = 13a after 0014.
+Source files exist through **0017**. There is **no 0018**. Production Neon
+application of 0012–0017 is **UNVERIFIED** until CP19.
 
 Preview: `src/lib/db.ts` applies these to PGLite at startup, then SET ROLE `aether_runtime`.
 
@@ -93,7 +151,7 @@ See `.env.example`.
 | `AETHER_OPS_PASSWORD` | no (preview bootstrap) | yes |
 | `AETHER_RESTORE_TARGET` | no (`preview` or `production`) | no |
 
-No `.env` files are stored in checkpoints.
+No `.env` files are stored in git.
 
 ## 7. How is it built?
 
@@ -112,51 +170,69 @@ npm run test:aether
 npm run typecheck
 ```
 
-Last known-good: CP12B committed source + CP13A local role split (PGLite). Neon remains unverified.
+Last known-good **source**: CP16C/CP17 at `45e171a` / `cp17-known-good` (PGLite).
+Neon remains unverified.
 
 ## 9. How is it deployed?
 
-CP13A is source-only production-role work. Production deploy is blocked until Neon
-owner/`aether_app` verification PASSes. Do not connect Vercel from this checkpoint.
+CP16C/CP17 is source-complete. Production deploy is blocked until Neon
+owner/`aether_app` verification PASSes (CP19). Do not connect Vercel from this
+source baseline. Do not treat a current GitHub clone as production readiness.
 
 Do not call `init_or_update_app` / provision / reset / replace-app.
 
 ## 10. What must NEVER be done?
 
+- Restore an older checkpoint ZIP over a newer Git tree without **explicit human approval**
+- Treat the CP10 ZIP as current source
+- Treat a Grok workspace as authoritative
 - Call platform provisioner / `init_or_update_app` / reinitialise / reset app without **explicit human approval** (GATE A)
 - Use the table-owner connection as the application runtime connection
-- Claim Neon / production verification from PGLite results
+- Claim Neon / production verification from PGLite results or from GitHub currency
 - Substitute SQLite or mocks for PostgreSQL occupancy
-- Overwrite a completed checkpoint (create CP10A / CP11 instead)
+- Rewrite git history (reset / revert / rebase / squash / force-push) as restore
 - Commit secrets, `.env` values, or print credentials
 - Redesign occupancy, booking, inventory, or auth as part of restore
 - Reconstruct Aether as reception-only
 - Continue building on an uncertain restore
+- Create a CP19 tag, or claim CP19 complete, before Neon verification PASSes
 
 ## 11. Latest known-good checkpoint
 
-**Checkpoint 13a** — CP13A SQL-created production LOGIN `aether_app`.
+**Source baseline: CP16C/CP17** — commit `45e171a23037b7c94005018cd2126033a449d6f0`,
+tag `cp17-known-good`.
 
-Historical trusted occupancy baseline remains **Checkpoint 10**. CP12/CP12A added tenancy. CP12B hardened fail-closed production. CP13A does not rewrite occupancy.
+Historical trusted occupancy baseline remains **Checkpoint 10**. CP10
+documentation and the CP10 ZIP are historical only.
 
-Do not start CP13B from restore. Do not connect Vercel until Neon is verified.
+Do not start production Vercel connection until Neon is verified (CP19).
 
 ## 12. How do you restore it?
 
-1. Start a fresh TanStack Start sandbox (or any Node 22 workspace).
-2. Extract the checkpoint zip over the workspace, preserving `node_modules` if present.
-3. Keep any user-uploaded archives in `attachments/` — do not delete them.
+Primary path (required):
+
+1. Clone `https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud.git`.
+2. Check out tag `cp17-known-good` (commit `45e171a23037b7c94005018cd2126033a449d6f0`),
+   or a later documented commit on `main` after identifying SHA and checkpoint.
+3. Record repository, branch, `HEAD` SHA, and checkpoint **before** modifying anything.
 4. Read `BUILD_STATE.md`, `AETHER_RECOVERY_MANIFEST.json`, this file, then `docs/RECOVERY_MANIFEST.md`.
-5. Run `sh scripts/restore_aether.sh`.
+5. Run `sh scripts/restore_aether.sh` only as a sandbox helper after Git checkout — not as a ZIP overlay.
 6. If the script fails, **stop**. Do not invent workarounds.
 7. Start the app with `sh startup.sh` in this sandbox (serves the live preview).
-8. Do not start CP13B. Do not connect Vercel until Neon verification PASSes.
+8. Do not treat CP19 as complete. Do not connect Vercel until Neon verification PASSes.
 
-Alternatively: `sh scripts/restore_aether.sh` after extract.
+Disaster-recovery path (ZIP) — **only** if GitHub is unavailable **and** a human
+has explicitly approved overlaying that archive:
+
+1. Do **not** extract `attachments/AETHER_TRANSFER_CP010_DATABASE_2026-09-05.zip`
+   over a tree whose `HEAD` is newer than CP10.
+2. Keep archives in `attachments/` — do not delete them.
+3. Human review is required before any reconciliation with current GitHub.
 
 ## 13. What remains blocked?
 
-- Neon application of 0012 / 0013 / 0014 (credentials unavailable here)
+- CP19: Neon production binding/verification (**not** a source commit)
+- Neon application of 0012–0017 (credentials unavailable here)
 - Neon `DATABASE_URL` proven as `aether_app` LOGIN (`session_user` = `current_user`)
 - `aether_app` proven not a `neon_superuser` member
 - Neon concurrency (overlapping vehicle and driver assignments)
@@ -173,10 +249,4 @@ Values are not stored here.
 - Production operator credentials if preview `desk` / `desk-pass` must not be used
 
 If those are unavailable: **PRODUCTION VERIFICATION: BLOCKED. REASON: credentials unavailable.**
-
-## Source of truth order
-
-1. Database schema and migrations
-2. Application source currently on disk
-3. Checkpoint manifests / exported archives
-4. Platform-generated/deployed state — **not authoritative**
+That is a **database** blocker. It does not make GitHub source non-authoritative.

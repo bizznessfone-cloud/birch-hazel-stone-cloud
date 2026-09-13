@@ -1,10 +1,10 @@
 {
   "project": "Aether Transfer",
   "guest_lockup": "SCAN. BOOK. GO.",
-  "restore_checkpoint_id": "13a",
-  "last_known_good_checkpoint": "12b",
-  "phase": "CP13A SQL-created production LOGIN aether_app (source only). Neon UNVERIFIED. Vercel NOT CONNECTED.",
-  "timestamp": "2026-09-05T16:14:00+03:00",
+  "restore_checkpoint_id": "cp17-known-good",
+  "last_known_good_checkpoint": "cp17-known-good",
+  "phase": "CP16C/CP17 known-good source at 45e171a / tag cp17-known-good. CP19 is Neon binding/verification and is NOT complete. Vercel NOT CONNECTED.",
+  "timestamp": "2026-09-13T19:46:00+03:00",
   "source_tree_hash_sha256": "07539bc2de4d64c93e580c1bd3d82400df1943d76e3ea0594c8eabbbc27817ba",
   "source_file_count": 164,
   "restored_from": {
@@ -12,7 +12,9 @@
     "uploaded_archive_sha256": "be72e91f93c5b4b1114bdcec5b0347803aba0b7f22a80ea5b0c1bf7ece063910",
     "filename_note": "Filename says CP010_DATABASE; contents are Checkpoint 10 (schema_phase 10, migration 0011, guest+ops, hardening tests).",
     "inner_cp10_alias": "recovery-snapshots/AETHER_TRANSFER_CP10_HARDENING_2026-09-05.zip",
-    "inner_cp10_sha256": "c5b1a5c05f82b3e069f4ec8153889ab3baceb132d6bb2be7ec27867e28625cd0"
+    "inner_cp10_sha256": "c5b1a5c05f82b3e069f4ec8153889ab3baceb132d6bb2be7ec27867e28625cd0",
+    "status": "HISTORICAL",
+    "warning": "The CP10 ZIP is a secondary disaster-recovery artifact. MUST NOT be extracted over a newer Git tree without explicit human approval. GitHub at 45e171a / cp17-known-good is current source."
   },
   "important_files": [
     ".env.example",
@@ -41,6 +43,9 @@
     "migrations/0012_cp12_tenancy.sql",
     "migrations/0013_cp12b_runtime_login.sql",
     "migrations/0014_cp13a_production_app_role.sql",
+    "migrations/0015_cp14_hotel_configuration.sql",
+    "migrations/0016_cp14_hotel_timezone.sql",
+    "migrations/0017_cp16_runtime_privilege_hardening.sql",
     "migrations/auth/0001_auth.sql",
     "package-lock.json",
     "package.json",
@@ -240,12 +245,23 @@
       "0008_guest_ux.sql",
       "0009_ops_desk.sql",
       "0010_hotel_white_label.sql",
-      "0011_production_hardening.sql"
+      "0011_production_hardening.sql",
+      "0012_cp12_tenancy.sql",
+      "0013_cp12b_runtime_login.sql",
+      "0014_cp13a_production_app_role.sql",
+      "0015_cp14_hotel_configuration.sql",
+      "0016_cp14_hotel_timezone.sql",
+      "0017_cp16_runtime_privilege_hardening.sql"
     ],
-    "auth_subdir": "migrations/auth/0001_auth.sql \u2014 unused; operator auth is not Better Auth",
-    "last_applied_expected": "0011_production_hardening.sql",
-    "schema_phase": "10",
-    "db_checkpoint": "10"
+    "auth_subdir": "migrations/auth/0001_auth.sql — unused; operator auth is not Better Auth",
+    "last_applied_expected": "0017_cp16_runtime_privilege_hardening.sql",
+    "schema_phase": "16 (source files; production Neon UNVERIFIED)",
+    "db_checkpoint": "cp17-known-good source / Neon UNVERIFIED",
+    "last_applied_expected_source": "0017_cp16_runtime_privilege_hardening.sql",
+    "schema_phase_source": "16",
+    "db_checkpoint_source": "16",
+    "no_0018": true,
+    "production_neon": "UNVERIFIED — CP19 not complete"
   },
   "package": {
     "name": "aether-transfer",
@@ -265,10 +281,10 @@
     "test": "npm run test:aether",
     "typecheck": "npm run typecheck",
     "dev": "npm run dev  # 0.0.0.0:8080 via startup.sh",
-    "migrate_owner": "npm run db:migrate  # AETHER_DATABASE_OWNER_URL || DATABASE_URL",
-    "restore": "sh scripts/restore_aether.sh",
+    "migrate_owner": "npm run db:migrate  # AETHER_DATABASE_OWNER_URL only; never DATABASE_URL fallback",
+    "restore": "git clone https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud.git && git checkout cp17-known-good",
     "snapshot": "node scripts/make-recovery-snapshot.mjs",
-    "deploy": "NOT STARTED \u2014 Phase 11. Do not run platform provisioner."
+    "deploy": "NOT STARTED — CP19 Neon verification required before Vercel. Do not run platform provisioner."
   },
   "environment_variable_names_only": [
     {
@@ -298,8 +314,9 @@
     }
   ],
   "database_migration_state": {
-    "preview": "PGLite applies 0002-0014 at startup; labelled DEVELOPMENT SUBSTITUTE",
-    "production": "UNVERIFIED \u2014 credentials unavailable in this workspace"
+    "preview": "PGLite applies 0002-0017 at startup; labelled DEVELOPMENT SUBSTITUTE",
+    "production": "UNVERIFIED — CP19 Neon binding/verification not complete; credentials may be unavailable in a workspace",
+    "source_files": "0002 through 0017 present in git at 45e171a; no 0018"
   },
   "external_dependencies": [
     "PostgreSQL  (Neon in production, PGLite in preview)",
@@ -311,27 +328,45 @@
     "AETHER_DATABASE_OWNER_URL"
   ],
   "known_blockers": [
+    "CP19 production Neon binding/verification: NOT COMPLETE",
     "Neon production runtime role separate from migration owner: BLOCKED/UNVERIFIED",
-    "DATABASE_URL as aether_app: BLOCKED/UNVERIFIED",
+    "DATABASE_URL as aether_app LOGIN: BLOCKED/UNVERIFIED",
     "Neon concurrent overlapping vehicle assignments: NOT VERIFIED",
     "Neon concurrent overlapping driver assignments: NOT VERIFIED",
-    "No GitHub remote",
-    "Platform provisioner can replace the workspace"
+    "Platform provisioner can replace the workspace — do not call it",
+    "A historical CP10 ZIP exists in attachments/ — MUST NOT extract over newer Git"
   ],
-  "current_phase": "13A source complete; Neon unverified; 13B not started",
-  "current_checkpoint": "13a",
-  "production_status": "NOT PRODUCTION-READY",
+  "current_phase": "CP16C/CP17 source known-good (cp17-known-good / 45e171a); CP19 Neon not complete",
+  "current_checkpoint": "cp17-known-good",
+  "production_status": "NOT PRODUCTION-READY — source current does not imply Neon readiness",
   "source_of_truth_order": [
-    "1. Database schema and migrations",
-    "2. Application source on disk",
-    "3. Checkpoint manifests / exported archives",
-    "4. Platform-generated/deployed state is NOT authoritative"
+    "1. GitHub repository + exact commit SHA (authoritative application source)",
+    "2. Checkpoint tag cp17-known-good (45e171a23037b7c94005018cd2126033a449d6f0)",
+    "3. Recovery ZIP — secondary disaster-recovery artifact only",
+    "4. Grok workspace — disposable, never authoritative",
+    "5. Chat — architectural/operational context",
+    "6. Platform-generated/deployed state is NOT authoritative"
   ],
-  "restoration_instructions": "Follow RESTORE.md then sh scripts/restore_aether.sh. Do not call init_or_update_app. Do not overwrite Checkpoint 10. Do not substitute PGLite as production evidence.",
+  "restoration_instructions": "Clone GitHub bizznessfone-cloud/birch-hazel-stone-cloud and checkout cp17-known-good (45e171a23037b7c94005018cd2126033a449d6f0). Follow RESTORE.md. Do not call init_or_update_app. Do not extract the CP10 ZIP over a newer Git tree. Do not substitute PGLite as production evidence. Do not claim CP19 complete.",
   "never": [
     "print or store secret values in this manifest",
     "call init_or_update_app / provision / reset without explicit approval",
     "overwrite an immutable checkpoint",
-    "claim production from PGLite"
-  ]
+    "claim production from PGLite",
+    "extract the CP10 ZIP over a newer Git tree without explicit human approval",
+    "treat a workspace or recovery ZIP as authoritative current source",
+    "claim Neon production readiness from GitHub currency",
+    "create a CP19 tag or treat CP19 as a source commit before Neon verification PASSes",
+    "move or replace tag cp17-known-good"
+  ],
+  "github": {
+    "authoritative": true,
+    "repository": "bizznessfone-cloud/birch-hazel-stone-cloud",
+    "url": "https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud",
+    "branch": "main",
+    "known_good_source_commit": "45e171a23037b7c94005018cd2126033a449d6f0",
+    "known_good_tag": "cp17-known-good",
+    "note": "When cp17-known-good was created, main pointed at 45e171a. The tag is immutable. Documentation-only commits may follow on main."
+  },
+  "source_tree_hash_note": "source_tree_hash_sha256 and file_hashes_sha256 below are a historical CP13a-era inventory. Authoritative current application source is git commit 45e171a23037b7c94005018cd2126033a449d6f0 / tag cp17-known-good. Do not treat these hashes as current-tree proof."
 }

@@ -3,8 +3,47 @@
 This file is the permanent copy of the rebuild protocol used to reconstruct
 Aether Transfer after the original implementation workspace was lost.
 
-GitHub is not part of this rebuild. Persistence is the user's downloaded
-recovery snapshots plus the documents in `docs/`.
+## Source of truth
+
+GitHub is the authoritative source for application source code.
+
+| Field | Value |
+|---|---|
+| Repository | `bizznessfone-cloud/birch-hazel-stone-cloud` |
+| Branch | `main` |
+| Known-good application source | `45e171a23037b7c94005018cd2126033a449d6f0` |
+| Tag | `cp17-known-good` |
+
+When `cp17-known-good` was created, `main` pointed at that commit. The tag is
+immutable. Documentation-only commits may follow on `main` without changing the
+CP16C/CP17 application baseline.
+
+Recovery ZIPs are secondary disaster-recovery artifacts. The CP10 ZIP is
+historical and must not be extracted over a newer Git tree without explicit
+human approval. A workspace is disposable and is never authoritative.
+
+Every engineering checkpoint must identify an exact Git commit SHA. Every
+future production-readiness audit must name the exact Git commit audited.
+Source-code state and production database state must be reported separately.
+A historical checkpoint must never be mistaken for the current project state.
+
+Do not claim Neon production readiness merely because the source repository is
+current. **CP19** currently refers to production Neon binding/verification and
+is **not** yet a completed production checkpoint.
+
+Agents must never restore an older checkpoint over a newer repository state
+without explicit human approval. Before modifying the application, identify
+repository, branch, `HEAD` SHA, and checkpoint. Before starting a new
+checkpoint, the previous known-good commit must remain recoverable.
+
+### Source of truth order
+
+1. GitHub repository + exact commit SHA
+2. Checkpoint tag (`cp17-known-good`)
+3. Recovery ZIP (disaster recovery only)
+4. Grok workspace (disposable)
+5. Chat (context only)
+6. Platform-generated/deployed state — **not** authoritative
 
 ## Absolute priorities
 
@@ -16,20 +55,24 @@ recovery snapshots plus the documents in `docs/`.
 6. Timezone/DST behaviour must be explicitly tested.
 7. Do not invent missing product requirements.
 8. Do not expand MVP scope.
-9. Maintain complete recovery documentation.
-10. Produce complete downloadable recovery snapshots at defined checkpoints.
-11. Never claim something is implemented, tested or verified unless it has been verified in the current rebuild.
+9. Maintain complete recovery documentation keyed to GitHub SHAs.
+10. Recovery snapshots (ZIPs) are backups of a Git commit, not replacements for GitHub.
+11. Never claim something is implemented, tested or verified unless it has been verified in the current rebuild, and never claim production from source currency alone.
 
 ## Snapshot rule
 
 A snapshot must contain the entire restorable project: source, migrations,
-tests, configuration examples (no secrets), and recovery documentation.
+tests, configuration examples (no secrets), and recovery documentation. It is a
+backup of a named Git commit.
 
 Ask at every checkpoint: could another coding agent restore this application
-from this snapshot without access to the original conversation? If no, the
-snapshot is not complete.
+from GitHub at the named SHA without access to the original conversation? If
+no, the checkpoint documentation is not complete.
 
 ## Checkpoints
+
+Historical rebuild gates (0–11) remain the original protocol. They are **not**
+the current source baseline.
 
 | Checkpoint | Gate |
 |---|---|
@@ -43,26 +86,47 @@ snapshot is not complete.
 | 7 | Operations UX passes |
 | 8 | White-label/hotel attribution passes |
 | 9 | Full test reconstruction passes |
-| 10 | Production hardening passes |
-| 11 | Production deployment passes |
+| 10 | Production hardening passes (historical occupancy baseline) |
+| 11 | Production deployment passes (**not achieved**) |
+| 12 / 12A / 12B | Tenancy and pre-Vercel hardening (source) |
+| 13A | SQL-created production LOGIN `aether_app` (source) |
+| 14.x | Hotel configuration, timezone, quote, provisioning (source) |
+| 15 | Hotel-scoped Ops identity (source) |
+| 16C | Runtime privilege hardening (source, migration 0017) |
+| 17 | Hotel-local Ops Today (source) — **current known-good**, tag `cp17-known-good` |
+| 19 | Production Neon binding/verification — **not a source commit; not complete** |
+
+Current source baseline is CP16C/CP17 at
+`45e171a23037b7c94005018cd2126033a449d6f0`. Checkpoint 10 documentation is
+historical only.
 
 Do not continue into the next major phase until the checkpoint is identified
-and a complete snapshot exists.
+by Git SHA (and tag when present) and remains recoverable.
 
 ## If the workspace disappears
 
-Read, in order:
+Restore from GitHub:
+
+```
+git clone https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud.git
+git checkout cp17-known-good
+```
+
+Then read, in order:
 
 1. `docs/RECOVERY_MANIFEST.md`
-2. `docs/IMPLEMENTATION_STATUS.md`
-3. `docs/ARCHITECTURE.md`
-4. `docs/TEST_RESULTS.md`
-5. `docs/RECOVERY_NOTES.md`
-6. `docs/BUILD_BLUEPRINT_V2.md`
-7. `docs/RESTORE.md`
+2. `BUILD_STATE.md`
+3. `RESTORE.md`
+4. `docs/IMPLEMENTATION_STATUS.md`
+5. `docs/ARCHITECTURE.md`
+6. `docs/TEST_RESULTS.md`
+7. `docs/RECOVERY_NOTES.md`
+8. `docs/BUILD_BLUEPRINT_V2.md`
+9. `docs/RESTORE.md`
 
 Then inspect the source tree and migrations. Do not restart from scratch.
-Continue from the recorded phase.
+Continue from the recorded source phase. Do not extract a historical ZIP over
+the clone.
 
 ## Frozen stack
 
