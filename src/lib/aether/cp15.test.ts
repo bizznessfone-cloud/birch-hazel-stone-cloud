@@ -323,7 +323,7 @@ describe("CP15 hotel-scoped Ops Today", () => {
     );
     const desk = await loginHotelDesk(db, "gate-today", gate.id);
     const board = await loadTodayBoard(db, desk);
-    assert.equal(board.athensDate, today);
+    assert.equal(board.boardDate, today);
     assert.ok(board.feed.length >= 1);
     assert.equal(board.feed.every((row) => row.hotelCode === "gate"), true);
     await pg.close();

@@ -278,6 +278,38 @@ const MATRIX: Array<{ file: string; titles: string[] }> = [
       "CP14.4 hotel timezone / occupancy remains unchanged",
     ],
   },
+  {
+    file: "cp16.test.ts",
+    titles: [
+      "0011–0016 remain byte-identical; 0017 is privilege-only",
+      "aether_app grant matrix after 0017",
+      "aether_app guest booking, lookup, quote, timezone, occupancy, rate limit, idempotency",
+      "aether_app can update operational booking columns and cannot update protected columns",
+      "aether_app is denied hotel/provider/membership/destination/meta/schema/occupancy DDL",
+      "provider fleet INSERT/UPDATE shape is preserved; hotel ownership INSERT is denied",
+      "ensureOperatorFromEnv legacy writes, session lifecycle, membership mutation denied",
+      "preview aether_runtime identity is unchanged",
+    ],
+  },
+  {
+    file: "cp17.test.ts",
+    titles: [
+      "0011–0017 remain byte-identical; CP17 adds no migration",
+      "hotel A desk sees A bookings and does not see B bookings",
+      "hotel B desk sees B bookings and does not see A bookings",
+      "Athens hotel desk board date matches Europe/Athens civil date",
+      "London hotel desk board date follows Europe/London independently of Athens",
+      "New York hotel desk board date follows America/New_York",
+      "Dubai hotel desk board date follows Asia/Dubai",
+      "UTC-midnight divergence uses hotel civil date not UTC",
+      "DST civil date calculation remains correct for New York and London",
+      "invalid and empty hotel timezone fail closed without Athens fallback",
+      "next remains lower(occupies) >= now() with existing ordering",
+      "provider dispatcher Today remains Athens-global and provider-scoped",
+      "Today path has no client timezone authority",
+      "CP14.4 occupancy objects remain untouched",
+    ],
+  },
 ];
 
 async function openDb() {
@@ -418,7 +450,7 @@ describe("Phase 9 full test reconstruction", () => {
     assert.match(occupancy, /tstzrange/);
     assert.match(occupancy, /'\[\)'/);
 
-    const later = ["0008_guest_ux.sql", "0009_ops_desk.sql", "0010_hotel_white_label.sql", "0011_production_hardening.sql", "0012_cp12_tenancy.sql", "0013_cp12b_runtime_login.sql", "0014_cp13a_production_app_role.sql", "0015_cp14_hotel_configuration.sql", "0016_cp14_hotel_timezone.sql"]
+    const later = ["0008_guest_ux.sql", "0009_ops_desk.sql", "0010_hotel_white_label.sql", "0011_production_hardening.sql", "0012_cp12_tenancy.sql", "0013_cp12b_runtime_login.sql", "0014_cp13a_production_app_role.sql", "0015_cp14_hotel_configuration.sql", "0016_cp14_hotel_timezone.sql", "0017_cp16_runtime_privilege_hardening.sql"]
       .map((name) => readAether(`../../../migrations/${name}`))
       .join("\n");
     assert.doesNotMatch(

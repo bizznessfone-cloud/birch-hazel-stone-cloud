@@ -46,8 +46,19 @@ elapsed duration (make_interval minutes)
 tstzrange [)  (trigger writes bookings.occupies)
 ```
 
-Dashboard Today is `aether_athens_today()` — the Europe/Athens civil date of
-`now()`. Instant → civil date is `aether_athens_date()`.
+Dashboard Today is hat-specific:
+
+- `hotel_desk`: current civil date in the authenticated hotel's
+  `hotels.iana_timezone`, computed as `(now() AT TIME ZONE tz)::date`.
+  Fail closed on missing hotel, empty timezone, or invalid IANA. No Athens
+  fallback. Timezone comes from `requireOps().hotelId`, never the client.
+- `provider_dispatcher`: `aether_athens_today()` — the Europe/Athens civil
+  date of `now()` — until a future dispatcher timezone checkpoint.
+
+The Today feed remains `b.transfer_date = boardDate` (hotel-local pickup
+date). `next` remains `lower(occupies) >= now()`. Instant → Athens civil
+date is `aether_athens_date()`. Hotel occupancy conversion remains
+`aether_civil_instant`.
 
 ICS is not implemented.
 
@@ -103,7 +114,10 @@ Source: `src/components/aether/guest-book.tsx`, `src/routes/book.$hotelCode.tsx`
 Reception/dispatch desk. Privileged. Does not write `occupies`.
 
 - `/ops/login` — existing scrypt session
-- `/ops` — Today = Athens civil date of `now()`
+- `/ops` — Today board. `hotel_desk` uses the hotel IANA civil date;
+  `provider_dispatcher` remains Athens-global. Feed is
+  `transfer_date = boardDate`. Next remaining transfer is
+  `lower(occupies) >= now()`.
 - Chronological feed, next remaining transfer, attention (no vehicle / no driver / cancelled)
 - `/ops/bookings/` list + `/ops/bookings/$bookingId` detail
 - Independent vehicle/driver assign via Phase 5 inventory; `23P01` → readable unavailable
@@ -374,10 +388,17 @@ Vercel is not connected at CP13A.
 
 ## V1 geographic / timezone constraint
 
-V1 operational timezone is **Europe/Athens**. This is a deliberate V1 operating
-constraint, not the intended long-term global architecture.
+Hotel occupancy conversion uses `hotels.iana_timezone` via
+`aether_civil_instant` (CP14.4). Ops Today is hat-specific (CP17):
 
-Future architecture (not implemented):
+- `hotel_desk`: current civil date in `hotels.iana_timezone`
+- `provider_dispatcher`: remains Athens-global (`aether_athens_today()`)
+  until a future dispatcher timezone checkpoint
+
+A provider can operate hotels in multiple timezones, so dispatcher Today is
+not a single hotel zone.
+
+Future architecture (not fully implemented):
 
 ```
 hotel/location-specific IANA timezone
@@ -393,7 +414,8 @@ ONE GLOBAL BOOKING ENGINE + LOCALLY CONFIGURED OPERATIONAL ENVIRONMENTS.
 
 Future local configuration may include operational location, IANA timezone,
 currency, country, city, transport hubs, local pricing, and fleet
-configuration. None of that is implemented in CP12B.
+configuration. Dispatcher timezone remains Athens-global in this checkpoint.
+
 
 ## 100-hotel strategic data (document only)
 

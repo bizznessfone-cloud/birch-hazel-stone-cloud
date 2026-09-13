@@ -189,3 +189,25 @@ export async function athensToday(db: TimeDb): Promise<string> {
   const rows = await db.query<{ d: unknown }>("select aether_athens_today()::text as d");
   return toDateText(rows[0]?.d);
 }
+
+/** Hotel-local civil date of now(). PostgreSQL AT TIME ZONE is the authority. */
+export async function civilToday(db: TimeDb, ianaTimezone: string): Promise<string> {
+  const tz = requireTimezone(ianaTimezone);
+  try {
+    const rows = await db.query<{ d: unknown }>(
+      "select (now() at time zone $1::text)::date::text as d",
+      [tz],
+    );
+    const value = rows[0]?.d;
+    if (value == null) throw new CivilTimeError("invalid_time", "time zone is invalid");
+    return toDateText(value);
+  } catch (err) {
+    if (err instanceof CivilTimeError) throw err;
+    try {
+      wrapSqlError(err);
+    } catch (mapped) {
+      if (mapped instanceof CivilTimeError) throw mapped;
+      throw new CivilTimeError("invalid_time", "time zone is invalid");
+    }
+  }
+}

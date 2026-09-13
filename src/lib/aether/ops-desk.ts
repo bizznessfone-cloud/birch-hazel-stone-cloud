@@ -3,7 +3,7 @@
  * Does not write occupies. Assignment stays in inventory.ts.
  */
 import { hotelIdentity, type HotelIdentity } from "./hotel.ts";
-import { athensToday, type TimeDb } from "./time.ts";
+import { athensToday, civilToday, type TimeDb } from "./time.ts";
 import {
   isHotelDesk,
   isProviderDispatcher,
@@ -53,7 +53,7 @@ export type OpsBookingRow = {
 };
 
 export type TodayBoard = {
-  athensDate: string;
+  boardDate: string;
   next: OpsBookingRow | null;
   feed: OpsBookingRow[];
   attention: {
@@ -181,16 +181,44 @@ const BOOKING_SELECT = `
   left join drivers d on d.id = b.driver_id
 `;
 
+async function hotelDeskBoardDate(db: OpsDeskDb, hotelId: string): Promise<string> {
+  const rows = await db.query<{ tz: string | null }>(
+    "select btrim(iana_timezone) as tz from hotels where id = $1::uuid",
+    [hotelId],
+  );
+  const row = rows[0];
+  if (!row) throw new OpsDeskError("not_found", 404, "Hotel not found.");
+  const tz = row.tz;
+  if (tz == null || tz === "") {
+    throw new OpsDeskError("invalid", 400, "Hotel timezone is invalid.");
+  }
+  try {
+    return await civilToday(db, tz);
+  } catch {
+    throw new OpsDeskError("invalid", 400, "Hotel timezone is invalid.");
+  }
+}
+
+async function boardDateForScope(db: OpsDeskDb, scope: OpsScope): Promise<string> {
+  if (isHotelDesk(scope) && scope.hotelId) {
+    return hotelDeskBoardDate(db, scope.hotelId);
+  }
+  if (isProviderDispatcher(scope)) {
+    return athensToday(db);
+  }
+  throw new OpsDeskError("forbidden", 403, "Not allowed.");
+}
+
 export async function loadTodayBoard(db: OpsDeskDb, scope: OpsScope): Promise<TodayBoard> {
   assertDeskOrDispatcher(scope);
-  const athensDate = await athensToday(db);
+  const boardDate = await boardDateForScope(db, scope);
   const scoped = withScope(
     `${BOOKING_SELECT}
      where b.transfer_date = $1::date
        and ${bookingScopeClause(scope).sql}
      order by b.pickup_time, b.created_at`,
     scope,
-    [athensDate],
+    [boardDate],
   );
   const rows = await db.query<Record<string, unknown>>(scoped.text, scoped.params);
   const feed = rows.map(mapBooking);
@@ -204,12 +232,12 @@ export async function loadTodayBoard(db: OpsDeskDb, scope: OpsScope): Promise<To
      order by b.pickup_time, b.created_at
      limit 1`,
     scope,
-    [athensDate],
+    [boardDate],
   );
   const remaining = await db.query<{ id: string }>(remainingSql.text, remainingSql.params);
   const nextId = remaining[0]?.id;
   return {
-    athensDate,
+    boardDate,
     next: feed.find((row) => row.id === nextId) ?? null,
     feed,
     attention: {

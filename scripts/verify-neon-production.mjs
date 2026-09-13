@@ -66,6 +66,33 @@ async function expectDenied(label, fn) {
   throw new Error(`${label}: unexpectedly succeeded`);
 }
 
+async function expectTablePriv(client, table, privilege, expected, label) {
+  const row = (
+    await client.query(`select has_table_privilege($1, $2, $3) as ok`, [RUNTIME, table, privilege])
+  ).rows[0];
+  if (Boolean(row?.ok) !== expected) {
+    blocked(`${label}: has_table_privilege(${table}, ${privilege}) = ${row?.ok}, expected ${expected}`);
+  }
+  say(`PASS  ${label}`);
+}
+
+async function expectColumnPriv(client, table, column, privilege, expected, label) {
+  const row = (
+    await client.query(`select has_column_privilege($1, $2, $3, $4) as ok`, [
+      RUNTIME,
+      table,
+      column,
+      privilege,
+    ])
+  ).rows[0];
+  if (Boolean(row?.ok) !== expected) {
+    blocked(
+      `${label}: has_column_privilege(${table}.${column}, ${privilege}) = ${row?.ok}, expected ${expected}`,
+    );
+  }
+  say(`PASS  ${label}`);
+}
+
 const migrationsDir = join(dirname(fileURLToPath(import.meta.url)), "..", "migrations");
 
 async function migrateOwner(client) {
@@ -267,6 +294,253 @@ async function main() {
     const dml = await runtime.query("select aether_athens_instant('2026-01-15', '09:00') as t");
     if (!dml.rows[0]?.t) throw new Error("runtime cannot EXECUTE aether_athens_instant");
     say("PASS  runtime EXECUTE aether_athens_instant");
+
+    const civil = await runtime.query(
+      "select aether_civil_instant('2026-01-15', '09:00', 'Europe/Athens') as t",
+    );
+    if (!civil.rows[0]?.t) throw new Error("runtime cannot EXECUTE aether_civil_instant");
+    say("PASS  runtime EXECUTE aether_civil_instant");
+
+    await expectTablePriv(runtime, "hotels", "SELECT", true, "hotels SELECT");
+    await expectTablePriv(runtime, "hotels", "INSERT", false, "hotels INSERT denied");
+    await expectTablePriv(runtime, "hotels", "UPDATE", false, "hotels UPDATE denied");
+    await expectTablePriv(runtime, "hotels", "DELETE", false, "hotels DELETE denied");
+    await expectTablePriv(runtime, "hotel_destinations", "SELECT", true, "destinations SELECT");
+    await expectTablePriv(runtime, "hotel_destinations", "INSERT", false, "destinations INSERT denied");
+    await expectTablePriv(runtime, "hotel_destinations", "UPDATE", false, "destinations UPDATE denied");
+    await expectTablePriv(runtime, "hotel_destinations", "DELETE", false, "destinations DELETE denied");
+    await expectTablePriv(runtime, "providers", "SELECT", true, "providers SELECT");
+    await expectTablePriv(runtime, "providers", "INSERT", false, "providers INSERT denied");
+    await expectTablePriv(runtime, "providers", "UPDATE", false, "providers UPDATE denied");
+    await expectTablePriv(runtime, "providers", "DELETE", false, "providers DELETE denied");
+    await expectTablePriv(
+      runtime,
+      "hotel_provider_agreements",
+      "SELECT",
+      true,
+      "agreements SELECT",
+    );
+    await expectTablePriv(
+      runtime,
+      "hotel_provider_agreements",
+      "INSERT",
+      false,
+      "agreements INSERT denied",
+    );
+    await expectTablePriv(
+      runtime,
+      "hotel_provider_agreements",
+      "UPDATE",
+      false,
+      "agreements UPDATE denied",
+    );
+    await expectTablePriv(
+      runtime,
+      "hotel_provider_agreements",
+      "DELETE",
+      false,
+      "agreements DELETE denied",
+    );
+    await expectTablePriv(runtime, "operator_memberships", "SELECT", true, "memberships SELECT");
+    await expectTablePriv(
+      runtime,
+      "operator_memberships",
+      "INSERT",
+      false,
+      "memberships INSERT denied",
+    );
+    await expectTablePriv(
+      runtime,
+      "operator_memberships",
+      "UPDATE",
+      false,
+      "memberships UPDATE denied",
+    );
+    await expectTablePriv(
+      runtime,
+      "operator_memberships",
+      "DELETE",
+      false,
+      "memberships DELETE denied",
+    );
+    await expectTablePriv(runtime, "operators", "SELECT", true, "operators SELECT");
+    await expectTablePriv(runtime, "operators", "DELETE", false, "operators DELETE denied");
+    await expectColumnPriv(runtime, "operators", "login", "INSERT", true, "operators INSERT login (legacy runtime)");
+    await expectColumnPriv(
+      runtime,
+      "operators",
+      "password_hash",
+      "INSERT",
+      true,
+      "operators INSERT password_hash (legacy runtime)",
+    );
+    await expectColumnPriv(
+      runtime,
+      "operators",
+      "password_hash",
+      "UPDATE",
+      true,
+      "operators UPDATE password_hash (legacy runtime)",
+    );
+    await expectTablePriv(runtime, "bookings", "SELECT", true, "bookings SELECT");
+    await expectTablePriv(runtime, "bookings", "DELETE", false, "bookings DELETE denied");
+    await expectColumnPriv(runtime, "bookings", "vehicle_id", "UPDATE", true, "bookings UPDATE vehicle_id");
+    await expectColumnPriv(runtime, "bookings", "driver_id", "UPDATE", true, "bookings UPDATE driver_id");
+    await expectColumnPriv(runtime, "bookings", "cancelled_at", "UPDATE", true, "bookings UPDATE cancelled_at");
+    await expectColumnPriv(runtime, "bookings", "status", "UPDATE", true, "bookings UPDATE status");
+    await expectColumnPriv(runtime, "bookings", "hotel_id", "UPDATE", false, "bookings UPDATE hotel_id denied");
+    await expectColumnPriv(
+      runtime,
+      "bookings",
+      "executing_provider_id",
+      "UPDATE",
+      false,
+      "bookings UPDATE executing_provider_id denied",
+    );
+    await expectColumnPriv(runtime, "bookings", "occupies", "UPDATE", false, "bookings UPDATE occupies denied");
+    await expectColumnPriv(
+      runtime,
+      "bookings",
+      "destination_id",
+      "UPDATE",
+      false,
+      "bookings UPDATE destination_id denied",
+    );
+    await expectColumnPriv(
+      runtime,
+      "bookings",
+      "quoted_amount_minor",
+      "UPDATE",
+      false,
+      "bookings UPDATE quoted_amount_minor denied",
+    );
+    await expectColumnPriv(
+      runtime,
+      "bookings",
+      "quoted_currency",
+      "UPDATE",
+      false,
+      "bookings UPDATE quoted_currency denied",
+    );
+    await expectColumnPriv(
+      runtime,
+      "bookings",
+      "confirmation_token",
+      "UPDATE",
+      false,
+      "bookings UPDATE confirmation_token denied",
+    );
+    await expectColumnPriv(
+      runtime,
+      "bookings",
+      "transfer_date",
+      "UPDATE",
+      false,
+      "bookings UPDATE transfer_date denied",
+    );
+    await expectColumnPriv(
+      runtime,
+      "bookings",
+      "pickup_time",
+      "UPDATE",
+      false,
+      "bookings UPDATE pickup_time denied",
+    );
+    await expectColumnPriv(
+      runtime,
+      "bookings",
+      "duration_minutes",
+      "UPDATE",
+      false,
+      "bookings UPDATE duration_minutes denied",
+    );
+    await expectColumnPriv(
+      runtime,
+      "vehicles",
+      "owned_by_provider_id",
+      "INSERT",
+      true,
+      "vehicles INSERT owned_by_provider_id (deferred stamper)",
+    );
+    await expectColumnPriv(
+      runtime,
+      "vehicles",
+      "operated_by_provider_id",
+      "INSERT",
+      true,
+      "vehicles INSERT operated_by_provider_id (deferred stamper)",
+    );
+    await expectColumnPriv(
+      runtime,
+      "vehicles",
+      "owned_by_hotel_id",
+      "INSERT",
+      false,
+      "vehicles INSERT owned_by_hotel_id denied",
+    );
+    await expectColumnPriv(runtime, "vehicles", "name", "UPDATE", true, "vehicles UPDATE name");
+    await expectColumnPriv(
+      runtime,
+      "vehicles",
+      "owned_by_provider_id",
+      "UPDATE",
+      false,
+      "vehicles UPDATE owned_by_provider_id denied",
+    );
+    await expectColumnPriv(
+      runtime,
+      "drivers",
+      "employed_by_provider_id",
+      "INSERT",
+      true,
+      "drivers INSERT employed_by_provider_id (deferred stamper)",
+    );
+    await expectColumnPriv(
+      runtime,
+      "drivers",
+      "dispatched_by_provider_id",
+      "INSERT",
+      true,
+      "drivers INSERT dispatched_by_provider_id (deferred stamper)",
+    );
+    await expectColumnPriv(
+      runtime,
+      "drivers",
+      "employed_by_hotel_id",
+      "INSERT",
+      false,
+      "drivers INSERT employed_by_hotel_id denied",
+    );
+    await expectColumnPriv(runtime, "drivers", "name", "UPDATE", true, "drivers UPDATE name");
+    await expectColumnPriv(
+      runtime,
+      "drivers",
+      "dispatched_by_provider_id",
+      "UPDATE",
+      false,
+      "drivers UPDATE dispatched_by_provider_id denied",
+    );
+    await expectTablePriv(runtime, "audit_events", "INSERT", true, "audit INSERT");
+    await expectTablePriv(runtime, "audit_events", "UPDATE", false, "audit UPDATE denied");
+    await expectTablePriv(runtime, "audit_events", "DELETE", false, "audit DELETE denied");
+    await expectTablePriv(runtime, "_migrations", "SELECT", false, "_migrations SELECT denied");
+    await expectTablePriv(runtime, "_migrations", "INSERT", false, "_migrations INSERT denied");
+    await expectTablePriv(runtime, "_migrations", "UPDATE", false, "_migrations UPDATE denied");
+    await expectTablePriv(runtime, "_migrations", "DELETE", false, "_migrations DELETE denied");
+    await expectTablePriv(runtime, "aether_meta", "SELECT", true, "aether_meta SELECT");
+    await expectTablePriv(runtime, "aether_meta", "INSERT", false, "aether_meta INSERT denied");
+    await expectTablePriv(runtime, "aether_meta", "UPDATE", false, "aether_meta UPDATE denied");
+    await expectTablePriv(runtime, "aether_meta", "DELETE", false, "aether_meta DELETE denied");
+    const schemaCreate = (
+      await runtime.query(`select has_schema_privilege($1, 'public', 'CREATE') as ok`, [RUNTIME])
+    ).rows[0];
+    if (schemaCreate.ok) blocked("aether_app has schema CREATE");
+    say("PASS  schema CREATE denied");
+    const schemaUsage = (
+      await runtime.query(`select has_schema_privilege($1, 'public', 'USAGE') as ok`, [RUNTIME])
+    ).rows[0];
+    if (!schemaUsage.ok) blocked("aether_app missing schema USAGE");
+    say("PASS  schema USAGE");
   } finally {
     runtime.release();
   }
@@ -343,75 +617,29 @@ async function main() {
     if (dCode !== "23P01") throw new Error(`driver loser SQLSTATE ${dCode}, expected 23P01`);
     say("PASS  concurrent overlapping driver assign: one winner, loser 23P01");
 
-    await a.query(
-      `insert into bookings (
-         hotel_id, executing_provider_id, transfer_date, pickup_time, duration_minutes,
-         guest_name, guest_phone, guest_email,
-         passenger_count, luggage_count,
-         pickup_text, destination_text,
-         vehicle_id, human_reference, confirmation_token
-       ) values (
-         $1, $2, '2026-11-03', '09:00', 60,
-         'Adj One', '+30000000000', 'adj1@example.com',
-         1, 0, 'Hotel lobby', 'Airport',
-         $3, $4, $5
-       )`,
-      [hotel.id, provider.provider_id, vehicle.id, `PTADJ1${Date.now()}`, `tok-adj1-${Date.now()}`],
-    );
-    await a.query(
-      `insert into bookings (
-         hotel_id, executing_provider_id, transfer_date, pickup_time, duration_minutes,
-         guest_name, guest_phone, guest_email,
-         passenger_count, luggage_count,
-         pickup_text, destination_text,
-         vehicle_id, human_reference, confirmation_token
-       ) values (
-         $1, $2, '2026-11-03', '10:00', 60,
-         'Adj Two', '+30000000000', 'adj2@example.com',
-         1, 0, 'Hotel lobby', 'Airport',
-         $3, $4, $5
-       )`,
-      [hotel.id, provider.provider_id, vehicle.id, `PTADJ2${Date.now()}`, `tok-adj2-${Date.now()}`],
-    );
+    async function insertThenAssign(client, email, date, time, vehicleId) {
+      const id = await insertBooking(client, email, date, time);
+      await client.query("update bookings set vehicle_id = $1 where id = $2", [vehicleId, id]);
+      return id;
+    }
+
+    await insertThenAssign(a, "adj1@example.com", "2026-11-03", "09:00", vehicle.id);
+    await insertThenAssign(a, "adj2@example.com", "2026-11-03", "10:00", vehicle.id);
     say("PASS  [) adjacency remains valid");
 
-    const cancelId = (
-      await a.query(
-        `insert into bookings (
-           hotel_id, executing_provider_id, transfer_date, pickup_time, duration_minutes,
-           guest_name, guest_phone, guest_email,
-           passenger_count, luggage_count,
-           pickup_text, destination_text,
-           vehicle_id, human_reference, confirmation_token
-         ) values (
-           $1, $2, '2026-11-04', '11:00', 60,
-           'Cancel Me', '+30000000000', 'cancel@example.com',
-           1, 0, 'Hotel lobby', 'Airport',
-           $3, $4, $5
-         ) returning id`,
-        [hotel.id, provider.provider_id, vehicle.id, `PTCAN${Date.now()}`, `tok-can-${Date.now()}`],
-      )
-    ).rows[0].id;
+    const cancelId = await insertThenAssign(
+      a,
+      "cancel@example.com",
+      "2026-11-04",
+      "11:00",
+      vehicle.id,
+    );
     await a.query("update bookings set cancelled_at = now() where id = $1", [cancelId]);
     const empty = (
       await a.query("select isempty(occupies) as empty from bookings where id = $1", [cancelId])
     ).rows[0];
     if (!empty.empty) throw new Error("cancellation did not release occupies");
-    await a.query(
-      `insert into bookings (
-         hotel_id, executing_provider_id, transfer_date, pickup_time, duration_minutes,
-         guest_name, guest_phone, guest_email,
-         passenger_count, luggage_count,
-         pickup_text, destination_text,
-         vehicle_id, human_reference, confirmation_token
-       ) values (
-         $1, $2, '2026-11-04', '11:00', 60,
-         'Reuse', '+30000000000', 'reuse@example.com',
-         1, 0, 'Hotel lobby', 'Airport',
-         $3, $4, $5
-       )`,
-      [hotel.id, provider.provider_id, vehicle.id, `PTREU${Date.now()}`, `tok-reu-${Date.now()}`],
-    );
+    await insertThenAssign(a, "reuse@example.com", "2026-11-04", "11:00", vehicle.id);
     say("PASS  cancellation releases occupancy so the vehicle can be reused");
   } finally {
     a.release();

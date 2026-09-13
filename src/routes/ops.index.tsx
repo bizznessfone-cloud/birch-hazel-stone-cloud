@@ -15,8 +15,8 @@ function TodayBoard() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <p className="text-xs tracking-widest text-muted uppercase">Athens today</p>
-        <h1 className="mt-1 text-3xl font-semibold tracking-tight">{board.athensDate}</h1>
+        <p className="text-xs tracking-widest text-muted uppercase">Today</p>
+        <h1 className="mt-1 text-3xl font-semibold tracking-tight">{board.boardDate}</h1>
       </div>
       <div className="grid grid-cols-3 gap-2">
         <Attention label="No vehicle" value={board.attention.unassignedVehicle} />

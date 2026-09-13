@@ -94,7 +94,7 @@ describe("Phase 7 operations desk", () => {
       destinationText: "Piraeus",
     });
     const board = await loadTodayBoard(db, await dispatcher(db));
-    assert.equal(board.athensDate, today);
+    assert.equal(board.boardDate, today);
     assert.equal(board.feed.length, 2);
     assert.equal(board.feed[0]!.pickupTime, "08:00");
     assert.equal(board.feed[1]!.pickupTime, "18:00");
