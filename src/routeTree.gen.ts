@@ -20,6 +20,7 @@ import { Route as OpsLoginRouteImport } from './routes/ops.login'
 import { Route as OpsVehiclesRouteImport } from './routes/ops.vehicles'
 import { Route as OpsBookingsIndexRouteImport } from './routes/ops.bookings.index'
 import { Route as OpsBookingsBookingIdRouteImport } from './routes/ops.bookings.$bookingId'
+import { Route as OpsInternalRuntimeIdentityRouteImport } from './routes/ops.internal.runtime-identity'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -76,6 +77,12 @@ const OpsBookingsBookingIdRoute = OpsBookingsBookingIdRouteImport.update({
   path: '/bookings/$bookingId',
   getParentRoute: () => OpsRoute,
 } as any)
+const OpsInternalRuntimeIdentityRoute =
+  OpsInternalRuntimeIdentityRouteImport.update({
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -88,6 +95,7 @@ export interface FileRoutesByFullPath {
   '/ops/vehicles': typeof OpsVehiclesRoute
   '/ops/': typeof OpsIndexRoute
   '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
   '/ops/bookings/': typeof OpsBookingsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -100,6 +108,7 @@ export interface FileRoutesByTo {
   '/ops/vehicles': typeof OpsVehiclesRoute
   '/ops': typeof OpsIndexRoute
   '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
   '/ops/bookings': typeof OpsBookingsIndexRoute
 }
 export interface FileRoutesById {
@@ -114,6 +123,7 @@ export interface FileRoutesById {
   '/ops/vehicles': typeof OpsVehiclesRoute
   '/ops/': typeof OpsIndexRoute
   '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
   '/ops/bookings/': typeof OpsBookingsIndexRoute
 }
 export interface FileRouteTypes {
@@ -129,6 +139,7 @@ export interface FileRouteTypes {
     | '/ops/vehicles'
     | '/ops/'
     | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
     | '/ops/bookings/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -141,6 +152,7 @@ export interface FileRouteTypes {
     | '/ops/vehicles'
     | '/ops'
     | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
     | '/ops/bookings'
   id:
     | '__root__'
@@ -154,6 +166,7 @@ export interface FileRouteTypes {
     | '/ops/vehicles'
     | '/ops/'
     | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
     | '/ops/bookings/'
   fileRoutesById: FileRoutesById
 }
@@ -243,6 +256,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
       parentRoute: typeof OpsRoute
     }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
   }
 }
 
@@ -253,6 +273,7 @@ interface OpsRouteChildren {
   OpsVehiclesRoute: typeof OpsVehiclesRoute
   OpsIndexRoute: typeof OpsIndexRoute
   OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
   OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
 }
 
@@ -263,6 +284,7 @@ const OpsRouteChildren: OpsRouteChildren = {
   OpsVehiclesRoute: OpsVehiclesRoute,
   OpsIndexRoute: OpsIndexRoute,
   OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
   OpsBookingsIndexRoute: OpsBookingsIndexRoute,
 }
 
