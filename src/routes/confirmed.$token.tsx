@@ -4,6 +4,7 @@ import { formatQuotedPrice, touristMessage } from "@/lib/aether/guest";
 import { GuestHeader } from "@/components/aether/guest-header";
 import { ThemeToggle } from "@/components/aether/theme-toggle";
 import type { PublicBooking } from "@/lib/aether/booking";
+import type { ConfirmationEmailStatus } from "@/lib/aether/confirmation-email";
 
 export const Route = createFileRoute("/confirmed/$token")({
   pendingComponent: ConfirmLoading,
@@ -37,7 +38,7 @@ function MissingBooking({ message }: { message: string }) {
         <ThemeToggle />
       </div>
       <section className="flex flex-1 flex-col items-center justify-center px-6 pb-16 text-center">
-        <p className="text-xs tracking-widest text-muted uppercase">Aether Transfer</p>
+        <p className="text-xs tracking-widest text-muted uppercase">SCAN / BOOK / GO</p>
         <h1 className="mt-6 max-w-sm text-3xl font-semibold tracking-tight">{message}</h1>
         <p className="mt-4 max-w-sm text-base leading-relaxed text-muted">
           Check the confirmation link. A booking reference on its own cannot open this page.
@@ -52,7 +53,18 @@ function priceLabel(booking: PublicBooking): string {
   return formatQuotedPrice(booking.pricing.currency, booking.pricing.amountMinor);
 }
 
-function ConfirmationCard({ booking }: { booking: PublicBooking }) {
+function emailStatusLabel(status: ConfirmationEmailStatus | undefined): string {
+  if (status === "sent") return "Confirmation email sent";
+  if (status === "not_configured") return "Confirmation email will be enabled when email delivery is configured";
+  if (status === "failed") return "Your booking is confirmed. We could not send the confirmation email, so keep this page and your booking reference.";
+  return "Keep this page and your booking reference.";
+}
+
+function ConfirmationCard({
+  booking,
+}: {
+  booking: PublicBooking & { confirmationEmailStatus?: ConfirmationEmailStatus };
+}) {
   return (
     <div className="flex min-h-dvh flex-col bg-canvas text-ink">
       <GuestHeader hotelName={booking.hotelName} />
@@ -62,7 +74,7 @@ function ConfirmationCard({ booking }: { booking: PublicBooking }) {
         </p>
         <h1 className="mt-3 text-3xl font-semibold tracking-tight">Your transfer is booked</h1>
         <p className="mt-3 text-base leading-relaxed text-muted">
-          Keep this page. The hotel can find you by the reference below.
+          {emailStatusLabel(booking.confirmationEmailStatus)}
         </p>
         <p className="mt-8 text-4xl font-semibold tracking-tight">{booking.humanReference}</p>
         <dl className="mt-8 divide-y divide-line border border-line">
