@@ -56,15 +56,6 @@ function requestClientHint(): string {
   return "unknown";
 }
 
-function requestOrigin(): string | undefined {
-  try {
-    return getRequest()?.headers.get("origin") || undefined;
-  } catch {
-    /* no request context (tests) */
-    return undefined;
-  }
-}
-
 export async function createBookingFromRequest(
   input: CreateBookingInput,
 ): Promise<CreatedBooking & { confirmationEmailStatus: ConfirmationEmailStatus }> {
@@ -74,7 +65,7 @@ export async function createBookingFromRequest(
   // The booking engine completes its transaction before returning. Email is a
   // separate side effect: a provider failure must never roll back a booking.
   const booking = await createBookingEngine(db, input);
-  const email = await sendConfirmationEmail(booking, input.guestEmail, { origin: requestOrigin() });
+  const email = await sendConfirmationEmail(booking, input.guestEmail);
 
   return {
     ...booking,
