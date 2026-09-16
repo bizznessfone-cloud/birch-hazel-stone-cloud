@@ -21,13 +21,15 @@ const booking: CreatedBooking = {
   confirmationToken: "test-confirmation-token",
 };
 
+const recipient = "shaun@example.com";
+
 test("confirmation email stays disabled until Resend configuration exists", async () => {
   const previousKey = process.env.RESEND_API_KEY;
   const previousFrom = process.env.RESEND_FROM_EMAIL;
   delete process.env.RESEND_API_KEY;
   delete process.env.RESEND_FROM_EMAIL;
   try {
-    const result = await sendConfirmationEmail(booking);
+    const result = await sendConfirmationEmail(booking, recipient);
     assert.deepEqual(result, { status: "not_configured" });
   } finally {
     if (previousKey === undefined) delete process.env.RESEND_API_KEY;
@@ -51,7 +53,7 @@ test("confirmation email sends through Resend without exposing the token in the 
   };
 
   try {
-    const result = await sendConfirmationEmail(booking, { origin: "https://scan-book-go.vercel.app" });
+    const result = await sendConfirmationEmail(booking, recipient, { origin: "https://scan-book-go.vercel.app" });
     assert.deepEqual(result, { status: "sent" });
     assert.ok(request);
     assert.equal(request!.url, "https://api.resend.com/emails");
@@ -63,7 +65,7 @@ test("confirmation email sends through Resend without exposing the token in the 
       html: string;
       text: string;
     };
-    assert.deepEqual(body.to, ["undefined"]);
+    assert.deepEqual(body.to, [recipient]);
     assert.match(body.subject, /PT-TEST123456/);
     assert.doesNotMatch(body.subject, /test-confirmation-token/);
     assert.match(body.html, /View My Booking/);
