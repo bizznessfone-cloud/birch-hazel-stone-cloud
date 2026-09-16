@@ -17,6 +17,7 @@ import {
   type PublicHotel,
 } from "./booking";
 import { assertGuestCreateRateLimit, hashGuestClientKey } from "./guest-rate-limit";
+import { sendConfirmationEmail, type ConfirmationEmailStatus } from "./confirmation-email";
 
 type Executable = Kysely<AetherDatabase> | Transaction<AetherDatabase>;
 
@@ -55,12 +56,30 @@ function requestClientHint(): string {
   return "unknown";
 }
 
+function requestOrigin(): string | undefined {
+  try {
+    return getRequest()?.headers.get("origin") || undefined;
+  } catch {
+    /* no request context (tests) */
+    return undefined;
+  }
+}
+
 export async function createBookingFromRequest(
   input: CreateBookingInput,
-): Promise<CreatedBooking> {
+): Promise<CreatedBooking & { confirmationEmailStatus: ConfirmationEmailStatus }> {
   const db = await appDb();
   await assertGuestCreateRateLimit(db, hashGuestClientKey(requestClientHint()));
-  return createBookingEngine(db, input);
+
+  // The booking engine completes its transaction before returning. Email is a
+  // separate side effect: a provider failure must never roll back a booking.
+  const booking = await createBookingEngine(db, input);
+  const email = await sendConfirmationEmail(booking, { origin: requestOrigin() });
+
+  return {
+    ...booking,
+    confirmationEmailStatus: email.status,
+  };
 }
 
 export async function getPublicBookingFromRequest(token: string): Promise<PublicBooking> {
