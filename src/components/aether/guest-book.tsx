@@ -94,7 +94,6 @@ export function GuestBook({
       await navigate({
         to: "/confirmed/$token",
         params: { token: result.booking.confirmationToken },
-        search: { email: result.booking.confirmationEmailStatus },
       });
     } catch {
       setSubmitError(touristMessage("server_error"));
@@ -220,10 +219,12 @@ export function GuestBook({
             ) : null}
             {step === "review" ? (
               <ReviewStep
-                draft={draft}
+                hotelName={hotelName}
                 currency={currency}
-                submitting={submitting}
+                destinations={destinations}
+                draft={draft}
                 error={submitError}
+                busy={submitting}
                 onSubmit={() => void submit()}
                 onBack={() => setStep("contact")}
               />
@@ -245,30 +246,27 @@ function Landing({
   onFind: () => void;
 }) {
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center bg-canvas px-6 text-center text-ink">
-      <div className="w-full max-w-md">
-        <p className="text-xs tracking-widest text-muted uppercase">{hotelName}</p>
-        <h1 className="mt-5 text-4xl font-semibold tracking-tight">Book your transfer</h1>
-        <p className="mt-4 text-base leading-relaxed text-muted">Simple hotel-to-destination transfers, confirmed in minutes.</p>
-        <button type="button" onClick={onBook} className="mt-10 flex min-h-14 w-full items-center justify-center bg-ink px-5 text-base font-medium text-canvas">
-          Book a transfer
-        </button>
-        <button type="button" onClick={onFind} className="mt-3 flex min-h-14 w-full items-center justify-center border border-line px-5 text-base font-medium">
-          View my booking
-        </button>
+    <main className="flex min-h-dvh flex-col">
+      <div className="flex justify-end px-5 py-4">
+        <ThemeToggle />
       </div>
+      <section className="flex flex-1 flex-col items-center justify-center px-6 pb-16 text-center">
+        <HotelMark name={hotelName} size="lg" />
+        <h1 className="mt-8 text-3xl font-semibold tracking-tight">{hotelName}</h1>
+        <p className="mt-6 text-4xl leading-none font-semibold tracking-tight">SCAN. BOOK. GO.</p>
+        <p className="mt-6 max-w-sm text-base leading-relaxed text-muted">
+          Private hotel transfers. Book at reception in a few steps.
+        </p>
+        <div className="mt-12 flex w-full max-w-sm flex-col gap-3">
+          <PrimaryButton onClick={onBook}>Book transfer</PrimaryButton>
+          <SecondaryButton onClick={onFind}>View my booking</SecondaryButton>
+        </div>
+      </section>
     </main>
   );
 }
 
-function FindStep({
-  token,
-  error,
-  busy,
-  onToken,
-  onLookup,
-  onBack,
-}: {
+function FindStep(props: {
   token: string;
   error: string | null;
   busy: boolean;
@@ -277,33 +275,33 @@ function FindStep({
   onBack: () => void;
 }) {
   return (
-    <section>
-      <p className="text-xs tracking-widest text-muted uppercase">Your booking</p>
-      <h1 className="mt-3 text-3xl font-semibold tracking-tight">Open confirmation</h1>
-      <p className="mt-3 text-base leading-relaxed text-muted">Use the secure confirmation link you received. A booking reference alone cannot open your booking.</p>
-      <label className="mt-8 block text-xs tracking-widest text-muted uppercase" htmlFor="confirmation-token">Confirmation token</label>
-      <input id="confirmation-token" value={token} onChange={(event) => onToken(event.target.value)} autoComplete="off" className="mt-2 min-h-14 w-full border border-line bg-transparent px-4 text-sm outline-none" />
-      {error ? <p className="mt-3 text-sm text-red-700">{error}</p> : null}
-      <button type="button" onClick={onLookup} disabled={busy || !token.trim()} className="mt-6 flex min-h-14 w-full items-center justify-center bg-ink px-5 text-base font-medium text-canvas disabled:opacity-40">
-        {busy ? "Checking…" : "View my booking"}
-      </button>
-      <button type="button" onClick={onBack} className="mt-3 flex min-h-14 w-full items-center justify-center border border-line px-5 text-base font-medium">Back</button>
-    </section>
+    <form
+      className="flex flex-1 flex-col gap-6"
+      onSubmit={(event) => {
+        event.preventDefault();
+        props.onLookup();
+      }}
+    >
+      <StepTitle title="View my booking" note="Enter the confirmation token from your booking page. A reference number is not enough." />
+      <Field label="Confirmation token">
+        <input
+          className={inputClass}
+          value={props.token}
+          autoComplete="off"
+          onChange={(event) => props.onToken(event.target.value)}
+        />
+      </Field>
+      {props.error ? <ErrorText>{props.error}</ErrorText> : null}
+      <Actions
+        back={props.onBack}
+        nextLabel={props.busy ? "Looking…" : "Find booking"}
+        nextDisabled={!props.token.trim() || props.busy}
+      />
+    </form>
   );
 }
 
-function JourneyStep({
-  hotelName,
-  currency,
-  destinations,
-  draft,
-  onDirection,
-  onKind,
-  onPickup,
-  onDestination,
-  onNext,
-  onBack,
-}: {
+function JourneyStep(props: {
   hotelName: string;
   currency: string;
   destinations: CatalogueDestination[];
@@ -315,119 +313,398 @@ function JourneyStep({
   onNext: () => void;
   onBack: () => void;
 }) {
-  const filtered = destinations.filter((destination) => destination.kind === draft.placeKind);
+  const choices = props.destinations
+    .filter((item) => item.kind === props.draft.placeKind)
+    .slice()
+    .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
+  const selected = props.destinations.find((item) => item.id === props.draft.destinationId);
+  const ready = Boolean(props.draft.destinationId) && Boolean(props.draft.pickupText.trim());
   return (
-    <section>
-      <p className="text-xs tracking-widest text-muted uppercase">Journey</p>
-      <h1 className="mt-3 text-3xl font-semibold tracking-tight">Where are you going?</h1>
-      <p className="mt-3 text-base leading-relaxed text-muted">Choose your transfer direction and destination.</p>
-      <div className="mt-7 grid grid-cols-2 gap-2">
-        <ChoiceButton active={draft.direction === "from_hotel"} onClick={() => onDirection("from_hotel")}>From hotel</ChoiceButton>
-        <ChoiceButton active={draft.direction === "to_hotel"} onClick={() => onDirection("to_hotel")}>To hotel</ChoiceButton>
+    <form
+      className="flex flex-1 flex-col gap-6"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (ready) props.onNext();
+      }}
+    >
+      <StepTitle title="Journey" note="Choose a destination from this hotel's list. Pickup is the collection point." />
+      <ChoiceRow
+        label="Direction"
+        options={[
+          { id: "from_hotel", label: `From ${props.hotelName}` },
+          { id: "to_hotel", label: `To ${props.hotelName}` },
+        ]}
+        value={props.draft.direction}
+        onChange={(id) => props.onDirection(id as Direction)}
+      />
+      <ChoiceRow
+        label="Place type"
+        options={PLACE_KINDS.map((kind) => ({ id: kind, label: placeKindLabel(kind) }))}
+        value={props.draft.placeKind}
+        onChange={(id) => props.onKind(id as PlaceKind)}
+      />
+      <fieldset>
+        <legend className="mb-2 text-xs tracking-widest text-muted uppercase">Destination</legend>
+        {choices.length === 0 ? (
+          <p className="border border-line bg-surface px-4 py-3 text-sm text-muted">
+            No destinations of this type are available.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {choices.map((item) => {
+              const active = item.id === props.draft.destinationId;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`flex min-h-14 items-center justify-between border px-4 text-left text-sm font-medium ${active ? "border-ink bg-ink text-canvas" : "border-line bg-surface text-ink"}`}
+                  onClick={() => props.onDestination(item)}
+                >
+                  <span>{item.name}</span>
+                  <span className="tabular-nums">{formatQuotedPrice(props.currency, item.amountMinor)}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </fieldset>
+      <Field label="Pickup">
+        <input
+          className={inputClass}
+          value={props.draft.pickupText}
+          onChange={(event) => props.onPickup(event.target.value)}
+        />
+      </Field>
+      {selected ? (
+        <p className="text-sm text-muted">
+          Quoted price {formatQuotedPrice(props.currency, selected.amountMinor)}
+        </p>
+      ) : null}
+      <Actions back={props.onBack} nextDisabled={!ready} />
+    </form>
+  );
+}
+
+function WhenStep(props: {
+  draft: GuestDraft;
+  onDate: (value: string) => void;
+  onTime: (value: string) => void;
+  onDuration: (value: number) => void;
+  onNext: () => void;
+  onBack: () => void;
+}) {
+  const ready = props.draft.transferDate && props.draft.pickupTime && props.draft.durationMinutes >= 1;
+  return (
+    <form
+      className="flex flex-1 flex-col gap-6"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (ready) props.onNext();
+      }}
+    >
+      <StepTitle title="When" note="Hotel local civil time. Times that do not exist, including some DST hours, cannot be booked." />
+      <Field label="Date">
+        <input
+          type="date"
+          className={inputClass}
+          value={props.draft.transferDate}
+          onChange={(event) => props.onDate(event.target.value)}
+        />
+      </Field>
+      <Field label="Pickup time">
+        <input
+          type="time"
+          className={inputClass}
+          value={props.draft.pickupTime}
+          onChange={(event) => props.onTime(event.target.value)}
+        />
+      </Field>
+      <Stepper
+        label="Duration (minutes)"
+        value={props.draft.durationMinutes}
+        min={1}
+        max={1440}
+        onChange={props.onDuration}
+      />
+      <Actions back={props.onBack} nextDisabled={!ready} />
+    </form>
+  );
+}
+
+function PartyStep(props: {
+  draft: GuestDraft;
+  hint: { title: string; note: string };
+  onPassengers: (value: number) => void;
+  onLuggage: (value: number) => void;
+  onNext: () => void;
+  onBack: () => void;
+}) {
+  return (
+    <form
+      className="flex flex-1 flex-col gap-6"
+      onSubmit={(event) => {
+        event.preventDefault();
+        props.onNext();
+      }}
+    >
+      <StepTitle title="Party" note="Tell us how many people and bags are travelling." />
+      <Stepper label="Passengers" value={props.draft.passengerCount} min={1} max={20} onChange={props.onPassengers} />
+      <Stepper label="Luggage" value={props.draft.luggageCount} min={0} max={20} onChange={props.onLuggage} />
+      <aside className="border border-line bg-surface px-4 py-4 text-left">
+        <p className="text-xs tracking-widest text-muted uppercase">Comfort guide</p>
+        <p className="mt-2 text-lg font-semibold">{props.hint.title}</p>
+        <p className="mt-2 text-sm leading-relaxed text-muted">{props.hint.note}</p>
+      </aside>
+      <Actions back={props.onBack} />
+    </form>
+  );
+}
+
+function ContactStep(props: {
+  draft: GuestDraft;
+  onName: (value: string) => void;
+  onPhone: (value: string) => void;
+  onEmail: (value: string) => void;
+  onSpecial: (value: string) => void;
+  onNext: () => void;
+  onBack: () => void;
+}) {
+  const ready = props.draft.guestName.trim() && props.draft.guestPhone.trim() && props.draft.guestEmail.trim();
+  return (
+    <form
+      className="flex flex-1 flex-col gap-6"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (ready) props.onNext();
+      }}
+    >
+      <StepTitle title="Contact" note="We use these details for the driver and the confirmation." />
+      <Field label="Name">
+        <input className={inputClass} value={props.draft.guestName} onChange={(event) => props.onName(event.target.value)} />
+      </Field>
+      <Field label="Phone">
+        <input
+          className={inputClass}
+          type="tel"
+          value={props.draft.guestPhone}
+          onChange={(event) => props.onPhone(event.target.value)}
+        />
+      </Field>
+      <Field label="Email">
+        <input
+          className={inputClass}
+          type="email"
+          value={props.draft.guestEmail}
+          onChange={(event) => props.onEmail(event.target.value)}
+        />
+      </Field>
+      <Field label="Room or flight number">
+        <input
+          className={inputClass}
+          value={props.draft.specialRequirements}
+          onChange={(event) => props.onSpecial(event.target.value)}
+        />
+      </Field>
+      <Actions back={props.onBack} nextDisabled={!ready} />
+    </form>
+  );
+}
+
+function ReviewStep(props: {
+  hotelName: string;
+  currency: string;
+  destinations: CatalogueDestination[];
+  draft: GuestDraft;
+  error: string | null;
+  busy: boolean;
+  onSubmit: () => void;
+  onBack: () => void;
+}) {
+  const selected = props.destinations.find((item) => item.id === props.draft.destinationId);
+  const destinationName = selected?.name ?? props.draft.destinationText;
+  const priceLabel = selected
+    ? formatQuotedPrice(props.currency, selected.amountMinor)
+    : "To be confirmed";
+  return (
+    <form
+      className="flex flex-1 flex-col gap-6"
+      onSubmit={(event) => {
+        event.preventDefault();
+        props.onSubmit();
+      }}
+    >
+      <StepTitle title="Review" note="Check the details. The price is the hotel's quoted rate for this destination." />
+      <dl className="divide-y divide-line border border-line">
+        <ReviewRow label="Hotel" value={props.hotelName} />
+        <ReviewRow label="Direction" value={props.draft.direction === "from_hotel" ? `From ${props.hotelName}` : `To ${props.hotelName}`} />
+        <ReviewRow label="Pickup" value={props.draft.pickupText} />
+        <ReviewRow label="Destination" value={destinationName} />
+        <ReviewRow label="When" value={`${props.draft.transferDate} · ${props.draft.pickupTime} · ${props.draft.durationMinutes} min`} />
+        <ReviewRow label="Party" value={`${props.draft.passengerCount} passengers · ${props.draft.luggageCount} bags`} />
+        <ReviewRow label="Guest" value={props.draft.guestName} />
+        <ReviewRow label="Price" value={priceLabel} />
+      </dl>
+      {props.error ? <ErrorText>{props.error}</ErrorText> : null}
+      <Actions
+        back={props.onBack}
+        nextLabel={props.busy ? "Booking…" : "Confirm booking"}
+        nextDisabled={props.busy || !props.draft.destinationId}
+      />
+    </form>
+  );
+}
+
+const inputClass =
+  "min-h-14 w-full border border-line bg-surface px-4 text-lg text-ink outline-none focus:border-ink";
+
+function StepTitle({ title, note }: { title: string; note: string }) {
+  return (
+    <div>
+      <h2 className="text-2xl font-semibold tracking-tight">{title}</h2>
+      <p className="mt-2 text-sm leading-relaxed text-muted">{note}</p>
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-xs tracking-widest text-muted uppercase">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function ChoiceRow({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: { id: string; label: string }[];
+  value: string;
+  onChange: (id: string) => void;
+}) {
+  return (
+    <fieldset>
+      <legend className="mb-2 text-xs tracking-widest text-muted uppercase">{label}</legend>
+      <div className="grid grid-cols-2 gap-2">
+        {options.map((option) => {
+          const active = option.id === value;
+          return (
+            <button
+              key={option.id}
+              type="button"
+              className={`min-h-14 border px-3 text-sm font-medium ${active ? "border-ink bg-ink text-canvas" : "border-line bg-surface text-ink"}`}
+              onClick={() => onChange(option.id)}
+            >
+              {option.label}
+            </button>
+          );
+        })}
       </div>
-      <label className="mt-7 block text-xs tracking-widest text-muted uppercase">Destination type</label>
-      <div className="mt-2 grid grid-cols-2 gap-2">
-        {PLACE_KINDS.map((kind) => <ChoiceButton key={kind} active={draft.placeKind === kind} onClick={() => onKind(kind)}>{placeKindLabel(kind)}</ChoiceButton>)}
+    </fieldset>
+  );
+}
+
+function Stepper({
+  label,
+  value,
+  min,
+  max,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <div>
+      <p className="mb-2 text-xs tracking-widest text-muted uppercase">{label}</p>
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          className="flex min-h-14 min-w-14 items-center justify-center border border-line text-2xl"
+          onClick={() => onChange(Math.max(min, value - 1))}
+          aria-label={`Decrease ${label}`}
+        >
+          −
+        </button>
+        <p className="flex-1 text-center text-3xl font-semibold tabular-nums">{value}</p>
+        <button
+          type="button"
+          className="flex min-h-14 min-w-14 items-center justify-center border border-line text-2xl"
+          onClick={() => onChange(Math.min(max, value + 1))}
+          aria-label={`Increase ${label}`}
+        >
+          +
+        </button>
       </div>
-      <label className="mt-7 block text-xs tracking-widest text-muted uppercase" htmlFor="pickup-text">Pickup</label>
-      <input id="pickup-text" value={draft.pickupText} onChange={(event) => onPickup(event.target.value)} className="mt-2 min-h-14 w-full border border-line bg-transparent px-4 text-sm outline-none" />
-      <label className="mt-7 block text-xs tracking-widest text-muted uppercase">Destination</label>
-      <div className="mt-2 space-y-2">
-        {filtered.map((destination) => (
-          <button key={destination.id} type="button" onClick={() => onDestination(destination)} className={`flex min-h-14 w-full items-center justify-between border px-4 text-left ${draft.destinationId === destination.id ? "border-ink" : "border-line"}`}>
-            <span className="text-sm font-medium">{destination.name}</span>
-            <span className="text-sm text-muted">{formatQuotedPrice(currency, destination.amountMinor)}</span>
-          </button>
-        ))}
-        {!filtered.length ? <p className="border border-line px-4 py-4 text-sm text-muted">No destinations are available for this type.</p> : null}
-      </div>
-      <button type="button" onClick={onNext} disabled={!draft.destinationId || !draft.pickupText.trim()} className="mt-7 flex min-h-14 w-full items-center justify-center bg-ink px-5 text-base font-medium text-canvas disabled:opacity-40">Continue</button>
-      <button type="button" onClick={onBack} className="mt-3 flex min-h-14 w-full items-center justify-center border border-line px-5 text-base font-medium">Back</button>
-    </section>
+    </div>
   );
 }
 
-function WhenStep({ draft, onDate, onTime, onDuration, onNext, onBack }: { draft: GuestDraft; onDate: (value: string) => void; onTime: (value: string) => void; onDuration: (value: number) => void; onNext: () => void; onBack: () => void }) {
+function Actions({
+  back,
+  nextLabel = "Continue",
+  nextDisabled,
+}: {
+  back: () => void;
+  nextLabel?: string;
+  nextDisabled?: boolean;
+}) {
   return (
-    <section>
-      <p className="text-xs tracking-widest text-muted uppercase">When</p>
-      <h1 className="mt-3 text-3xl font-semibold tracking-tight">When do you travel?</h1>
-      <label className="mt-8 block text-xs tracking-widest text-muted uppercase" htmlFor="transfer-date">Date</label>
-      <input id="transfer-date" type="date" value={draft.transferDate} onChange={(event) => onDate(event.target.value)} className="mt-2 min-h-14 w-full border border-line bg-transparent px-4 text-sm" />
-      <label className="mt-6 block text-xs tracking-widest text-muted uppercase" htmlFor="pickup-time">Pickup time</label>
-      <input id="pickup-time" type="time" value={draft.pickupTime} onChange={(event) => onTime(event.target.value)} className="mt-2 min-h-14 w-full border border-line bg-transparent px-4 text-sm" />
-      <label className="mt-6 block text-xs tracking-widest text-muted uppercase" htmlFor="duration">Duration</label>
-      <input id="duration" type="number" min={15} step={15} value={draft.durationMinutes} onChange={(event) => onDuration(Number(event.target.value))} className="mt-2 min-h-14 w-full border border-line bg-transparent px-4 text-sm" />
-      <button type="button" onClick={onNext} className="mt-8 flex min-h-14 w-full items-center justify-center bg-ink px-5 text-base font-medium text-canvas">Continue</button>
-      <button type="button" onClick={onBack} className="mt-3 flex min-h-14 w-full items-center justify-center border border-line px-5 text-base font-medium">Back</button>
-    </section>
+    <div className="mt-auto flex flex-col gap-3 pt-4">
+      <PrimaryButton type="submit" disabled={nextDisabled}>
+        {nextLabel}
+      </PrimaryButton>
+      <SecondaryButton type="button" onClick={back}>
+        Back
+      </SecondaryButton>
+    </div>
   );
 }
 
-function PartyStep({ draft, hint, onPassengers, onLuggage, onNext, onBack }: { draft: GuestDraft; hint: string; onPassengers: (value: number) => void; onLuggage: (value: number) => void; onNext: () => void; onBack: () => void }) {
+function PrimaryButton({
+  children,
+  ...props
+}: ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <section>
-      <p className="text-xs tracking-widest text-muted uppercase">Party</p>
-      <h1 className="mt-3 text-3xl font-semibold tracking-tight">How many are travelling?</h1>
-      <label className="mt-8 block text-xs tracking-widest text-muted uppercase" htmlFor="passengers">Passengers</label>
-      <input id="passengers" type="number" min={1} value={draft.passengerCount} onChange={(event) => onPassengers(Number(event.target.value))} className="mt-2 min-h-14 w-full border border-line bg-transparent px-4 text-sm" />
-      <label className="mt-6 block text-xs tracking-widest text-muted uppercase" htmlFor="luggage">Bags</label>
-      <input id="luggage" type="number" min={0} value={draft.luggageCount} onChange={(event) => onLuggage(Number(event.target.value))} className="mt-2 min-h-14 w-full border border-line bg-transparent px-4 text-sm" />
-      <p className="mt-4 text-sm text-muted">{hint}</p>
-      <button type="button" onClick={onNext} className="mt-8 flex min-h-14 w-full items-center justify-center bg-ink px-5 text-base font-medium text-canvas">Continue</button>
-      <button type="button" onClick={onBack} className="mt-3 flex min-h-14 w-full items-center justify-center border border-line px-5 text-base font-medium">Back</button>
-    </section>
+    <button
+      {...props}
+      className="min-h-14 w-full bg-ink px-4 text-base font-semibold tracking-wide text-canvas uppercase disabled:opacity-40"
+    >
+      {children}
+    </button>
   );
 }
 
-function ContactStep({ draft, onName, onPhone, onEmail, onSpecial, onNext, onBack }: { draft: GuestDraft; onName: (value: string) => void; onPhone: (value: string) => void; onEmail: (value: string) => void; onSpecial: (value: string) => void; onNext: () => void; onBack: () => void }) {
+function SecondaryButton({
+  children,
+  ...props
+}: ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <section>
-      <p className="text-xs tracking-widest text-muted uppercase">Contact</p>
-      <h1 className="mt-3 text-3xl font-semibold tracking-tight">Where should we send confirmation?</h1>
-      <label className="mt-8 block text-xs tracking-widest text-muted uppercase" htmlFor="guest-name">Name</label>
-      <input id="guest-name" value={draft.guestName} onChange={(event) => onName(event.target.value)} className="mt-2 min-h-14 w-full border border-line bg-transparent px-4 text-sm" />
-      <label className="mt-6 block text-xs tracking-widest text-muted uppercase" htmlFor="guest-phone">Phone</label>
-      <input id="guest-phone" type="tel" value={draft.guestPhone} onChange={(event) => onPhone(event.target.value)} className="mt-2 min-h-14 w-full border border-line bg-transparent px-4 text-sm" />
-      <label className="mt-6 block text-xs tracking-widest text-muted uppercase" htmlFor="guest-email">Email</label>
-      <input id="guest-email" type="email" value={draft.guestEmail} onChange={(event) => onEmail(event.target.value)} className="mt-2 min-h-14 w-full border border-line bg-transparent px-4 text-sm" />
-      <label className="mt-6 block text-xs tracking-widest text-muted uppercase" htmlFor="special-requirements">Special requirements</label>
-      <textarea id="special-requirements" value={draft.specialRequirements} onChange={(event) => onSpecial(event.target.value)} rows={4} className="mt-2 w-full border border-line bg-transparent px-4 py-3 text-sm" />
-      <button type="button" onClick={onNext} disabled={!draft.guestName.trim() || !draft.guestPhone.trim() || !draft.guestEmail.trim()} className="mt-8 flex min-h-14 w-full items-center justify-center bg-ink px-5 text-base font-medium text-canvas disabled:opacity-40">Review booking</button>
-      <button type="button" onClick={onBack} className="mt-3 flex min-h-14 w-full items-center justify-center border border-line px-5 text-base font-medium">Back</button>
-    </section>
+    <button
+      {...props}
+      className="min-h-14 w-full border border-line px-4 text-base font-medium text-ink"
+    >
+      {children}
+    </button>
   );
 }
 
-function ReviewStep({ draft, currency, submitting, error, onSubmit, onBack }: { draft: GuestDraft; currency: string; submitting: boolean; error: string | null; onSubmit: () => void; onBack: () => void }) {
+function ErrorText({ children }: { children: ReactNode }) {
+  return <p className="border border-line bg-surface px-4 py-3 text-sm">{children}</p>;
+}
+
+function ReviewRow({ label, value }: { label: string; value: string }) {
   return (
-    <section>
-      <p className="text-xs tracking-widest text-muted uppercase">Review</p>
-      <h1 className="mt-3 text-3xl font-semibold tracking-tight">Confirm your transfer</h1>
-      <div className="mt-8 divide-y divide-line border border-line">
-        <Row label="Date" value={`${draft.transferDate} · ${draft.pickupTime}`} />
-        <Row label="Pickup" value={draft.pickupText} />
-        <Row label="Destination" value={draft.destinationText || "—"} />
-        <Row label="Party" value={`${draft.passengerCount} passengers · ${draft.luggageCount} bags`} />
-        <Row label="Guest" value={draft.guestName} />
-        <Row label="Email" value={draft.guestEmail} />
-        <Row label="Price" value={draft.destinationId ? currency : "—"} />
-      </div>
-      {error ? <p className="mt-4 text-sm text-red-700">{error}</p> : null}
-      <button type="button" onClick={onSubmit} disabled={submitting} className="mt-8 flex min-h-14 w-full items-center justify-center bg-ink px-5 text-base font-medium text-canvas disabled:opacity-40">{submitting ? "Booking…" : "Confirm transfer"}</button>
-      <button type="button" onClick={onBack} disabled={submitting} className="mt-3 flex min-h-14 w-full items-center justify-center border border-line px-5 text-base font-medium">Back</button>
-    </section>
+    <div className="flex items-start justify-between gap-4 px-4 py-3">
+      <dt className="text-xs tracking-widest text-muted uppercase">{label}</dt>
+      <dd className="text-right text-sm font-medium">{value}</dd>
+    </div>
   );
-}
-
-function ChoiceButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
-  return <button type="button" onClick={onClick} className={`min-h-12 border px-3 text-sm font-medium ${active ? "border-ink" : "border-line"}`}>{children}</button>;
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return <div className="flex items-start justify-between gap-4 px-4 py-3"><span className="text-xs tracking-widest text-muted uppercase">{label}</span><span className="text-right text-sm font-medium">{value}</span></div>;
-}
-
-function Button({ children, ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { children: ReactNode }) {
-  return <button {...props}>{children}</button>;
 }
