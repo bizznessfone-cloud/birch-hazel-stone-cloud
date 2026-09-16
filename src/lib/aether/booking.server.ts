@@ -74,7 +74,7 @@ export async function createBookingFromRequest(
   // The booking engine completes its transaction before returning. Email is a
   // separate side effect: a provider failure must never roll back a booking.
   const booking = await createBookingEngine(db, input);
-  const email = await sendConfirmationEmail(booking, { origin: requestOrigin() });
+  const email = await sendConfirmationEmail(booking, input.guestEmail, { origin: requestOrigin() });
 
   return {
     ...booking,
