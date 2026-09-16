@@ -23,6 +23,11 @@ const booking: CreatedBooking = {
 
 const recipient = "shaun@example.com";
 
+function restoreEnv(name: string, value: string | undefined) {
+  if (value === undefined) delete process.env[name];
+  else process.env[name] = value;
+}
+
 test("confirmation email stays disabled until Resend configuration exists", async () => {
   const previousKey = process.env.RESEND_API_KEY;
   const previousFrom = process.env.RESEND_FROM_EMAIL;
@@ -32,10 +37,8 @@ test("confirmation email stays disabled until Resend configuration exists", asyn
     const result = await sendConfirmationEmail(booking, recipient);
     assert.deepEqual(result, { status: "not_configured" });
   } finally {
-    if (previousKey === undefined) delete process.env.RESEND_API_KEY;
-    else process.env.RESEND_API_KEY = previousKey;
-    if (previousFrom === undefined) delete process.env.RESEND_FROM_EMAIL;
-    else process.env.RESEND_FROM_EMAIL = previousFrom;
+    restoreEnv("RESEND_API_KEY", previousKey);
+    restoreEnv("RESEND_FROM_EMAIL", previousFrom);
   }
 });
 
@@ -70,12 +73,50 @@ test("confirmation email sends through Resend without exposing the token in the 
     assert.doesNotMatch(body.subject, /test-confirmation-token/);
     assert.match(body.html, /View My Booking/);
     assert.match(body.html, /https:\/\/scan-book-go\.vercel\.app\/confirmed\/test-confirmation-token/);
+    assert.match(body.html, /60 min/);
     assert.match(body.text, /PT-TEST123456/);
+    assert.match(body.text, /Duration: 60 min/);
   } finally {
     globalThis.fetch = previousFetch;
-    if (previousKey === undefined) delete process.env.RESEND_API_KEY;
-    else process.env.RESEND_API_KEY = previousKey;
-    if (previousFrom === undefined) delete process.env.RESEND_FROM_EMAIL;
-    else process.env.RESEND_FROM_EMAIL = previousFrom;
+    restoreEnv("RESEND_API_KEY", previousKey);
+    restoreEnv("RESEND_FROM_EMAIL", previousFrom);
+  }
+});
+
+test("Resend HTTP failure is isolated and returns failed", async () => {
+  const previousKey = process.env.RESEND_API_KEY;
+  const previousFrom = process.env.RESEND_FROM_EMAIL;
+  const previousFetch = globalThis.fetch;
+  process.env.RESEND_API_KEY = "test-key";
+  process.env.RESEND_FROM_EMAIL = "confirmations@example.com";
+  globalThis.fetch = async () => new Response("rejected", { status: 500 });
+
+  try {
+    const result = await sendConfirmationEmail(booking, recipient);
+    assert.deepEqual(result, { status: "failed" });
+  } finally {
+    globalThis.fetch = previousFetch;
+    restoreEnv("RESEND_API_KEY", previousKey);
+    restoreEnv("RESEND_FROM_EMAIL", previousFrom);
+  }
+});
+
+test("Resend transport exception is isolated and returns failed", async () => {
+  const previousKey = process.env.RESEND_API_KEY;
+  const previousFrom = process.env.RESEND_FROM_EMAIL;
+  const previousFetch = globalThis.fetch;
+  process.env.RESEND_API_KEY = "test-key";
+  process.env.RESEND_FROM_EMAIL = "confirmations@example.com";
+  globalThis.fetch = async () => {
+    throw new Error("network unavailable");
+  };
+
+  try {
+    const result = await sendConfirmationEmail(booking, recipient);
+    assert.deepEqual(result, { status: "failed" });
+  } finally {
+    globalThis.fetch = previousFetch;
+    restoreEnv("RESEND_API_KEY", previousKey);
+    restoreEnv("RESEND_FROM_EMAIL", previousFrom);
   }
 });
