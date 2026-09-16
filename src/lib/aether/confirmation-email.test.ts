@@ -53,7 +53,7 @@ test("confirmation email sends through Resend without exposing the token in the 
   };
 
   try {
-    const result = await sendConfirmationEmail(booking, recipient, { origin: "https://scan-book-go.vercel.app" });
+    const result = await sendConfirmationEmail(booking, recipient);
     assert.deepEqual(result, { status: "sent" });
     assert.ok(request);
     assert.equal(request!.url, "https://api.resend.com/emails");
