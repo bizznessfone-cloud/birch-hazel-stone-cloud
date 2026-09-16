@@ -26,8 +26,8 @@ function escapeHtml(value: string): string {
     .replaceAll("'", "&#39;");
 }
 
-function confirmationUrl(booking: CreatedBooking, origin?: string): string {
-  const base = origin?.trim() || env("PUBLIC_APP_URL") || "https://scan-book-go.vercel.app";
+function confirmationUrl(booking: CreatedBooking): string {
+  const base = env("PUBLIC_APP_URL") || "https://scan-book-go.vercel.app";
   return `${base.replace(/\/$/, "")}/confirmed/${encodeURIComponent(booking.confirmationToken)}`;
 }
 
@@ -85,7 +85,6 @@ function htmlBody(booking: CreatedBooking, url: string): string {
 export async function sendConfirmationEmail(
   booking: CreatedBooking,
   recipientEmail: string,
-  options: { origin?: string } = {},
 ): Promise<SendResult> {
   const apiKey = env("RESEND_API_KEY");
   const from = env("RESEND_FROM_EMAIL");
@@ -94,7 +93,7 @@ export async function sendConfirmationEmail(
     return { status: "not_configured" };
   }
 
-  const url = confirmationUrl(booking, options.origin);
+  const url = confirmationUrl(booking);
 
   try {
     const response = await fetch("https://api.resend.com/emails", {
