@@ -84,6 +84,7 @@ function htmlBody(booking: CreatedBooking, url: string): string {
 
 export async function sendConfirmationEmail(
   booking: CreatedBooking,
+  recipientEmail: string,
   options: { origin?: string } = {},
 ): Promise<SendResult> {
   const apiKey = env("RESEND_API_KEY");
@@ -105,7 +106,7 @@ export async function sendConfirmationEmail(
       },
       body: JSON.stringify({
         from,
-        to: [booking.guestEmail],
+        to: [recipientEmail],
         subject: subject(booking),
         text: textBody(booking, url),
         html: htmlBody(booking, url),
