@@ -77,6 +77,12738 @@ const OpsBookingsBookingIdRoute = OpsBookingsBookingIdRouteImport.update({
   path: '/bookings/$bookingId',
   getParentRoute: () => OpsRoute,
 } as any)
+const LoginRoute = LoginRouteImport.update({ id: '/login', path: '/login', getParentRoute: () => rootRouteImport } as any)
+const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({ id: '/api/auth/
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+  '/login': typeof LoginRoute
+  '/api/auth/
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+  '/login': typeof LoginRoute
+  '/api/auth/
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/login': { id: '/login'; path: '/login'; fullPath: '/login'; preLoaderRoute: typeof LoginRouteImport; parentRoute: typeof rootRouteImport }
+    '/api/auth/  }
+}
+
+interface AppHotelsHotelIdRouteChildren { AppHotelsHotelIdPreviewRoute: typeof AppHotelsHotelIdPreviewRoute; AppHotelsHotelIdQrRoute: typeof AppHotelsHotelIdQrRoute }
+const AppHotelsHotelIdRouteChildren: AppHotelsHotelIdRouteChildren = { AppHotelsHotelIdPreviewRoute, AppHotelsHotelIdQrRoute }
+const AppHotelsHotelIdRouteWithChildren = AppHotelsHotelIdRoute._addFileChildren(AppHotelsHotelIdRouteChildren)
+interface AppRouteChildren { AppIndexRoute: typeof AppIndexRoute; AppOnboardingRoute: typeof AppOnboardingRoute; AppHotelsHotelIdRoute: typeof AppHotelsHotelIdRouteWithChildren }
+const AppRouteChildren: AppRouteChildren = { AppIndexRoute, AppOnboardingRoute, AppHotelsHotelIdRoute: AppHotelsHotelIdRouteWithChildren }
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+  LoginRoute: LoginRoute,
+  ApiAuthSplatRoute: ApiAuthSplatRoute,
+  HotelSlugRoute: HotelSlugRoute,
+  AppRoute: AppRouteWithChildren,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, path: '/api/auth/
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, getParentRoute: () => rootRouteImport } as any)
+const HotelSlugRoute = HotelSlugRouteImport.update({ id: '/$hotelSlug', path: '/$hotelSlug', getParentRoute: () => rootRouteImport } as any)
+const AppRoute = AppRouteImport.update({ id: '/app', path: '/app', getParentRoute: () => rootRouteImport } as any)
+const AppIndexRoute = AppIndexRouteImport.update({ id: '/app/', path: '/', getParentRoute: () => AppRoute } as any)
+const AppOnboardingRoute = AppOnboardingRouteImport.update({ id: '/onboarding', path: '/onboarding', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdRoute = AppHotelsHotelIdRouteImport.update({ id: '/hotels/$hotelId', path: '/hotels/$hotelId', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdPreviewRoute = AppHotelsHotelIdPreviewRouteImport.update({ id: '/preview', path: '/preview', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const AppHotelsHotelIdQrRoute = AppHotelsHotelIdQrRouteImport.update({ id: '/qr', path: '/qr', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const OpsInternalRuntimeIdentityRoute =
+  OpsInternalRuntimeIdentityRouteImport.update({
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+: typeof ApiAuthSplatRoute
+  '/$hotelSlug': typeof HotelSlugRoute
+  '/app': typeof AppRouteWithChildren
+  '/app/onboarding': typeof AppOnboardingRoute
+  '/app/hotels/$hotelId': typeof AppHotelsHotelIdRouteWithChildren
+  '/app/hotels/$hotelId/preview': typeof AppHotelsHotelIdPreviewRoute
+  '/app/hotels/$hotelId/qr': typeof AppHotelsHotelIdQrRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, path: '/api/auth/
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, getParentRoute: () => rootRouteImport } as any)
+const HotelSlugRoute = HotelSlugRouteImport.update({ id: '/$hotelSlug', path: '/$hotelSlug', getParentRoute: () => rootRouteImport } as any)
+const AppRoute = AppRouteImport.update({ id: '/app', path: '/app', getParentRoute: () => rootRouteImport } as any)
+const AppIndexRoute = AppIndexRouteImport.update({ id: '/app/', path: '/', getParentRoute: () => AppRoute } as any)
+const AppOnboardingRoute = AppOnboardingRouteImport.update({ id: '/onboarding', path: '/onboarding', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdRoute = AppHotelsHotelIdRouteImport.update({ id: '/hotels/$hotelId', path: '/hotels/$hotelId', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdPreviewRoute = AppHotelsHotelIdPreviewRouteImport.update({ id: '/preview', path: '/preview', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const AppHotelsHotelIdQrRoute = AppHotelsHotelIdQrRouteImport.update({ id: '/qr', path: '/qr', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const OpsInternalRuntimeIdentityRoute =
+  OpsInternalRuntimeIdentityRouteImport.update({
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+: typeof ApiAuthSplatRoute
+  '/$hotelSlug': typeof HotelSlugRoute
+  '/app': typeof AppRouteWithChildren
+  '/app/': typeof AppIndexRoute
+  '/app/onboarding': typeof AppOnboardingRoute
+  '/app/hotels/$hotelId': typeof AppHotelsHotelIdRouteWithChildren
+  '/app/hotels/$hotelId/preview': typeof AppHotelsHotelIdPreviewRoute
+  '/app/hotels/$hotelId/qr': typeof AppHotelsHotelIdQrRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+  '/login': typeof LoginRoute
+  '/api/auth/
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, path: '/api/auth/
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, getParentRoute: () => rootRouteImport } as any)
+const HotelSlugRoute = HotelSlugRouteImport.update({ id: '/$hotelSlug', path: '/$hotelSlug', getParentRoute: () => rootRouteImport } as any)
+const AppRoute = AppRouteImport.update({ id: '/app', path: '/app', getParentRoute: () => rootRouteImport } as any)
+const AppIndexRoute = AppIndexRouteImport.update({ id: '/app/', path: '/', getParentRoute: () => AppRoute } as any)
+const AppOnboardingRoute = AppOnboardingRouteImport.update({ id: '/onboarding', path: '/onboarding', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdRoute = AppHotelsHotelIdRouteImport.update({ id: '/hotels/$hotelId', path: '/hotels/$hotelId', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdPreviewRoute = AppHotelsHotelIdPreviewRouteImport.update({ id: '/preview', path: '/preview', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const AppHotelsHotelIdQrRoute = AppHotelsHotelIdQrRouteImport.update({ id: '/qr', path: '/qr', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const OpsInternalRuntimeIdentityRoute =
+  OpsInternalRuntimeIdentityRouteImport.update({
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+: typeof ApiAuthSplatRoute
+  '/$hotelSlug': typeof HotelSlugRoute
+  '/app': typeof AppRouteWithChildren
+  '/app/onboarding': typeof AppOnboardingRoute
+  '/app/hotels/$hotelId': typeof AppHotelsHotelIdRouteWithChildren
+  '/app/hotels/$hotelId/preview': typeof AppHotelsHotelIdPreviewRoute
+  '/app/hotels/$hotelId/qr': typeof AppHotelsHotelIdQrRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, path: '/api/auth/
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, getParentRoute: () => rootRouteImport } as any)
+const HotelSlugRoute = HotelSlugRouteImport.update({ id: '/$hotelSlug', path: '/$hotelSlug', getParentRoute: () => rootRouteImport } as any)
+const AppRoute = AppRouteImport.update({ id: '/app', path: '/app', getParentRoute: () => rootRouteImport } as any)
+const AppIndexRoute = AppIndexRouteImport.update({ id: '/app/', path: '/', getParentRoute: () => AppRoute } as any)
+const AppOnboardingRoute = AppOnboardingRouteImport.update({ id: '/onboarding', path: '/onboarding', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdRoute = AppHotelsHotelIdRouteImport.update({ id: '/hotels/$hotelId', path: '/hotels/$hotelId', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdPreviewRoute = AppHotelsHotelIdPreviewRouteImport.update({ id: '/preview', path: '/preview', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const AppHotelsHotelIdQrRoute = AppHotelsHotelIdQrRouteImport.update({ id: '/qr', path: '/qr', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const OpsInternalRuntimeIdentityRoute =
+  OpsInternalRuntimeIdentityRouteImport.update({
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+: { id: '/api/auth/  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, path: '/api/auth/
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, getParentRoute: () => rootRouteImport } as any)
+const HotelSlugRoute = HotelSlugRouteImport.update({ id: '/$hotelSlug', path: '/$hotelSlug', getParentRoute: () => rootRouteImport } as any)
+const AppRoute = AppRouteImport.update({ id: '/app', path: '/app', getParentRoute: () => rootRouteImport } as any)
+const AppIndexRoute = AppIndexRouteImport.update({ id: '/app/', path: '/', getParentRoute: () => AppRoute } as any)
+const AppOnboardingRoute = AppOnboardingRouteImport.update({ id: '/onboarding', path: '/onboarding', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdRoute = AppHotelsHotelIdRouteImport.update({ id: '/hotels/$hotelId', path: '/hotels/$hotelId', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdPreviewRoute = AppHotelsHotelIdPreviewRouteImport.update({ id: '/preview', path: '/preview', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const AppHotelsHotelIdQrRoute = AppHotelsHotelIdQrRouteImport.update({ id: '/qr', path: '/qr', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const OpsInternalRuntimeIdentityRoute =
+  OpsInternalRuntimeIdentityRouteImport.update({
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+: typeof ApiAuthSplatRoute
+  '/$hotelSlug': typeof HotelSlugRoute
+  '/app': typeof AppRouteWithChildren
+  '/app/onboarding': typeof AppOnboardingRoute
+  '/app/hotels/$hotelId': typeof AppHotelsHotelIdRouteWithChildren
+  '/app/hotels/$hotelId/preview': typeof AppHotelsHotelIdPreviewRoute
+  '/app/hotels/$hotelId/qr': typeof AppHotelsHotelIdQrRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, path: '/api/auth/
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, getParentRoute: () => rootRouteImport } as any)
+const HotelSlugRoute = HotelSlugRouteImport.update({ id: '/$hotelSlug', path: '/$hotelSlug', getParentRoute: () => rootRouteImport } as any)
+const AppRoute = AppRouteImport.update({ id: '/app', path: '/app', getParentRoute: () => rootRouteImport } as any)
+const AppIndexRoute = AppIndexRouteImport.update({ id: '/app/', path: '/', getParentRoute: () => AppRoute } as any)
+const AppOnboardingRoute = AppOnboardingRouteImport.update({ id: '/onboarding', path: '/onboarding', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdRoute = AppHotelsHotelIdRouteImport.update({ id: '/hotels/$hotelId', path: '/hotels/$hotelId', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdPreviewRoute = AppHotelsHotelIdPreviewRouteImport.update({ id: '/preview', path: '/preview', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const AppHotelsHotelIdQrRoute = AppHotelsHotelIdQrRouteImport.update({ id: '/qr', path: '/qr', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const OpsInternalRuntimeIdentityRoute =
+  OpsInternalRuntimeIdentityRouteImport.update({
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+: typeof ApiAuthSplatRoute
+  '/$hotelSlug': typeof HotelSlugRoute
+  '/app': typeof AppRouteWithChildren
+  '/app/': typeof AppIndexRoute
+  '/app/onboarding': typeof AppOnboardingRoute
+  '/app/hotels/$hotelId': typeof AppHotelsHotelIdRouteWithChildren
+  '/app/hotels/$hotelId/preview': typeof AppHotelsHotelIdPreviewRoute
+  '/app/hotels/$hotelId/qr': typeof AppHotelsHotelIdQrRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+  '/login': typeof LoginRoute
+  '/api/auth/
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, path: '/api/auth/
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, getParentRoute: () => rootRouteImport } as any)
+const HotelSlugRoute = HotelSlugRouteImport.update({ id: '/$hotelSlug', path: '/$hotelSlug', getParentRoute: () => rootRouteImport } as any)
+const AppRoute = AppRouteImport.update({ id: '/app', path: '/app', getParentRoute: () => rootRouteImport } as any)
+const AppIndexRoute = AppIndexRouteImport.update({ id: '/app/', path: '/', getParentRoute: () => AppRoute } as any)
+const AppOnboardingRoute = AppOnboardingRouteImport.update({ id: '/onboarding', path: '/onboarding', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdRoute = AppHotelsHotelIdRouteImport.update({ id: '/hotels/$hotelId', path: '/hotels/$hotelId', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdPreviewRoute = AppHotelsHotelIdPreviewRouteImport.update({ id: '/preview', path: '/preview', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const AppHotelsHotelIdQrRoute = AppHotelsHotelIdQrRouteImport.update({ id: '/qr', path: '/qr', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const OpsInternalRuntimeIdentityRoute =
+  OpsInternalRuntimeIdentityRouteImport.update({
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+: typeof ApiAuthSplatRoute
+  '/$hotelSlug': typeof HotelSlugRoute
+  '/app': typeof AppRouteWithChildren
+  '/app/onboarding': typeof AppOnboardingRoute
+  '/app/hotels/$hotelId': typeof AppHotelsHotelIdRouteWithChildren
+  '/app/hotels/$hotelId/preview': typeof AppHotelsHotelIdPreviewRoute
+  '/app/hotels/$hotelId/qr': typeof AppHotelsHotelIdQrRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, path: '/api/auth/
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, getParentRoute: () => rootRouteImport } as any)
+const HotelSlugRoute = HotelSlugRouteImport.update({ id: '/$hotelSlug', path: '/$hotelSlug', getParentRoute: () => rootRouteImport } as any)
+const AppRoute = AppRouteImport.update({ id: '/app', path: '/app', getParentRoute: () => rootRouteImport } as any)
+const AppIndexRoute = AppIndexRouteImport.update({ id: '/app/', path: '/', getParentRoute: () => AppRoute } as any)
+const AppOnboardingRoute = AppOnboardingRouteImport.update({ id: '/onboarding', path: '/onboarding', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdRoute = AppHotelsHotelIdRouteImport.update({ id: '/hotels/$hotelId', path: '/hotels/$hotelId', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdPreviewRoute = AppHotelsHotelIdPreviewRouteImport.update({ id: '/preview', path: '/preview', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const AppHotelsHotelIdQrRoute = AppHotelsHotelIdQrRouteImport.update({ id: '/qr', path: '/qr', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const OpsInternalRuntimeIdentityRoute =
+  OpsInternalRuntimeIdentityRouteImport.update({
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+; path: '/api/auth/  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, path: '/api/auth/
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, getParentRoute: () => rootRouteImport } as any)
+const HotelSlugRoute = HotelSlugRouteImport.update({ id: '/$hotelSlug', path: '/$hotelSlug', getParentRoute: () => rootRouteImport } as any)
+const AppRoute = AppRouteImport.update({ id: '/app', path: '/app', getParentRoute: () => rootRouteImport } as any)
+const AppIndexRoute = AppIndexRouteImport.update({ id: '/app/', path: '/', getParentRoute: () => AppRoute } as any)
+const AppOnboardingRoute = AppOnboardingRouteImport.update({ id: '/onboarding', path: '/onboarding', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdRoute = AppHotelsHotelIdRouteImport.update({ id: '/hotels/$hotelId', path: '/hotels/$hotelId', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdPreviewRoute = AppHotelsHotelIdPreviewRouteImport.update({ id: '/preview', path: '/preview', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const AppHotelsHotelIdQrRoute = AppHotelsHotelIdQrRouteImport.update({ id: '/qr', path: '/qr', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const OpsInternalRuntimeIdentityRoute =
+  OpsInternalRuntimeIdentityRouteImport.update({
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+: typeof ApiAuthSplatRoute
+  '/$hotelSlug': typeof HotelSlugRoute
+  '/app': typeof AppRouteWithChildren
+  '/app/onboarding': typeof AppOnboardingRoute
+  '/app/hotels/$hotelId': typeof AppHotelsHotelIdRouteWithChildren
+  '/app/hotels/$hotelId/preview': typeof AppHotelsHotelIdPreviewRoute
+  '/app/hotels/$hotelId/qr': typeof AppHotelsHotelIdQrRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, path: '/api/auth/
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, getParentRoute: () => rootRouteImport } as any)
+const HotelSlugRoute = HotelSlugRouteImport.update({ id: '/$hotelSlug', path: '/$hotelSlug', getParentRoute: () => rootRouteImport } as any)
+const AppRoute = AppRouteImport.update({ id: '/app', path: '/app', getParentRoute: () => rootRouteImport } as any)
+const AppIndexRoute = AppIndexRouteImport.update({ id: '/app/', path: '/', getParentRoute: () => AppRoute } as any)
+const AppOnboardingRoute = AppOnboardingRouteImport.update({ id: '/onboarding', path: '/onboarding', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdRoute = AppHotelsHotelIdRouteImport.update({ id: '/hotels/$hotelId', path: '/hotels/$hotelId', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdPreviewRoute = AppHotelsHotelIdPreviewRouteImport.update({ id: '/preview', path: '/preview', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const AppHotelsHotelIdQrRoute = AppHotelsHotelIdQrRouteImport.update({ id: '/qr', path: '/qr', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const OpsInternalRuntimeIdentityRoute =
+  OpsInternalRuntimeIdentityRouteImport.update({
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+: typeof ApiAuthSplatRoute
+  '/$hotelSlug': typeof HotelSlugRoute
+  '/app': typeof AppRouteWithChildren
+  '/app/': typeof AppIndexRoute
+  '/app/onboarding': typeof AppOnboardingRoute
+  '/app/hotels/$hotelId': typeof AppHotelsHotelIdRouteWithChildren
+  '/app/hotels/$hotelId/preview': typeof AppHotelsHotelIdPreviewRoute
+  '/app/hotels/$hotelId/qr': typeof AppHotelsHotelIdQrRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+  '/login': typeof LoginRoute
+  '/api/auth/
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, path: '/api/auth/
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, getParentRoute: () => rootRouteImport } as any)
+const HotelSlugRoute = HotelSlugRouteImport.update({ id: '/$hotelSlug', path: '/$hotelSlug', getParentRoute: () => rootRouteImport } as any)
+const AppRoute = AppRouteImport.update({ id: '/app', path: '/app', getParentRoute: () => rootRouteImport } as any)
+const AppIndexRoute = AppIndexRouteImport.update({ id: '/app/', path: '/', getParentRoute: () => AppRoute } as any)
+const AppOnboardingRoute = AppOnboardingRouteImport.update({ id: '/onboarding', path: '/onboarding', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdRoute = AppHotelsHotelIdRouteImport.update({ id: '/hotels/$hotelId', path: '/hotels/$hotelId', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdPreviewRoute = AppHotelsHotelIdPreviewRouteImport.update({ id: '/preview', path: '/preview', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const AppHotelsHotelIdQrRoute = AppHotelsHotelIdQrRouteImport.update({ id: '/qr', path: '/qr', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const OpsInternalRuntimeIdentityRoute =
+  OpsInternalRuntimeIdentityRouteImport.update({
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+: typeof ApiAuthSplatRoute
+  '/$hotelSlug': typeof HotelSlugRoute
+  '/app': typeof AppRouteWithChildren
+  '/app/onboarding': typeof AppOnboardingRoute
+  '/app/hotels/$hotelId': typeof AppHotelsHotelIdRouteWithChildren
+  '/app/hotels/$hotelId/preview': typeof AppHotelsHotelIdPreviewRoute
+  '/app/hotels/$hotelId/qr': typeof AppHotelsHotelIdQrRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, path: '/api/auth/
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, getParentRoute: () => rootRouteImport } as any)
+const HotelSlugRoute = HotelSlugRouteImport.update({ id: '/$hotelSlug', path: '/$hotelSlug', getParentRoute: () => rootRouteImport } as any)
+const AppRoute = AppRouteImport.update({ id: '/app', path: '/app', getParentRoute: () => rootRouteImport } as any)
+const AppIndexRoute = AppIndexRouteImport.update({ id: '/app/', path: '/', getParentRoute: () => AppRoute } as any)
+const AppOnboardingRoute = AppOnboardingRouteImport.update({ id: '/onboarding', path: '/onboarding', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdRoute = AppHotelsHotelIdRouteImport.update({ id: '/hotels/$hotelId', path: '/hotels/$hotelId', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdPreviewRoute = AppHotelsHotelIdPreviewRouteImport.update({ id: '/preview', path: '/preview', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const AppHotelsHotelIdQrRoute = AppHotelsHotelIdQrRouteImport.update({ id: '/qr', path: '/qr', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const OpsInternalRuntimeIdentityRoute =
+  OpsInternalRuntimeIdentityRouteImport.update({
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+; fullPath: '/api/auth/  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, path: '/api/auth/
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, getParentRoute: () => rootRouteImport } as any)
+const HotelSlugRoute = HotelSlugRouteImport.update({ id: '/$hotelSlug', path: '/$hotelSlug', getParentRoute: () => rootRouteImport } as any)
+const AppRoute = AppRouteImport.update({ id: '/app', path: '/app', getParentRoute: () => rootRouteImport } as any)
+const AppIndexRoute = AppIndexRouteImport.update({ id: '/app/', path: '/', getParentRoute: () => AppRoute } as any)
+const AppOnboardingRoute = AppOnboardingRouteImport.update({ id: '/onboarding', path: '/onboarding', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdRoute = AppHotelsHotelIdRouteImport.update({ id: '/hotels/$hotelId', path: '/hotels/$hotelId', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdPreviewRoute = AppHotelsHotelIdPreviewRouteImport.update({ id: '/preview', path: '/preview', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const AppHotelsHotelIdQrRoute = AppHotelsHotelIdQrRouteImport.update({ id: '/qr', path: '/qr', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const OpsInternalRuntimeIdentityRoute =
+  OpsInternalRuntimeIdentityRouteImport.update({
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+: typeof ApiAuthSplatRoute
+  '/$hotelSlug': typeof HotelSlugRoute
+  '/app': typeof AppRouteWithChildren
+  '/app/onboarding': typeof AppOnboardingRoute
+  '/app/hotels/$hotelId': typeof AppHotelsHotelIdRouteWithChildren
+  '/app/hotels/$hotelId/preview': typeof AppHotelsHotelIdPreviewRoute
+  '/app/hotels/$hotelId/qr': typeof AppHotelsHotelIdQrRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, path: '/api/auth/
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, getParentRoute: () => rootRouteImport } as any)
+const HotelSlugRoute = HotelSlugRouteImport.update({ id: '/$hotelSlug', path: '/$hotelSlug', getParentRoute: () => rootRouteImport } as any)
+const AppRoute = AppRouteImport.update({ id: '/app', path: '/app', getParentRoute: () => rootRouteImport } as any)
+const AppIndexRoute = AppIndexRouteImport.update({ id: '/app/', path: '/', getParentRoute: () => AppRoute } as any)
+const AppOnboardingRoute = AppOnboardingRouteImport.update({ id: '/onboarding', path: '/onboarding', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdRoute = AppHotelsHotelIdRouteImport.update({ id: '/hotels/$hotelId', path: '/hotels/$hotelId', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdPreviewRoute = AppHotelsHotelIdPreviewRouteImport.update({ id: '/preview', path: '/preview', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const AppHotelsHotelIdQrRoute = AppHotelsHotelIdQrRouteImport.update({ id: '/qr', path: '/qr', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const OpsInternalRuntimeIdentityRoute =
+  OpsInternalRuntimeIdentityRouteImport.update({
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+: typeof ApiAuthSplatRoute
+  '/$hotelSlug': typeof HotelSlugRoute
+  '/app': typeof AppRouteWithChildren
+  '/app/': typeof AppIndexRoute
+  '/app/onboarding': typeof AppOnboardingRoute
+  '/app/hotels/$hotelId': typeof AppHotelsHotelIdRouteWithChildren
+  '/app/hotels/$hotelId/preview': typeof AppHotelsHotelIdPreviewRoute
+  '/app/hotels/$hotelId/qr': typeof AppHotelsHotelIdQrRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+  '/login': typeof LoginRoute
+  '/api/auth/
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, path: '/api/auth/
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, getParentRoute: () => rootRouteImport } as any)
+const HotelSlugRoute = HotelSlugRouteImport.update({ id: '/$hotelSlug', path: '/$hotelSlug', getParentRoute: () => rootRouteImport } as any)
+const AppRoute = AppRouteImport.update({ id: '/app', path: '/app', getParentRoute: () => rootRouteImport } as any)
+const AppIndexRoute = AppIndexRouteImport.update({ id: '/app/', path: '/', getParentRoute: () => AppRoute } as any)
+const AppOnboardingRoute = AppOnboardingRouteImport.update({ id: '/onboarding', path: '/onboarding', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdRoute = AppHotelsHotelIdRouteImport.update({ id: '/hotels/$hotelId', path: '/hotels/$hotelId', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdPreviewRoute = AppHotelsHotelIdPreviewRouteImport.update({ id: '/preview', path: '/preview', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const AppHotelsHotelIdQrRoute = AppHotelsHotelIdQrRouteImport.update({ id: '/qr', path: '/qr', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const OpsInternalRuntimeIdentityRoute =
+  OpsInternalRuntimeIdentityRouteImport.update({
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+: typeof ApiAuthSplatRoute
+  '/$hotelSlug': typeof HotelSlugRoute
+  '/app': typeof AppRouteWithChildren
+  '/app/onboarding': typeof AppOnboardingRoute
+  '/app/hotels/$hotelId': typeof AppHotelsHotelIdRouteWithChildren
+  '/app/hotels/$hotelId/preview': typeof AppHotelsHotelIdPreviewRoute
+  '/app/hotels/$hotelId/qr': typeof AppHotelsHotelIdQrRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, path: '/api/auth/
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, getParentRoute: () => rootRouteImport } as any)
+const HotelSlugRoute = HotelSlugRouteImport.update({ id: '/$hotelSlug', path: '/$hotelSlug', getParentRoute: () => rootRouteImport } as any)
+const AppRoute = AppRouteImport.update({ id: '/app', path: '/app', getParentRoute: () => rootRouteImport } as any)
+const AppIndexRoute = AppIndexRouteImport.update({ id: '/app/', path: '/', getParentRoute: () => AppRoute } as any)
+const AppOnboardingRoute = AppOnboardingRouteImport.update({ id: '/onboarding', path: '/onboarding', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdRoute = AppHotelsHotelIdRouteImport.update({ id: '/hotels/$hotelId', path: '/hotels/$hotelId', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdPreviewRoute = AppHotelsHotelIdPreviewRouteImport.update({ id: '/preview', path: '/preview', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const AppHotelsHotelIdQrRoute = AppHotelsHotelIdQrRouteImport.update({ id: '/qr', path: '/qr', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const OpsInternalRuntimeIdentityRoute =
+  OpsInternalRuntimeIdentityRouteImport.update({
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+; preLoaderRoute: typeof ApiAuthSplatRouteImport; parentRoute: typeof rootRouteImport }
+    '/$hotelSlug': { id: '/$hotelSlug'; path: '/$hotelSlug'; fullPath: '/$hotelSlug'; preLoaderRoute: typeof HotelSlugRouteImport; parentRoute: typeof rootRouteImport }
+    '/app': { id: '/app'; path: '/app'; fullPath: '/app'; preLoaderRoute: typeof AppRouteImport; parentRoute: typeof rootRouteImport }
+    '/app/': { id: '/app/'; path: '/'; fullPath: '/app/'; preLoaderRoute: typeof AppIndexRouteImport; parentRoute: typeof AppRoute }
+    '/app/onboarding': { id: '/app/onboarding'; path: '/onboarding'; fullPath: '/app/onboarding'; preLoaderRoute: typeof AppOnboardingRouteImport; parentRoute: typeof AppRoute }
+    '/app/hotels/$hotelId': { id: '/app/hotels/$hotelId'; path: '/hotels/$hotelId'; fullPath: '/app/hotels/$hotelId'; preLoaderRoute: typeof AppHotelsHotelIdRouteImport; parentRoute: typeof AppRoute }
+    '/app/hotels/$hotelId/preview': { id: '/app/hotels/$hotelId/preview'; path: '/preview'; fullPath: '/app/hotels/$hotelId/preview'; preLoaderRoute: typeof AppHotelsHotelIdPreviewRouteImport; parentRoute: typeof AppHotelsHotelIdRoute }
+    '/app/hotels/$hotelId/qr': { id: '/app/hotels/$hotelId/qr'; path: '/qr'; fullPath: '/app/hotels/$hotelId/qr'; preLoaderRoute: typeof AppHotelsHotelIdQrRouteImport; parentRoute: typeof AppHotelsHotelIdRoute }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, path: '/api/auth/
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, getParentRoute: () => rootRouteImport } as any)
+const HotelSlugRoute = HotelSlugRouteImport.update({ id: '/$hotelSlug', path: '/$hotelSlug', getParentRoute: () => rootRouteImport } as any)
+const AppRoute = AppRouteImport.update({ id: '/app', path: '/app', getParentRoute: () => rootRouteImport } as any)
+const AppIndexRoute = AppIndexRouteImport.update({ id: '/app/', path: '/', getParentRoute: () => AppRoute } as any)
+const AppOnboardingRoute = AppOnboardingRouteImport.update({ id: '/onboarding', path: '/onboarding', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdRoute = AppHotelsHotelIdRouteImport.update({ id: '/hotels/$hotelId', path: '/hotels/$hotelId', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdPreviewRoute = AppHotelsHotelIdPreviewRouteImport.update({ id: '/preview', path: '/preview', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const AppHotelsHotelIdQrRoute = AppHotelsHotelIdQrRouteImport.update({ id: '/qr', path: '/qr', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const OpsInternalRuntimeIdentityRoute =
+  OpsInternalRuntimeIdentityRouteImport.update({
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+: typeof ApiAuthSplatRoute
+  '/$hotelSlug': typeof HotelSlugRoute
+  '/app': typeof AppRouteWithChildren
+  '/app/onboarding': typeof AppOnboardingRoute
+  '/app/hotels/$hotelId': typeof AppHotelsHotelIdRouteWithChildren
+  '/app/hotels/$hotelId/preview': typeof AppHotelsHotelIdPreviewRoute
+  '/app/hotels/$hotelId/qr': typeof AppHotelsHotelIdQrRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, path: '/api/auth/
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, getParentRoute: () => rootRouteImport } as any)
+const HotelSlugRoute = HotelSlugRouteImport.update({ id: '/$hotelSlug', path: '/$hotelSlug', getParentRoute: () => rootRouteImport } as any)
+const AppRoute = AppRouteImport.update({ id: '/app', path: '/app', getParentRoute: () => rootRouteImport } as any)
+const AppIndexRoute = AppIndexRouteImport.update({ id: '/app/', path: '/', getParentRoute: () => AppRoute } as any)
+const AppOnboardingRoute = AppOnboardingRouteImport.update({ id: '/onboarding', path: '/onboarding', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdRoute = AppHotelsHotelIdRouteImport.update({ id: '/hotels/$hotelId', path: '/hotels/$hotelId', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdPreviewRoute = AppHotelsHotelIdPreviewRouteImport.update({ id: '/preview', path: '/preview', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const AppHotelsHotelIdQrRoute = AppHotelsHotelIdQrRouteImport.update({ id: '/qr', path: '/qr', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const OpsInternalRuntimeIdentityRoute =
+  OpsInternalRuntimeIdentityRouteImport.update({
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+: typeof ApiAuthSplatRoute
+  '/$hotelSlug': typeof HotelSlugRoute
+  '/app': typeof AppRouteWithChildren
+  '/app/': typeof AppIndexRoute
+  '/app/onboarding': typeof AppOnboardingRoute
+  '/app/hotels/$hotelId': typeof AppHotelsHotelIdRouteWithChildren
+  '/app/hotels/$hotelId/preview': typeof AppHotelsHotelIdPreviewRoute
+  '/app/hotels/$hotelId/qr': typeof AppHotelsHotelIdQrRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+  '/login': typeof LoginRoute
+  '/api/auth/
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, path: '/api/auth/
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, getParentRoute: () => rootRouteImport } as any)
+const HotelSlugRoute = HotelSlugRouteImport.update({ id: '/$hotelSlug', path: '/$hotelSlug', getParentRoute: () => rootRouteImport } as any)
+const AppRoute = AppRouteImport.update({ id: '/app', path: '/app', getParentRoute: () => rootRouteImport } as any)
+const AppIndexRoute = AppIndexRouteImport.update({ id: '/app/', path: '/', getParentRoute: () => AppRoute } as any)
+const AppOnboardingRoute = AppOnboardingRouteImport.update({ id: '/onboarding', path: '/onboarding', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdRoute = AppHotelsHotelIdRouteImport.update({ id: '/hotels/$hotelId', path: '/hotels/$hotelId', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdPreviewRoute = AppHotelsHotelIdPreviewRouteImport.update({ id: '/preview', path: '/preview', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const AppHotelsHotelIdQrRoute = AppHotelsHotelIdQrRouteImport.update({ id: '/qr', path: '/qr', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const OpsInternalRuntimeIdentityRoute =
+  OpsInternalRuntimeIdentityRouteImport.update({
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+: typeof ApiAuthSplatRoute
+  '/$hotelSlug': typeof HotelSlugRoute
+  '/app': typeof AppRouteWithChildren
+  '/app/onboarding': typeof AppOnboardingRoute
+  '/app/hotels/$hotelId': typeof AppHotelsHotelIdRouteWithChildren
+  '/app/hotels/$hotelId/preview': typeof AppHotelsHotelIdPreviewRoute
+  '/app/hotels/$hotelId/qr': typeof AppHotelsHotelIdQrRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, path: '/api/auth/
+    id: '/internal/runtime-identity',
+    path: '/internal/runtime-identity',
+    getParentRoute: () => OpsRoute,
+  } as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings': typeof OpsBookingsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ops': typeof OpsRouteWithChildren
+  '/book/$hotelCode': typeof BookHotelCodeRoute
+  '/confirmed/$token': typeof ConfirmedTokenRoute
+  '/ops/drivers': typeof OpsDriversRoute
+  '/ops/hotels': typeof OpsHotelsRoute
+  '/ops/login': typeof OpsLoginRoute
+  '/ops/vehicles': typeof OpsVehiclesRoute
+  '/ops/': typeof OpsIndexRoute
+  '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
+  '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/ops/bookings/': typeof OpsBookingsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings'
+  id:
+    | '__root__'
+    | '/'
+    | '/ops'
+    | '/book/$hotelCode'
+    | '/confirmed/$token'
+    | '/ops/drivers'
+    | '/ops/hotels'
+    | '/ops/login'
+    | '/ops/vehicles'
+    | '/ops/'
+    | '/ops/bookings/$bookingId'
+    | '/ops/internal/runtime-identity'
+    | '/ops/bookings/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  OpsRoute: typeof OpsRouteWithChildren
+  BookHotelCodeRoute: typeof BookHotelCodeRoute
+  ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$hotelCode': {
+      id: '/book/$hotelCode'
+      path: '/book/$hotelCode'
+      fullPath: '/book/$hotelCode'
+      preLoaderRoute: typeof BookHotelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmed/$token': {
+      id: '/confirmed/$token'
+      path: '/confirmed/$token'
+      fullPath: '/confirmed/$token'
+      preLoaderRoute: typeof ConfirmedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops/': {
+      id: '/ops/'
+      path: '/'
+      fullPath: '/ops/'
+      preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/drivers': {
+      id: '/ops/drivers'
+      path: '/drivers'
+      fullPath: '/ops/drivers'
+      preLoaderRoute: typeof OpsDriversRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/hotels': {
+      id: '/ops/hotels'
+      path: '/hotels'
+      fullPath: '/ops/hotels'
+      preLoaderRoute: typeof OpsHotelsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/login': {
+      id: '/ops/login'
+      path: '/login'
+      fullPath: '/ops/login'
+      preLoaderRoute: typeof OpsLoginRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/vehicles': {
+      id: '/ops/vehicles'
+      path: '/vehicles'
+      fullPath: '/ops/vehicles'
+      preLoaderRoute: typeof OpsVehiclesRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/': {
+      id: '/ops/bookings/'
+      path: '/bookings'
+      fullPath: '/ops/bookings/'
+      preLoaderRoute: typeof OpsBookingsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/bookings/$bookingId': {
+      id: '/ops/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/ops/bookings/$bookingId'
+      preLoaderRoute: typeof OpsBookingsBookingIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/internal/runtime-identity': {
+      id: '/ops/internal/runtime-identity'
+      path: '/internal/runtime-identity'
+      fullPath: '/ops/internal/runtime-identity'
+      preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
+      parentRoute: typeof OpsRoute
+    }
+  }
+}
+
+interface OpsRouteChildren {
+  OpsDriversRoute: typeof OpsDriversRoute
+  OpsHotelsRoute: typeof OpsHotelsRoute
+  OpsLoginRoute: typeof OpsLoginRoute
+  OpsVehiclesRoute: typeof OpsVehiclesRoute
+  OpsIndexRoute: typeof OpsIndexRoute
+  OpsBookingsBookingIdRoute: typeof OpsBookingsBookingIdRoute
+  OpsInternalRuntimeIdentityRoute: typeof OpsInternalRuntimeIdentityRoute
+  OpsBookingsIndexRoute: typeof OpsBookingsIndexRoute
+}
+
+const OpsRouteChildren: OpsRouteChildren = {
+  OpsDriversRoute: OpsDriversRoute,
+  OpsHotelsRoute: OpsHotelsRoute,
+  OpsLoginRoute: OpsLoginRoute,
+  OpsVehiclesRoute: OpsVehiclesRoute,
+  OpsIndexRoute: OpsIndexRoute,
+  OpsBookingsBookingIdRoute: OpsBookingsBookingIdRoute,
+  OpsInternalRuntimeIdentityRoute: OpsInternalRuntimeIdentityRoute,
+  OpsBookingsIndexRoute: OpsBookingsIndexRoute,
+}
+
+const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  OpsRoute: OpsRouteWithChildren,
+  BookHotelCodeRoute: BookHotelCodeRoute,
+  ConfirmedTokenRoute: ConfirmedTokenRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
+, getParentRoute: () => rootRouteImport } as any)
+const HotelSlugRoute = HotelSlugRouteImport.update({ id: '/$hotelSlug', path: '/$hotelSlug', getParentRoute: () => rootRouteImport } as any)
+const AppRoute = AppRouteImport.update({ id: '/app', path: '/app', getParentRoute: () => rootRouteImport } as any)
+const AppIndexRoute = AppIndexRouteImport.update({ id: '/app/', path: '/', getParentRoute: () => AppRoute } as any)
+const AppOnboardingRoute = AppOnboardingRouteImport.update({ id: '/onboarding', path: '/onboarding', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdRoute = AppHotelsHotelIdRouteImport.update({ id: '/hotels/$hotelId', path: '/hotels/$hotelId', getParentRoute: () => AppRoute } as any)
+const AppHotelsHotelIdPreviewRoute = AppHotelsHotelIdPreviewRouteImport.update({ id: '/preview', path: '/preview', getParentRoute: () => AppHotelsHotelIdRoute } as any)
+const AppHotelsHotelIdQrRoute = AppHotelsHotelIdQrRouteImport.update({ id: '/qr', path: '/qr', getParentRoute: () => AppHotelsHotelIdRoute } as any)
 const OpsInternalRuntimeIdentityRoute =
   OpsInternalRuntimeIdentityRouteImport.update({
     id: '/internal/runtime-identity',
