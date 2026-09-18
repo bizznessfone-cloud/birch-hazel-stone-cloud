@@ -24,6 +24,8 @@ Source already contains:
 
 Do not restart or redesign these foundations.
 
+CP22 is currently implementing the authenticated /app onboarding layer.
+
 ## CP20 email
 
 Booking confirmation email is a post-commit notification layer:
