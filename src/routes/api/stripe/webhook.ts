@@ -41,9 +41,20 @@ export const Route = createFileRoute("/api/stripe/webhook")({
           "customer.subscription.created",
           "customer.subscription.updated",
           "customer.subscription.deleted",
+          "account.application.deauthorized",
         ]);
 
         if (!relevant.has(event.type)) {
+          return Response.json({ received: true });
+        }
+
+        const db = await getSql();
+
+        if (event.type === "account.application.deauthorized") {
+          const accountId = event?.account?.id ?? event?.data?.object?.id;
+          if (typeof accountId === "string") {
+            await db.query("select sbg_disconnect_stripe_by_account($1)", [accountId]);
+          }
           return Response.json({ received: true });
         }
 
@@ -51,8 +62,6 @@ export const Route = createFileRoute("/api/stripe/webhook")({
         if (!data.hotelId || !data.subscriptionId) {
           return Response.json({ received: true });
         }
-
-        const db = await getSql();
         await db.query(
           "select sbg_apply_billing_event($1, $2, $3::uuid, $4, $5, $6, $7, $8::timestamptz)",
           [
