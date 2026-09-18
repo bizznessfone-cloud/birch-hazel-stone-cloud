@@ -21,7 +21,7 @@ CP15 frozen source checkpoint:
 CP21B audit baseline:
 `fa823186a548a2009bbb3dc1e7453c75cf94b919`.
 
-CP22 implementation baseline: `390a471e7fcdac87ec89d77e77ec89b2aea82a73f`.
+CP22 implementation baseline: `390a471e7fcdac87ec9bd9e77ec89b2aea82a73f`.
 
 ## Mandatory current-state read
 
