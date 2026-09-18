@@ -28,7 +28,7 @@ function HotelWorkspace() {
   const destination = item.destinations[0];
   const bookingUrl =
     typeof window === "undefined"
-      ? "/book/" + hotel.code
+      ? "/" + hotel.public_slug
       : window.location.origin + "/book/" + hotel.code;
 
   async function copyBookingUrl() {
