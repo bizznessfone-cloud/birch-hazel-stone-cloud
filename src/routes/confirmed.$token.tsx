@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { getPublicBooking } from "@/lib/aether/booking-fns";
+import { startGuestPayment } from "@/lib/aether/guest-payment-fns";
 import { formatQuotedPrice, touristMessage } from "@/lib/aether/guest";
 import { GuestHeader } from "@/components/aether/guest-header";
 import { ThemeToggle } from "@/components/aether/theme-toggle";
@@ -87,6 +88,23 @@ function ConfirmationCard({
           <Row label="Guest" value={booking.guestName} />
           <Row label="Price" value={priceLabel(booking)} />
         </dl>
+        {!booking.cancelled && booking.pricing.priced && booking.pricing.amountMinor > 0 ? (
+          <button
+            type="button"
+            className="mt-6 flex min-h-14 w-full items-center justify-center bg-ink text-base font-semibold tracking-wide text-canvas uppercase disabled:opacity-40"
+            onClick={async () => {
+              try {
+                const result = await startGuestPayment({ data: { token: window.location.pathname.split("/").pop() ?? "" } });
+                if (result.status === "paid") return;
+                if (result.url) window.location.assign(result.url);
+              } catch {
+                window.alert("Payment could not be started. Please try again.");
+              }
+            }}
+          >
+            Pay for transfer
+          </button>
+        ) : null}
         <Link
           to="/book/$hotelCode"
           params={{ hotelCode: booking.hotelCode }}
