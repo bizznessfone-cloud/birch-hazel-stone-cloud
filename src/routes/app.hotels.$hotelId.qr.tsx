@@ -17,7 +17,7 @@ function HotelQr() {
 
   const bookingUrl =
     typeof window === "undefined"
-      ? "/book/" + item.hotel.code
+      ? "/" + item.hotel.public_slug
       : window.location.origin + "/book/" + item.hotel.code;
 
   return (
