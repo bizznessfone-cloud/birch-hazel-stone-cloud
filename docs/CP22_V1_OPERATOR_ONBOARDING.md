@@ -55,41 +55,10 @@ The public guest route remains `/book/{hotelCode}` until CP23 introduces the hum
 
 Actual QR image generation is offline and dependency-free. The hotel workspace exposes `/app/hotels/{hotelId}/qr` with SVG download and browser print support. CP23 now targets the human-readable hotel slug.
 
-## Not implemented yet
+## Follow-on V1 checkpoints
 
-- public human-readable hotel slug
-- subscription plan UI
-- Stripe subscription activation
-- Stripe Connect for hotel guest payments
-- LIVE entitlement enforcement through subscription state
-- final V1 end-to-end flow
+CP23 adds the public human-readable hotel slug.
 
-Those belong to subsequent controlled checkpoints.
+CP24 adds the SBG subscription activation surface and Stripe Connect account boundary.
 
-## Security boundary
-
-No broad `aether_app` DML was restored.
-
-The new onboarding mutation path is:
-
-```
-authenticated Better Auth user
-        ↓
-authMiddleware
-        ↓
-aether_app
-        ↓
-narrow SECURITY DEFINER onboarding function
-        ↓
-owner-owned hotel/service objects
-```
-
-The existing occupancy, booking, hotel/provider, and Ops security model remains intact.
-
-## Validation state
-
-Source-level CP22 regression coverage now includes the QR encoder and QR print/download surface. Full `npm run test:aether` and `npm run build` have not been executed in this environment, so their results remain unverified.
-
-## Next
-
-Complete executable local/CI validation of CP22/CP23, then proceed to subscription/Stripe activation.
+The remaining controlled payment step is guest transfer Checkout/PaymentIntent execution against the connected hotel Stripe account.
