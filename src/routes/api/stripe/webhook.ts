@@ -75,6 +75,7 @@ export const Route = createFileRoute("/api/stripe/webhook")({
             data.currentPeriodEnd,
           ],
         );
+        await db.query("select sbg_sync_hotel_entitlement($1::uuid)", [data.hotelId]);
 
         return Response.json({ received: true });
       },
