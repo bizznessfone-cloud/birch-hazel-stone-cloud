@@ -57,11 +57,11 @@ begin
 end;
 $$;
 
-create or replace function sbg_set_booking_checkout_session(p_payment_id uuid, p_checkout_session_id text)
+create or replace function sbg_set_booking_checkout_session(p_payment_id uuid, p_checkout_session_id text, p_checkout_url text)
 returns void language sql security definer set search_path = public
 as $
   update sbg_booking_payments
-     set stripe_checkout_session_id = p_checkout_session_id, updated_at = now()
+     set stripe_checkout_session_id = p_checkout_session_id, stripe_checkout_url = p_checkout_url, updated_at = now()
    where id = p_payment_id and status = 'pending';
 $$;
 
@@ -88,8 +88,8 @@ end;
 $$;
 
 revoke all on function sbg_prepare_booking_payment(text) from public;
-revoke all on function sbg_set_booking_checkout_session(uuid,text) from public;
+revoke all on function sbg_set_booking_checkout_session(uuid,text,text) from public;
 revoke all on function sbg_apply_payment_event(text,text,uuid,uuid,text,text) from public;
 grant execute on function sbg_prepare_booking_payment(text) to aether_app;
-grant execute on function sbg_set_booking_checkout_session(uuid,text) to aether_app;
+grant execute on function sbg_set_booking_checkout_session(uuid,text,text) to aether_app;
 grant execute on function sbg_apply_payment_event(text,text,uuid,uuid,text,text) to aether_app;
