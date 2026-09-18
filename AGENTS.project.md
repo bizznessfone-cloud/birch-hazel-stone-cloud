@@ -21,8 +21,7 @@ CP15 frozen source checkpoint:
 CP21B audit baseline:
 `fa823186a548a2009bbb3dc1e7453c75cf94b919`.
 
-CP22 current source HEAD:
-`65342b6ffef977ff34d7ec9ea05ae18c239cc1f6`.
+CP22 implementation baseline: `390a471e7fcdac87ec89d77e77ec89b2aea82a73f`.
 
 ## Mandatory current-state read
 
@@ -50,7 +49,7 @@ CP21 V1 Product Surface Audit is complete.
 
 CP21B reconciliation is complete.
 
-Current checkpoint: **CP22 — V1 Operator Onboarding**.
+Current checkpoint: **CP23 — Public Human-Readable Hotel Slug**
 
 ## V1 product layer
 
@@ -62,7 +61,7 @@ The V1 operator SaaS surface belongs under `/app/*`.
 
 Existing `/ops/*` is the internal operations desk and must not be repurposed as SaaS onboarding.
 
-Current public guest route remains `/book/{hotelCode}` until the later CP23 human-readable hotel slug step.
+Current public guest route is now `/{hotelSlug}`. Legacy `/book/{hotelCode}` remains supported for compatibility.
 
 ## V1 scope
 
@@ -87,10 +86,11 @@ Do not reopen CP15/CP16/CP19 security architecture while building CP22.
 ## Route boundaries
 
 - `/` — current product surface; V1 marketing/onboarding work is pending.
-- `/book/{hotelCode}` — current public guest booking.
+- `/{hotelSlug}` — current human-readable public hotel booking.
+- `/book/{hotelCode}` — legacy public guest booking compatibility route.
 - `/confirmed/{token}` — secure public confirmation.
 - `/ops/*` — internal authenticated operations.
-- `/app/*` — reserved for V1 SaaS operator onboarding/application; not yet present at CP21B.
+- `/app/*` — V1 SaaS operator onboarding/application.
 
 ## Feature fence
 
