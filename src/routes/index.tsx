@@ -33,13 +33,21 @@ function Home() {
           Reception books from the hotel page. No guest account. No payment at
           this step.
         </p>
-        <Link
-          to="/book/$hotelCode"
-          params={{ hotelCode: "gate" }}
-          className="mt-12 flex min-h-14 w-full max-w-sm items-center justify-center bg-ink px-4 text-base font-semibold tracking-wide text-canvas uppercase"
-        >
-          Book transfer
-        </Link>
+        <div className="mt-12 flex w-full max-w-sm flex-col gap-3">
+          <Link
+            to="/book/$hotelCode"
+            params={{ hotelCode: "gate" }}
+            className="flex min-h-14 w-full items-center justify-center bg-ink px-4 text-base font-semibold tracking-wide text-canvas uppercase"
+          >
+            Book transfer
+          </Link>
+          <Link
+            to="/login"
+            className="flex min-h-12 w-full items-center justify-center border border-line px-4 text-sm font-semibold tracking-wide uppercase"
+          >
+            Hotel / operator sign in
+          </Link>
+        </div>
       </section>
 
       <footer className="border-t border-line px-6 py-5 md:px-10">
