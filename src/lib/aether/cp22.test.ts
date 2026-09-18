@@ -22,12 +22,15 @@ test("CP22 enables real operator email/password authentication", () => {
 test("CP22 app surface is distinct from the internal Ops surface", () => {
   const app = read("src/routes/app.tsx");
   const onboarding = read("src/routes/app.onboarding.tsx");
+  const preview = read("src/routes/app.hotels.$hotelId.preview.tsx");
   assert.match(app, /\/app/);
   assert.match(app, /RedirectToSignIn/);
   assert.match(onboarding, /createOnboardingHotel/);
   assert.match(onboarding, /createOnboardingService/);
   assert.match(onboarding, /createOnboardingDestination/);
   assert.match(onboarding, /Prepare hotel for activation|prepareOnboardingHotel/);
+  assert.match(preview, /<GuestBook/);
+  assert.match(preview, /preview/);
 });
 
 test("CP22 onboarding migration keeps provisioning DML behind narrow functions", () => {
