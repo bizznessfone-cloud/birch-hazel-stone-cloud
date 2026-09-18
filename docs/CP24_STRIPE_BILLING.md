@@ -13,7 +13,7 @@ Commercial split:
 
 SBG does not receive, hold, or split hotel guest-service funds. No application fee is configured by this source implementation.
 
-Stripe documents direct charges as charges created on the connected account, with the connected account balance increasing from those charges. citeturn4view0
+Stripe documents direct charges as charges created on the connected account, with the connected account balance increasing from those charges.
 
 ## Connect model
 
@@ -23,7 +23,7 @@ The operator starts from `/app/billing`. The server creates a signed short-lived
 
 The callback exchanges the authorization code for the connected account ID and stores only the account ID, livemode state, and connection timestamps. OAuth access/refresh tokens are not stored.
 
-Stripe documents the connection flow and the connected `stripe_user_id` used with the `Stripe-Account` header. citeturn2view0
+Stripe documents the connection flow and the connected `stripe_user_id` used with the `Stripe-Account` header.
 
 ## SBG subscription
 
@@ -37,13 +37,13 @@ The operator chooses a plan in `/app/billing`. Checkout metadata carries the hot
 
 Subscription state is updated from verified Stripe webhook events. `active` and `trialing` are treated as active subscription states for the eventual LIVE entitlement.
 
-Stripe recommends using subscription webhook events to maintain application access state. citeturn5view0
+Stripe recommends using subscription webhook events to maintain application access state.
 
 ## Webhook security
 
 `/api/stripe/webhook` reads the raw request body, verifies `Stripe-Signature`, rejects stale signatures, records Stripe event IDs for idempotency, and applies subscription lifecycle events.
 
-Stripe requires signature verification against the unmodified raw request body. citeturn3view0
+Stripe requires signature verification against the unmodified raw request body.
 
 ## Database boundary
 
