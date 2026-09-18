@@ -45,7 +45,12 @@ begin
     from target t
     join connection c on c.hotel_id = t.hotel_id
     where t.quoted_amount_minor is not null and t.quoted_amount_minor > 0 and t.quoted_currency is not null
-    on conflict (booking_id) do update set updated_at = now()
+    on conflict (booking_id) do update
+      set status = case when sbg_booking_payments.status in ('failed','expired','canceled') then 'pending' else sbg_booking_payments.status end,
+          stripe_checkout_session_id = case when sbg_booking_payments.status in ('failed','expired','canceled') then null else sbg_booking_payments.stripe_checkout_session_id end,
+          stripe_checkout_url = case when sbg_booking_payments.status in ('failed','expired','canceled') then null else sbg_booking_payments.stripe_checkout_url end,
+          stripe_payment_intent_id = case when sbg_booking_payments.status in ('failed','expired','canceled') then null else sbg_booking_payments.stripe_payment_intent_id end,
+          updated_at = now()
     returning id, booking_id, amount_minor, currency, status, stripe_checkout_session_id
   )
   select i.id, i.booking_id, t.hotel_id, c.stripe_account_id, i.amount_minor, i.currency, i.status, i.stripe_checkout_session_id, i.stripe_checkout_url
