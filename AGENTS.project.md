@@ -49,7 +49,7 @@ CP21 V1 Product Surface Audit is complete.
 
 CP21B reconciliation is complete.
 
-Current checkpoint: **CP23 — Public Human-Readable Hotel Slug**
+Current checkpoint: **CP24 — SBG Subscription + Stripe Connect**
 
 ## V1 product layer
 
@@ -61,11 +61,11 @@ The V1 operator SaaS surface belongs under `/app/*`.
 
 Existing `/ops/*` is the internal operations desk and must not be repurposed as SaaS onboarding.
 
-Current public guest route is now `/{hotelSlug}`. Legacy `/book/{hotelCode}` remains supported for compatibility.
+Current public guest route is `/{hotelSlug}`. Legacy `/book/{hotelCode}` remains supported for compatibility. CP24 adds the operator billing/Stripe activation boundary.
 
 ## V1 scope
 
-Onboarding, centralized transactional email, subscription/activation, and Stripe integration are now in V1 scope.
+Onboarding, centralized transactional email, subscription activation, and Stripe Connect integration are now in V1 scope.
 
 Stripe was intentionally outside the original frozen Blueprint v2 and is now being layered over the hardened base. Do not rewrite the historical Blueprint to pretend otherwise.
 
@@ -81,7 +81,7 @@ Preserve:
 
 Production must not use `aether_runtime`, SET ROLE, `neon_superuser`, or owner credentials.
 
-Do not reopen CP15/CP16/CP19 security architecture while building CP22.
+Do not reopen CP15/CP16/CP19 security architecture while building CP24.
 
 ## Route boundaries
 
