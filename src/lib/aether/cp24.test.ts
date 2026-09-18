@@ -50,3 +50,24 @@ test("CP24 does not make SBG the hotel guest-payment custodian", () => {
   assert.match(billing, /hotel’s own Stripe account/i);
   assert.match(billing, /does not receive or hold the hotel’s guest payment funds/i);
 });
+
+
+test("CP25 keeps guest transfer payment on the connected hotel account", () => {
+  const migration = read("migrations/0021_cp25_hotel_guest_payments.sql");
+  const stripe = read("src/lib/aether/stripe.server.ts");
+  const payment = read("src/lib/aether/guest-payment-fns.ts");
+  const confirmation = read("src/routes/confirmed.$token.tsx");
+
+  assert.match(migration, /sbg_booking_payments/);
+  assert.match(migration, /sbg_prepare_booking_payment/);
+  assert.match(migration, /sbg_apply_payment_event/);
+  assert.match(stripe, /mode: "payment"/);
+  assert.match(stripe, /Stripe-Account/);
+  assert.match(stripe, /metadata\[booking_id\]/);
+  assert.match(stripe, /metadata\[payment_id\]/);
+  assert.match(payment, /sbg_prepare_booking_payment/);
+  assert.match(payment, /createGuestTransferCheckout/);
+  assert.match(payment, /stripe_account_id/);
+  assert.match(confirmation, /startGuestPayment/);
+  assert.match(confirmation, /Pay for transfer/);
+});
