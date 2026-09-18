@@ -1,93 +1,82 @@
-# SCAN / BOOK / GO
+## CP21B CURRENT PROJECT STATE
 
-Internal code/history name: **Aether Transfer**.
+The original README content below is retained. This section supersedes only its current-state claims.
 
-SCAN / BOOK / GO is a hotel QR-code transfer platform. The hardened booking, occupancy, tenancy, Ops and recovery foundations are now receiving the V1 SaaS product layer.
+- Product: **SCAN / BOOK / GO**; internal code/history name: Aether Transfer.
+- CP21B reconciliation is complete.
+- Current V1 phase: product-surface construction.
+- Next: **CP22 — V1 Operator Onboarding**.
+- V1 journey: `account → hotel → first service → preview → QR → plan → Stripe activation → LIVE`.
+- `/ops/*` remains internal operations; `/app/*` is the new SaaS surface.
+- CP20 transactional email architecture is implemented/tested.
+- Stripe is now V1 product-layer work, intentionally layered after the frozen MVP foundation.
+- Do not delete or rewrite historical checkpoint material.
+
+---
+
+# Aether Transfer
+
+SCAN. BOOK. GO.
+
+Private hotel transfers. Reconstruction of the lost implementation from
+**CANONICAL PRIVATE TRANSFER APP — BUILD BLUEPRINT v2**.
+
+This is not a visual prototype. PostgreSQL is authoritative for booking and
+inventory integrity.
 
 ## Source of truth
 
-GitHub `main` is authoritative.
+GitHub is authoritative for application source.
 
-Repository: `bizznessfone-cloud/birch-hazel-stone-cloud`
+| Field | Value |
+|---|---|
+| Repository | [`bizznessfone-cloud/birch-hazel-stone-cloud`](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud) |
+| Branch | `main` |
+| Known-good application source | `45e171a23037b7c94005018cd2126033a449d6f0` |
+| Tag | `cp17-known-good` |
 
-CP15 frozen checkpoint:
-`96947e6c1840d5c04bc118c8abf93b2fa802469c`
+`cp17-known-good` is an immutable tag on that commit. When the tag was created,
+`main` pointed at it. Later documentation-only commits on `main` do not change
+the CP16C/CP17 application baseline.
 
-CP21B audit baseline:
-`fa823186a548a2009bbb3dc1e7453c75cf94b919`
+A Grok workspace is disposable and is never authoritative. Recovery ZIPs are
+secondary disaster-recovery artifacts. The CP10 ZIP in `attachments/` is
+historical and **must not** be extracted over a newer Git tree without explicit
+human approval.
 
-Grok workspace state is disposable. Recovery ZIPs are secondary disaster-recovery artifacts. Historical checkpoint documents remain evidence and are not silently rewritten.
+Source-code state and production database state are reported separately. Do not
+claim Neon production readiness merely because this repository is current.
 
-## Current V1 phase
+## Current checkpoint
 
-**V1 product-surface construction**
+Read `docs/RECOVERY_MANIFEST.md` first.
 
-The current operator journey is:
+**Source baseline: CP16C/CP17** at `45e171a` / `cp17-known-good`. Occupancy,
+auth, time, booking, inventory, guest UX, ops desk, hotel white-label, CP12
+tenancy, CP13A `aether_app` LOGIN, CP14 hotel configuration/timezone, CP15
+hotel-scoped Ops identity, CP16C privilege hardening, and CP17 hotel-local Ops
+Today are in this tree.
 
-```
-account
-  ↓
-hotel
-  ↓
-first service
-  ↓
-preview
-  ↓
-QR
-  ↓
-plan
-  ↓
-Stripe activation
-  ↓
-LIVE
-```
+**CP19** is production Neon binding/verification. It is **not** a completed
+production checkpoint and is **not** a source-code commit. Neon verification
+and Vercel connection are **not** part of this baseline.
 
-The SaaS operator surface belongs under `/app/*`.
+Every future production-readiness audit **must** name the exact Git commit
+audited.
 
-The existing `/ops/*` surface remains the internal authenticated operations desk.
+## Restore
 
-## Current guest surface
+See `RESTORE.md` (repo root) and `docs/RESTORE.md`. Clone the GitHub repository
+and check out `cp17-known-good` or commit `45e171a23037b7c94005018cd2126033a449d6f0`.
+Do not restore from a checkpoint ZIP unless Git is unavailable and a human has
+approved that disaster-recovery path.
 
-- `/book/{hotelCode}` — current public hotel booking
-- `/confirmed/{token}` — secure public confirmation
-- human-readable hotel slug presentation is a later CP23 step
+## Stack
 
-Guests do not need accounts. The confirmation token remains the public credential.
+TanStack Start, React, TypeScript, Tailwind v4, Outfit, Kysely, PostgreSQL /
+PGLite, Neon in production.
 
-## Email
+## Do not
 
-CP20 centralized transactional confirmation email is implemented in source.
-
-Booking success is not invalidated by email transport failure.
-
-Resend/domain/production activation is a later controlled step.
-
-## Payments
-
-Stripe is now part of the V1 product layer.
-
-This does not rewrite the original frozen Blueprint v2, where Stripe was intentionally outside the original MVP contract. Stripe is being layered over the hardened foundation now.
-
-## Hardened architecture
-
-- PostgreSQL is authoritative for booking/inventory integrity.
-- `neondb_owner` = migration/schema owner.
-- `aether_runtime` = PGLite/preview SET ROLE identity.
-- `aether_app` = SQL-created production LOGIN.
-- Production must not use `aether_runtime`, SET ROLE, `neon_superuser`, or owner credentials.
-- Occupancy trigger and GiST EXCLUDE protections remain authoritative.
-- CP15 hotel-scoped Ops identity remains intact.
-
-## Next checkpoint
-
-**CP22 — V1 Operator Onboarding**
-
-Build the operator account → hotel → service → preview → QR flow on the existing hardened base.
-
-Do not restart the foundation and do not repurpose `/ops/*`.
-
-## V2 fence
-
-SMS, WhatsApp, chatbot, custom domains, hotel-local Ops Today enhancements, new booking concepts and unrelated feature expansion remain deferred.
-
-For current Grok instructions, read `AGENTS.project.md` and `.grok/references/current-project-state.md`.
+Do not add payments, guest accounts, RLS, hotel colour themes, Next.js,
+Prisma, or a standalone REST API. See `docs/BUILD_BLUEPRINT_V2.md`.
