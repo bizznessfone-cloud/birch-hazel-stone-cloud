@@ -38,6 +38,9 @@ export const Route = createFileRoute("/api/stripe/webhook")({
         }
 
         const relevant = new Set([
+          "checkout.session.completed",
+          "checkout.session.async_payment_succeeded",
+          "checkout.session.async_payment_failed",
           "customer.subscription.created",
           "customer.subscription.updated",
           "customer.subscription.deleted",
@@ -49,6 +52,28 @@ export const Route = createFileRoute("/api/stripe/webhook")({
         }
 
         const db = await getSql();
+
+        if (event.type.startsWith("checkout.session.")) {
+          const object = event?.data?.object;
+          const metadata = object?.metadata ?? {};
+          const bookingId = typeof metadata.booking_id === "string" ? metadata.booking_id : null;
+          const paymentId = typeof metadata.payment_id === "string" ? metadata.payment_id : null;
+          if (!bookingId || !paymentId) return Response.json({ received: true });
+          const paymentStatus =
+            event.type === "checkout.session.completed" && object?.payment_status === "paid"
+              ? "paid"
+              : event.type === "checkout.session.async_payment_succeeded"
+                ? "paid"
+                : event.type === "checkout.session.async_payment_failed"
+                  ? "failed"
+                  : "pending";
+          const paymentIntentId = typeof object?.payment_intent === "string" ? object.payment_intent : null;
+          await db.query(
+            "select sbg_apply_payment_event($1, $2, $3::uuid, $4::uuid, $5, $6)",
+            [event.id, event.type, bookingId, paymentId, paymentIntentId, paymentStatus],
+          );
+          return Response.json({ received: true });
+        }
 
         if (event.type === "account.application.deauthorized") {
           const accountId = event?.account?.id ?? event?.data?.object?.id;
