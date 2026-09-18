@@ -5,6 +5,7 @@ create table if not exists sbg_booking_payments (
   id uuid primary key default gen_random_uuid(),
   booking_id uuid not null unique references bookings (id) on delete cascade,
   stripe_checkout_session_id text unique,
+  stripe_checkout_url text,
   stripe_payment_intent_id text unique,
   amount_minor integer not null check (amount_minor > 0),
   currency text not null,
@@ -58,7 +59,7 @@ $$;
 
 create or replace function sbg_set_booking_checkout_session(p_payment_id uuid, p_checkout_session_id text)
 returns void language sql security definer set search_path = public
-as $$
+as $
   update sbg_booking_payments
      set stripe_checkout_session_id = p_checkout_session_id, updated_at = now()
    where id = p_payment_id and status = 'pending';
