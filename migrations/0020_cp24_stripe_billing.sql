@@ -179,3 +179,19 @@ grant execute on function sbg_save_stripe_connection_for_user(text,uuid,text,boo
 grant execute on function sbg_set_billing_price_for_user(text,uuid,text) to aether_app;
 grant execute on function sbg_apply_billing_event(text,text,uuid,text,text,text,text,timestamptz) to aether_app;
 grant execute on function sbg_disconnect_stripe_for_hotel(uuid) to aether_app;
+
+create or replace function sbg_disconnect_stripe_by_account(
+  p_stripe_account_id text
+)
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  update sbg_stripe_connections
+     set disconnected_at = now()
+   where stripe_account_id = p_stripe_account_id;
+$$;
+
+revoke all on function sbg_disconnect_stripe_by_account(text) from public;
+grant execute on function sbg_disconnect_stripe_by_account(text) to aether_app;
