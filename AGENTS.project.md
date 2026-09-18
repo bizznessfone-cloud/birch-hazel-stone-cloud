@@ -45,9 +45,9 @@ CP20 transactional confirmation-email architecture is implemented and tested; pr
 
 CP21 V1 Product Surface Audit is complete.
 
-CP21B is the current Grok workspace reconciliation.
+CP21B reconciliation is complete.
 
-Next checkpoint: **CP22 — V1 Operator Onboarding**.
+Current checkpoint: **CP22 — V1 Operator Onboarding**.
 
 ## V1 product layer
 
