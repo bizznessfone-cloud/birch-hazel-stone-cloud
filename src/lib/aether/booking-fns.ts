@@ -31,6 +31,10 @@ const hotelInput = z.object({
   hotelCode: z.string(),
 });
 
+const hotelSlugInput = z.object({
+  publicSlug: z.string(),
+});
+
 function fail(err: unknown): { ok: false; code: string; message: string } {
   if (
     err &&
@@ -79,6 +83,20 @@ export const getPublicHotel = createServerFn({ method: "GET" })
     try {
       const { getPublicHotelFromRequest } = await import("./booking.server");
       const hotel = await getPublicHotelFromRequest(data.hotelCode);
+      return { ok: true as const, hotel };
+    } catch (err) {
+      return fail(err);
+    }
+  });
+
+
+export const getPublicHotelBySlug = createServerFn({ method: "GET" })
+  .validator(hotelSlugInput)
+  .handler(async ({ data }) => {
+    try {
+      const { getPublicHotelBySlug: resolve } = await import("./booking");
+      const { getSql } = await import("@/lib/db");
+      const hotel = await resolve(await getSql(), data.publicSlug);
       return { ok: true as const, hotel };
     } catch (err) {
       return fail(err);
