@@ -1,6 +1,6 @@
 # CP22 — V1 OPERATOR ONBOARDING
 
-**Status: source implementation complete; local execution validation pending**
+**Status: complete; executable validation pending**
 
 ## Current source
 
@@ -53,7 +53,7 @@ The hotel workspace exposes the canonical guest URL as the QR destination and pr
 
 The public guest route remains `/book/{hotelCode}` until CP23 introduces the human-readable hotel slug.
 
-Actual QR image generation is now offline and dependency-free. The hotel workspace exposes a dedicated `/app/hotels/{hotelId}/qr` print surface with SVG download and browser print support. No external QR service is used.
+Actual QR image generation is offline and dependency-free. The hotel workspace exposes `/app/hotels/{hotelId}/qr` with SVG download and browser print support. CP23 now targets the human-readable hotel slug.
 
 ## Not implemented yet
 
@@ -92,4 +92,4 @@ Source-level CP22 regression coverage now includes the QR encoder and QR print/d
 
 ## Next
 
-Complete executable local/CI validation of CP22, then proceed to CP23 public hotel slug and the later subscription/Stripe checkpoints.
+Complete executable local/CI validation of CP22/CP23, then proceed to subscription/Stripe activation.
