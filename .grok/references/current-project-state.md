@@ -7,6 +7,8 @@
 Repository: `bizznessfone-cloud/birch-hazel-stone-cloud`
 Branch: `main`
 CP21B audit baseline: `fa823186a548a2009bbb3dc1e7453c75cf94b919`
+
+CP22 current source HEAD: `65342b6ffef977ff34d7ec9ea05ae18c239cc1f6`
 CP15 frozen checkpoint: `96947e6c1840d5c04bc118c8abf93b2fa802469c`
 
 GitHub `main` is authoritative. Grok workspace state is disposable.
