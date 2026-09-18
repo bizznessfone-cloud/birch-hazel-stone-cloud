@@ -1,0 +1,74 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { getSql } from "@/lib/db";
+import { verifyStripeSignature } from "@/lib/aether/stripe.server";
+
+function unixToIso(value: unknown) {
+  return typeof value === "number" ? new Date(value * 1000).toISOString() : null;
+}
+
+function subscriptionData(event: any) {
+  const object = event?.data?.object;
+  const metadata = object?.metadata ?? {};
+  const item = object?.items?.data?.[0];
+  return {
+    hotelId: typeof metadata.hotel_id === "string" ? metadata.hotel_id : null,
+    customerId: typeof object?.customer === "string" ? object.customer : null,
+    subscriptionId: typeof object?.id === "string" ? object.id : null,
+    priceId: typeof item?.price?.id === "string" ? item.price.id : null,
+    status: typeof object?.status === "string" ? object.status : "inactive",
+    currentPeriodEnd: unixToIso(object?.current_period_end),
+  };
+}
+
+export const Route = createFileRoute("/api/stripe/webhook")({
+  server: {
+    handlers: {
+      POST: async ({ request }) => {
+        const raw = await request.text();
+        const signature = request.headers.get("stripe-signature");
+        if (!signature || !verifyStripeSignature(raw, signature)) {
+          return new Response("Invalid Stripe signature.", { status: 400 });
+        }
+
+        let event: any;
+        try {
+          event = JSON.parse(raw);
+        } catch {
+          return new Response("Invalid JSON.", { status: 400 });
+        }
+
+        const relevant = new Set([
+          "customer.subscription.created",
+          "customer.subscription.updated",
+          "customer.subscription.deleted",
+        ]);
+
+        if (!relevant.has(event.type)) {
+          return Response.json({ received: true });
+        }
+
+        const data = subscriptionData(event);
+        if (!data.hotelId || !data.subscriptionId) {
+          return Response.json({ received: true });
+        }
+
+        const db = await getSql();
+        await db.query(
+          "select sbg_apply_billing_event($1, $2, $3::uuid, $4, $5, $6, $7, $8::timestamptz)",
+          [
+            event.id,
+            event.type,
+            data.hotelId,
+            data.customerId,
+            data.subscriptionId,
+            data.priceId,
+            data.status,
+            data.currentPeriodEnd,
+          ],
+        );
+
+        return Response.json({ received: true });
+      },
+    },
+  },
+});
