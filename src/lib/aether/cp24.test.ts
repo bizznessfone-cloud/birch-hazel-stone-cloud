@@ -12,7 +12,8 @@ test("CP24 adds isolated SBG billing and Stripe connection state", () => {
   assert.match(migration, /create table if not exists sbg_stripe_connections/);
   assert.match(migration, /create table if not exists sbg_stripe_events/);
   assert.match(migration, /sbg_save_stripe_connection_for_user/);
-  assert.match(migration, /sbg_apply_billing_event/);\n  assert.match(migration, /sbg_sync_hotel_entitlement/);
+  assert.match(migration, /sbg_apply_billing_event/);
+  assert.match(migration, /sbg_sync_hotel_entitlement/);
   assert.match(migration, /grant select on table sbg_billing_accounts to aether_app/);
   assert.match(migration, /grant select on table sbg_stripe_connections to aether_app/);
   assert.doesNotMatch(migration, /alter table bookings/i);
@@ -26,7 +27,7 @@ test("CP24 keeps Stripe secrets server-side and uses Connect account scoping", (
   assert.match(stripe, /STRIPE_CONNECT_CLIENT_ID/);
   assert.match(stripe, /STRIPE_WEBHOOK_SECRET/);
   assert.match(stripe, /Stripe-Account/);
-  assert.match(stripe, /connect\.stripe\.com\/oauth\/authorize/);
+  assert.match(stripe, /connect\.stripe\.com\\/oauth\\/authorize/);
   assert.doesNotMatch(stripe, /VITE_|PUBLIC_STRIPE|NEXT_PUBLIC_STRIPE_SECRET/i);
 });
 
