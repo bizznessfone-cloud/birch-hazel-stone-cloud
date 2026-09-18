@@ -83,7 +83,7 @@ function HotelWorkspace() {
       </section>
 
       <div className="flex flex-wrap gap-3">
-        <Link to="/app/onboarding" className="min-h-12 border border-line px-4 py-3 text-sm font-semibold tracking-wide uppercase">Setup</Link><Link to="/app/billing" search={{ hotelId }} className="min-h-12 border border-line px-4 py-3 text-sm font-semibold tracking-wide uppercase">Plan & Stripe</Link>
+        <Link to="/app/onboarding" className="min-h-12 border border-line px-4 py-3 text-sm font-semibold tracking-wide uppercase">Setup</Link><a href={"/app/billing?hotelId=" + hotelId} className="min-h-12 border border-line px-4 py-3 text-sm font-semibold tracking-wide uppercase">Plan & Stripe</a>
       </div>
     </div>
   );
