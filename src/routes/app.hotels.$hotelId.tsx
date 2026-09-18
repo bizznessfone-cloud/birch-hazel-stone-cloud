@@ -56,10 +56,10 @@ function HotelWorkspace() {
           <button type="button" onClick={() => void copyBookingUrl()} className="min-h-11 border border-line px-4 text-sm font-semibold tracking-wide uppercase">
             {copied ? "Copied" : "Copy URL"}
           </button>
-          {hotel.status === "configured" || hotel.status === "live" ? (
-            <a href={"/book/" + hotel.code} target="_blank" rel="noreferrer" className="min-h-11 bg-ink px-4 py-3 text-sm font-semibold tracking-wide text-canvas uppercase">
+          {service && destination ? (
+            <Link to="/app/hotels/$hotelId/preview" params={{ hotelId }} className="min-h-11 bg-ink px-4 py-3 text-sm font-semibold tracking-wide text-canvas uppercase">
               Preview guest page
-            </a>
+            </Link>
           ) : null}
         </div>
       </section>
