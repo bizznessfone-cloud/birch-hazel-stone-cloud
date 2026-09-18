@@ -51,7 +51,7 @@ begin
           stripe_checkout_url = case when sbg_booking_payments.status in ('failed','expired','canceled') then null else sbg_booking_payments.stripe_checkout_url end,
           stripe_payment_intent_id = case when sbg_booking_payments.status in ('failed','expired','canceled') then null else sbg_booking_payments.stripe_payment_intent_id end,
           updated_at = now()
-    returning id, booking_id, amount_minor, currency, status, stripe_checkout_session_id
+    returning id, booking_id, amount_minor, currency, status, stripe_checkout_session_id, stripe_checkout_url
   )
   select i.id, i.booking_id, t.hotel_id, c.stripe_account_id, i.amount_minor, i.currency, i.status, i.stripe_checkout_session_id, i.stripe_checkout_url
   from inserted i
