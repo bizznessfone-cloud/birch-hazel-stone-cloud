@@ -222,7 +222,11 @@ begin
     raise exception 'hotel not found' using errcode = 'P0002';
   end if;
 
-  if v_billing_status in ('active', 'trialing') and v_connected then
+  if v_billing_status in ('active', 'trialing')
+     and v_connected
+     and exists (select 1 from hotel_services where hotel_id = p_hotel_id and active)
+     and exists (select 1 from hotel_destinations where hotel_id = p_hotel_id and active)
+     and (select count(*) from hotel_provider_agreements where hotel_id = p_hotel_id and active) = 1 then
     update hotels set status = 'live' where id = p_hotel_id and status <> 'live';
     return 'live';
   end if;
