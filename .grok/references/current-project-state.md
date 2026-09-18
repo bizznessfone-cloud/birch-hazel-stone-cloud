@@ -67,6 +67,8 @@ The remaining V1 product layer includes:
 - subscription/activation
 - Stripe integration
 - final public hotel slug presentation
+- SBG subscription activation UI
+- Stripe Connect hotel account connection boundary
 - controlled V1 end-to-end testing
 - final security, production and load gates
 
