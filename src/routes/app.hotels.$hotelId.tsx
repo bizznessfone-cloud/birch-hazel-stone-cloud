@@ -29,7 +29,7 @@ function HotelWorkspace() {
   const bookingUrl =
     typeof window === "undefined"
       ? "/" + hotel.public_slug
-      : window.location.origin + "/book/" + hotel.code;
+      : window.location.origin + "/" + hotel.public_slug;
 
   async function copyBookingUrl() {
     await navigator.clipboard.writeText(bookingUrl);
@@ -51,7 +51,7 @@ function HotelWorkspace() {
       <section className="border border-line bg-surface p-5">
         <p className="text-xs font-medium tracking-widest text-muted uppercase">Guest page / QR destination</p>
         <p className="mt-2 break-all text-sm font-medium">{bookingUrl}</p>
-        <p className="mt-2 text-sm text-muted">This is the current QR-ready guest address. The human-readable hotel slug is handled later in CP23.</p>
+        <p className="mt-2 text-sm text-muted">This is the current QR-ready guest address. The public guest address uses the human-readable hotel slug.</p>
         <div className="mt-4 flex flex-wrap gap-3">
           <button type="button" onClick={() => void copyBookingUrl()} className="min-h-11 border border-line px-4 text-sm font-semibold tracking-wide uppercase">
             {copied ? "Copied" : "Copy URL"}
