@@ -46,6 +46,7 @@ test("CP22 onboarding migration keeps provisioning DML behind narrow functions",
   assert.match(migration, /revoke all on table app_hotel_accounts from aether_app/);
   assert.match(migration, /revoke all on table hotel_services from aether_app/);
   assert.doesNotMatch(migration, /create role/i);
+  assert.doesNotMatch(migration, /revoke all on all functions in schema public from aether_app/i);
   assert.doesNotMatch(migration, /alter table bookings/i);
   assert.doesNotMatch(migration, /exclude/i);
 });
