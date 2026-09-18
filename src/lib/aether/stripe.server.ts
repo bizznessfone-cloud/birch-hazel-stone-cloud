@@ -140,3 +140,26 @@ export function verifyStripeSignature(payload: string, header: string, tolerance
   const b = Buffer.from(signature, "utf8");
   return a.length === b.length && timingSafeEqual(a, b);
 }
+
+
+export async function createGuestTransferCheckout(input: {
+  accountId: string;
+  bookingId: string;
+  paymentId: string;
+  amountMinor: number;
+  currency: string;
+  successUrl: string;
+  cancelUrl: string;
+}) {
+  return stripePost<{ id: string; url: string }>("/checkout/sessions", {
+    mode: "payment",
+    "line_items[0][price_data][currency]": input.currency.toLowerCase(),
+    "line_items[0][price_data][product_data][name]": "Hotel transfer",
+    "line_items[0][price_data][unit_amount]": String(input.amountMinor),
+    "line_items[0][quantity]": "1",
+    success_url: input.successUrl,
+    cancel_url: input.cancelUrl,
+    "metadata[booking_id]": input.bookingId,
+    "metadata[payment_id]": input.paymentId,
+  }, input.accountId);
+}
