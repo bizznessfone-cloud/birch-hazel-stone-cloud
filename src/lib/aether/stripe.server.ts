@@ -86,6 +86,28 @@ export function stripeConnectAuthorizeUrl(input: {
 }
 
 export async function exchangeStripeConnectCode(code: string) {
+  const response = await fetch("https://connect.stripe.com/oauth/token", {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${Buffer.from(`${secretKey()}:`).toString("base64")}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({ code, grant_type: "authorization_code" }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    const message = typeof data?.error_description === "string" ? data.error_description : "Stripe Connect authorization failed.";
+    throw new Error(message);
+  }
+  return data as {
+    stripe_user_id: string;
+    livemode: boolean;
+    scope: string;
+  };
+}
+
+/* Legacy shape retained below for source compatibility. */
+export async function _unusedStripeConnectTokenShape(code: string) {
   return stripePost<{
     stripe_user_id: string;
     livemode: boolean;
