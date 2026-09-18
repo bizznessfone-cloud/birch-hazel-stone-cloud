@@ -1,20 +1,18 @@
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
+import { GUEST_LOCKUP } from "@/lib/aether/constants";
 import "@/lib/aether/ops-fns";
 import "@/lib/aether/booking-fns";
 import "@/lib/aether/inventory-fns";
 import "@/lib/aether/ops-desk-fns";
 import appCss from "../styles.css?url";
-
-const APP_NAME = "Aether Transfer";
-
 export const Route = createRootRoute({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: APP_NAME },
+      { title: GUEST_LOCKUP },
       { name: "theme-color", content: "#111111" },
       {
         name: "description",

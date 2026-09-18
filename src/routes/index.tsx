@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { GUEST_LOCKUP, PRODUCT_NAME } from "@/lib/aether/constants";
+import { GUEST_LOCKUP } from "@/lib/aether/constants";
 import { getFoundationStatus } from "@/lib/aether/health";
 import { HotelMark } from "@/components/aether/hotel-mark";
 import { ThemeToggle } from "@/components/aether/theme-toggle";
@@ -11,18 +11,19 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   const status = Route.useLoaderData();
+  const available = status.ok;
 
   return (
     <main className="flex min-h-dvh flex-col bg-canvas text-ink">
       <header className="flex items-center justify-between px-6 py-6 md:px-10">
         <p className="text-xs font-medium tracking-widest text-muted uppercase">
-          {PRODUCT_NAME}
+          SCAN. BOOK. GO.
         </p>
         <ThemeToggle />
       </header>
 
       <section className="flex flex-1 flex-col items-center justify-center px-6 pb-24 text-center">
-        <HotelMark name="Gate Hotel" size="lg" />
+        <HotelMark name="Scan Book Go" size="lg" />
         <p className="mt-8 text-xs font-medium tracking-widest text-muted uppercase">
           Private hotel transfers
         </p>
@@ -30,17 +31,22 @@ function Home() {
           {GUEST_LOCKUP}
         </h1>
         <p className="mt-8 max-w-md text-base leading-relaxed text-muted md:text-lg">
-          Reception books from the hotel page. No guest account. No payment at
-          this step.
+          Scan the hotel QR. Book a transfer. Go. No guest account.
         </p>
         <div className="mt-12 flex w-full max-w-sm flex-col gap-3">
-          <Link
-            to="/book/$hotelCode"
-            params={{ hotelCode: "gate" }}
-            className="flex min-h-14 w-full items-center justify-center bg-ink px-4 text-base font-semibold tracking-wide text-canvas uppercase"
-          >
-            Book transfer
-          </Link>
+          {available ? (
+            <Link
+              to="/book/$hotelCode"
+              params={{ hotelCode: "gate" }}
+              className="flex min-h-14 w-full items-center justify-center bg-ink px-4 text-base font-semibold tracking-wide text-canvas uppercase"
+            >
+              Book transfer
+            </Link>
+          ) : (
+            <p className="text-sm leading-relaxed text-muted">
+              Transfers are temporarily unavailable. Please try again shortly.
+            </p>
+          )}
           <Link
             to="/login"
             className="flex min-h-12 w-full items-center justify-center border border-line px-4 text-sm font-semibold tracking-wide uppercase"
@@ -51,31 +57,15 @@ function Home() {
       </section>
 
       <footer className="border-t border-line px-6 py-5 md:px-10">
-        {status.ok ? (
-          <dl className="mx-auto grid max-w-4xl grid-cols-2 gap-4 text-left sm:grid-cols-4">
-            <StatusItem label="Database" value={status.backend} />
-            <StatusItem label="Schema" value={`phase ${status.schemaPhase}`} />
-            <StatusItem label="Checkpoint" value={status.checkpoint} />
-            <StatusItem
-              label="Kysely"
-              value={status.kyselyOk ? "connected" : "failed"}
-            />
-          </dl>
-        ) : (
-          <p className="text-sm text-muted">
-            Database unavailable. Foundation gate has not passed.
+        <div className="mx-auto flex max-w-4xl items-center justify-between gap-4">
+          <p className="text-xs tracking-widest text-muted uppercase">
+            {available ? "Ready" : "Unavailable"}
           </p>
-        )}
+          <Link to="/ops/login" className="text-xs tracking-widest text-muted uppercase">
+            Desk
+          </Link>
+        </div>
       </footer>
     </main>
-  );
-}
-
-function StatusItem({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <dt className="text-xs tracking-widest text-muted uppercase">{label}</dt>
-      <dd className="mt-1 text-sm font-medium">{value}</dd>
-    </div>
   );
 }

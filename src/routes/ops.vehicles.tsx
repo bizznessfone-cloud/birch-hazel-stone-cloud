@@ -3,6 +3,7 @@ import { useState } from "react";
 import { opsListVehicles, opsUpsertVehicle } from "@/lib/aether/ops-desk-fns";
 import { csrfHeaders } from "@/lib/aether/csrf-client";
 import { OpsButton, OpsNotice, OpsSecondary, opsInputClass } from "@/components/aether/ops-shell";
+import { EmptyState, PageHeader, StatusChip, compactButtonClass } from "@/components/aether/ui";
 
 export const Route = createFileRoute("/ops/vehicles")({
   loader: () => opsListVehicles(),
@@ -47,24 +48,27 @@ function VehiclesPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Vehicles</h1>
+      <PageHeader title="Vehicles" lead="Fleet available for assignment. Overlapping times cannot be assigned." />
       {message ? <OpsNotice>{message}</OpsNotice> : null}
       {result.vehicles.length === 0 ? (
-        <p className="text-sm text-muted">No vehicles yet.</p>
+        <EmptyState title="No vehicles yet." />
       ) : (
-        <ul className="divide-y divide-line border border-line">
+        <ul className="divide-y divide-line border border-line bg-surface">
           {result.vehicles.map((item) => (
             <li key={item.id} className="flex items-center justify-between gap-3 px-4 py-3">
               <div>
                 <p className="font-medium">{item.name}</p>
-                <p className="text-sm text-muted">
-                  {item.capacity} seats · {item.active ? "Active" : "Inactive"}
-                </p>
+                <p className="mt-1 text-sm text-muted">{item.capacity} seats</p>
+                <div className="mt-2">
+                  <StatusChip tone={item.active ? "neutral" : "cancelled"}>
+                    {item.active ? "Active" : "Inactive"}
+                  </StatusChip>
+                </div>
               </div>
               <div className="flex gap-2">
                 <button
                   type="button"
-                  className="min-h-11 border border-line px-3 text-sm"
+                  className={compactButtonClass}
                   disabled={busy}
                   onClick={() => {
                     setEditingId(item.id);
@@ -78,7 +82,7 @@ function VehiclesPage() {
                 </button>
                 <button
                   type="button"
-                  className="min-h-11 border border-line px-3 text-sm"
+                  className={compactButtonClass}
                   disabled={busy}
                   onClick={() =>
                     void save({
@@ -111,7 +115,12 @@ function VehiclesPage() {
         <p className="text-xs tracking-widest text-muted uppercase">
           {editingId ? "Edit vehicle" : "Add vehicle"}
         </p>
-        <input className={opsInputClass} placeholder="Name" value={name} onChange={(event) => setName(event.target.value)} />
+        <input
+          className={opsInputClass}
+          placeholder="Name"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+        />
         <label className="block">
           <span className="mb-2 block text-xs tracking-widest text-muted uppercase">Seats</span>
           <input

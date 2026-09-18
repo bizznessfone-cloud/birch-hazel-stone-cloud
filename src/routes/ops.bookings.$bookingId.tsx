@@ -11,6 +11,7 @@ import {
 import { opsGetBooking } from "@/lib/aether/ops-desk-fns";
 import { csrfHeaders } from "@/lib/aether/csrf-client";
 import { OpsButton, OpsNotice, OpsSecondary, opsInputClass } from "@/components/aether/ops-shell";
+import { DefinitionRow, StatusChip } from "@/components/aether/ui";
 
 export const Route = createFileRoute("/ops/bookings/$bookingId")({
   loader: ({ params }) => opsGetBooking({ data: { id: params.bookingId } }),
@@ -53,17 +54,29 @@ function BookingDetail() {
         <p className="mt-2 text-sm text-muted">
           {booking.transferDate} · {booking.pickupTime} · {booking.durationMinutes} min
         </p>
+        <div className="mt-3 flex flex-wrap gap-1">
+          {booking.cancelled ? (
+            <StatusChip tone="cancelled">Cancelled</StatusChip>
+          ) : (
+            <StatusChip>{booking.status}</StatusChip>
+          )}
+          {!booking.cancelled && !booking.vehicleId ? (
+            <StatusChip tone="attention">No vehicle</StatusChip>
+          ) : null}
+          {!booking.cancelled && !booking.driverId ? (
+            <StatusChip tone="attention">No driver</StatusChip>
+          ) : null}
+        </div>
       </div>
       {message ? <OpsNotice>{message}</OpsNotice> : null}
-      <dl className="divide-y divide-line border border-line">
-        <Row label="Guest" value={`${booking.guestName} · ${booking.guestPhone}`} />
-        <Row label="Email" value={booking.guestEmail} />
-        <Row label="Pickup" value={booking.pickupText} />
-        <Row label="Destination" value={booking.destinationText} />
-        <Row label="Party" value={`${booking.passengerCount} pax · ${booking.luggageCount} bags`} />
-        <Row label="Notes" value={booking.specialRequirements || "—"} />
-        <Row label="Internal" value={booking.internalNotes || "—"} />
-        <Row label="Status" value={booking.cancelled ? "Cancelled" : booking.status} />
+      <dl className="divide-y divide-line border border-line bg-surface">
+        <DefinitionRow label="Guest" value={`${booking.guestName} · ${booking.guestPhone}`} />
+        <DefinitionRow label="Email" value={booking.guestEmail} />
+        <DefinitionRow label="Pickup" value={booking.pickupText} />
+        <DefinitionRow label="Destination" value={booking.destinationText} />
+        <DefinitionRow label="Party" value={`${booking.passengerCount} pax · ${booking.luggageCount} bags`} />
+        <DefinitionRow label="Notes" value={booking.specialRequirements || "—"} />
+        <DefinitionRow label="Internal" value={booking.internalNotes || "—"} />
       </dl>
 
       <section className="flex flex-col gap-3">
@@ -77,18 +90,19 @@ function BookingDetail() {
             const vehicleId = event.target.value;
             event.target.value = "";
             if (!vehicleId) return;
-            void run(
-              "Vehicle assigned.",
-              () => opsAssignVehicle({ data: { bookingId: booking.id, vehicleId }, headers }),
+            void run("Vehicle assigned.", () =>
+              opsAssignVehicle({ data: { bookingId: booking.id, vehicleId }, headers }),
             );
           }}
         >
           <option value="">Assign vehicle</option>
-          {vehicles.filter((item) => item.active).map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.name} · {item.capacity}
-            </option>
-          ))}
+          {vehicles
+            .filter((item) => item.active)
+            .map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name} · {item.capacity}
+              </option>
+            ))}
         </select>
         {booking.vehicleId ? (
           <OpsSecondary
@@ -116,18 +130,19 @@ function BookingDetail() {
             const driverId = event.target.value;
             event.target.value = "";
             if (!driverId) return;
-            void run(
-              "Driver assigned.",
-              () => opsAssignDriver({ data: { bookingId: booking.id, driverId }, headers }),
+            void run("Driver assigned.", () =>
+              opsAssignDriver({ data: { bookingId: booking.id, driverId }, headers }),
             );
           }}
         >
           <option value="">Assign driver</option>
-          {drivers.filter((item) => item.active).map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.name}
-            </option>
-          ))}
+          {drivers
+            .filter((item) => item.active)
+            .map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+              </option>
+            ))}
         </select>
         {booking.driverId ? (
           <OpsSecondary
@@ -146,7 +161,11 @@ function BookingDetail() {
 
       <section className="flex flex-col gap-3">
         <p className="text-xs tracking-widest text-muted uppercase">Status</p>
-        <input className={opsInputClass} value={status} onChange={(event) => setStatus(event.target.value)} />
+        <input
+          className={opsInputClass}
+          value={status}
+          onChange={(event) => setStatus(event.target.value)}
+        />
         <OpsButton
           type="button"
           disabled={busy || !status.trim()}
@@ -172,11 +191,11 @@ function BookingDetail() {
       </section>
 
       <section>
-        <p className="text-xs tracking-widest text-muted uppercase">Audit</p>
+        <p className="text-xs tracking-widest text-muted uppercase">Activity</p>
         {audit.length === 0 ? (
           <p className="mt-2 text-sm text-muted">No events yet.</p>
         ) : (
-          <ul className="mt-3 divide-y divide-line border border-line">
+          <ul className="mt-3 divide-y divide-line border border-line bg-surface">
             {audit.map((event, index) => (
               <li key={`${event.at}-${index}`} className="px-4 py-3 text-sm">
                 <p className="font-medium">{event.action}</p>
@@ -186,15 +205,6 @@ function BookingDetail() {
           </ul>
         )}
       </section>
-    </div>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-start justify-between gap-4 px-4 py-3">
-      <dt className="text-xs tracking-widest text-muted uppercase">{label}</dt>
-      <dd className="text-right text-sm font-medium">{value}</dd>
     </div>
   );
 }

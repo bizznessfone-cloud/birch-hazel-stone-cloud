@@ -3,6 +3,7 @@ import { useState } from "react";
 import { opsListDrivers, opsUpsertDriver } from "@/lib/aether/ops-desk-fns";
 import { csrfHeaders } from "@/lib/aether/csrf-client";
 import { OpsButton, OpsNotice, OpsSecondary, opsInputClass } from "@/components/aether/ops-shell";
+import { EmptyState, PageHeader, StatusChip, compactButtonClass } from "@/components/aether/ui";
 
 export const Route = createFileRoute("/ops/drivers")({
   loader: () => opsListDrivers(),
@@ -45,22 +46,26 @@ function DriversPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Drivers</h1>
+      <PageHeader title="Drivers" lead="Drivers available for assignment. Overlapping times cannot be assigned." />
       {message ? <OpsNotice>{message}</OpsNotice> : null}
       {result.drivers.length === 0 ? (
-        <p className="text-sm text-muted">No drivers yet.</p>
+        <EmptyState title="No drivers yet." />
       ) : (
-        <ul className="divide-y divide-line border border-line">
+        <ul className="divide-y divide-line border border-line bg-surface">
           {result.drivers.map((item) => (
             <li key={item.id} className="flex items-center justify-between gap-3 px-4 py-3">
               <div>
                 <p className="font-medium">{item.name}</p>
-                <p className="text-sm text-muted">{item.active ? "Active" : "Inactive"}</p>
+                <div className="mt-2">
+                  <StatusChip tone={item.active ? "neutral" : "cancelled"}>
+                    {item.active ? "Active" : "Inactive"}
+                  </StatusChip>
+                </div>
               </div>
               <div className="flex gap-2">
                 <button
                   type="button"
-                  className="min-h-11 border border-line px-3 text-sm"
+                  className={compactButtonClass}
                   disabled={busy}
                   onClick={() => {
                     setEditingId(item.id);
@@ -73,7 +78,7 @@ function DriversPage() {
                 </button>
                 <button
                   type="button"
-                  className="min-h-11 border border-line px-3 text-sm"
+                  className={compactButtonClass}
                   disabled={busy}
                   onClick={() => void save({ id: item.id, name: item.name, active: !item.active })}
                 >
@@ -94,7 +99,12 @@ function DriversPage() {
         <p className="text-xs tracking-widest text-muted uppercase">
           {editingId ? "Edit driver" : "Add driver"}
         </p>
-        <input className={opsInputClass} placeholder="Name" value={name} onChange={(event) => setName(event.target.value)} />
+        <input
+          className={opsInputClass}
+          placeholder="Name"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+        />
         <OpsButton type="submit" disabled={busy || !name.trim()}>
           Save driver
         </OpsButton>

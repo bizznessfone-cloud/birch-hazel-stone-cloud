@@ -1,8 +1,9 @@
 import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { opsLogin } from "@/lib/aether/ops-fns";
+import { GUEST_LOCKUP } from "@/lib/aether/constants";
 import { ThemeToggle } from "@/components/aether/theme-toggle";
-import { OpsButton, opsInputClass } from "@/components/aether/ops-shell";
+import { Notice, PrimaryButton, fieldClass } from "@/components/aether/ui";
 
 export const Route = createFileRoute("/ops/login")({
   component: OpsLogin,
@@ -44,15 +45,15 @@ function OpsLogin() {
         className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center px-5 pb-16"
         onSubmit={(event) => void submit(event)}
       >
-        <p className="text-xs tracking-widest text-muted uppercase">Aether Transfer</p>
+        <p className="text-xs tracking-widest text-muted uppercase">{GUEST_LOCKUP}</p>
         <h1 className="mt-3 text-3xl font-semibold tracking-tight">Desk</h1>
         <p className="mt-3 text-sm leading-relaxed text-muted">
-          Sign in to the dispatch board. This is not a guest page.
+          Sign in to manage today’s transfers. Guests book from the hotel page.
         </p>
         <label className="mt-8 block">
           <span className="mb-2 block text-xs tracking-widest text-muted uppercase">Login</span>
           <input
-            className={opsInputClass}
+            className={fieldClass}
             value={login}
             autoComplete="username"
             onChange={(event) => setLogin(event.target.value)}
@@ -61,18 +62,18 @@ function OpsLogin() {
         <label className="mt-4 block">
           <span className="mb-2 block text-xs tracking-widest text-muted uppercase">Password</span>
           <input
-            className={opsInputClass}
+            className={fieldClass}
             type="password"
             value={password}
             autoComplete="current-password"
             onChange={(event) => setPassword(event.target.value)}
           />
         </label>
-        {error ? <p className="mt-4 border border-line bg-surface px-4 py-3 text-sm">{error}</p> : null}
+        {error ? <div className="mt-4"><Notice>{error}</Notice></div> : null}
         <div className="mt-6">
-          <OpsButton type="submit" disabled={busy || !login || !password} className="w-full">
+          <PrimaryButton type="submit" disabled={busy || !login || !password} className="w-full">
             {busy ? "Signing in…" : "Sign in"}
-          </OpsButton>
+          </PrimaryButton>
         </div>
       </form>
     </main>

@@ -2,7 +2,15 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { opsLogout } from "@/lib/aether/ops-fns";
 import { csrfHeaders } from "@/lib/aether/csrf-client";
+import { GUEST_LOCKUP } from "@/lib/aether/constants";
 import { ThemeToggle } from "./theme-toggle";
+import {
+  Notice,
+  PrimaryButton,
+  SecondaryButton,
+  compactButtonClass,
+  fieldClass,
+} from "./ui";
 
 const NAV = [
   { to: "/ops", label: "Today" },
@@ -31,22 +39,18 @@ export function OpsShell({
     <div className="flex min-h-dvh flex-col bg-canvas text-ink">
       <header className="border-b border-line px-4 py-3">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3">
-          <div>
-            <p className="text-xs tracking-widest text-muted uppercase">Desk</p>
-            <p className="text-sm font-semibold">{login}</p>
+          <div className="min-w-0">
+            <p className="text-xs tracking-widest text-muted uppercase">{GUEST_LOCKUP}</p>
+            <p className="truncate text-sm font-semibold">Desk · {login}</p>
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <button
-              type="button"
-              className="min-h-11 border border-line px-3 text-sm"
-              onClick={() => void signOut()}
-            >
+            <button type="button" className={compactButtonClass} onClick={() => void signOut()}>
               Sign out
             </button>
           </div>
         </div>
-        <nav className="mx-auto mt-3 flex max-w-3xl gap-1 overflow-x-auto">
+        <nav className="mx-auto mt-3 flex max-w-3xl gap-1 overflow-x-auto pb-1">
           {NAV.map((item) => {
             const active =
               item.to === "/ops" ? pathname === "/ops" : pathname.startsWith(item.to);
@@ -68,26 +72,15 @@ export function OpsShell({
 }
 
 export function OpsNotice({ children }: { children: ReactNode }) {
-  return <p className="border border-line bg-surface px-4 py-3 text-sm">{children}</p>;
+  return <Notice>{children}</Notice>;
 }
 
 export function OpsButton({ className, ...props }: ButtonHTMLAttributes<HTMLButtonElement>) {
-  return (
-    <button
-      {...props}
-      className={`min-h-12 w-full bg-ink px-4 text-sm font-semibold tracking-wide text-canvas uppercase disabled:opacity-40 ${className ?? ""}`}
-    />
-  );
+  return <PrimaryButton className={className} {...props} />;
 }
 
 export function OpsSecondary({ className, ...props }: ButtonHTMLAttributes<HTMLButtonElement>) {
-  return (
-    <button
-      {...props}
-      className={`min-h-12 w-full border border-line px-4 text-sm font-medium disabled:opacity-40 ${className ?? ""}`}
-    />
-  );
+  return <SecondaryButton className={className} {...props} />;
 }
 
-export const opsInputClass =
-  "min-h-12 w-full border border-line bg-surface px-3 text-base text-ink outline-none focus:border-ink";
+export const opsInputClass = fieldClass;

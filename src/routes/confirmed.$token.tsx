@@ -4,6 +4,7 @@ import { startGuestPayment } from "@/lib/aether/guest-payment-fns";
 import { formatQuotedPrice, touristMessage } from "@/lib/aether/guest";
 import { GuestHeader } from "@/components/aether/guest-header";
 import { ThemeToggle } from "@/components/aether/theme-toggle";
+import { DefinitionRow, StatusChip } from "@/components/aether/ui";
 import type { PublicBooking } from "@/lib/aether/booking";
 import type { ConfirmationEmailStatus } from "@/lib/aether/confirmation-email";
 
@@ -39,7 +40,7 @@ function MissingBooking({ message }: { message: string }) {
         <ThemeToggle />
       </div>
       <section className="flex flex-1 flex-col items-center justify-center px-6 pb-16 text-center">
-        <p className="text-xs tracking-widest text-muted uppercase">SCAN / BOOK / GO</p>
+        <p className="text-xs tracking-widest text-muted uppercase">SCAN. BOOK. GO.</p>
         <h1 className="mt-6 max-w-sm text-3xl font-semibold tracking-tight">{message}</h1>
         <p className="mt-4 max-w-sm text-base leading-relaxed text-muted">
           Check the confirmation link. A booking reference on its own cannot open this page.
@@ -50,7 +51,7 @@ function MissingBooking({ message }: { message: string }) {
 }
 
 function priceLabel(booking: PublicBooking): string {
-  if (!booking.pricing.priced) return "To be confirmed";
+  if (!booking.pricing.priced) return "Quoted by hotel";
   return formatQuotedPrice(booking.pricing.currency, booking.pricing.amountMinor);
 }
 
@@ -58,7 +59,7 @@ function emailStatusLabel(status: ConfirmationEmailStatus | undefined): string {
   if (status === "sent") return "Confirmation email sent";
   if (status === "not_configured") return "Confirmation email will be enabled when email delivery is configured";
   if (status === "failed") return "Your booking is confirmed. We could not send the confirmation email, so keep this page and your booking reference.";
-  return "Keep this page and your booking reference.";
+  return "Keep this page. The hotel can find you by the reference below.";
 }
 
 function ConfirmationCard({
@@ -66,27 +67,35 @@ function ConfirmationCard({
 }: {
   booking: PublicBooking & { confirmationEmailStatus?: ConfirmationEmailStatus };
 }) {
+  const cancelled = booking.cancelled;
   return (
     <div className="flex min-h-dvh flex-col bg-canvas text-ink">
       <GuestHeader hotelName={booking.hotelName} />
       <main className="mx-auto flex w-full max-w-md flex-1 flex-col px-5 py-8">
-        <p className="text-xs tracking-widest text-muted uppercase">
-          {booking.cancelled ? "Cancelled" : "Confirmed"}
-        </p>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight">Your transfer is booked</h1>
+        <StatusChip tone={cancelled ? "cancelled" : "live"}>
+          {cancelled ? "Cancelled" : "Confirmed"}
+        </StatusChip>
+        <h1 className="mt-4 text-3xl font-semibold tracking-tight">
+          {cancelled ? "This transfer is cancelled" : "Your transfer is booked"}
+        </h1>
         <p className="mt-3 text-base leading-relaxed text-muted">
-          {emailStatusLabel(booking.confirmationEmailStatus)}
+          {cancelled
+            ? "This booking is no longer scheduled. Keep the reference if the hotel needs it."
+            : emailStatusLabel(booking.confirmationEmailStatus)}
         </p>
         <p className="mt-8 text-4xl font-semibold tracking-tight">{booking.humanReference}</p>
-        <dl className="mt-8 divide-y divide-line border border-line">
-          <Row label="Hotel" value={booking.hotelName} />
-          <Row label="When" value={`${booking.transferDate} · ${booking.pickupTime}`} />
-          <Row label="Duration" value={`${booking.durationMinutes} min`} />
-          <Row label="Pickup" value={booking.pickupText} />
-          <Row label="Destination" value={booking.destinationText} />
-          <Row label="Party" value={`${booking.passengerCount} passengers · ${booking.luggageCount} bags`} />
-          <Row label="Guest" value={booking.guestName} />
-          <Row label="Price" value={priceLabel(booking)} />
+        <dl className="mt-8 divide-y divide-line border border-line bg-surface">
+          <DefinitionRow label="Hotel" value={booking.hotelName} />
+          <DefinitionRow label="When" value={`${booking.transferDate} · ${booking.pickupTime}`} />
+          <DefinitionRow label="Duration" value={`${booking.durationMinutes} min`} />
+          <DefinitionRow label="Pickup" value={booking.pickupText} />
+          <DefinitionRow label="Destination" value={booking.destinationText} />
+          <DefinitionRow
+            label="Party"
+            value={`${booking.passengerCount} passengers · ${booking.luggageCount} bags`}
+          />
+          <DefinitionRow label="Guest" value={booking.guestName} />
+          <DefinitionRow label="Price" value={priceLabel(booking)} />
         </dl>
         {!booking.cancelled && booking.pricing.priced && booking.pricing.amountMinor > 0 ? (
           <button
@@ -108,20 +117,11 @@ function ConfirmationCard({
         <Link
           to="/book/$hotelCode"
           params={{ hotelCode: booking.hotelCode }}
-          className="mt-10 flex min-h-14 items-center justify-center border border-line text-base font-medium"
+          className="mt-10 flex min-h-14 items-center justify-center border border-line bg-surface text-base font-medium"
         >
           Back to hotel booking
         </Link>
       </main>
-    </div>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-start justify-between gap-4 px-4 py-3">
-      <dt className="text-xs tracking-widest text-muted uppercase">{label}</dt>
-      <dd className="text-right text-sm font-medium">{value}</dd>
     </div>
   );
 }

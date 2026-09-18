@@ -7,15 +7,16 @@
   --color-muted: var(--aether-muted);
   --color-line: var(--aether-line);
   --color-surface: var(--aether-surface);
+  --radius-none: 0px;
 }
 
 :root {
   color-scheme: light;
-  --aether-canvas: #f7f7f5;
-  --aether-surface: #ffffff;
-  --aether-ink: #111111;
-  --aether-muted: #6b6b6b;
-  --aether-line: #e2e2de;
+  --aether-canvas: #f4f3ef;
+  --aether-surface: #fbfaf7;
+  --aether-ink: #161616;
+  --aether-muted: #6a6a66;
+  --aether-line: #dddcd6;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -40,11 +41,11 @@ html.dark {
 
 html.light {
   color-scheme: light;
-  --aether-canvas: #f7f7f5;
-  --aether-surface: #ffffff;
-  --aether-ink: #111111;
-  --aether-muted: #6b6b6b;
-  --aether-line: #e2e2de;
+  --aether-canvas: #f4f3ef;
+  --aether-surface: #fbfaf7;
+  --aether-ink: #161616;
+  --aether-muted: #6a6a66;
+  --aether-line: #dddcd6;
 }
 
 @layer base {
@@ -72,5 +73,15 @@ html.light {
 
   p {
     text-wrap: pretty;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

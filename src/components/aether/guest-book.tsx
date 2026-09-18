@@ -1,4 +1,4 @@
-import { useMemo, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { createPublicBooking, getPublicBooking } from "@/lib/aether/booking-fns";
 import {
@@ -15,10 +15,21 @@ import {
 import { GuestHeader } from "./guest-header";
 import { HotelMark } from "./hotel-mark";
 import { ThemeToggle } from "./theme-toggle";
+import {
+  DefinitionRow,
+  EmptyState,
+  Field,
+  GuestPrimaryButton,
+  GuestSecondaryButton,
+  Notice,
+  StepProgress,
+  guestFieldClass,
+} from "./ui";
 
 type Step = "landing" | "find" | "journey" | "when" | "party" | "contact" | "review";
 
 const PLACE_KINDS: PlaceKind[] = ["airport", "port", "hotel", "other"];
+const BOOK_STEPS = ["Journey", "When", "Party", "Contact", "Review"] as const;
 
 type CatalogueDestination = {
   id: string;
@@ -257,16 +268,21 @@ function Landing({
       </div>
       <section className="flex flex-1 flex-col items-center justify-center px-6 pb-16 text-center">
         <HotelMark name={hotelName} size="lg" />
-        <h1 className="mt-8 text-3xl font-semibold tracking-tight">{hotelName}</h1>
+        <p className="mt-8 text-xs font-medium tracking-widest text-muted uppercase">
+          Private hotel transfer
+        </p>
+        <h1 className="mt-4 text-3xl font-semibold tracking-tight">{hotelName}</h1>
         <p className="mt-6 text-4xl leading-none font-semibold tracking-tight">SCAN. BOOK. GO.</p>
         <p className="mt-6 max-w-sm text-base leading-relaxed text-muted">
           {preview
             ? "Preview of the guest booking experience. This preview does not create a booking."
-            : "Private hotel transfers. Book at reception in a few steps."}
+            : "Choose a destination and price. No account needed."}
         </p>
         <div className="mt-12 flex w-full max-w-sm flex-col gap-3">
-          <PrimaryButton onClick={onBook}>{preview ? "Preview booking flow" : "Book transfer"}</PrimaryButton>
-          {!preview ? <SecondaryButton onClick={onFind}>View my booking</SecondaryButton> : null}
+          <GuestPrimaryButton onClick={onBook}>
+            {preview ? "Preview booking flow" : "Book transfer"}
+          </GuestPrimaryButton>
+          {!preview ? <GuestSecondaryButton onClick={onFind}>View my booking</GuestSecondaryButton> : null}
         </div>
       </section>
     </main>
@@ -289,16 +305,16 @@ function FindStep(props: {
         props.onLookup();
       }}
     >
-      <StepTitle title="View my booking" note="Enter the confirmation token from your booking page. A reference number is not enough." />
+      <StepTitle title="View my booking" note="Open the confirmation link from your booking, or paste the confirmation token here. A booking reference is not enough." />
       <Field label="Confirmation token">
         <input
-          className={inputClass}
+          className={guestFieldClass}
           value={props.token}
           autoComplete="off"
           onChange={(event) => props.onToken(event.target.value)}
         />
       </Field>
-      {props.error ? <ErrorText>{props.error}</ErrorText> : null}
+      {props.error ? <Notice>{props.error}</Notice> : null}
       <Actions
         back={props.onBack}
         nextLabel={props.busy ? "Looking…" : "Find booking"}
@@ -334,7 +350,11 @@ function JourneyStep(props: {
         if (ready) props.onNext();
       }}
     >
-      <StepTitle title="Journey" note="Choose a destination from this hotel's list. Pickup is the collection point." />
+      <StepProgress steps={BOOK_STEPS} current="Journey" />
+      <StepTitle
+        title="Transfer"
+        note="Select a destination. The price is this hotel’s quoted transfer rate."
+      />
       <ChoiceRow
         label="Direction"
         options={[
@@ -353,9 +373,7 @@ function JourneyStep(props: {
       <fieldset>
         <legend className="mb-2 text-xs tracking-widest text-muted uppercase">Destination</legend>
         {choices.length === 0 ? (
-          <p className="border border-line bg-surface px-4 py-3 text-sm text-muted">
-            No destinations of this type are available.
-          </p>
+          <EmptyState title="No destinations of this type are available." />
         ) : (
           <div className="flex flex-col gap-2">
             {choices.map((item) => {
@@ -377,7 +395,7 @@ function JourneyStep(props: {
       </fieldset>
       <Field label="Pickup">
         <input
-          className={inputClass}
+          className={guestFieldClass}
           value={props.draft.pickupText}
           onChange={(event) => props.onPickup(event.target.value)}
         />
@@ -409,11 +427,12 @@ function WhenStep(props: {
         if (ready) props.onNext();
       }}
     >
-      <StepTitle title="When" note="Hotel local civil time. Times that do not exist, including some DST hours, cannot be booked." />
+      <StepProgress steps={BOOK_STEPS} current="When" />
+      <StepTitle title="When" note="Use the hotel’s local date and time. If a time cannot be booked, choose another." />
       <Field label="Date">
         <input
           type="date"
-          className={inputClass}
+          className={guestFieldClass}
           value={props.draft.transferDate}
           onChange={(event) => props.onDate(event.target.value)}
         />
@@ -421,7 +440,7 @@ function WhenStep(props: {
       <Field label="Pickup time">
         <input
           type="time"
-          className={inputClass}
+          className={guestFieldClass}
           value={props.draft.pickupTime}
           onChange={(event) => props.onTime(event.target.value)}
         />
@@ -454,7 +473,8 @@ function PartyStep(props: {
         props.onNext();
       }}
     >
-      <StepTitle title="Party" note="Tell us how many people and bags are travelling." />
+      <StepProgress steps={BOOK_STEPS} current="Party" />
+      <StepTitle title="Party" note="How many people and bags are travelling." />
       <Stepper label="Passengers" value={props.draft.passengerCount} min={1} max={20} onChange={props.onPassengers} />
       <Stepper label="Luggage" value={props.draft.luggageCount} min={0} max={20} onChange={props.onLuggage} />
       <aside className="border border-line bg-surface px-4 py-4 text-left">
@@ -485,13 +505,14 @@ function ContactStep(props: {
         if (ready) props.onNext();
       }}
     >
-      <StepTitle title="Contact" note="We use these details for the driver and the confirmation." />
+      <StepProgress steps={BOOK_STEPS} current="Contact" />
+      <StepTitle title="Contact" note="Used for the driver and your confirmation." />
       <Field label="Name">
-        <input className={inputClass} value={props.draft.guestName} onChange={(event) => props.onName(event.target.value)} />
+        <input className={guestFieldClass} value={props.draft.guestName} onChange={(event) => props.onName(event.target.value)} />
       </Field>
       <Field label="Phone">
         <input
-          className={inputClass}
+          className={guestFieldClass}
           type="tel"
           value={props.draft.guestPhone}
           onChange={(event) => props.onPhone(event.target.value)}
@@ -499,7 +520,7 @@ function ContactStep(props: {
       </Field>
       <Field label="Email">
         <input
-          className={inputClass}
+          className={guestFieldClass}
           type="email"
           value={props.draft.guestEmail}
           onChange={(event) => props.onEmail(event.target.value)}
@@ -507,7 +528,7 @@ function ContactStep(props: {
       </Field>
       <Field label="Room or flight number">
         <input
-          className={inputClass}
+          className={guestFieldClass}
           value={props.draft.specialRequirements}
           onChange={(event) => props.onSpecial(event.target.value)}
         />
@@ -541,19 +562,20 @@ function ReviewStep(props: {
         props.onSubmit();
       }}
     >
-      <StepTitle title="Review" note="Check the details. The price is the hotel's quoted rate for this destination." />
-      <dl className="divide-y divide-line border border-line">
-        <ReviewRow label="Hotel" value={props.hotelName} />
-        <ReviewRow label="Direction" value={props.draft.direction === "from_hotel" ? `From ${props.hotelName}` : `To ${props.hotelName}`} />
-        <ReviewRow label="Pickup" value={props.draft.pickupText} />
-        <ReviewRow label="Destination" value={destinationName} />
-        <ReviewRow label="When" value={`${props.draft.transferDate} · ${props.draft.pickupTime} · ${props.draft.durationMinutes} min`} />
-        <ReviewRow label="Party" value={`${props.draft.passengerCount} passengers · ${props.draft.luggageCount} bags`} />
-        <ReviewRow label="Guest" value={props.draft.guestName} />
-        <ReviewRow label="Price" value={priceLabel} />
+      <StepProgress steps={BOOK_STEPS} current="Review" />
+      <StepTitle title="Review" note="Check the details. The price is this hotel’s quoted transfer rate." />
+      <dl className="divide-y divide-line border border-line bg-surface">
+        <DefinitionRow label="Hotel" value={props.hotelName} />
+        <DefinitionRow label="Direction" value={props.draft.direction === "from_hotel" ? `From ${props.hotelName}` : `To ${props.hotelName}`} />
+        <DefinitionRow label="Pickup" value={props.draft.pickupText} />
+        <DefinitionRow label="Destination" value={destinationName} />
+        <DefinitionRow label="When" value={`${props.draft.transferDate} · ${props.draft.pickupTime} · ${props.draft.durationMinutes} min`} />
+        <DefinitionRow label="Party" value={`${props.draft.passengerCount} passengers · ${props.draft.luggageCount} bags`} />
+        <DefinitionRow label="Guest" value={props.draft.guestName} />
+        <DefinitionRow label="Price" value={priceLabel} />
       </dl>
-      {props.error ? <ErrorText>{props.error}</ErrorText> : null}
-      {props.preview ? <ErrorText>This is a preview. No booking will be created.</ErrorText> : null}
+      {props.error ? <Notice>{props.error}</Notice> : null}
+      {props.preview ? <Notice>This is a preview. No booking will be created.</Notice> : null}
       <Actions
         back={props.onBack}
         nextLabel={props.preview ? "Preview only" : props.busy ? "Booking…" : "Confirm booking"}
@@ -563,24 +585,12 @@ function ReviewStep(props: {
   );
 }
 
-const inputClass =
-  "min-h-14 w-full border border-line bg-surface px-4 text-lg text-ink outline-none focus:border-ink";
-
 function StepTitle({ title, note }: { title: string; note: string }) {
   return (
     <div>
       <h2 className="text-2xl font-semibold tracking-tight">{title}</h2>
       <p className="mt-2 text-sm leading-relaxed text-muted">{note}</p>
     </div>
-  );
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <label className="block">
-      <span className="mb-2 block text-xs tracking-widest text-muted uppercase">{label}</span>
-      {children}
-    </label>
   );
 }
 
@@ -595,10 +605,11 @@ function ChoiceRow({
   value: string;
   onChange: (id: string) => void;
 }) {
+  const cols = options.length > 2 ? "grid-cols-2" : "grid-cols-2";
   return (
     <fieldset>
       <legend className="mb-2 text-xs tracking-widest text-muted uppercase">{label}</legend>
-      <div className="grid grid-cols-2 gap-2">
+      <div className={`grid gap-2 ${cols}`}>
         {options.map((option) => {
           const active = option.id === value;
           return (
@@ -636,7 +647,7 @@ function Stepper({
       <div className="flex items-center gap-3">
         <button
           type="button"
-          className="flex min-h-14 min-w-14 items-center justify-center border border-line text-2xl"
+          className="flex min-h-14 min-w-14 items-center justify-center border border-line bg-surface text-2xl"
           onClick={() => onChange(Math.max(min, value - 1))}
           aria-label={`Decrease ${label}`}
         >
@@ -645,7 +656,7 @@ function Stepper({
         <p className="flex-1 text-center text-3xl font-semibold tabular-nums">{value}</p>
         <button
           type="button"
-          className="flex min-h-14 min-w-14 items-center justify-center border border-line text-2xl"
+          className="flex min-h-14 min-w-14 items-center justify-center border border-line bg-surface text-2xl"
           onClick={() => onChange(Math.min(max, value + 1))}
           aria-label={`Increase ${label}`}
         >
@@ -667,53 +678,12 @@ function Actions({
 }) {
   return (
     <div className="mt-auto flex flex-col gap-3 pt-4">
-      <PrimaryButton type="submit" disabled={nextDisabled}>
+      <GuestPrimaryButton type="submit" disabled={nextDisabled}>
         {nextLabel}
-      </PrimaryButton>
-      <SecondaryButton type="button" onClick={back}>
+      </GuestPrimaryButton>
+      <GuestSecondaryButton type="button" onClick={back}>
         Back
-      </SecondaryButton>
-    </div>
-  );
-}
-
-function PrimaryButton({
-  children,
-  ...props
-}: ButtonHTMLAttributes<HTMLButtonElement>) {
-  return (
-    <button
-      {...props}
-      className="min-h-14 w-full bg-ink px-4 text-base font-semibold tracking-wide text-canvas uppercase disabled:opacity-40"
-    >
-      {children}
-    </button>
-  );
-}
-
-function SecondaryButton({
-  children,
-  ...props
-}: ButtonHTMLAttributes<HTMLButtonElement>) {
-  return (
-    <button
-      {...props}
-      className="min-h-14 w-full border border-line px-4 text-base font-medium text-ink"
-    >
-      {children}
-    </button>
-  );
-}
-
-function ErrorText({ children }: { children: ReactNode }) {
-  return <p className="border border-line bg-surface px-4 py-3 text-sm">{children}</p>;
-}
-
-function ReviewRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-start justify-between gap-4 px-4 py-3">
-      <dt className="text-xs tracking-widest text-muted uppercase">{label}</dt>
-      <dd className="text-right text-sm font-medium">{value}</dd>
+      </GuestSecondaryButton>
     </div>
   );
 }

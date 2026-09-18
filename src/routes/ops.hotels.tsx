@@ -4,6 +4,7 @@ import { opsListHotels, opsUpsertHotel } from "@/lib/aether/ops-desk-fns";
 import { csrfHeaders } from "@/lib/aether/csrf-client";
 import { HotelMark } from "@/components/aether/hotel-mark";
 import { OpsButton, OpsNotice, OpsSecondary, opsInputClass } from "@/components/aether/ops-shell";
+import { EmptyState, PageHeader, compactButtonClass } from "@/components/aether/ui";
 
 export const Route = createFileRoute("/ops/hotels")({
   loader: () => opsListHotels(),
@@ -56,16 +57,13 @@ function HotelsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Hotels</h1>
-        <p className="mt-2 text-sm leading-relaxed text-muted">
-          Each hotel has a name, a unique booking code, and a generated HotelMark.
-          The QR-ready URL is the guest booking page. Identity stays black, white and grey.
-        </p>
-      </div>
+      <PageHeader
+        title="Hotels"
+        lead="Each hotel has a name, a booking code, and a guest booking page. Copy the URL for the reception QR."
+      />
       {message ? <OpsNotice>{message}</OpsNotice> : null}
       {result.hotels.length === 0 ? (
-        <p className="text-sm text-muted">No hotels yet.</p>
+        <EmptyState title="No hotels yet." />
       ) : (
         <ul className="flex flex-col gap-3">
           {result.hotels.map((item) => (
@@ -75,12 +73,12 @@ function HotelsPage() {
                   <HotelMark name={item.name} size="sm" />
                   <div className="min-w-0">
                     <p className="font-medium">{item.name}</p>
-                    <p className="text-xs tracking-widest text-muted uppercase">HotelMark {item.mark}</p>
+                    <p className="text-xs tracking-widest text-muted uppercase">{item.code}</p>
                   </div>
                 </div>
                 <button
                   type="button"
-                  className="min-h-11 shrink-0 border border-line px-3 text-sm"
+                  className={compactButtonClass}
                   disabled={busy}
                   onClick={() => {
                     setEditingId(item.id);
@@ -98,13 +96,13 @@ function HotelsPage() {
                 <Link
                   to="/book/$hotelCode"
                   params={{ hotelCode: item.code }}
-                  className="flex min-h-11 items-center border border-line px-3 text-sm"
+                  className={compactButtonClass}
                 >
                   Open booking page
                 </Link>
                 <button
                   type="button"
-                  className="min-h-11 border border-line px-3 text-sm"
+                  className={compactButtonClass}
                   onClick={() => void copyBookingUrl(item.bookingPath)}
                 >
                   {copied === item.bookingPath ? "Copied" : "Copy URL"}
@@ -124,8 +122,18 @@ function HotelsPage() {
         <p className="text-xs tracking-widest text-muted uppercase">
           {editingId ? "Edit hotel" : "Add hotel"}
         </p>
-        <input className={opsInputClass} placeholder="Name" value={name} onChange={(event) => setName(event.target.value)} />
-        <input className={opsInputClass} placeholder="Booking code" value={code} onChange={(event) => setCode(event.target.value)} />
+        <input
+          className={opsInputClass}
+          placeholder="Name"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+        />
+        <input
+          className={opsInputClass}
+          placeholder="Booking code"
+          value={code}
+          onChange={(event) => setCode(event.target.value)}
+        />
         <OpsButton type="submit" disabled={busy || !name.trim() || !code.trim()}>
           Save hotel
         </OpsButton>

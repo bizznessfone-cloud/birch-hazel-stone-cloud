@@ -43,7 +43,7 @@ function UnknownHotel({ message }: { message: string }) {
         <ThemeToggle />
       </div>
       <section className="flex flex-1 flex-col items-center justify-center px-6 pb-16 text-center">
-        <p className="text-xs tracking-widest text-muted uppercase">Aether Transfer</p>
+        <p className="text-xs tracking-widest text-muted uppercase">SCAN. BOOK. GO.</p>
         <h1 className="mt-6 max-w-sm text-3xl font-semibold tracking-tight">{message}</h1>
         <p className="mt-4 max-w-sm text-base leading-relaxed text-muted">
           Please ask reception for the correct booking link.
