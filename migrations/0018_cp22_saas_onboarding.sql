@@ -41,7 +41,6 @@ revoke all on table app_hotel_accounts from aether_app;
 revoke all on table hotel_services from aether_app;
 grant select on table app_hotel_accounts, hotel_services to aether_app;
 
-revoke all on all functions in schema public from aether_app;
 
 -- ---------------------------------------------------------------------------
 -- Narrow onboarding capabilities.
