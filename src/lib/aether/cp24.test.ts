@@ -8,6 +8,7 @@ const read = (path: string) => readFileSync(join(root, path), "utf8");
 
 test("CP24 adds isolated SBG billing and Stripe connection state", () => {
   const migration = read("migrations/0020_cp24_stripe_billing.sql");
+  const paymentMigration = read("migrations/0021_cp25_hotel_guest_payments.sql");
   assert.match(migration, /create table if not exists sbg_billing_accounts/);
   assert.match(migration, /create table if not exists sbg_stripe_connections/);
   assert.match(migration, /create table if not exists sbg_stripe_events/);
@@ -54,7 +55,6 @@ test("CP24 does not make SBG the hotel guest-payment custodian", () => {
   assert.match(billing, /hotel’s own Stripe account/i);
   assert.match(billing, /does not receive or hold the hotel’s guest payment funds/i);
 });
-
 
 test("CP25 keeps guest transfer payment on the connected hotel account", () => {
   const migration = read("migrations/0021_cp25_hotel_guest_payments.sql");
