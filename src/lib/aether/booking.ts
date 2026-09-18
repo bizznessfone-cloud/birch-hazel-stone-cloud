@@ -68,6 +68,7 @@ export type PublicDestination = {
 };
 
 export type PublicHotel = HotelIdentity & {
+  publicSlug: string;
   currency: string;
   destinations: PublicDestination[];
 };
@@ -575,17 +576,66 @@ export async function getPublicBookingByToken(
   return toPublic(row);
 }
 
+export async function getPublicHotelBySlug(db: TimeDb, publicSlug: string): Promise<PublicHotel> {
+  const slug = typeof publicSlug === "string" ? publicSlug.trim().toLowerCase() : "";
+  if (!slug) throw new BookingError("hotel_not_found", 404, "hotel not found");
+  const rows = await db.query<{
+    id: string;
+    code: string;
+    public_slug: string;
+    name: string;
+    currency: string;
+    status: string;
+  }>(
+    `select id, code, public_slug, name, btrim(currency) as currency, status
+       from hotels
+      where public_slug = $1`,
+    [slug],
+  );
+  const row = rows[0];
+  if (!row) throw new BookingError("hotel_not_found", 404, "hotel not found");
+  if (row.status !== "live") {
+    throw new BookingError("hotel_not_live", 409, "hotel not live");
+  }
+  const destinations = await db.query<{
+    id: string;
+    kind: PublicDestination["kind"];
+    name: string;
+    amount_minor: number;
+    sort_order: number;
+  }>(
+    `select id, kind, name, amount_minor, sort_order
+       from hotel_destinations
+      where hotel_id = $1::uuid and active
+      order by sort_order, name`,
+    [row.id],
+  );
+  return {
+    ...hotelIdentity(row),
+    publicSlug: row.public_slug,
+    currency: row.currency,
+    destinations: destinations.map((dest) => ({
+      id: dest.id,
+      kind: dest.kind,
+      name: dest.name,
+      amountMinor: Number(dest.amount_minor),
+      sortOrder: Number(dest.sort_order),
+    })),
+  };
+}
+
 export async function getPublicHotel(db: TimeDb, hotelCode: string): Promise<PublicHotel> {
   const code = typeof hotelCode === "string" ? hotelCode.trim().toLowerCase() : "";
   if (!code) throw new BookingError("hotel_not_found", 404, "hotel not found");
   const rows = await db.query<{
     id: string;
     code: string;
+    public_slug: string;
     name: string;
     currency: string;
     status: string;
   }>(
-    `select id, code, name, btrim(currency) as currency, status
+    `select id, code, public_slug, name, btrim(currency) as currency, status
        from hotels
       where lower(code) = $1`,
     [code],
@@ -611,6 +661,7 @@ export async function getPublicHotel(db: TimeDb, hotelCode: string): Promise<Pub
   try {
     return {
       ...hotelIdentity(row),
+      publicSlug: row.public_slug,
       currency: row.currency,
       destinations: destinations.map((dest) => ({
         id: dest.id,
