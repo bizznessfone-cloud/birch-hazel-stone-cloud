@@ -2,6 +2,10 @@
 
 **Status: implementation in progress**
 
+## Current source
+
+`65342b6ffef977ff34d7ec9ea05ae18c239cc1f6`
+
 ## Baseline
 
 CP21B reconciled the Grok workspace and preserved the historical record.
