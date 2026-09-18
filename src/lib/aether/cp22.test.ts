@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
+import { qrMatrix } from "./qr-code";
 
 const root = process.cwd();
 const read = (path) => readFileSync(join(root, path), "utf8");
@@ -60,4 +61,25 @@ test("CP22 does not repurpose the internal Ops hotel management route", () => {
   assert.match(opsHotels, /opsUpsertHotel/);
   const app = read("src/routes/app.tsx");
   assert.doesNotMatch(app, /opsUpsertHotel/);
+});
+
+
+test("CP22 QR asset is offline, deterministic, and printable/downloadable", () => {
+  const url = "https://scan-book-go.vercel.app/book/blue-lagoon";
+  const a = qrMatrix(url);
+  const b = qrMatrix(url);
+  assert.equal(a.length, a[0]?.length);
+  assert.ok(a.length >= 21);
+  assert.deepEqual(a, b);
+  assert.equal(a[0][0], true);
+  assert.equal(a[0][6], true);
+  assert.equal(a[6][0], true);
+  assert.equal(a[6][6], true);
+
+  const card = read("src/components/aether/qr-code-card.tsx");
+  const route = read("src/routes/app.hotels.$hotelId.qr.tsx");
+  assert.match(card, /Download SVG/);
+  assert.match(card, /window\.print/);
+  assert.match(card, /image\/svg\+xml/);
+  assert.match(route, /QrCodeCard/);
 });
