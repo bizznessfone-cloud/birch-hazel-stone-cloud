@@ -19,6 +19,10 @@ test("CP24 adds isolated SBG billing and Stripe connection state", () => {
   assert.doesNotMatch(migration, /alter table bookings/i);
   assert.doesNotMatch(migration, /exclude/i);
   assert.doesNotMatch(migration, /create role/i);
+  assert.match(paymentMigration, /sbg_booking_payments/);
+  assert.match(paymentMigration, /sbg_prepare_booking_payment/);
+  assert.match(paymentMigration, /Stripe|stripe_account_id/i);
+  assert.doesNotMatch(paymentMigration, /alter table bookings/i);
 });
 
 test("CP24 keeps Stripe secrets server-side and uses Connect account scoping", () => {
