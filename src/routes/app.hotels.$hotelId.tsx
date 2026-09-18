@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
 import { getOnboardingState } from "@/lib/aether/onboarding-fns";
 
 export const Route = createFileRoute("/app/hotels/$hotelId")({
@@ -9,6 +10,8 @@ export const Route = createFileRoute("/app/hotels/$hotelId")({
 function HotelWorkspace() {
   const result = Route.useLoaderData();
   const { hotelId } = Route.useParams();
+  const [copied, setCopied] = useState(false);
+
   if (!result.ok) return <p className="text-sm text-muted">{result.message}</p>;
   const item = result.hotels.find((entry) => entry.hotel.id === hotelId);
   if (!item) {
@@ -23,6 +26,16 @@ function HotelWorkspace() {
   const hotel = item.hotel;
   const service = item.services[0];
   const destination = item.destinations[0];
+  const bookingUrl =
+    typeof window === "undefined"
+      ? "/book/" + hotel.code
+      : window.location.origin + "/book/" + hotel.code;
+
+  async function copyBookingUrl() {
+    await navigator.clipboard.writeText(bookingUrl);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1500);
+  }
 
   return (
     <div className="space-y-8">
@@ -36,9 +49,19 @@ function HotelWorkspace() {
       </div>
 
       <section className="border border-line bg-surface p-5">
-        <p className="text-xs font-medium tracking-widest text-muted uppercase">Guest page</p>
-        <p className="mt-2 break-all text-sm font-medium">/book/{hotel.code}</p>
+        <p className="text-xs font-medium tracking-widest text-muted uppercase">Guest page / QR destination</p>
+        <p className="mt-2 break-all text-sm font-medium">{bookingUrl}</p>
         <p className="mt-2 text-sm text-muted">This is the current QR-ready guest address. The human-readable hotel slug is handled later in CP23.</p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <button type="button" onClick={() => void copyBookingUrl()} className="min-h-11 border border-line px-4 text-sm font-semibold tracking-wide uppercase">
+            {copied ? "Copied" : "Copy URL"}
+          </button>
+          {hotel.status === "configured" || hotel.status === "live" ? (
+            <a href={"/book/" + hotel.code} target="_blank" rel="noreferrer" className="min-h-11 bg-ink px-4 py-3 text-sm font-semibold tracking-wide text-canvas uppercase">
+              Preview guest page
+            </a>
+          ) : null}
+        </div>
       </section>
 
       <section className="grid gap-4 md:grid-cols-2">
@@ -56,9 +79,6 @@ function HotelWorkspace() {
 
       <div className="flex flex-wrap gap-3">
         <Link to="/app/onboarding" className="min-h-12 border border-line px-4 py-3 text-sm font-semibold tracking-wide uppercase">Setup</Link>
-        {service && destination ? (
-          <a href={"/book/" + hotel.code} target="_blank" rel="noreferrer" className="min-h-12 bg-ink px-4 py-3 text-sm font-semibold tracking-wide text-canvas uppercase">Preview guest page</a>
-        ) : null}
       </div>
     </div>
   );
