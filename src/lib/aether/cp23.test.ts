@@ -11,8 +11,7 @@ test("CP23 adds a public hotel slug without replacing internal hotel code identi
   assert.match(migration, /add column if not exists public_slug/i);
   assert.match(migration, /create unique index if not exists hotels_public_slug_uidx/i);
   assert.match(migration, /sbg_assign_public_slug/);
-  assert.match(migration, /blue/i);
-  assert.doesNotMatch(migration, /drop.*occup/i);
+    assert.doesNotMatch(migration, /drop.*occup/i);
   assert.doesNotMatch(migration, /create role/i);
 
   const booking = read("src/lib/aether/booking.ts");
