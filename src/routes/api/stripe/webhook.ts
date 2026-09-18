@@ -69,8 +69,8 @@ export const Route = createFileRoute("/api/stripe/webhook")({
                   : "pending";
           const paymentIntentId = typeof object?.payment_intent === "string" ? object.payment_intent : null;
           await db.query(
-            "select sbg_apply_payment_event($1, $2, $3::uuid, $4::uuid, $5, $6)",
-            [event.id, event.type, bookingId, paymentId, paymentIntentId, paymentStatus],
+            "select sbg_apply_payment_event($1, $2, $3::uuid, $4::uuid, $5, $6, $7)",
+            [event.id, event.type, bookingId, paymentId, paymentIntentId, paymentStatus, typeof event?.account === "string" ? event.account : null],
           );
           return Response.json({ received: true });
         }
