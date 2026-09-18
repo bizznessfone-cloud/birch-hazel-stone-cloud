@@ -120,5 +120,6 @@ export const completeStripeConnect = async (code: string, state: string) => {
     "select sbg_save_stripe_connection_for_user($1, $2::uuid, $3, $4)",
     [userId, hotelId, account.stripe_user_id, account.livemode],
   );
+  await db.query("select sbg_sync_hotel_entitlement($1::uuid)", [hotelId]);
   return hotelId;
 };
