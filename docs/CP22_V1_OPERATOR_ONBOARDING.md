@@ -1,10 +1,10 @@
 # CP22 — V1 OPERATOR ONBOARDING
 
-**Status: implementation in progress**
+**Status: source implementation complete; local execution validation pending**
 
 ## Current source
 
-`65342b6ffef977ff34d7ec9ea05ae18c239cc1f6`
+`390a471e7fcdac87ec9bd9e77ec89b2aea82a73f`
 
 ## Baseline
 
@@ -27,7 +27,7 @@ CP22 builds the first V1 SaaS product layer over the hardened booking/occupancy/
 
 ### SaaS application surface
 
-- `/app/*) is now the authenticated operator surface.
+- `/app/*` is now the authenticated operator surface.
 - `/ops/*` remains the internal operations desk.
 - `/app/` routes a signed-in operator to onboarding or the first hotel workspace.
 - `/app/onboarding` implements:
@@ -53,12 +53,11 @@ The hotel workspace exposes the canonical guest URL as the QR destination and pr
 
 The public guest route remains `/book/{hotelCode}` until CP23 introduces the human-readable hotel slug.
 
-Actual QR image generation/print asset remains the next product-surface increment rather than being faked with an external QR service.
+Actual QR image generation is now offline and dependency-free. The hotel workspace exposes a dedicated `/app/hotels/{hotelId}/qr` print surface with SVG download and browser print support. No external QR service is used.
 
 ## Not implemented yet
 
 - public human-readable hotel slug
-- downloadable/generated QR asset
 - subscription plan UI
 - Stripe subscription activation
 - Stripe Connect for hotel guest payments
@@ -87,6 +86,10 @@ owner-owned hotel/service objects
 
 The existing occupancy, booking, hotel/provider, and Ops security model remains intact.
 
+## Validation state
+
+Source-level CP22 regression coverage now includes the QR encoder and QR print/download surface. Full `npm run test:aether` and `npm run build` have not been executed in this environment, so their results remain unverified.
+
 ## Next
 
-Finish CP22 with the actual preview/QR presentation and onboarding regression coverage, then proceed to CP23 public hotel slug and the later subscription/Stripe checkpoints.
+Complete executable local/CI validation of CP22, then proceed to CP23 public hotel slug and the later subscription/Stripe checkpoints.
