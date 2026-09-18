@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { z } from "zod";
 import {
   createBillingPortalFn,
   createSubscriptionCheckoutFn,
@@ -8,12 +9,12 @@ import {
 } from "@/lib/aether/stripe-fns";
 
 export const Route = createFileRoute("/app/billing")({
+  validateSearch: z.object({ hotelId: z.string().uuid().catch("") }),
   component: Billing,
 });
 
 function Billing() {
-  const search = typeof window === "undefined" ? new URLSearchParams() : new URLSearchParams(window.location.search);
-  const hotelId = search.get("hotelId") ?? "";
+  const { hotelId } = Route.useSearch();
   const [state, setState] = useState<Awaited<ReturnType<typeof getBillingState>> | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
