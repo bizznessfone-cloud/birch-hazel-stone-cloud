@@ -1,6 +1,5 @@
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
-import { Link } from "@tanstack/react-router";
 import {
   createOnboardingDestination,
   createOnboardingHotel,
