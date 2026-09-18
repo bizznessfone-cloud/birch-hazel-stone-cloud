@@ -195,3 +195,44 @@ $$;
 
 revoke all on function sbg_disconnect_stripe_by_account(text) from public;
 grant execute on function sbg_disconnect_stripe_by_account(text) to aether_app;
+
+create or replace function sbg_sync_hotel_entitlement(p_hotel_id uuid)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_billing_status text;
+  v_connected boolean;
+  v_current_status text;
+begin
+  select status into v_billing_status
+    from sbg_billing_accounts
+   where hotel_id = p_hotel_id;
+
+  select exists (
+    select 1 from sbg_stripe_connections
+     where hotel_id = p_hotel_id
+       and disconnected_at is null
+  ) into v_connected;
+
+  select status into v_current_status from hotels where id = p_hotel_id for update;
+  if v_current_status is null then
+    raise exception 'hotel not found' using errcode = 'P0002';
+  end if;
+
+  if v_billing_status in ('active', 'trialing') and v_connected then
+    update hotels set status = 'live' where id = p_hotel_id and status <> 'live';
+    return 'live';
+  end if;
+
+  if v_current_status = 'live' then
+    update hotels set status = 'configured' where id = p_hotel_id;
+  end if;
+  return 'configured';
+end;
+$$;
+
+revoke all on function sbg_sync_hotel_entitlement(uuid) from public;
+grant execute on function sbg_sync_hotel_entitlement(uuid) to aether_app;
