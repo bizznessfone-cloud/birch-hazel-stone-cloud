@@ -106,18 +106,6 @@ export async function exchangeStripeConnectCode(code: string) {
   };
 }
 
-/* Legacy shape retained below for source compatibility. */
-export async function _unusedStripeConnectTokenShape(code: string) {
-  return stripePost<{
-    stripe_user_id: string;
-    livemode: boolean;
-    scope: string;
-  }>("/oauth/token", {
-    code,
-    grant_type: "authorization_code",
-  });
-}
-
 export async function createConnectState(userId: string, hotelId: string) {
   return new SignJWT({ sub: userId, hotelId })
     .setProtectedHeader({ alg: "HS256" })
