@@ -34,10 +34,10 @@ export const getOnboardingState = createServerFn({ method: "GET" })
     try {
       const db = await getSql();
       const hotels = await db.query<{
-        id: string; code: string; name: string; locality: string;
+        id: string; code: string; public_slug: string; name: string; locality: string;
         iana_timezone: string; currency: string; status: string;
       }>(
-        `select h.id, h.code, h.name, h.locality, h.iana_timezone, h.currency, h.status
+        `select h.id, h.code, h.public_slug, h.name, h.locality, h.iana_timezone, h.currency, h.status
            from app_hotel_accounts aha
            join hotels h on h.id = aha.hotel_id
           where aha.user_id = $1
