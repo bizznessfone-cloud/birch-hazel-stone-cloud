@@ -57,9 +57,14 @@ function HotelWorkspace() {
             {copied ? "Copied" : "Copy URL"}
           </button>
           {service && destination ? (
-            <Link to="/app/hotels/$hotelId/preview" params={{ hotelId }} className="min-h-11 bg-ink px-4 py-3 text-sm font-semibold tracking-wide text-canvas uppercase">
-              Preview guest page
-            </Link>
+            <>
+              <Link to="/app/hotels/$hotelId/preview" params={{ hotelId }} className="min-h-11 bg-ink px-4 py-3 text-sm font-semibold tracking-wide text-canvas uppercase">
+                Preview guest page
+              </Link>
+              <Link to="/app/hotels/$hotelId/qr" params={{ hotelId }} className="min-h-11 border border-line px-4 py-3 text-sm font-semibold tracking-wide uppercase">
+                QR / Print
+              </Link>
+            </>
           ) : null}
         </div>
       </section>
