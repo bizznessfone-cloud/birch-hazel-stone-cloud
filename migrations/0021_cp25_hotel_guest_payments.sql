@@ -48,7 +48,7 @@ begin
     on conflict (booking_id) do update set updated_at = now()
     returning id, booking_id, amount_minor, currency, status, stripe_checkout_session_id
   )
-  select i.id, i.booking_id, t.hotel_id, c.stripe_account_id, i.amount_minor, i.currency, i.status, i.stripe_checkout_session_id
+  select i.id, i.booking_id, t.hotel_id, c.stripe_account_id, i.amount_minor, i.currency, i.status, i.stripe_checkout_session_id, i.stripe_checkout_url
   from inserted i
   join target t on t.booking_id = i.booking_id
   join connection c on c.hotel_id = t.hotel_id;
