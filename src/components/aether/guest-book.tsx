@@ -33,11 +33,13 @@ export function GuestBook({
   hotelName,
   currency,
   destinations,
+  preview = false,
 }: {
   hotelCode: string;
   hotelName: string;
   currency: string;
   destinations: CatalogueDestination[];
+  preview?: boolean;
 }) {
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>("landing");
@@ -125,12 +127,12 @@ export function GuestBook({
   return (
     <div className="flex min-h-dvh flex-col bg-canvas text-ink">
       {step === "landing" ? (
-        <Landing hotelName={hotelName} onBook={() => setStep("journey")} onFind={() => setStep("find")} />
+        <Landing hotelName={hotelName} preview={preview} onBook={() => setStep("journey")} onFind={() => setStep("find")} />
       ) : (
         <>
           <GuestHeader hotelName={hotelName} />
           <main className="mx-auto flex w-full max-w-md flex-1 flex-col px-5 py-6">
-            {step === "find" ? (
+            {!preview && step === "find" ? (
               <FindStep
                 token={lookupToken}
                 error={lookupError}
@@ -225,6 +227,7 @@ export function GuestBook({
                 draft={draft}
                 error={submitError}
                 busy={submitting}
+                preview={preview}
                 onSubmit={() => void submit()}
                 onBack={() => setStep("contact")}
               />
@@ -238,10 +241,12 @@ export function GuestBook({
 
 function Landing({
   hotelName,
+  preview,
   onBook,
   onFind,
 }: {
   hotelName: string;
+  preview: boolean;
   onBook: () => void;
   onFind: () => void;
 }) {
@@ -255,11 +260,13 @@ function Landing({
         <h1 className="mt-8 text-3xl font-semibold tracking-tight">{hotelName}</h1>
         <p className="mt-6 text-4xl leading-none font-semibold tracking-tight">SCAN. BOOK. GO.</p>
         <p className="mt-6 max-w-sm text-base leading-relaxed text-muted">
-          Private hotel transfers. Book at reception in a few steps.
+          {preview
+            ? "Preview of the guest booking experience. This preview does not create a booking."
+            : "Private hotel transfers. Book at reception in a few steps."}
         </p>
         <div className="mt-12 flex w-full max-w-sm flex-col gap-3">
-          <PrimaryButton onClick={onBook}>Book transfer</PrimaryButton>
-          <SecondaryButton onClick={onFind}>View my booking</SecondaryButton>
+          <PrimaryButton onClick={onBook}>{preview ? "Preview booking flow" : "Book transfer"}</PrimaryButton>
+          {!preview ? <SecondaryButton onClick={onFind}>View my booking</SecondaryButton> : null}
         </div>
       </section>
     </main>
@@ -517,6 +524,7 @@ function ReviewStep(props: {
   draft: GuestDraft;
   error: string | null;
   busy: boolean;
+  preview?: boolean;
   onSubmit: () => void;
   onBack: () => void;
 }) {
@@ -545,10 +553,11 @@ function ReviewStep(props: {
         <ReviewRow label="Price" value={priceLabel} />
       </dl>
       {props.error ? <ErrorText>{props.error}</ErrorText> : null}
+      {props.preview ? <ErrorText>This is a preview. No booking will be created.</ErrorText> : null}
       <Actions
         back={props.onBack}
-        nextLabel={props.busy ? "Booking…" : "Confirm booking"}
-        nextDisabled={props.busy || !props.draft.destinationId}
+        nextLabel={props.preview ? "Preview only" : props.busy ? "Booking…" : "Confirm booking"}
+        nextDisabled={props.preview || props.busy || !props.draft.destinationId}
       />
     </form>
   );
