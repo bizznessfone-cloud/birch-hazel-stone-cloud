@@ -21,7 +21,7 @@ revoke all on table sbg_booking_payments from public;
 grant select on table sbg_booking_payments to aether_app;
 
 create or replace function sbg_prepare_booking_payment(p_confirmation_token text)
-returns table (payment_id uuid, booking_id uuid, hotel_id uuid, stripe_account_id text, amount_minor integer, currency text, status text, checkout_session_id text)
+returns table (payment_id uuid, booking_id uuid, hotel_id uuid, stripe_account_id text, amount_minor integer, currency text, status text, checkout_session_id text, checkout_url text)
 language plpgsql security definer set search_path = public
 as $$
 begin
@@ -67,7 +67,7 @@ $$;
 
 create or replace function sbg_apply_payment_event(
   p_event_id text, p_event_type text, p_booking_id uuid, p_payment_id uuid,
-  p_payment_intent_id text, p_status text
+  p_payment_intent_id text, p_status text, p_stripe_account_id text
 )
 returns boolean language plpgsql security definer set search_path = public
 as $$
@@ -76,6 +76,17 @@ begin
   values (p_event_id, p_event_type)
   on conflict (event_id) do nothing;
   if not found then return false; end if;
+
+  if not exists (
+    select 1
+      from sbg_booking_payments p
+      join bookings b on b.id = p.booking_id
+      join sbg_stripe_connections c on c.hotel_id = b.hotel_id
+     where p.id = p_payment_id
+       and p.booking_id = p_booking_id
+       and c.stripe_account_id = p_stripe_account_id
+       and c.disconnected_at is null
+  ) then return false; end if;
 
   update sbg_booking_payments
      set stripe_payment_intent_id = coalesce(p_payment_intent_id, stripe_payment_intent_id),
@@ -89,7 +100,7 @@ $$;
 
 revoke all on function sbg_prepare_booking_payment(text) from public;
 revoke all on function sbg_set_booking_checkout_session(uuid,text,text) from public;
-revoke all on function sbg_apply_payment_event(text,text,uuid,uuid,text,text) from public;
+revoke all on function sbg_apply_payment_event(text,text,uuid,uuid,text,text,text) from public;
 grant execute on function sbg_prepare_booking_payment(text) to aether_app;
 grant execute on function sbg_set_booking_checkout_session(uuid,text,text) to aether_app;
-grant execute on function sbg_apply_payment_event(text,text,uuid,uuid,text,text) to aether_app;
+grant execute on function sbg_apply_payment_event(text,text,uuid,uuid,text,text,text) to aether_app;
