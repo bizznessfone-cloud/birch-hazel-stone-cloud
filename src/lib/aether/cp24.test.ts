@@ -12,7 +12,7 @@ test("CP24 adds isolated SBG billing and Stripe connection state", () => {
   assert.match(migration, /create table if not exists sbg_stripe_connections/);
   assert.match(migration, /create table if not exists sbg_stripe_events/);
   assert.match(migration, /sbg_save_stripe_connection_for_user/);
-  assert.match(migration, /sbg_apply_billing_event/);
+  assert.match(migration, /sbg_apply_billing_event/);\n  assert.match(migration, /sbg_sync_hotel_entitlement/);
   assert.match(migration, /grant select on table sbg_billing_accounts to aether_app/);
   assert.match(migration, /grant select on table sbg_stripe_connections to aether_app/);
   assert.doesNotMatch(migration, /alter table bookings/i);
