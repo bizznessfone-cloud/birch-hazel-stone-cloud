@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
-import { qrMatrix } from "./qr-code";
+import { qrMatrix } from "./qr-code.ts";
 
 const root = process.cwd();
-const read = (path) => readFileSync(join(root, path), "utf8");
+const read = (path: string) => readFileSync(join(root, path), "utf8");
 
 test("CP22 enables real operator email/password authentication", () => {
   const flag = read("src/lib/auth/email-password.ts");
@@ -49,7 +49,7 @@ test("CP22 onboarding migration keeps provisioning DML behind narrow functions",
   assert.doesNotMatch(migration, /create role/i);
   assert.doesNotMatch(migration, /revoke all on all functions in schema public from aether_app/i);
   assert.doesNotMatch(migration, /alter table bookings/i);
-  assert.doesNotMatch(migration, /exclude/i);
+  assert.doesNotMatch(migration, /\bEXCLUDE\s+(USING|\()/i);
 });
 
 test("Better Auth migration copy remains byte-identical to its canonical source", () => {

@@ -119,6 +119,20 @@ export async function verifyConnectState(token: string) {
   return { userId: result.payload.sub ?? "", hotelId: result.payload.hotelId ?? "" };
 }
 
+export async function completeStripeConnect(code: string, state: string) {
+  const { userId, hotelId } = await verifyConnectState(state);
+  if (!userId || !hotelId) throw new Error("Invalid Stripe Connect state.");
+  const account = await exchangeStripeConnectCode(code);
+  const { getSql } = await import("@/lib/db");
+  const db = await getSql();
+  await db.query(
+    "select sbg_save_stripe_connection_for_user($1, $2::uuid, $3, $4)",
+    [userId, hotelId, account.stripe_user_id, account.livemode],
+  );
+  await db.query("select sbg_sync_hotel_entitlement($1::uuid)", [hotelId]);
+  return hotelId;
+}
+
 export function verifyStripeSignature(payload: string, header: string, toleranceSeconds = 300) {
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!secret) throw new Error("Stripe webhook is not configured.");

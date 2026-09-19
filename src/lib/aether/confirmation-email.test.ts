@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { CreatedBooking } from "./booking";
-import { sendConfirmationEmail } from "./confirmation-email";
+import { sendConfirmationEmail } from "./confirmation-email.ts";
 
 const booking: CreatedBooking = {
   humanReference: "PT-TEST123456",

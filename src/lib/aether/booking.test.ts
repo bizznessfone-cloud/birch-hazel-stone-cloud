@@ -48,7 +48,12 @@ const TENANCY_SQL = readFileSync(
   "utf8",
 );
 
-async function openDb(): Promise<{ db: BookingDb; pg: PGlite; hotelCode: string }> {
+async function openDb(): Promise<{
+  db: BookingDb;
+  pg: PGlite;
+  hotelCode: string;
+  destinationIdByCode: Record<string, string>;
+}> {
   const { btree_gist } = await import("@electric-sql/pglite/contrib/btree_gist");
   const pg = new PGlite({ extensions: { btree_gist } });
   await pg.waitReady;

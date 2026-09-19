@@ -1,13 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { getSql } from "@/lib/db";
-import { createGuestTransferCheckout } from "@/lib/aether/stripe.server";
 
 const tokenInput = z.object({ token: z.string().min(1) });
 
 export const startGuestPayment = createServerFn({ method: "POST" })
   .validator(tokenInput)
   .handler(async ({ data }) => {
+    const { createGuestTransferCheckout } = await import("@/lib/aether/stripe.server");
     const db = await getSql();
     const rows = await db.query<{
       payment_id: string;

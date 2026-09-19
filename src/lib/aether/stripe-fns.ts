@@ -3,16 +3,6 @@ import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { authMiddleware } from "@/lib/auth/middleware";
 import { getSql } from "@/lib/db";
-import {
-  createBillingPortal,
-  createConnectState,
-  createSubscriptionCheckout,
-  exchangeStripeConnectCode,
-  stripeConnectAuthorizeUrl,
-  stripePriceId,
-  verifyConnectState,
-  type StripePlan,
-} from "@/lib/aether/stripe.server";
 
 const hotelInput = z.object({ hotelId: z.string().uuid() });
 const planInput = z.object({ hotelId: z.string().uuid(), plan: z.enum(["basic", "pro", "premium"]) });
@@ -61,9 +51,10 @@ export const createSubscriptionCheckoutFn = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator(planInput)
   .handler(async ({ data, context }) => {
+    const { createSubscriptionCheckout, stripePriceId } = await import("@/lib/aether/stripe.server");
     const db = await getSql();
     await ownedHotel(db, context.userId, data.hotelId);
-    const priceId = stripePriceId(data.plan as StripePlan);
+    const priceId = stripePriceId(data.plan);
     await db.query(
       "select sbg_set_billing_price_for_user($1, $2::uuid, $3)",
       [context.userId, data.hotelId, priceId],
@@ -87,6 +78,7 @@ export const createBillingPortalFn = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator(hotelInput)
   .handler(async ({ data, context }) => {
+    const { createBillingPortal } = await import("@/lib/aether/stripe.server");
     const db = await getSql();
     await ownedHotel(db, context.userId, data.hotelId);
     const billing = await db.query<{ stripe_customer_id: string | null }>(
@@ -102,6 +94,7 @@ export const startStripeConnectFn = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator(hotelInput)
   .handler(async ({ data, context }) => {
+    const { createConnectState, stripeConnectAuthorizeUrl } = await import("@/lib/aether/stripe.server");
     const clientId = process.env.STRIPE_CONNECT_CLIENT_ID;
     if (!clientId) throw new Error("Stripe Connect is not configured.");
     const db = await getSql();
@@ -110,16 +103,3 @@ export const startStripeConnectFn = createServerFn({ method: "POST" })
     const state = await createConnectState(context.userId, data.hotelId);
     return { url: stripeConnectAuthorizeUrl({ clientId, redirectUri, state }) };
   });
-
-export const completeStripeConnect = async (code: string, state: string) => {
-  const { userId, hotelId } = await verifyConnectState(state);
-  if (!userId || !hotelId) throw new Error("Invalid Stripe Connect state.");
-  const account = await exchangeStripeConnectCode(code);
-  const db = await getSql();
-  await db.query(
-    "select sbg_save_stripe_connection_for_user($1, $2::uuid, $3, $4)",
-    [userId, hotelId, account.stripe_user_id, account.livemode],
-  );
-  await db.query("select sbg_sync_hotel_entitlement($1::uuid)", [hotelId]);
-  return hotelId;
-};

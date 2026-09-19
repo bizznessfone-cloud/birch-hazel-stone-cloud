@@ -16,7 +16,7 @@ test("CP23 adds a public hotel slug without replacing internal hotel code identi
 
   const booking = read("src/lib/aether/booking.ts");
   assert.match(booking, /getPublicHotelBySlug/);
-  assert.match(booking, /where public_slug = \\$1/);
+  assert.match(booking, /where public_slug = \$1/);
   assert.match(booking, /hotelCode: string/);
 });
 

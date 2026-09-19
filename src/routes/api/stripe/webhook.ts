@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { getSql } from "@/lib/db";
-import { verifyStripeSignature } from "@/lib/aether/stripe.server";
 
 function unixToIso(value: unknown) {
   return typeof value === "number" ? new Date(value * 1000).toISOString() : null;
@@ -26,6 +25,7 @@ export const Route = createFileRoute("/api/stripe/webhook")({
       POST: async ({ request }) => {
         const raw = await request.text();
         const signature = request.headers.get("stripe-signature");
+        const { verifyStripeSignature } = await import("@/lib/aether/stripe.server");
         if (!signature || !verifyStripeSignature(raw, signature)) {
           return new Response("Invalid Stripe signature.", { status: 400 });
         }

@@ -124,7 +124,10 @@ async function objectOwner(
 }
 
 function ownerAllowed(owner: string): boolean {
-  return owner === EXPECTED_OWNER && owner !== AETHER_APP_ROLE && owner !== AETHER_RUNTIME_ROLE;
+  const isOwner = owner === EXPECTED_OWNER;
+  const isApp = owner === AETHER_APP_ROLE;
+  const isRuntime = owner === AETHER_RUNTIME_ROLE;
+  return isOwner && !isApp && !isRuntime;
 }
 
 export async function verifyProductionRuntimeIdentity(): Promise<RuntimeIdentityResult> {
@@ -153,15 +156,23 @@ export async function verifyProductionRuntimeIdentity(): Promise<RuntimeIdentity
       current_database: String(id.current_database),
     };
 
+    const sessionUser = String(identity.session_user);
+    const currentUser = String(identity.current_user);
+    const isAppSession = sessionUser === AETHER_APP_ROLE;
+    const isAppCurrent = currentUser === AETHER_APP_ROLE;
+    const notRuntimeSession = sessionUser !== AETHER_RUNTIME_ROLE;
+    const notRuntimeCurrent = currentUser !== AETHER_RUNTIME_ROLE;
+    const notOwnerSession = sessionUser !== EXPECTED_OWNER;
+    const notOwnerCurrent = currentUser !== EXPECTED_OWNER;
     const identityOk =
-      identity.session_user === AETHER_APP_ROLE &&
-      identity.current_user === AETHER_APP_ROLE &&
+      isAppSession &&
+      isAppCurrent &&
       identity.session_matches_current &&
       identity.current_database === EXPECTED_DATABASE &&
-      identity.session_user !== AETHER_RUNTIME_ROLE &&
-      identity.current_user !== AETHER_RUNTIME_ROLE &&
-      identity.session_user !== EXPECTED_OWNER &&
-      identity.current_user !== EXPECTED_OWNER;
+      notRuntimeSession &&
+      notRuntimeCurrent &&
+      notOwnerSession &&
+      notOwnerCurrent;
 
     const roleRow = (
       await client.query<{

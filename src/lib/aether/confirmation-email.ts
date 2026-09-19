@@ -46,6 +46,7 @@ function textBody(booking: CreatedBooking, url: string): string {
     `Booking reference: ${booking.humanReference}`,
     `Date: ${booking.transferDate}`,
     `Pickup time: ${booking.pickupTime}`,
+    `Duration: ${booking.durationMinutes} min`,
     `Pickup: ${booking.pickupText}`,
     `Destination: ${booking.destinationText}`,
     `Passengers: ${booking.passengerCount}`,
@@ -74,7 +75,7 @@ function htmlBody(booking: CreatedBooking, url: string): string {
       <h1 style="margin:16px 0 8px;font-size:28px;line-height:1.15">Transfer confirmed</h1>
       <p style="margin:0 0 24px;color:#666;line-height:1.5">Your transfer with ${escapeHtml(booking.hotelName)} has been booked successfully.</p>
       <p style="margin:0 0 20px;font-size:30px;font-weight:700;letter-spacing:.04em">${escapeHtml(booking.humanReference)}</p>
-      <table style="width:100%;border-collapse:collapse;border:1px solid #ddd">${row("Hotel", booking.hotelName)}${row("When", `${booking.transferDate} · ${booking.pickupTime}`)}${row("Pickup", booking.pickupText)}${row("Destination", booking.destinationText)}${row("Party", `${booking.passengerCount} passengers · ${booking.luggageCount} bags`)}${row("Price", price)}</table>
+      <table style="width:100%;border-collapse:collapse;border:1px solid #ddd">${row("Hotel", booking.hotelName)}${row("When", `${booking.transferDate} · ${booking.pickupTime}`)}${row("Duration", `${booking.durationMinutes} min`)}${row("Pickup", booking.pickupText)}${row("Destination", booking.destinationText)}${row("Party", `${booking.passengerCount} passengers · ${booking.luggageCount} bags`)}${row("Price", price)}</table>
       <a href="${escapeHtml(url)}" style="display:block;margin-top:28px;padding:15px 18px;background:#171717;color:#fff;text-align:center;text-decoration:none;font-weight:700">View My Booking</a>
       <p style="margin:20px 0 0;color:#777;font-size:12px;line-height:1.5">This secure link is the credential for viewing your booking. Keep it private.</p>
     </div>

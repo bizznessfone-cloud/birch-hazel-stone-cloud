@@ -36,6 +36,7 @@ const SQL_FILES = [
   "0014_cp13a_production_app_role.sql",
   "0015_cp14_hotel_configuration.sql",
   "0016_cp14_hotel_timezone.sql",
+  "0019_cp23_public_hotel_slug.sql",
 ] as const;
 
 const IMMUTABLE = {

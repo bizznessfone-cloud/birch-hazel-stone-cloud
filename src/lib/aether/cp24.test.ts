@@ -18,22 +18,29 @@ test("CP24 adds isolated SBG billing and Stripe connection state", () => {
   assert.match(migration, /grant select on table sbg_billing_accounts to aether_app/);
   assert.match(migration, /grant select on table sbg_stripe_connections to aether_app/);
   assert.doesNotMatch(migration, /alter table bookings/i);
-  assert.doesNotMatch(migration, /exclude/i);
+  assert.doesNotMatch(migration, /\bEXCLUDE\s+(USING|\()/i);
   assert.doesNotMatch(migration, /create role/i);
   assert.match(paymentMigration, /sbg_booking_payments/);
   assert.match(paymentMigration, /sbg_prepare_booking_payment/);
   assert.match(paymentMigration, /Stripe|stripe_account_id/i);
   assert.doesNotMatch(paymentMigration, /alter table bookings/i);
+  assert.doesNotMatch(paymentMigration, /\bEXCLUDE\s+(USING|\()/i);
 });
 
 test("CP24 keeps Stripe secrets server-side and uses Connect account scoping", () => {
   const stripe = read("src/lib/aether/stripe.server.ts");
+  const fns = read("src/lib/aether/stripe-fns.ts");
+  const billing = read("src/routes/app.billing.tsx");
+  const serverFlow = `${stripe}\n${fns}`;
   assert.match(stripe, /STRIPE_SECRET_KEY/);
-  assert.match(stripe, /STRIPE_CONNECT_CLIENT_ID/);
   assert.match(stripe, /STRIPE_WEBHOOK_SECRET/);
+  assert.match(serverFlow, /STRIPE_CONNECT_CLIENT_ID/);
+  assert.match(fns, /process\.env\.STRIPE_CONNECT_CLIENT_ID/);
   assert.match(stripe, /Stripe-Account/);
-  assert.match(stripe, /connect\.stripe\.com\\/oauth\\/authorize/);
-  assert.doesNotMatch(stripe, /VITE_|PUBLIC_STRIPE|NEXT_PUBLIC_STRIPE_SECRET/i);
+  assert.match(stripe, /connect\.stripe\.com\/oauth\/authorize/);
+  assert.doesNotMatch(serverFlow, /VITE_|PUBLIC_STRIPE|NEXT_PUBLIC_/);
+  assert.doesNotMatch(billing, /STRIPE_SECRET_KEY|STRIPE_WEBHOOK_SECRET|STRIPE_CONNECT_CLIENT_ID/);
+  assert.doesNotMatch(billing, /VITE_|NEXT_PUBLIC_/);
 });
 
 test("CP24 subscription flow is authenticated and webhook-signed", () => {

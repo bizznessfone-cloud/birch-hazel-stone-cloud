@@ -1,10 +1,10 @@
 /**
  * CP17 — hotel-local Ops Today for hotel_desk.
  * Dispatcher Today remains Athens-global. Feed stays transfer_date equality.
- * Occupancy, CP15 auth, and 0011–0017 are unchanged. No migration 0018.
+ * Occupancy, CP15 auth, and 0011–0017 are unchanged.
  */
 import assert from "node:assert/strict";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { describe, test } from "node:test";
 import { PGlite } from "@electric-sql/pglite";
@@ -252,8 +252,6 @@ describe("CP17 hotel-local Ops Today", () => {
     assert.match(time, /aether_athens_today/);
     const server = readAether("./time.server.ts");
     assert.doesNotMatch(server, /civilToday/);
-    const migrationNames = readdirSync(new URL("../../../migrations", import.meta.url));
-    assert.equal(migrationNames.some((name) => /^0018/.test(name)), false, "NO 0018");
   });
 
   test("hotel A desk sees A bookings and does not see B bookings", async () => {
@@ -708,7 +706,7 @@ describe("CP17 hotel-local Ops Today", () => {
     assert.match(desk, /export async function loadTodayBoard\(db: OpsDeskDb, scope: OpsScope\)/);
     assert.doesNotMatch(desk, /localStorage|sessionStorage|Intl\.DateTimeFormat|date-fns-tz|luxon|Temporal/);
     const ui = readAether("../../routes/ops.index.tsx");
-    assert.match(ui, />Today</);
+    assert.match(ui, /eyebrow="Today"/);
     assert.match(ui, /board\.boardDate/);
     assert.doesNotMatch(ui, /Athens today/);
     assert.doesNotMatch(ui, /localStorage|sessionStorage|timeZone|timezone|Intl\.DateTimeFormat/);

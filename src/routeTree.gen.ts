@@ -10,7 +10,13 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as HotelSlugRouteImport } from './routes/$hotelSlug'
+import { Route as AppRouteImport } from './routes/app'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as OpsRouteImport } from './routes/ops'
+import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as AppBillingRouteImport } from './routes/app.billing'
+import { Route as AppOnboardingRouteImport } from './routes/app.onboarding'
 import { Route as BookHotelCodeRouteImport } from './routes/book.$hotelCode'
 import { Route as ConfirmedTokenRouteImport } from './routes/confirmed.$token'
 import { Route as OpsIndexRouteImport } from './routes/ops.index'
@@ -18,19 +24,55 @@ import { Route as OpsDriversRouteImport } from './routes/ops.drivers'
 import { Route as OpsHotelsRouteImport } from './routes/ops.hotels'
 import { Route as OpsLoginRouteImport } from './routes/ops.login'
 import { Route as OpsVehiclesRouteImport } from './routes/ops.vehicles'
+import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe/webhook'
+import { Route as AppHotelsHotelIdRouteImport } from './routes/app.hotels.$hotelId'
 import { Route as OpsBookingsIndexRouteImport } from './routes/ops.bookings.index'
 import { Route as OpsBookingsBookingIdRouteImport } from './routes/ops.bookings.$bookingId'
 import { Route as OpsInternalRuntimeIdentityRouteImport } from './routes/ops.internal.runtime-identity'
+import { Route as ApiStripeConnectCallbackRouteImport } from './routes/api/stripe/connect/callback'
+import { Route as AppHotelsHotelIdPreviewRouteImport } from './routes/app.hotels.$hotelId.preview'
+import { Route as AppHotelsHotelIdQrRouteImport } from './routes/app.hotels.$hotelId.qr'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HotelSlugRoute = HotelSlugRouteImport.update({
+  id: '/$hotelSlug',
+  path: '/$hotelSlug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppRoute = AppRouteImport.update({
+  id: '/app',
+  path: '/app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OpsRoute = OpsRouteImport.update({
   id: '/ops',
   path: '/ops',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppIndexRoute = AppIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppBillingRoute = AppBillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppOnboardingRoute = AppOnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => AppRoute,
 } as any)
 const BookHotelCodeRoute = BookHotelCodeRouteImport.update({
   id: '/book/$hotelCode',
@@ -67,6 +109,21 @@ const OpsVehiclesRoute = OpsVehiclesRouteImport.update({
   path: '/vehicles',
   getParentRoute: () => OpsRoute,
 } as any)
+const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
+  id: '/api/auth/$',
+  path: '/api/auth/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiStripeWebhookRoute = ApiStripeWebhookRouteImport.update({
+  id: '/api/stripe/webhook',
+  path: '/api/stripe/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppHotelsHotelIdRoute = AppHotelsHotelIdRouteImport.update({
+  id: '/hotels/$hotelId',
+  path: '/hotels/$hotelId',
+  getParentRoute: () => AppRoute,
+} as any)
 const OpsBookingsIndexRoute = OpsBookingsIndexRouteImport.update({
   id: '/bookings/',
   path: '/bookings/',
@@ -83,98 +140,190 @@ const OpsInternalRuntimeIdentityRoute =
     path: '/internal/runtime-identity',
     getParentRoute: () => OpsRoute,
   } as any)
+const ApiStripeConnectCallbackRoute =
+  ApiStripeConnectCallbackRouteImport.update({
+    id: '/api/stripe/connect/callback',
+    path: '/api/stripe/connect/callback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const AppHotelsHotelIdPreviewRoute = AppHotelsHotelIdPreviewRouteImport.update({
+  id: '/preview',
+  path: '/preview',
+  getParentRoute: () => AppHotelsHotelIdRoute,
+} as any)
+const AppHotelsHotelIdQrRoute = AppHotelsHotelIdQrRouteImport.update({
+  id: '/qr',
+  path: '/qr',
+  getParentRoute: () => AppHotelsHotelIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/$hotelSlug': typeof HotelSlugRoute
+  '/app': typeof AppRouteWithChildren
+  '/login': typeof LoginRoute
   '/ops': typeof OpsRouteWithChildren
+  '/app/billing': typeof AppBillingRoute
+  '/app/onboarding': typeof AppOnboardingRoute
   '/book/$hotelCode': typeof BookHotelCodeRoute
   '/confirmed/$token': typeof ConfirmedTokenRoute
   '/ops/drivers': typeof OpsDriversRoute
   '/ops/hotels': typeof OpsHotelsRoute
   '/ops/login': typeof OpsLoginRoute
   '/ops/vehicles': typeof OpsVehiclesRoute
+  '/app/': typeof AppIndexRoute
   '/ops/': typeof OpsIndexRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
+  '/app/hotels/$hotelId': typeof AppHotelsHotelIdRouteWithChildren
   '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
   '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
   '/ops/bookings/': typeof OpsBookingsIndexRoute
+  '/api/stripe/connect/callback': typeof ApiStripeConnectCallbackRoute
+  '/app/hotels/$hotelId/preview': typeof AppHotelsHotelIdPreviewRoute
+  '/app/hotels/$hotelId/qr': typeof AppHotelsHotelIdQrRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/$hotelSlug': typeof HotelSlugRoute
+  '/login': typeof LoginRoute
+  '/app/billing': typeof AppBillingRoute
+  '/app/onboarding': typeof AppOnboardingRoute
   '/book/$hotelCode': typeof BookHotelCodeRoute
   '/confirmed/$token': typeof ConfirmedTokenRoute
   '/ops/drivers': typeof OpsDriversRoute
   '/ops/hotels': typeof OpsHotelsRoute
   '/ops/login': typeof OpsLoginRoute
   '/ops/vehicles': typeof OpsVehiclesRoute
+  '/app': typeof AppIndexRoute
   '/ops': typeof OpsIndexRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
+  '/app/hotels/$hotelId': typeof AppHotelsHotelIdRouteWithChildren
   '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
   '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
   '/ops/bookings': typeof OpsBookingsIndexRoute
+  '/api/stripe/connect/callback': typeof ApiStripeConnectCallbackRoute
+  '/app/hotels/$hotelId/preview': typeof AppHotelsHotelIdPreviewRoute
+  '/app/hotels/$hotelId/qr': typeof AppHotelsHotelIdQrRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/$hotelSlug': typeof HotelSlugRoute
+  '/app': typeof AppRouteWithChildren
+  '/login': typeof LoginRoute
   '/ops': typeof OpsRouteWithChildren
+  '/app/billing': typeof AppBillingRoute
+  '/app/onboarding': typeof AppOnboardingRoute
   '/book/$hotelCode': typeof BookHotelCodeRoute
   '/confirmed/$token': typeof ConfirmedTokenRoute
   '/ops/drivers': typeof OpsDriversRoute
   '/ops/hotels': typeof OpsHotelsRoute
   '/ops/login': typeof OpsLoginRoute
   '/ops/vehicles': typeof OpsVehiclesRoute
+  '/app/': typeof AppIndexRoute
   '/ops/': typeof OpsIndexRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
+  '/app/hotels/$hotelId': typeof AppHotelsHotelIdRouteWithChildren
   '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
   '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
   '/ops/bookings/': typeof OpsBookingsIndexRoute
+  '/api/stripe/connect/callback': typeof ApiStripeConnectCallbackRoute
+  '/app/hotels/$hotelId/preview': typeof AppHotelsHotelIdPreviewRoute
+  '/app/hotels/$hotelId/qr': typeof AppHotelsHotelIdQrRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/$hotelSlug'
+    | '/app'
+    | '/login'
     | '/ops'
+    | '/app/billing'
+    | '/app/onboarding'
     | '/book/$hotelCode'
     | '/confirmed/$token'
     | '/ops/drivers'
     | '/ops/hotels'
     | '/ops/login'
     | '/ops/vehicles'
+    | '/app/'
     | '/ops/'
+    | '/api/auth/$'
+    | '/api/stripe/webhook'
+    | '/app/hotels/$hotelId'
     | '/ops/bookings/$bookingId'
     | '/ops/internal/runtime-identity'
     | '/ops/bookings/'
+    | '/api/stripe/connect/callback'
+    | '/app/hotels/$hotelId/preview'
+    | '/app/hotels/$hotelId/qr'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/$hotelSlug'
+    | '/login'
+    | '/app/billing'
+    | '/app/onboarding'
     | '/book/$hotelCode'
     | '/confirmed/$token'
     | '/ops/drivers'
     | '/ops/hotels'
     | '/ops/login'
     | '/ops/vehicles'
+    | '/app'
     | '/ops'
+    | '/api/auth/$'
+    | '/api/stripe/webhook'
+    | '/app/hotels/$hotelId'
     | '/ops/bookings/$bookingId'
     | '/ops/internal/runtime-identity'
     | '/ops/bookings'
+    | '/api/stripe/connect/callback'
+    | '/app/hotels/$hotelId/preview'
+    | '/app/hotels/$hotelId/qr'
   id:
     | '__root__'
     | '/'
+    | '/$hotelSlug'
+    | '/app'
+    | '/login'
     | '/ops'
+    | '/app/billing'
+    | '/app/onboarding'
     | '/book/$hotelCode'
     | '/confirmed/$token'
     | '/ops/drivers'
     | '/ops/hotels'
     | '/ops/login'
     | '/ops/vehicles'
+    | '/app/'
     | '/ops/'
+    | '/api/auth/$'
+    | '/api/stripe/webhook'
+    | '/app/hotels/$hotelId'
     | '/ops/bookings/$bookingId'
     | '/ops/internal/runtime-identity'
     | '/ops/bookings/'
+    | '/api/stripe/connect/callback'
+    | '/app/hotels/$hotelId/preview'
+    | '/app/hotels/$hotelId/qr'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  HotelSlugRoute: typeof HotelSlugRoute
+  AppRoute: typeof AppRouteWithChildren
+  LoginRoute: typeof LoginRoute
   OpsRoute: typeof OpsRouteWithChildren
   BookHotelCodeRoute: typeof BookHotelCodeRoute
   ConfirmedTokenRoute: typeof ConfirmedTokenRoute
+  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
+  ApiStripeConnectCallbackRoute: typeof ApiStripeConnectCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -186,12 +335,54 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/$hotelSlug': {
+      id: '/$hotelSlug'
+      path: '/$hotelSlug'
+      fullPath: '/$hotelSlug'
+      preLoaderRoute: typeof HotelSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app': {
+      id: '/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/ops': {
       id: '/ops'
       path: '/ops'
       fullPath: '/ops'
       preLoaderRoute: typeof OpsRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/app/': {
+      id: '/app/'
+      path: '/'
+      fullPath: '/app/'
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/billing': {
+      id: '/app/billing'
+      path: '/billing'
+      fullPath: '/app/billing'
+      preLoaderRoute: typeof AppBillingRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/onboarding': {
+      id: '/app/onboarding'
+      path: '/onboarding'
+      fullPath: '/app/onboarding'
+      preLoaderRoute: typeof AppOnboardingRouteImport
+      parentRoute: typeof AppRoute
     }
     '/book/$hotelCode': {
       id: '/book/$hotelCode'
@@ -242,6 +433,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OpsVehiclesRouteImport
       parentRoute: typeof OpsRoute
     }
+    '/api/auth/$': {
+      id: '/api/auth/$'
+      path: '/api/auth/$'
+      fullPath: '/api/auth/$'
+      preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/stripe/webhook': {
+      id: '/api/stripe/webhook'
+      path: '/api/stripe/webhook'
+      fullPath: '/api/stripe/webhook'
+      preLoaderRoute: typeof ApiStripeWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app/hotels/$hotelId': {
+      id: '/app/hotels/$hotelId'
+      path: '/hotels/$hotelId'
+      fullPath: '/app/hotels/$hotelId'
+      preLoaderRoute: typeof AppHotelsHotelIdRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/ops/bookings/': {
       id: '/ops/bookings/'
       path: '/bookings'
@@ -263,8 +475,58 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
       parentRoute: typeof OpsRoute
     }
+    '/api/stripe/connect/callback': {
+      id: '/api/stripe/connect/callback'
+      path: '/api/stripe/connect/callback'
+      fullPath: '/api/stripe/connect/callback'
+      preLoaderRoute: typeof ApiStripeConnectCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app/hotels/$hotelId/preview': {
+      id: '/app/hotels/$hotelId/preview'
+      path: '/preview'
+      fullPath: '/app/hotels/$hotelId/preview'
+      preLoaderRoute: typeof AppHotelsHotelIdPreviewRouteImport
+      parentRoute: typeof AppHotelsHotelIdRoute
+    }
+    '/app/hotels/$hotelId/qr': {
+      id: '/app/hotels/$hotelId/qr'
+      path: '/qr'
+      fullPath: '/app/hotels/$hotelId/qr'
+      preLoaderRoute: typeof AppHotelsHotelIdQrRouteImport
+      parentRoute: typeof AppHotelsHotelIdRoute
+    }
   }
 }
+
+interface AppHotelsHotelIdRouteChildren {
+  AppHotelsHotelIdPreviewRoute: typeof AppHotelsHotelIdPreviewRoute
+  AppHotelsHotelIdQrRoute: typeof AppHotelsHotelIdQrRoute
+}
+
+const AppHotelsHotelIdRouteChildren: AppHotelsHotelIdRouteChildren = {
+  AppHotelsHotelIdPreviewRoute: AppHotelsHotelIdPreviewRoute,
+  AppHotelsHotelIdQrRoute: AppHotelsHotelIdQrRoute,
+}
+
+const AppHotelsHotelIdRouteWithChildren =
+  AppHotelsHotelIdRoute._addFileChildren(AppHotelsHotelIdRouteChildren)
+
+interface AppRouteChildren {
+  AppBillingRoute: typeof AppBillingRoute
+  AppOnboardingRoute: typeof AppOnboardingRoute
+  AppIndexRoute: typeof AppIndexRoute
+  AppHotelsHotelIdRoute: typeof AppHotelsHotelIdRouteWithChildren
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppBillingRoute: AppBillingRoute,
+  AppOnboardingRoute: AppOnboardingRoute,
+  AppIndexRoute: AppIndexRoute,
+  AppHotelsHotelIdRoute: AppHotelsHotelIdRouteWithChildren,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 interface OpsRouteChildren {
   OpsDriversRoute: typeof OpsDriversRoute
@@ -292,9 +554,15 @@ const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  HotelSlugRoute: HotelSlugRoute,
+  AppRoute: AppRouteWithChildren,
+  LoginRoute: LoginRoute,
   OpsRoute: OpsRouteWithChildren,
   BookHotelCodeRoute: BookHotelCodeRoute,
   ConfirmedTokenRoute: ConfirmedTokenRoute,
+  ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiStripeWebhookRoute: ApiStripeWebhookRoute,
+  ApiStripeConnectCallbackRoute: ApiStripeConnectCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

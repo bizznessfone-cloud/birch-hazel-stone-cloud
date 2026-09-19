@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { completeStripeConnect } from "@/lib/aether/stripe-fns";
 
 export const Route = createFileRoute("/api/stripe/connect/callback")({
   server: {
@@ -18,6 +17,7 @@ export const Route = createFileRoute("/api/stripe/connect/callback")({
         }
 
         try {
+          const { completeStripeConnect } = await import("@/lib/aether/stripe.server");
           const hotelId = await completeStripeConnect(code, state);
           return Response.redirect(
             new URL(`/app/billing?hotelId=${encodeURIComponent(hotelId)}&stripe=connected`, url.origin),

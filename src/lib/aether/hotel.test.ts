@@ -37,6 +37,9 @@ async function openDb(opts: { live?: boolean } = {}) {
     await pg.exec(readFileSync(new URL(`../../../migrations/${name}`, import.meta.url), "utf8"));
   }
   const destinations = opts.live ? await applyCp14LiveCatalog(pg) : ({} as Record<string, string>);
+  await pg.exec(
+    readFileSync(new URL("../../../migrations/0019_cp23_public_hotel_slug.sql", import.meta.url), "utf8"),
+  );
   const db: BookingDb = {
     query: async <T>(text: string, params?: unknown[]) => (await pg.query<T>(text, params)).rows,
     async transaction<T>(fn: (inner: BookingDb) => Promise<T>) {
@@ -188,10 +191,13 @@ describe("Phase 8 hotel white label", () => {
        where table_name = 'hotels' order by column_name`,
     );
     const names = cols.map((row) => row.column_name);
-    assert.deepEqual(names, ["code", "created_at", "id", "name"]);
-    assert.ok(!names.includes("color"));
-    assert.ok(!names.includes("logo"));
-    assert.ok(!names.includes("accent"));
+    const allowed = new Set(["code", "created_at", "id", "name", "public_slug"]);
+    assert.deepEqual(
+      names.filter((name) => !allowed.has(name)),
+      [],
+    );
+    assert.ok(names.includes("public_slug"));
+    assert.ok(!names.some((name) => /color|colour|logo|skin|theme|accent|brand/i.test(name)));
     const rls = await db.query<{ rls: boolean }>(
       `select relrowsecurity as rls from pg_class where relname = 'hotels'`,
     );

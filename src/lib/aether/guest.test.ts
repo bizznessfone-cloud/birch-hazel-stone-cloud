@@ -68,6 +68,9 @@ async function openDb() {
   await pg.exec(WHITE_LABEL_SQL);
   await pg.exec(TENANCY_SQL);
   const destinations = await applyCp14LiveCatalog(pg);
+  await pg.exec(
+    readFileSync(new URL("../../../migrations/0019_cp23_public_hotel_slug.sql", import.meta.url), "utf8"),
+  );
   const db: BookingDb = {
     query: async <T>(text: string, params?: unknown[]) => (await pg.query<T>(text, params)).rows,
     async transaction<T>(fn: (inner: BookingDb) => Promise<T>) {
