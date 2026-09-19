@@ -1,8 +1,15 @@
-import { Outlet, createFileRoute } from "@tanstack/react-router";
+import { Outlet, createFileRoute, redirect } from "@tanstack/react-router";
 import { RedirectToSignIn, UserButton } from "@/lib/auth/gates";
+import { getAppSession } from "@/lib/auth/app-session";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 
-export const Route = createFileRoute("/app")({ component: AppShell });
+export const Route = createFileRoute("/app")({
+  beforeLoad: async () => {
+    const session = await getAppSession();
+    if (!session.ok) throw redirect({ to: "/login" });
+  },
+  component: AppShell,
+});
 
 function AppShell() {
   const { user, isPending } = useCurrentUserState();
