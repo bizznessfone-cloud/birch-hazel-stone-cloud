@@ -140,6 +140,45 @@ test("coherent migration plan succeeds with 0001 plus 0018-0021 pending", () => 
   assert.deepEqual(historicalSourceMigrations(SOURCE), LEDGER_0017);
 });
 
+test("after 0001-0021 applied, only 0022 is the allowed pending migration", () => {
+  const source = [...SOURCE, "0022_cp25g3_better_auth_runtime_privileges.sql"];
+  const ledger = [
+    ...LEDGER_0017,
+    "0001_auth.sql",
+    "0018_cp22_saas_onboarding.sql",
+    "0019_cp23_public_hotel_slug.sql",
+    "0020_cp24_stripe_billing.sql",
+    "0021_cp25_hotel_guest_payments.sql",
+  ];
+  const result = evaluatePreflight(
+    baseFacts({
+      ledger,
+      sourceMigrations: source,
+      authTables: {
+        user: "PRESENT",
+        session: "PRESENT",
+        account: "PRESENT",
+        verification: "PRESENT",
+      },
+    }),
+  );
+  assert.equal(result.ok, true);
+  assert.equal(result.verdict, PASS_VERDICT);
+  assert.equal(result.authClass, "A");
+  assert.deepEqual(result.pending, ["0022_cp25g3_better_auth_runtime_privileges.sql"]);
+});
+
+test("unexpected production migration still fails", () => {
+  const result = evaluatePreflight(
+    baseFacts({
+      sourceMigrations: [...SOURCE, "0023_unexpected.sql"],
+    }),
+  );
+  assert.equal(result.ok, false);
+  assert.equal(result.verdict, "BLOCKED — MIGRATION LEDGER INCONSISTENT");
+  assert.deepEqual(result.unexpectedPending, ["0023_unexpected.sql"]);
+});
+
 test("auth classification A/B pass and C/D fail", () => {
   assert.equal(
     classifyAuth(true, { user: "PRESENT", session: "PRESENT", account: "PRESENT", verification: "PRESENT" }),

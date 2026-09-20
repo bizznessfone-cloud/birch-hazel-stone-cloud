@@ -18,7 +18,7 @@ export const PASS_VERDICT = "GATE B PASS — MIGRATION PLAN PROVEN";
 export const BLOCKED_OWNER_URL = "BLOCKED — AETHER_DATABASE_OWNER_URL is not configured";
 
 const HISTORICAL_RE = /^00(0[2-9]|1[0-7])_.*\.sql$/;
-const EXPECTED_PENDING_RE = /^(0001_auth\.sql|0018_.*\.sql|0019_.*\.sql|0020_.*\.sql|0021_.*\.sql)$/;
+const EXPECTED_PENDING_RE = /^(0001_auth\.sql|0018_.*\.sql|0019_.*\.sql|0020_.*\.sql|0021_.*\.sql|0022_.*\.sql)$/;
 const AUTH_TABLES = ["user", "session", "account", "verification"];
 const OCCUPANCY_CONSTRAINTS = [
   "bookings_vehicle_occupancy_excl",
