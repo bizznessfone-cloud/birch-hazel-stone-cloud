@@ -21,9 +21,9 @@ Full guides + snippets: the **`neon` skill** (database) and the **`auth` skill**
 
 ## Migrations
 
-- `migrations/*.sql` is the single schema source: applied to **Neon on deploy**
-  (`npm run build` runs `npm run db:migrate`, so Vercel ships with the schema
-  ready) and to the **PGLite** preview automatically on startup.
+- `migrations/*.sql` is the single schema source.
+- **SCAN / BOOK / GO:** `npm run build` does **not** run `db:migrate`. Production migration is a separate owner-plane control (`AETHER_DATABASE_OWNER_URL`, never on Vercel). PGLite preview still applies migrations at startup.
+- Generic Grok scaffold apps may still migrate on deploy; this repository does not.
 - Add the app's tables as ordered files (`migrations/0002_*.sql`), not inline.
 - An app that needs no database adds no `.sql` file, and then no migration runs
   anywhere.

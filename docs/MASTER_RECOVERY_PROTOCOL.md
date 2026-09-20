@@ -3,61 +3,49 @@
 This file is the permanent copy of the rebuild protocol used to reconstruct
 Aether Transfer after the original implementation workspace was lost.
 
-## Source of truth
+## Current accepted baseline (POST-CP25G.3)
 
-GitHub is the authoritative source for application source code.
+GitHub is the authoritative source for application source code. Living status: **`BUILD_STATE.md`**.
 
 | Field | Value |
 |---|---|
 | Repository | `bizznessfone-cloud/birch-hazel-stone-cloud` |
 | Branch | `main` |
-| Known-good application source | `45e171a23037b7c94005018cd2126033a449d6f0` |
-| Tag | `cp17-known-good` |
+| Current source SHA | `4c20e9b9574309a0edbeb03f8675febdef38dede` |
+| CP25G.3 | **CLOSED** |
+| Next numbered checkpoint | **UNDEFINED** — **Do not invent CP26.** |
+| Production | `scan-book-go` / `dpl_5XnaxYcqkrgWucD54TKgbmvHkfy1` READY |
+| Migrations | `0001`–`0022` |
 
-When `cp17-known-good` was created, `main` pointed at that commit. The tag is
-immutable. Documentation-only commits may follow on `main` without changing the
-CP16C/CP17 application baseline.
+`cp17-known-good` (`45e171a23037b7c94005018cd2126033a449d6f0`) is an immutable **historical** tag. It is not current `main`.
 
-Recovery ZIPs are secondary disaster-recovery artifacts. The CP10 ZIP is
-historical and must not be extracted over a newer Git tree without explicit
-human approval. A workspace is disposable and is never authoritative.
+Recovery ZIPs are secondary disaster-recovery artifacts. The CP10 ZIP must not be extracted over a newer Git tree without explicit human approval. A workspace is disposable and is never authoritative.
 
-Every engineering checkpoint must identify an exact Git commit SHA. Every
-future production-readiness audit must name the exact Git commit audited.
-Source-code state and production database state must be reported separately.
-A historical checkpoint must never be mistaken for the current project state.
+Every engineering checkpoint must identify an exact Git commit SHA. Source-code state and production database state must be reported separately.
 
-Do not claim Neon production readiness merely because the source repository is
-current. **CP19** currently refers to production Neon binding/verification and
-is **not** yet a completed production checkpoint.
-
-Agents must never restore an older checkpoint over a newer repository state
-without explicit human approval. Before modifying the application, identify
-repository, branch, `HEAD` SHA, and checkpoint. Before starting a new
-checkpoint, the previous known-good commit must remain recoverable.
+Agents must never restore an older checkpoint over a newer repository state without explicit human approval.
 
 ### Source of truth order
 
-1. GitHub repository + exact commit SHA
-2. Checkpoint tag (`cp17-known-good`)
-3. Recovery ZIP (disaster recovery only)
-4. Grok workspace (disposable)
-5. Chat (context only)
-6. Platform-generated/deployed state — **not** authoritative
+1. GitHub repository + exact current `main` SHA
+2. Living `BUILD_STATE.md`
+3. Historical tag `cp17-known-good` (CP16C/CP17 only)
+4. Recovery ZIP (disaster recovery only)
+5. Grok workspace (disposable)
+6. Chat (context only)
 
 ## Absolute priorities
 
-1. Preserve Blueprint v2 architecture.
+1. Preserve occupancy / booking integrity (PostgreSQL is authoritative).
 2. Build a genuinely functional application, not a visual prototype.
-3. PostgreSQL remains authoritative for booking and inventory integrity.
-4. Security boundaries must be enforced server-side.
-5. Database concurrency must be enforced by the database.
-6. Timezone/DST behaviour must be explicitly tested.
-7. Do not invent missing product requirements.
-8. Do not expand MVP scope.
-9. Maintain complete recovery documentation keyed to GitHub SHAs.
-10. Recovery snapshots (ZIPs) are backups of a Git commit, not replacements for GitHub.
-11. Never claim something is implemented, tested or verified unless it has been verified in the current rebuild, and never claim production from source currency alone.
+3. Security boundaries must be enforced server-side.
+4. Database concurrency must be enforced by the database.
+5. Timezone/DST behaviour must be explicitly tested.
+6. Do not invent missing product requirements.
+7. Do not expand MVP/V2-fenced scope without authorisation.
+8. Maintain complete recovery documentation keyed to GitHub SHAs.
+9. Recovery snapshots (ZIPs) are backups of a Git commit, not replacements for GitHub.
+10. Never claim something is implemented, tested or verified unless it has been verified, and never treat a historical SHA as current `main`.
 
 ## Snapshot rule
 
@@ -71,96 +59,17 @@ no, the checkpoint documentation is not complete.
 
 ## Checkpoints
 
-Historical rebuild gates (0–11) remain the original protocol. They are **not**
-the current source baseline.
+Historical rebuild gates (0–17) remain the original protocol. They are **not**
+the current source SHA.
 
-| Checkpoint | Gate |
-|---|---|
-| 0 | Foundation complete |
-| 1 | Database + occupancy engine passes |
-| 2 | Authentication passes |
-| 3 | Time-domain tests pass |
-| 4 | Booking engine passes |
-| 5 | Inventory/concurrency passes |
-| 6 | Guest UX passes |
-| 7 | Operations UX passes |
-| 8 | White-label/hotel attribution passes |
-| 9 | Full test reconstruction passes |
-| 10 | Production hardening passes (historical occupancy baseline) |
-| 11 | Production deployment passes (**not achieved**) |
-| 12 / 12A / 12B | Tenancy and pre-Vercel hardening (source) |
-| 13A | SQL-created production LOGIN `aether_app` (source) |
-| 14.x | Hotel configuration, timezone, quote, provisioning (source) |
-| 15 | Hotel-scoped Ops identity (source) |
-| 16C | Runtime privilege hardening (source, migration 0017) |
-| 17 | Hotel-local Ops Today (source) — **current known-good**, tag `cp17-known-good` |
-| 19 | Production Neon binding/verification — **not a source commit; not complete** |
+Later completed work (see living `BUILD_STATE.md`): CP19 production binding,
+CP20 email architecture, CP21/CP21B, CP22 onboarding, CP23 public slug, CP24
+Stripe Connect source, CP25 guest-payment source, CP25G.3 Production Better Auth
+(CLOSED).
 
-Current source baseline is CP16C/CP17 at
-`45e171a23037b7c94005018cd2126033a449d6f0`. Checkpoint 10 documentation is
-historical only.
-
-Do not continue into the next major phase until the checkpoint is identified
-by Git SHA (and tag when present) and remains recoverable.
+Next numbered checkpoint: **UNDEFINED**.
 
 ## If the workspace disappears
 
-Restore from GitHub:
-
-```
-git clone https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud.git
-git checkout cp17-known-good
-```
-
-Then read, in order:
-
-1. `docs/RECOVERY_MANIFEST.md`
-2. `BUILD_STATE.md`
-3. `RESTORE.md`
-4. `docs/IMPLEMENTATION_STATUS.md`
-5. `docs/ARCHITECTURE.md`
-6. `docs/TEST_RESULTS.md`
-7. `docs/RECOVERY_NOTES.md`
-8. `docs/BUILD_BLUEPRINT_V2.md`
-9. `docs/RESTORE.md`
-
-Then inspect the source tree and migrations. Do not restart from scratch.
-Continue from the recorded source phase. Do not extract a historical ZIP over
-the clone.
-
-## Frozen stack
-
-TanStack Start, React, TypeScript, Tailwind v4, CSS variables, Outfit, Kysely,
-pg, PGLite, PostgreSQL, Neon intended for production. Use TanStack
-`createServerFn`. Do not introduce Next.js, Prisma, or a standalone REST service.
-
-## Out of MVP
-
-Next.js, Prisma, standalone REST API, microservices, RLS, hotel colour themes,
-hotel logo upload, marketplace, guest accounts, driver application, driver
-authentication, WhatsApp, SMS, push notifications, Stripe, deposits, payment
-processing, hotel billing, multi-operator SaaS, booking holds, surge pricing,
-dynamic pricing, multi-stop journeys, taxi-meter functionality, guest vehicle
-SKUs, custom service worker, offline booking, complex IAM, analytics/CMS,
-passkeys, unnecessary frameworks.
-
-## UNKNOWN rule
-
-Blueprint v2 contains deliberate UNKNOWN fields. Do not convert UNKNOWN into
-invented requirements. When a decision is unavoidable: choose the smallest safe
-implementation, document it in `docs/RECOVERY_NOTES.md`, and mark it as an
-implementation decision rather than recovered historical fact.
-
-## Concurrency rule
-
-Do not solve concurrency with SELECT availability → assume available →
-INSERT/UPDATE. PostgreSQL EXCLUDE constraints are authoritative. Application
-pre-checks are UX only.
-
-## When something breaks
-
-Do not weaken the architecture to make a test pass. Never remove EXCLUDE
-constraints, disable the occupancy trigger, switch to naive timestamps, change
-PostgreSQL timezone globally, move operator tokens into localStorage, remove
-CSRF, expose reference-only booking lookup, or make frontend availability
-authoritative.
+Restore from GitHub `main` at the current SHA in `BUILD_STATE.md`. Do not check
+out `cp17-known-good` unless a human authorises a historical rollback.

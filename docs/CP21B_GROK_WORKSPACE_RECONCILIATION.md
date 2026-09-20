@@ -1,6 +1,14 @@
 # CP21B — GROK WORKSPACE RECONCILIATION
 
-**Status: complete**
+**Status: historical checkpoint record (complete). Not current living state.**
+
+Current accepted baseline is POST-CP25G.3 at
+`4c20e9b9574309a0edbeb03f8675febdef38dede`. See `BUILD_STATE.md`.
+Next numbered checkpoint: **UNDEFINED**. Do not invent CP26.
+
+---
+
+**Original status: complete**
 
 Purpose: synchronize Grok's current working context with the actual SCAN / BOOK / GO repository without deleting historical material.
 
@@ -76,8 +84,8 @@ V2 remains fenced for SMS, WhatsApp, chatbot, custom domains, hotel-local Ops To
 - no secrets
 - no deployment
 
-## Result
+## Result (historical CP21B conclusion)
 
-Grok now has an explicit project-specific current-state bridge and must read it before new work.
+Grok then had an explicit project-specific current-state bridge and was required to read it before new work.
 
-Next checkpoint: **CP22 — V1 Operator Onboarding**.
+The CP21B “next checkpoint” was **CP22 — V1 Operator Onboarding**. That work has since been completed. Current living next numbered checkpoint is **UNDEFINED**. See `BUILD_STATE.md`.

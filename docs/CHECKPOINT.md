@@ -1,10 +1,25 @@
+# Current checkpoint pointer
+
+Living status: **`BUILD_STATE.md`** (repo root).
+
+| Field | Value |
+|---|---|
+| Current source SHA | `4c20e9b9574309a0edbeb03f8675febdef38dede` |
+| CP25G.3 | **CLOSED** |
+| Next numbered checkpoint | **UNDEFINED** — requires explicit authorisation. **Do not invent CP26.** |
+| Production | Vercel `scan-book-go` deployment `dpl_5XnaxYcqkrgWucD54TKgbmvHkfy1` READY |
+| Migrations | `0001`–`0022` |
+
+This file’s remainder is a **historical Checkpoint 10** record only.
+
+---
+
 # HISTORICAL RECORD — Checkpoint 10 only
 
-This file is **not** the current project state.
+This section is **not** the current project state.
 
-Current application source is GitHub
-`bizznessfone-cloud/birch-hazel-stone-cloud` commit
-`45e171a23037b7c94005018cd2126033a449d6f0`, tag `cp17-known-good` (CP16C/CP17).
+`cp17-known-good` (`45e171a23037b7c94005018cd2126033a449d6f0`) is an immutable
+historical CP16C/CP17 tag. Current `main` is newer.
 
 Do **not** extract the CP10 recovery ZIP over a newer Git tree without explicit
 human approval. Recovery ZIPs are secondary disaster-recovery artifacts. A

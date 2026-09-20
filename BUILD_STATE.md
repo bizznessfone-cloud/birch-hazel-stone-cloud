@@ -1,122 +1,95 @@
-## CP21B CURRENT-STATE OVERRIDE
+# BUILD STATE — living record
 
-This section is current project guidance. The historical material below is preserved verbatim.
+This file describes **current reality**, not intended future state.
 
-- Current main audit baseline before CP21B: `fa823186a548a2009bbb3dc1e7453c75cf94b919`
-- CP21B reconciliation: complete.
-- Next checkpoint: **CP22 — V1 Operator Onboarding**.
-- Product: **SCAN / BOOK / GO** (internal code/history name: Aether Transfer).
-- CP20 transactional confirmation-email architecture is implemented and tested.
-- V1 product-layer work now includes operator onboarding, service setup, preview/QR, subscription/activation and Stripe integration.
-- Existing `/ops/*` remains internal operations; new SaaS operator surface belongs under `/app/*`.
-- Current guest route remains `/book/{hotelCode}`; human-readable hotel slug presentation is CP23.
-- Stripe was intentionally outside the original frozen Blueprint v2 and is now being layered over the hardened base. Historical checkpoint/blueprint text below is not rewritten.
-- V2 fence remains: SMS, WhatsApp, chatbot, custom domains, hotel-local Ops Today enhancements and unrelated feature expansion.
-- See `AGENTS.project.md` and `.grok/references/current-project-state.md` for the reconciled Grok state.
-
----
-
-# AETHER BUILD STATE
-
-This file describes reality, not intended future state.
-
-## Source of truth
-
-GitHub is authoritative for application source.
+## Current accepted baseline (POST-CP25G.3)
 
 | Field | Value |
 |---|---|
+| Product | **SCAN / BOOK / GO** (internal history name: Aether Transfer) |
 | Repository | `bizznessfone-cloud/birch-hazel-stone-cloud` |
 | Branch | `main` |
-| Known-good application source | `45e171a23037b7c94005018cd2126033a449d6f0` |
-| Tag | `cp17-known-good` |
+| Current source SHA | `4c20e9b9574309a0edbeb03f8675febdef38dede` |
+| CP25G.3 | **CLOSED** |
+| Next numbered checkpoint | **UNDEFINED** — requires explicit architecture/product authorisation after CP25G.3 closure. **Do not invent CP26.** |
 
-`cp17-known-good` points at that commit and must not be moved. When the tag was
-created, `main` pointed at it. Documentation-only commits may follow on `main`;
-they do not change the application baseline.
+### Production
 
-A workspace is disposable and is never authoritative. Recovery ZIPs are
-secondary disaster-recovery artifacts. The CP10 ZIP is historical and must not
-be extracted over a newer Git tree without explicit human approval.
+| Field | Value |
+|---|---|
+| Vercel project | `scan-book-go` |
+| Deployment | `dpl_5XnaxYcqkrgWucD54TKgbmvHkfy1` |
+| State | READY |
+| Alias | `https://scan-book-go.vercel.app` |
+| Deployed SHA | `4c20e9b9574309a0edbeb03f8675febdef38dede` |
 
-Source-code state and production database state are reported separately. Every
-future production-readiness audit must name the exact Git commit audited. Do
-not claim Neon production readiness merely because this repository is current.
+Environment (names/presence only):
 
-## Current source baseline
+| Variable | Production |
+|---|---|
+| `DATABASE_URL` | PRESENT (`aether_app` runtime LOGIN) |
+| `AETHER_DATABASE_OWNER_URL` | ABSENT |
+| `BETTER_AUTH_SECRET` | PRESENT |
+| `BETTER_AUTH_URL` | PRESENT |
+| Stripe / Resend / Ops credentials | ABSENT unless separately proven |
 
-Current source checkpoint: **CP16C/CP17** (`45e171a` / `cp17-known-good`)
-
-Current phase: **source complete through CP17; CP19 Neon binding not completed**
-
-Does not overwrite CP10, CP11, CP12, CP12A, CP12B, CP13A, or CP14–CP15.
-
-Current status: source contains CP13A SQL-created production LOGIN `aether_app`
-(0014), CP14 hotel configuration/timezone (0015–0016), CP15 hotel-scoped Ops
-identity, CP16C privilege hardening (0017), and CP17 hotel-local Ops Today.
-`aether_runtime` remains the PGLite/preview SET ROLE identity. 0011–0017 are
-immutable. **This is source state, not Neon verification.**
-
-Production status: **NOT PRODUCTION-READY** — Neon schema and `aether_app`
-LOGIN on the production database are **BLOCKED / UNVERIFIED**. Vercel is
-**NOT CONNECTED**.
-
-**CP19** currently refers to production Neon binding/verification. It is **not**
-yet a completed production checkpoint and is **not** a source-code commit.
-
-## Source vs database
+### Database
 
 | Layer | State |
 |---|---|
-| Application source (GitHub) | CP16C/CP17 at `45e171a` / `cp17-known-good` |
-| Migration files in git | `0002`–`0017` present; no `0018` |
-| Preview (PGLite) | local development substitute |
-| Production Neon | **UNVERIFIED** — not implied by source currency |
-| Vercel | **NOT CONNECTED** |
+| Source migrations | `0001`–`0022` present |
+| Production Neon | migrated through **0022** |
+| 0022 | Better Auth runtime DML restored for `aether_app` |
+| Runtime | `DATABASE_URL` → `aether_app` |
+| Owner / migration plane | `AETHER_DATABASE_OWNER_URL` → `neondb_owner` (not on Vercel) |
+| Preview | PGLite; `aether_runtime` SET ROLE only |
+| Application build | `npm run build` does **not** migrate |
 
-Credential injection:
+Roles: `neondb_owner` = schema/migration owner; `aether_app` = production LOGIN; `aether_runtime` = PGLite/preview only. Production must not use SET ROLE or owner credentials as runtime.
 
-- `DATABASE_URL`: **MISSING** in this workspace (must be `aether_app` LOGIN when present)
-- `AETHER_DATABASE_OWNER_URL`: **MISSING** (must be `neondb_owner` / schema owner)
-- No `.env` / secret mount with those names
-- `npm run verify:neon` exits **2** when credentials are unavailable — not a pass
+### Auth (CP25G.3 CLOSED — do not reopen)
 
-Known blockers:
+**Proven:** email/password signup; session creation; secure Production cookies (`__Host-`, HttpOnly, Secure, SameSite=Lax); authenticated `/app`; session persistence; sign-out; signed-out `/app` → `/login`.
 
-- Neon owner URL / runtime URL not bound in this workspace
-- Neon application of 0012–0017 **UNVERIFIED**
-- Neon `aether_app` LOGIN (`session_user` = `current_user`) **UNVERIFIED**
-- Neon concurrency: **NOT VERIFIED** on Neon (PGLite only)
-- Vercel project not connected
+**Implemented, not Production-proven:** returning email/password sign-in POST; authenticated tenant runtime.
 
-## Historical
+**Backlog / deferred:** copied-cookie stale-session replay; password recovery; email verification.
 
-- CP10: occupancy + privilege split (PGLite). Historical only. ZIP is not current source.
-- NEW CP11: Neon verifier (historical runner evidence). Not current production proof.
-- CP12: multi-tenant hotel/provider foundation
-- CP12A: resource ownership administration boundaries
-- CP12B: pre-Vercel production hardening
-- CP13A: SQL-created production LOGIN `aether_app`
-- CP14.x: hotel configuration, timezone, quote path, owner-only provisioning
-- CP15: hotel-scoped Ops identity
-- CP16C: runtime privilege hardening (0017)
-- CP17: hotel-local Ops Today
-- Previous abandoned original CP11: **not used**
+### SaaS operator journey
 
-## Next safe action
+```
+account → hotel → service → preview → QR → plan → Stripe → LIVE
+```
 
-1. Do **not** extract the CP10 ZIP over this tree.
-2. Do **not** treat CP19 as complete.
-3. Bind production Neon (`DATABASE_URL` = `aether_app` LOGIN,
-   `AETHER_DATABASE_OWNER_URL` = `neondb_owner`) as a separate infrastructure
-   step. Never create `aether_app` in Neon Console.
-4. Apply pending production migrations via owner URL only.
-5. Re-run `npm run verify:neon`. A pass is the only Neon production evidence.
-6. Do not connect Vercel until Neon verification PASSes.
-7. Any production-readiness claim must name the exact Git commit audited.
+- `/app/*` exists and is authentication-gated.
+- Onboarding source exists. First Production hotel created **through `/app`** is **not** proven.
+- Tenancy exists structurally (`app_hotel_accounts`). Authenticated Production tenant runtime remains unproven.
+- Stripe Connect / SBG subscription / hotel-owned guest Checkout **source** exists. Production Stripe configuration is absent.
+- Resend confirmation-email **source** exists. Production Resend is absent.
 
-## What must not be claimed
+### Guest / Ops
 
-PGLite results are **LOCAL VERIFIED** only. They are not Neon production
-verification. A current GitHub repository is not Neon readiness. A local build
-is not Vercel readiness.
+- Guest booking exists. `demo-kos` has Production evidence.
+- Hotel-owned guest payment source exists; not Production-proven.
+- `/ops/*` remains isolated from SaaS `/app/*`. Production Ops credentials are absent.
+
+### What must not be claimed
+
+- Do not claim CP17/CP19 is current.
+- Do not claim CP22 is next or CP24 is current.
+- Do not claim Neon is unproven or Vercel is disconnected.
+- Do not claim migrations after 0017 are absent.
+- Do not claim `/app/*` does not exist.
+- Do not claim CP25G.3 remains open.
+- Do not invent CP26.
+
+GitHub `main` at the current SHA is authoritative application source. A workspace is never authoritative. Recovery ZIPs are secondary disaster-recovery artifacts. The CP10 ZIP must not be extracted over a newer Git tree without explicit human approval.
+
+---
+
+## Historical (not current)
+
+- `cp17-known-good` / `45e171a23037b7c94005018cd2126033a449d6f0` — immutable CP16C/CP17 source tag. Not current `main`.
+- CP10 occupancy ZIP — historical disaster-recovery artifact only.
+- CP19 originally meant Neon binding/verification. That work completed in later controlled production checkpoints; do not treat the old “CP19 unfinished” wording as living state.
+- CP22–CP25 / CP25G.3 source and production work happened after CP17. See `docs/CP22_V1_OPERATOR_ONBOARDING.md`, `docs/CP23_PUBLIC_HOTEL_SLUG.md`, `docs/CP24_STRIPE_BILLING.md` as **completed checkpoint specifications**, not as the next task.

@@ -1,3 +1,11 @@
+# HISTORICAL RECORD — Checkpoint 10A only
+
+Not current living state. See `BUILD_STATE.md`.
+Current source SHA `4c20e9b9574309a0edbeb03f8675febdef38dede`. CP25G.3 CLOSED.
+Next numbered checkpoint: UNDEFINED.
+
+---
+
 Aether Transfer
 Checkpoint 10A
 Phase persistence-restore

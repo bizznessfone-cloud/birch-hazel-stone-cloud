@@ -1,8 +1,12 @@
 # Architecture
 
+> **Living status:** `BUILD_STATE.md`. Current source SHA `4c20e9b9574309a0edbeb03f8675febdef38dede`. CP25G.3 **CLOSED**. Next numbered checkpoint **UNDEFINED** (do not invent CP26).
+>
+> SaaS `/app` authentication is Better Auth email/password. Ops desk authentication remains scrypt sessions. Occupancy/booking notes below remain the engine. `npm run build` does not migrate.
+
 Aether Transfer is a TanStack Start application. PostgreSQL is the system of
-record. Occupancy is a database trigger plus GiST EXCLUDE. Operator auth is
-application-level scrypt + server sessions, not Better Auth.
+record. Occupancy is a database trigger plus GiST EXCLUDE. Ops desk auth is
+application-level scrypt + server sessions. SaaS `/app` auth is Better Auth.
 
 ## Runtime
 
@@ -333,8 +337,9 @@ CREATE/DROP btree_gist  →  42501
 - Production without `DATABASE_URL` fails closed. PGLite is never a production
   substitute.
 - Serverless: one shared `pg.Pool` per isolate (`max: 2`, idle 10s, connect 8s).
-- **Neon production-role split is BLOCKED / UNVERIFIED** in this environment
-  (`DATABASE_URL` unset). Neon concurrency remains **NOT VERIFIED**.
+- **Neon production-role split** was unverified in the original writing environment
+  (`DATABASE_URL` unset there). Living Production state is in `BUILD_STATE.md`
+  (role split established; Neon migrated through 0022).
 
 Source: `migrations/0011_production_hardening.sql`,
 `migrations/0013_cp12b_runtime_login.sql`, `src/lib/db.ts`,
@@ -382,9 +387,9 @@ Tests: `src/lib/aether/cp13a.test.ts`.
 | CP12 | Multi-tenant hotel/provider foundation (`0012`). |
 | CP12A | Resource ownership administration boundaries (operate AND own / dispatch AND employ). |
 | CP12B | Pre-Vercel production hardening (`aether_runtime LOGIN`, fail-closed, pool cap). |
-| CP13A | SQL-created production LOGIN `aether_app` (this document's current source). |
+| CP13A | SQL-created production LOGIN `aether_app`. |
 
-Vercel is not connected at CP13A.
+Vercel was not connected at CP13A. Living Production is connected; see `BUILD_STATE.md`.
 
 ## V1 geographic / timezone constraint
 

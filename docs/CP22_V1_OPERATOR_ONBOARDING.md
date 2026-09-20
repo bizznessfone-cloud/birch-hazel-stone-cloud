@@ -1,6 +1,14 @@
 # CP22 — V1 OPERATOR ONBOARDING
 
-**Status: complete; executable validation pending**
+**Status: historical checkpoint specification (source complete). Not the next task.**
+
+Current accepted baseline is POST-CP25G.3 at
+`4c20e9b9574309a0edbeb03f8675febdef38dede`. See `BUILD_STATE.md`.
+Next numbered checkpoint: **UNDEFINED**. Do not invent CP26.
+
+---
+
+**Original status: complete; executable validation pending**
 
 ## Current source
 

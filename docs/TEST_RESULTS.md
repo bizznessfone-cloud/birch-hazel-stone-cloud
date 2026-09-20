@@ -1,8 +1,11 @@
 # Test results
 
+> **Living status:** `BUILD_STATE.md`. This file is a **historical test ledger**, not current Production proof.
+> Current source SHA `4c20e9b…`. CP25G.3 **CLOSED**. Next numbered checkpoint **UNDEFINED**.
+
 Two sections. Never mix them.
 
-## CURRENT — CP12B (2026-09-10)
+## HISTORICAL — CP12B (2026-09-10)
 
 Phase: **CP12B — Pre-Vercel production hardening**
 Baseline: CP12A (`2283746187e7fc4a98987775ac54c28037e06948`). Occupancy SQL unchanged.

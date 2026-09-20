@@ -1,7 +1,10 @@
 # Recovery notes
 
-Implementation decisions and unresolved UNKNOWNs. Decisions are **not**
-recovered historical facts.
+> **Living status:** `BUILD_STATE.md`. Notes below are historical implementation decisions.
+> Current source SHA `4c20e9b…`. CP25G.3 **CLOSED**. Next numbered checkpoint **UNDEFINED**.
+
+Implementation decisions and unresolved UNKNOWNs **at the time of writing**.
+Decisions are **not** recovered historical facts unless still true in current source.
 
 ## Provenance
 

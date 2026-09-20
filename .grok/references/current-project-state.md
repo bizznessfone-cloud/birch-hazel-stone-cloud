@@ -1,160 +1,68 @@
 # SCAN / BOOK / GO — CURRENT PROJECT STATE
 
-**CP21B reconciliation state**
+Living source-of-truth for Grok. GitHub `main` is authoritative. This file must
+not trail the repository.
 
 ## Source
 
-Repository: `bizznessfone-cloud/birch-hazel-stone-cloud`
-Branch: `main`
-CP21B audit baseline: `fa823186a548a2009bbb3dc1e7453c75cf94b919`
+| Field | Value |
+|---|---|
+| Repository | `bizznessfone-cloud/birch-hazel-stone-cloud` |
+| Branch | `main` |
+| Current source SHA | `4c20e9b9574309a0edbeb03f8675febdef38dede` |
+| CP25G.3 | **CLOSED** |
+| Next numbered checkpoint | **UNDEFINED** — requires explicit authorisation. **Do not invent CP26.** |
 
-CP22 current source HEAD: `65342b6ffef977ff34d7ec9ea05ae18c239cc1f6`
-CP15 frozen checkpoint: `96947e6c1840d5c04bc118c8abf93b2fa802469c`
+`cp17-known-good` (`45e171a…`) and CP15/CP21B SHAs below are **historical**.
 
-GitHub `main` is authoritative. Grok workspace state is disposable.
+- CP21B audit baseline (historical): `fa823186a548a2009bbb3dc1e7453c75cf94b919`
+- CP15 frozen checkpoint (historical): `96947e6c1840d5c04bc118c8abf93b2fa802469c`
 
-## Current hardened foundation
+## Production
 
-Source already contains:
+- Vercel project: `scan-book-go`
+- Deployment: `dpl_5XnaxYcqkrgWucD54TKgbmvHkfy1` READY
+- Alias: `https://scan-book-go.vercel.app`
+- Deployed SHA matches current source SHA
+- `DATABASE_URL` PRESENT (`aether_app`)
+- `AETHER_DATABASE_OWNER_URL` ABSENT
+- `BETTER_AUTH_SECRET` PRESENT
+- `BETTER_AUTH_URL` PRESENT
 
-- CP13A SQL-created production LOGIN architecture
-- CP14 hotel configuration, quote/destination protections and timezone architecture
-- CP15 hotel-scoped Ops identity/authentication
-- CP16C/CP17 runtime privilege hardening and hotel-local Ops Today
-- CP19 recovery/control-plane hardening
-- CP20 centralized transactional confirmation-email architecture
+## Database
 
-Do not restart or redesign these foundations.
+Migrations **0001–0022** exist in source and are applied on Production Neon.
+0022 restored Better Auth runtime DML for `aether_app`. Application build does
+not migrate.
 
-CP22 is currently implementing the authenticated /app onboarding layer.
+## Auth (do not reopen CP25G.3)
 
-## CP20 email
+Proven: signup, session, secure cookies, authenticated `/app`, persistence,
+sign-out, signed-out `/app` boundary.
 
-Booking confirmation email is a post-commit notification layer:
+Not Production-proven: returning sign-in POST; authenticated tenant runtime.
 
-```
-successful booking commit
-        ↓
-confirmation email
-        ↓
-Resend
-```
-
-Email failure is isolated from booking success.
-
-The guest receives a secure View My Booking URL using the confirmation token. The raw token is not separately displayed.
-
-Resend/domain/production credential activation is a later controlled checkpoint.
-
-## CP21 product-surface audit
-
-Core booking, occupancy, tenancy, hotel provisioning and internal Ops foundations are substantially built.
-
-Current route reality:
-
-- `/book/{hotelCode}` exists.
-- `/confirmed/{token}` exists.
-- `/ops/*` exists and remains internal operations.
-- `/app/*` does not yet exist.
-
-The remaining V1 product layer includes:
-
-- operator onboarding
-- hotel setup
-- first service
-- preview
-- QR presentation
-- subscription/activation
-- Stripe integration
-- final public hotel slug presentation
-- SBG subscription activation UI
-- Stripe Connect hotel account connection boundary
-- controlled V1 end-to-end testing
-- final security, production and load gates
+Deferred: copied-cookie stale replay; password recovery; email verification.
 
 ## V1 operator journey
 
 ```
-account
-  ↓
-hotel
-  ↓
-first service
-  ↓
-preview
-  ↓
-QR
-  ↓
-plan
-  ↓
-Stripe activation
-  ↓
-LIVE
+account → hotel → service → preview → QR → plan → Stripe → LIVE
 ```
 
-This belongs under `/app/*`.
-
-Do not repurpose `/ops/*`.
-
-## Payment boundary
-
-Stripe is now a V1 product-layer concern. It was intentionally outside the original frozen Blueprint v2 and is being layered over the hardened base now.
-
-The platform should not become the hotel's payment custodian or commission layer merely to process hotel/operator payments. Exact account/payment routing is a later controlled Stripe implementation decision.
-
-## Guest journey
-
-V1 remains:
-
-```
-hotel QR
-  ↓
-human-readable hotel page
-  ↓
-service
-  ↓
-guest booking
-  ↓
-confirmation
-```
-
-No guest account.
-
-Confirmation remains token-based.
-
-## Public URL
-
-Current guest route: `/book/{hotelCode}`.
-
-Target V1 presentation: human-readable hotel slug such as `/{hotel-slug}`.
-
-That presentation change is CP23 and must not alter database identity or booking ownership.
+- `/app/*` exists (authenticated SaaS).
+- Onboarding source exists. First Production hotel through `/app` is not proven.
+- Stripe/Resend source exists. Production configuration is absent.
+- `/ops/*` remains internal operations.
+- Public guest: `/{hotelSlug}` plus legacy `/book/{hotelCode}`.
+- Guest booking / `demo-kos` have Production evidence. Guest payment is not Production-proven.
 
 ## V2 fence
 
-Keep SMS, WhatsApp, chatbot, custom domains, hotel-local Ops Today enhancements, new booking concepts, marketplace features and unrelated feature expansion out of the current V1 build.
+Keep SMS, WhatsApp, chatbot, custom domains, marketplace features, guest
+accounts, RLS, and unrelated expansion out of V1 unless a later checkpoint
+explicitly opens them.
 
 ## Next checkpoint
 
-**CP22 — V1 Operator Onboarding**
-
-Build on the hardened base:
-
-1. account
-2. hotel
-3. first service
-4. preview
-5. QR
-6. handoff to plan/activation
-
-Do not reopen CP15, CP16 or CP19 architecture.
-
-## Reconciliation rule
-
-Historical checkpoint documents are preserved.
-
-Stale current-state claims are not authoritative when they conflict with current GitHub source and this file.
-
-`.grok/status` remains untracked and must never be committed.
-
-No Neon, Vercel, secret or deployment action belongs to CP21B.
+**UNDEFINED.** Do not treat CP22 or CP24 as next/current. Do not invent CP26.

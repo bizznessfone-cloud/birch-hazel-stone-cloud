@@ -8,28 +8,26 @@ Use this order:
 
 1. GitHub `main` current HEAD — authoritative application source.
 2. Current source code, migrations, and tests on that HEAD.
-3. Current project state in `.grok/references/current-project-state.md`.
+3. Living status in `BUILD_STATE.md` and `.grok/references/current-project-state.md`.
 4. Current living recovery/build documentation.
 5. Historical checkpoint documents — evidence only.
 6. Grok workspace state — disposable cache, never authoritative.
 
 Repository: `bizznessfone-cloud/birch-hazel-stone-cloud`.
 
-CP15 frozen source checkpoint:
-`96947e6c1840d5c04bc118c8abf93b2fa802469c`.
+## Current accepted baseline (POST-CP25G.3)
 
-CP21B audit baseline:
-`fa823186a548a2009bbb3dc1e7453c75cf94b919`.
+| Field | Value |
+|---|---|
+| Current source SHA | `4c20e9b9574309a0edbeb03f8675febdef38dede` |
+| CP25G.3 | **CLOSED** |
+| Next numbered checkpoint | **UNDEFINED** — requires explicit architecture/product authorisation. **Do not invent CP26.** |
 
-CP22 implementation baseline: `390a471e7fcdac87ec9bd9e77ec89b2aea82a73f`.
+Historical SHAs (not current `main`):
 
-## Mandatory current-state read
-
-Before making any change, read:
-
-`.grok/references/current-project-state.md`
-
-Then inspect the actual repository state. Do not rely on old Grok snapshots.
+- CP15 frozen: `96947e6c1840d5c04bc118c8abf93b2fa802469c`
+- CP21B audit: `fa823186a548a2009bbb3dc1e7453c75cf94b919`
+- CP17 tag `cp17-known-good`: `45e171a23037b7c94005018cd2126033a449d6f0`
 
 ## Product identity
 
@@ -41,35 +39,23 @@ The internal code/history name **Aether Transfer** may remain in source and hist
 
 ## Current phase
 
-CP19 recovery/control-plane hardening is complete in source.
+CP25G.3 Production Better Auth configuration is **CLOSED**.
 
-CP20 transactional confirmation-email architecture is implemented and tested; provider/domain activation is a later controlled step.
+Source includes the hardened booking/occupancy/tenancy base plus CP20 email architecture, CP22 `/app` onboarding, CP23 public slug, CP24 Stripe Connect source, CP25 hotel-owned guest payment source, and CP25G.3 auth configuration.
 
-CP21 V1 Product Surface Audit is complete.
-
-CP21B reconciliation is complete.
-
-Current checkpoint: **CP24 — SBG Subscription + Stripe Connect**
+Production Vercel `scan-book-go` (`dpl_5XnaxYcqkrgWucD54TKgbmvHkfy1`) is READY on the current SHA. Neon is migrated through **0022**. `DATABASE_URL` is the runtime credential; `AETHER_DATABASE_OWNER_URL` must never be added to Vercel.
 
 ## V1 product layer
 
-The hardened base is now receiving the V1 product layer:
+```
+account → hotel → first service → preview → QR → plan → Stripe activation → LIVE
+```
 
-`account → hotel → first service → preview → QR → plan → Stripe activation → LIVE`
+`/app/*` is the SaaS operator surface. `/ops/*` is the internal operations desk.
 
-The V1 operator SaaS surface belongs under `/app/*`.
+Public guest route is `/{hotelSlug}`. Legacy `/book/{hotelCode}` remains supported.
 
-Existing `/ops/*` is the internal operations desk and must not be repurposed as SaaS onboarding.
-
-Current public guest route is `/{hotelSlug}`. Legacy `/book/{hotelCode}` remains supported for compatibility. CP24 adds the operator billing/Stripe activation boundary.
-
-## V1 scope
-
-Onboarding, centralized transactional email, subscription activation, and Stripe Connect integration are now in V1 scope.
-
-Stripe was intentionally outside the original frozen Blueprint v2 and is now being layered over the hardened base. Do not rewrite the historical Blueprint to pretend otherwise.
-
-The exact Stripe account/payment boundary is a later controlled implementation step. SCAN / BOOK / GO is not intended to become the hotel's payment custodian or commission layer.
+First Production hotel through `/app` is **not** proven. Production Stripe and Resend configuration are **absent**.
 
 ## Existing security architecture
 
@@ -81,31 +67,27 @@ Preserve:
 
 Production must not use `aether_runtime`, SET ROLE, `neon_superuser`, or owner credentials.
 
-Do not reopen CP15/CP16/CP19 security architecture while building CP24.
+Do not reopen CP15/CP16/CP19 security architecture. Do not reopen CP25G.3.
 
 ## Route boundaries
 
-- `/` — current product surface; V1 marketing/onboarding work is pending.
-- `/{hotelSlug}` — current human-readable public hotel booking.
-- `/book/{hotelCode}` — legacy public guest booking compatibility route.
-- `/confirmed/{token}` — secure public confirmation.
-- `/ops/*` — internal authenticated operations.
-- `/app/*` — V1 SaaS operator onboarding/application.
+- `/` — product surface
+- `/{hotelSlug}` — human-readable public hotel booking
+- `/book/{hotelCode}` — legacy public guest booking
+- `/confirmed/{token}` — secure public confirmation
+- `/login` — SaaS email/password
+- `/ops/*` — internal authenticated operations
+- `/app/*` — V1 SaaS operator application
 
 ## Feature fence
 
 Keep V2 features out of V1 unless a later checkpoint explicitly opens them:
 
-- SMS
-- WhatsApp
-- chatbot
-- custom domains
-- hotel-local Ops Today enhancements
-- new booking concepts
-- marketplace features
-- unrelated feature expansion
+- SMS, WhatsApp, chatbot, custom domains
+- marketplace features, unrelated feature expansion
+- guest accounts, RLS, a new RBAC system, a tenants table, new fleet/occupancy architecture
 
-Do not add guest accounts, RLS, a new RBAC system, a tenants table, or new fleet/occupancy architecture.
+Stripe was intentionally outside the original frozen Blueprint v2 and is now layered over the hardened base. SCAN / BOOK / GO is not the hotel’s payment custodian.
 
 ## Historical material
 
@@ -125,4 +107,4 @@ Do not contact Neon, modify Vercel, change secrets, or deploy unless the active 
 
 Every checkpoint must identify the exact Git commit audited.
 
-CP21B reconciles current Grok-facing state without deleting historical evidence.
+Next numbered checkpoint is **UNDEFINED**. Do not invent CP26.

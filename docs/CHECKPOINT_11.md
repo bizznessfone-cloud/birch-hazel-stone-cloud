@@ -1,3 +1,11 @@
+# HISTORICAL RECORD — NEW CP11 only
+
+Not current living state. See `BUILD_STATE.md`.
+Current source SHA `4c20e9b9574309a0edbeb03f8675febdef38dede`. CP25G.3 CLOSED.
+Next numbered checkpoint: UNDEFINED.
+
+---
+
 Aether Transfer
 NEW CP11 — Production Infrastructure
 Date 2026-09-06

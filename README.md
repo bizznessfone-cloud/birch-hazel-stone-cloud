@@ -1,20 +1,65 @@
-## CP21B CURRENT PROJECT STATE
+## CURRENT ACCEPTED BASELINE (POST-CP25G.3)
 
-The original README content below is retained. This section supersedes only its current-state claims.
+Living source-of-truth. Historical README text below is evidence only.
 
-- Product: **SCAN / BOOK / GO**; internal code/history name: Aether Transfer.
-- CP21B reconciliation is complete.
-- Current V1 phase: product-surface construction.
-- Next: **CP22 — V1 Operator Onboarding**.
-- V1 journey: `account → hotel → first service → preview → QR → plan → Stripe activation → LIVE`.
-- `/ops/*` remains internal operations; `/app/*` is the new SaaS surface.
-- CP20 transactional email architecture is implemented/tested.
-- Stripe is now V1 product-layer work, intentionally layered after the frozen MVP foundation.
-- Do not delete or rewrite historical checkpoint material.
+| Field | Value |
+|---|---|
+| Product | **SCAN / BOOK / GO** (internal history name: Aether Transfer) |
+| Repository | [`bizznessfone-cloud/birch-hazel-stone-cloud`](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud) |
+| Branch | `main` |
+| Current source SHA | `4c20e9b9574309a0edbeb03f8675febdef38dede` |
+| CP25G.3 | **CLOSED** |
+| Next numbered checkpoint | **UNDEFINED** — requires explicit architecture/product authorisation after CP25G.3 closure. **Do not invent CP26.** |
+
+### Production
+
+| Field | Value |
+|---|---|
+| Vercel project | `scan-book-go` |
+| Deployment | `dpl_5XnaxYcqkrgWucD54TKgbmvHkfy1` |
+| State | READY |
+| Alias | `https://scan-book-go.vercel.app` |
+| Deployed SHA | same as source SHA above |
+
+Environment (names/presence only; never secret values):
+
+- `DATABASE_URL` — PRESENT (production runtime `aether_app`)
+- `AETHER_DATABASE_OWNER_URL` — ABSENT from Vercel
+- `BETTER_AUTH_SECRET` — PRESENT
+- `BETTER_AUTH_URL` — PRESENT
+- Stripe / Resend / Ops credentials — not present on the application plane unless separately proven
+
+### Database
+
+- Source and Production Neon migrations: **0001–0022**
+- 0022 restored Better Auth runtime DML for `aether_app`
+- `neondb_owner` = migration/schema owner; `aether_app` = production LOGIN; `aether_runtime` = PGLite/preview SET ROLE only
+- `npm run build` does **not** run migrations. Production migration is a separate owner-plane control.
+
+### Auth (do not reopen CP25G.3)
+
+**Proven in Production:** email/password signup, session creation, secure cookies, authenticated `/app`, session persistence, sign-out, signed-out `/app` boundary.
+
+**Implemented, not Production-proven:** returning email/password sign-in POST; authenticated tenant runtime.
+
+**Backlog / deferred:** copied-cookie stale-session replay; password recovery; email verification.
+
+### SaaS / guest / Ops
+
+V1 journey: `account → hotel → service → preview → QR → plan → Stripe → LIVE`
+
+- `/app/*` authenticated SaaS surface exists. First Production hotel **through `/app`** is not yet proven.
+- Tenancy (`app_hotel_accounts`) exists structurally; authenticated Production tenant runtime is unproven.
+- Stripe Connect / SBG subscription / hotel-owned guest payment **source** exists; Production Stripe configuration is absent.
+- Resend confirmation-email **source** exists; Production Resend configuration is absent.
+- Guest booking exists; `demo-kos` has Production evidence. Hotel-owned guest payment is not Production-proven.
+- `/ops/*` remains isolated. Production Ops credentials are absent.
+
+Read `BUILD_STATE.md` for the living status record. Restore from GitHub `main` at the current SHA, not from `cp17-known-good` (that tag is a historical CP16C/CP17 marker).
 
 ---
 
-# Aether Transfer
+# Aether Transfer (historical README retained)
 
 SCAN. BOOK. GO.
 
@@ -24,59 +69,32 @@ Private hotel transfers. Reconstruction of the lost implementation from
 This is not a visual prototype. PostgreSQL is authoritative for booking and
 inventory integrity.
 
-## Source of truth
+## Source of truth (historical CP17 wording — superseded above)
 
 GitHub is authoritative for application source.
 
-| Field | Value |
-|---|---|
-| Repository | [`bizznessfone-cloud/birch-hazel-stone-cloud`](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud) |
-| Branch | `main` |
-| Known-good application source | `45e171a23037b7c94005018cd2126033a449d6f0` |
-| Tag | `cp17-known-good` |
-
-`cp17-known-good` is an immutable tag on that commit. When the tag was created,
-`main` pointed at it. Later documentation-only commits on `main` do not change
-the CP16C/CP17 application baseline.
+`cp17-known-good` (`45e171a23037b7c94005018cd2126033a449d6f0`) is an **immutable historical tag** for the CP16C/CP17 application baseline. It is **not** current `main`.
 
 A Grok workspace is disposable and is never authoritative. Recovery ZIPs are
 secondary disaster-recovery artifacts. The CP10 ZIP in `attachments/` is
 historical and **must not** be extracted over a newer Git tree without explicit
 human approval.
 
-Source-code state and production database state are reported separately. Do not
-claim Neon production readiness merely because this repository is current.
-
-## Current checkpoint
-
-Read `docs/RECOVERY_MANIFEST.md` first.
-
-**Source baseline: CP16C/CP17** at `45e171a` / `cp17-known-good`. Occupancy,
-auth, time, booking, inventory, guest UX, ops desk, hotel white-label, CP12
-tenancy, CP13A `aether_app` LOGIN, CP14 hotel configuration/timezone, CP15
-hotel-scoped Ops identity, CP16C privilege hardening, and CP17 hotel-local Ops
-Today are in this tree.
-
-**CP19** is production Neon binding/verification. It is **not** a completed
-production checkpoint and is **not** a source-code commit. Neon verification
-and Vercel connection are **not** part of this baseline.
-
-Every future production-readiness audit **must** name the exact Git commit
-audited.
-
 ## Restore
 
 See `RESTORE.md` (repo root) and `docs/RESTORE.md`. Clone the GitHub repository
-and check out `cp17-known-good` or commit `45e171a23037b7c94005018cd2126033a449d6f0`.
-Do not restore from a checkpoint ZIP unless Git is unavailable and a human has
-approved that disaster-recovery path.
+and check out **current `main`** (`4c20e9b9574309a0edbeb03f8675febdef38dede`
+at the time of this alignment). Do not restore from a checkpoint ZIP unless Git
+is unavailable and a human has approved that disaster-recovery path.
 
 ## Stack
 
 TanStack Start, React, TypeScript, Tailwind v4, Outfit, Kysely, PostgreSQL /
 PGLite, Neon in production.
 
-## Do not
+## Historical Blueprint note
 
-Do not add payments, guest accounts, RLS, hotel colour themes, Next.js,
-Prisma, or a standalone REST API. See `docs/BUILD_BLUEPRINT_V2.md`.
+Blueprint v2 originally excluded payments. CP24/CP25 later layered Stripe
+Connect and hotel-owned guest Checkout over the hardened base. Do not treat the
+historical “do not add payments” line as current V1 scope. Do not add guest
+accounts, RLS, hotel colour themes, Next.js, Prisma, or a standalone REST API.

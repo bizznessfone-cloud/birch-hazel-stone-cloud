@@ -1,31 +1,33 @@
-## CP21B CURRENT-STATE OVERRIDE
+## CURRENT STATE (POST-CP25G.3)
 
-The historical status record below is preserved. Current state is:
+Living status: **`BUILD_STATE.md`**.
 
-- Product: **SCAN / BOOK / GO** (internal code/history name: Aether Transfer)
-- CP21B reconciliation complete.
-- Next checkpoint: **CP22 — V1 Operator Onboarding**
-- V1 journey: `account → hotel → first service → preview → QR → plan → Stripe activation → LIVE`
-- `/app/*` is the new SaaS operator surface; `/ops/*` remains internal operations.
-- CP20 confirmation-email architecture is present and tested.
-- Stripe/subscription work is now V1 product-layer work; the original frozen Blueprint is not rewritten.
-- V2 remains fenced.
+- Product: **SCAN / BOOK / GO**
+- Current source SHA: `4c20e9b9574309a0edbeb03f8675febdef38dede`
+- CP25G.3: **CLOSED**
+- Next numbered checkpoint: **UNDEFINED** — requires explicit architecture/product authorisation. **Do not invent CP26.**
+- Vercel Production `scan-book-go` / `dpl_5XnaxYcqkrgWucD54TKgbmvHkfy1` READY, SHA matches source
+- Neon Production migrated through **0022**
+- `/app/*` exists (SaaS). `/ops/*` remains internal operations.
+- V1 journey: `account → hotel → service → preview → QR → plan → Stripe → LIVE`
+- Stripe/Resend Production configuration: **absent**
+- First Production hotel through `/app`: **not proven**
 
-The historical checkpoint status below is retained as evidence and must not be used to override current source.
+The historical status table below is preserved as evidence and must not override current source.
 
 ---
 
-# Implementation status
+# Implementation status (historical CP13A-era record)
 
-Product: **Aether Transfer**
+Product: **Aether Transfer** (now SCAN / BOOK / GO)
 
-Build: **CP13A — SQL-created production application role (source only)**
+Build at the time of this table: **CP13A — SQL-created production application role (source only)**
 
 Trusted occupancy baseline: **CP10**. CP12/CP12A tenancy is in the tree. Previous abandoned original CP11 was **not** used.
 
 Never mark a phase PASS merely because the UI renders.
 
-| Phase | Name | State |
+| Phase | Name | State at time of this table |
 |---|---|---|
 | 0 | Foundation | **PASS** |
 | 1 | Database | **PASS** |
@@ -39,37 +41,14 @@ Never mark a phase PASS merely because the UI renders.
 | 9 | Full test reconstruction | **PASS** |
 | 10 | Production hardening (PGLite privilege split) | **PASS** (PGLite) |
 | 10A | Persistence / controlled restore | **PASS** (preview) |
-| 11 | NEW CP11 Production Infrastructure | Historical — Neon verifier exists; live Neon **BLOCKED** here |
-| 12 | Multi-tenant hotel/provider foundation | **PASS** (PGLite; Neon schema **UNVERIFIED**) |
-| 12A | Resource ownership administration boundaries | **PASS** (PGLite) |
-| 12B | Pre-Vercel production hardening | **LOCAL** — Neon **BLOCKED** |
-| 13A | SQL-created production LOGIN `aether_app` | **LOCAL** — Neon **BLOCKED** |
+| 11 | NEW CP11 Production Infrastructure | Historical |
+| 12 | Multi-tenant hotel/provider foundation | **PASS** (later applied on Neon) |
+| 12A | Resource ownership administration boundaries | **PASS** |
+| 12B | Pre-Vercel production hardening | later completed on Neon/Vercel |
+| 13A | SQL-created production LOGIN `aether_app` | later completed on Neon |
 
-## CP13A (current)
-
-- [x] `aether_app` SQL-created LOGIN (0014); password out of band
-- [x] `aether_runtime` retained for PGLite SET ROLE
-- [x] 0011–0013 immutable
-- [x] Production verifier requires `session_user` = `current_user` = `aether_app`
-- [x] Verifier denies `neon_superuser` membership
-- [ ] Neon 0012/0013/0014 applied and verified — **BLOCKED** (credentials unavailable)
-- [ ] Vercel — **NOT CONNECTED**
-
-## CP12B (historical, still in tree)
-
-- [x] Production without DATABASE_URL fails closed (no silent PGLite)
-- [x] Production migrate uses AETHER_DATABASE_OWNER_URL only
-- [x] aether_runtime LOGIN (0013); app does not send a startup role option
-- [x] Public confirmation JSON no longer exposes phone/email/token/notes
-- [x] Guest-create rate limit (SQL, no Redis, fail-open)
-- [x] Preview desk/desk-pass refused in production
-- [x] Shared capped pg.Pool
-- [ ] Neon 0012/0013 applied and verified — **BLOCKED** (credentials unavailable)
-- [ ] Vercel — **NOT CONNECTED**
+Later completed (not in the original table): CP14–CP17, CP19 production binding, CP20 email architecture, CP21/CP21B, CP22 onboarding, CP23 public slug, CP24 Stripe Connect source, CP25 guest-payment source, CP25G.3 Production Better Auth configuration (CLOSED).
 
 ## Next
 
-Do not start CP13B until this source checkpoint is accepted.
-Supply Neon owner URL + SQL-created `aether_app` LOGIN URL, set the app password out of band (never Neon Console), then `npm run verify:neon`.
-Do not connect Vercel until that gate PASSes.
-Do not call the platform app provisioner.
+Next numbered checkpoint is **UNDEFINED**. Do not start CP22/CP24/CP26 from this file. Use `BUILD_STATE.md`.

@@ -1,5 +1,13 @@
 # CP24 — SBG SUBSCRIPTION + STRIPE CONNECT
 
+**Status: historical checkpoint specification (source complete). Production Stripe configuration remains absent. Not the next numbered checkpoint.**
+
+Current accepted baseline is POST-CP25G.3 at
+`4c20e9b9574309a0edbeb03f8675febdef38dede`. See `BUILD_STATE.md`.
+Next numbered checkpoint: **UNDEFINED**. Do not invent CP26.
+
+---
+
 Status: **source implementation complete; executable validation pending**
 
 ## Purpose
