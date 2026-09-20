@@ -8,9 +8,10 @@ GitHub is authoritative for application source. Living status: **`BUILD_STATE.md
 |---|---|
 | Repository | `https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud` |
 | Branch | `main` |
-| Current source SHA | `4c20e9b9574309a0edbeb03f8675febdef38dede` |
+| Current source SHA | `91ba2c15c6f3b5b11106ebc006e433515e1f0f86` |
 | CP25G.3 | **CLOSED** |
-| Next numbered checkpoint | **UNDEFINED** — **Do not invent CP26.** |
+| **Next execution checkpoint** | **CP26A** |
+| Forward roadmap | **`docs/ROADMAP.md`** |
 | Production | Vercel `scan-book-go` / `dpl_5XnaxYcqkrgWucD54TKgbmvHkfy1` READY |
 | Alias | `https://scan-book-go.vercel.app` |
 | Migrations | `0001`–`0022` (applied on Production Neon) |
@@ -133,6 +134,7 @@ See `.env.example`.
 
 - Do not extract the CP10 ZIP over current `main`.
 - Do not reopen CP25G.3.
-- Do not invent CP26.
+- Do not treat CP26 as go-live. Only CP31 activates commerce.
+- Next execution is **CP26A**. See `docs/ROADMAP.md`.
 - Do not add `AETHER_DATABASE_OWNER_URL` to Vercel.
 - Do not run migrations during `npm run build`.

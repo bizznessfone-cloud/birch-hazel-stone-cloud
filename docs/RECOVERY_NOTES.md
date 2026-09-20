@@ -1,7 +1,7 @@
 # Recovery notes
 
 > **Living status:** `BUILD_STATE.md`. Notes below are historical implementation decisions.
-> Current source SHA `4c20e9b…`. CP25G.3 **CLOSED**. Next numbered checkpoint **UNDEFINED**.
+> Current living roadmap: `docs/ROADMAP.md`. Next execution **CP26A**. CP25G.3 **CLOSED**.
 
 Implementation decisions and unresolved UNKNOWNs **at the time of writing**.
 Decisions are **not** recovered historical facts unless still true in current source.

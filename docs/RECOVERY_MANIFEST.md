@@ -11,9 +11,10 @@ GitHub is authoritative for application source. Living status: **`BUILD_STATE.md
 |---|---|
 | Repository | `bizznessfone-cloud/birch-hazel-stone-cloud` |
 | Branch | `main` |
-| Current source SHA | `4c20e9b9574309a0edbeb03f8675febdef38dede` |
+| Current source SHA | `91ba2c15c6f3b5b11106ebc006e433515e1f0f86` |
 | CP25G.3 | **CLOSED** |
-| Next numbered checkpoint | **UNDEFINED** — **Do not invent CP26.** |
+| **Next execution checkpoint** | **CP26A** |
+| Forward roadmap | **[ROADMAP.md](ROADMAP.md)** |
 | Product | SCAN / BOOK / GO |
 | Production | Vercel `scan-book-go` / `dpl_5XnaxYcqkrgWucD54TKgbmvHkfy1` READY |
 | Alias | `https://scan-book-go.vercel.app` |
@@ -36,7 +37,7 @@ A workspace is never authoritative. Recovery ZIPs are secondary artifacts. The C
 | Current source checkpoint | POST-CP25G.3 at `4c20e9b` |
 | Trusted occupancy baseline | CP10 (historical occupancy engine; not current source SHA) |
 | Previous abandoned original CP11 used | **NO** |
-| Current phase | CP25G.3 CLOSED; next numbered checkpoint UNDEFINED |
+| Current phase | CP25G.3 CLOSED; next execution **CP26A**; see ROADMAP.md |
 | Date of this alignment | 2026-09-20 |
 
 ## Database migration state

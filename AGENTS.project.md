@@ -19,9 +19,10 @@ Repository: `bizznessfone-cloud/birch-hazel-stone-cloud`.
 
 | Field | Value |
 |---|---|
-| Current source SHA | `4c20e9b9574309a0edbeb03f8675febdef38dede` |
+| Current source SHA | `91ba2c15c6f3b5b11106ebc006e433515e1f0f86` |
 | CP25G.3 | **CLOSED** |
-| Next numbered checkpoint | **UNDEFINED** — requires explicit architecture/product authorisation. **Do not invent CP26.** |
+| **Next execution checkpoint** | **CP26A — COMMERCIAL DORMANCY + SAAS TENANT FOUNDATION** |
+| Forward roadmap | **`docs/ROADMAP.md`** |
 
 Historical SHAs (not current `main`):
 
@@ -40,6 +41,8 @@ The internal code/history name **Aether Transfer** may remain in source and hist
 ## Current phase
 
 CP25G.3 Production Better Auth configuration is **CLOSED**.
+
+Next execution checkpoint is **CP26A**. CP26 builds/tests SBG SaaS subscriptions and is **not** commercial go-live. Only **CP31** activates commerce. See `docs/ROADMAP.md`.
 
 Source includes the hardened booking/occupancy/tenancy base plus CP20 email architecture, CP22 `/app` onboarding, CP23 public slug, CP24 Stripe Connect source, CP25 hotel-owned guest payment source, and CP25G.3 auth configuration.
 
@@ -107,4 +110,4 @@ Do not contact Neon, modify Vercel, change secrets, or deploy unless the active 
 
 Every checkpoint must identify the exact Git commit audited.
 
-Next numbered checkpoint is **UNDEFINED**. Do not invent CP26.
+Next execution checkpoint is **CP26A**. Canonical roadmap: `docs/ROADMAP.md`. CP26 is not go-live.

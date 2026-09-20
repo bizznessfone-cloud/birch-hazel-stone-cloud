@@ -1,6 +1,6 @@
 # Architecture
 
-> **Living status:** `BUILD_STATE.md`. Current source SHA `4c20e9b9574309a0edbeb03f8675febdef38dede`. CP25G.3 **CLOSED**. Next numbered checkpoint **UNDEFINED** (do not invent CP26).
+> **Living status:** `BUILD_STATE.md` + `docs/ROADMAP.md`. CP25G.3 **CLOSED**. Next execution **CP26A**. CP26 is not go-live; only CP31 activates commerce.
 >
 > SaaS `/app` authentication is Better Auth email/password. Ops desk authentication remains scrypt sessions. Occupancy/booking notes below remain the engine. `npm run build` does not migrate.
 

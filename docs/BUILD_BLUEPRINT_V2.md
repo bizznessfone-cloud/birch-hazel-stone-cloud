@@ -2,8 +2,8 @@
 
 **Status:** frozen historical MVP build contract. Not living current-state.
 
-Living status: `BUILD_STATE.md`. Current source SHA `4c20e9b…`. CP25G.3 CLOSED.
-Next numbered checkpoint: **UNDEFINED**. Payments were later layered in CP24/CP25
+Living status: `BUILD_STATE.md` + `docs/ROADMAP.md`. Next execution **CP26A**.
+CP26 is not go-live; only CP31 activates commerce. Payments were later layered in CP24/CP25
 over this frozen base; do not rewrite this Blueprint to pretend otherwise.
 
 **Provenance:** the original Blueprint v2 file was not present in the recovered

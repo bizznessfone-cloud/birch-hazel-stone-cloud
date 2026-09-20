@@ -9,9 +9,10 @@ not trail the repository.
 |---|---|
 | Repository | `bizznessfone-cloud/birch-hazel-stone-cloud` |
 | Branch | `main` |
-| Current source SHA | `4c20e9b9574309a0edbeb03f8675febdef38dede` |
+| Current source SHA | `91ba2c15c6f3b5b11106ebc006e433515e1f0f86` |
 | CP25G.3 | **CLOSED** |
-| Next numbered checkpoint | **UNDEFINED** — requires explicit authorisation. **Do not invent CP26.** |
+| **Next execution checkpoint** | **CP26A — COMMERCIAL DORMANCY + SAAS TENANT FOUNDATION** |
+| Forward roadmap | `docs/ROADMAP.md` (CP26–CP31) |
 
 `cp17-known-good` (`45e171a…`) and CP15/CP21B SHAs below are **historical**.
 
@@ -65,4 +66,9 @@ explicitly opens them.
 
 ## Next checkpoint
 
-**UNDEFINED.** Do not treat CP22 or CP24 as next/current. Do not invent CP26.
+**CP26A — COMMERCIAL DORMANCY + SAAS TENANT FOUNDATION**
+
+Canonical roadmap: `docs/ROADMAP.md`.
+
+CP26 = build/test Domain A SaaS subscriptions. **Not go-live.**
+CP31 = activate commerce. Do not skip CP26A before Stripe test-mode work.

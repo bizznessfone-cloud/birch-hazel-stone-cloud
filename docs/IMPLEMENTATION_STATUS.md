@@ -3,10 +3,11 @@
 Living status: **`BUILD_STATE.md`**.
 
 - Product: **SCAN / BOOK / GO**
-- Current source SHA: `4c20e9b9574309a0edbeb03f8675febdef38dede`
+- Current source SHA: `91ba2c15c6f3b5b11106ebc006e433515e1f0f86`
 - CP25G.3: **CLOSED**
-- Next numbered checkpoint: **UNDEFINED** — requires explicit architecture/product authorisation. **Do not invent CP26.**
-- Vercel Production `scan-book-go` / `dpl_5XnaxYcqkrgWucD54TKgbmvHkfy1` READY, SHA matches source
+- **Next execution checkpoint: CP26A — COMMERCIAL DORMANCY + SAAS TENANT FOUNDATION**
+- Forward roadmap: **[ROADMAP.md](ROADMAP.md)** (CP26 build/test commerce → CP31 activate)
+- Vercel Production `scan-book-go` / `dpl_5XnaxYcqkrgWucD54TKgbmvHkfy1` READY
 - Neon Production migrated through **0022**
 - `/app/*` exists (SaaS). `/ops/*` remains internal operations.
 - V1 journey: `account → hotel → service → preview → QR → plan → Stripe → LIVE`
@@ -51,4 +52,4 @@ Later completed (not in the original table): CP14–CP17, CP19 production bindin
 
 ## Next
 
-Next numbered checkpoint is **UNDEFINED**. Do not start CP22/CP24/CP26 from this file. Use `BUILD_STATE.md`.
+**CP26A.** Canonical definitions: **[ROADMAP.md](ROADMAP.md)**. CP26 is not go-live.

@@ -11,9 +11,10 @@ GitHub is the authoritative source for application source code. Living status: *
 |---|---|
 | Repository | `bizznessfone-cloud/birch-hazel-stone-cloud` |
 | Branch | `main` |
-| Current source SHA | `4c20e9b9574309a0edbeb03f8675febdef38dede` |
+| Current source SHA | `91ba2c15c6f3b5b11106ebc006e433515e1f0f86` |
 | CP25G.3 | **CLOSED** |
-| Next numbered checkpoint | **UNDEFINED** — **Do not invent CP26.** |
+| **Next execution checkpoint** | **CP26A** |
+| Forward roadmap | **[ROADMAP.md](ROADMAP.md)** |
 | Production | `scan-book-go` / `dpl_5XnaxYcqkrgWucD54TKgbmvHkfy1` READY |
 | Migrations | `0001`–`0022` |
 
@@ -67,7 +68,8 @@ CP20 email architecture, CP21/CP21B, CP22 onboarding, CP23 public slug, CP24
 Stripe Connect source, CP25 guest-payment source, CP25G.3 Production Better Auth
 (CLOSED).
 
-Next numbered checkpoint: **UNDEFINED**.
+Next execution checkpoint: **CP26A**. Canonical roadmap: **[ROADMAP.md](ROADMAP.md)**.
+CP26 is not commercial go-live. Only CP31 activates commerce.
 
 ## If the workspace disappears
 

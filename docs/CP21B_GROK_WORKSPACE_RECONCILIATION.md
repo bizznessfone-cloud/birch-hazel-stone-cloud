@@ -2,9 +2,8 @@
 
 **Status: historical checkpoint record (complete). Not current living state.**
 
-Current accepted baseline is POST-CP25G.3 at
-`4c20e9b9574309a0edbeb03f8675febdef38dede`. See `BUILD_STATE.md`.
-Next numbered checkpoint: **UNDEFINED**. Do not invent CP26.
+Current accepted baseline is POST-CP25G.3. Next execution **CP26A**.
+See `BUILD_STATE.md` and `docs/ROADMAP.md`. CP26 is not go-live; only CP31 activates commerce.
 
 ---
 
@@ -88,4 +87,4 @@ V2 remains fenced for SMS, WhatsApp, chatbot, custom domains, hotel-local Ops To
 
 Grok then had an explicit project-specific current-state bridge and was required to read it before new work.
 
-The CP21B “next checkpoint” was **CP22 — V1 Operator Onboarding**. That work has since been completed. Current living next numbered checkpoint is **UNDEFINED**. See `BUILD_STATE.md`.
+The CP21B “next checkpoint” was **CP22 — V1 Operator Onboarding**. That work has since been completed. Current living next execution checkpoint is **CP26A**. See `docs/ROADMAP.md`.

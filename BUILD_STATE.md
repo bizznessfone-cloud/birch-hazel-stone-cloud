@@ -9,9 +9,10 @@ This file describes **current reality**, not intended future state.
 | Product | **SCAN / BOOK / GO** (internal history name: Aether Transfer) |
 | Repository | `bizznessfone-cloud/birch-hazel-stone-cloud` |
 | Branch | `main` |
-| Current source SHA | `4c20e9b9574309a0edbeb03f8675febdef38dede` |
+| Current source SHA | `91ba2c15c6f3b5b11106ebc006e433515e1f0f86` (docs/roadmap on `main`; application baseline `4c20e9b…`) |
 | CP25G.3 | **CLOSED** |
-| Next numbered checkpoint | **UNDEFINED** — requires explicit architecture/product authorisation after CP25G.3 closure. **Do not invent CP26.** |
+| **Next execution checkpoint** | **CP26A — COMMERCIAL DORMANCY + SAAS TENANT FOUNDATION** |
+| Forward roadmap | **[docs/ROADMAP.md](docs/ROADMAP.md)** (CP26–CP31) |
 
 ### Production
 
@@ -81,7 +82,10 @@ account → hotel → service → preview → QR → plan → Stripe → LIVE
 - Do not claim migrations after 0017 are absent.
 - Do not claim `/app/*` does not exist.
 - Do not claim CP25G.3 remains open.
-- Do not invent CP26.
+- Do not treat CP26 as commercial go-live. Only CP31 activates commerce.
+- Do not skip CP26A before Stripe test-mode integration.
+
+Canonical forward path: **`docs/ROADMAP.md`**. Next execution: **CP26A**.
 
 GitHub `main` at the current SHA is authoritative application source. A workspace is never authoritative. Recovery ZIPs are secondary disaster-recovery artifacts. The CP10 ZIP must not be extracted over a newer Git tree without explicit human approval.
 

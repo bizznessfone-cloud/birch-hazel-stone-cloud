@@ -2,9 +2,8 @@
 
 **Status: historical checkpoint specification (source complete). Production Stripe configuration remains absent. Not the next numbered checkpoint.**
 
-Current accepted baseline is POST-CP25G.3 at
-`4c20e9b9574309a0edbeb03f8675febdef38dede`. See `BUILD_STATE.md`.
-Next numbered checkpoint: **UNDEFINED**. Do not invent CP26.
+Current living next execution checkpoint is **CP26A**. See `docs/ROADMAP.md`.
+CP26 reuses this work; it is **not** go-live. Only CP31 activates commerce.
 
 ---
 

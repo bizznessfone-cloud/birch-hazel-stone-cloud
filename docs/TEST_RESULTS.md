@@ -1,7 +1,7 @@
 # Test results
 
 > **Living status:** `BUILD_STATE.md`. This file is a **historical test ledger**, not current Production proof.
-> Current source SHA `4c20e9b…`. CP25G.3 **CLOSED**. Next numbered checkpoint **UNDEFINED**.
+> Current living roadmap: `docs/ROADMAP.md`. Next execution **CP26A**. CP25G.3 **CLOSED**.
 
 Two sections. Never mix them.
 

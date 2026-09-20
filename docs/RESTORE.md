@@ -12,9 +12,10 @@ GitHub is authoritative for application source.
 |---|---|
 | Repository | `bizznessfone-cloud/birch-hazel-stone-cloud` |
 | Branch | `main` |
-| Current source SHA | `4c20e9b9574309a0edbeb03f8675febdef38dede` |
+| Current source SHA | `91ba2c15c6f3b5b11106ebc006e433515e1f0f86` |
 | CP25G.3 | **CLOSED** |
-| Next numbered checkpoint | **UNDEFINED** — **Do not invent CP26.** |
+| **Next execution checkpoint** | **CP26A** |
+| Forward roadmap | **[ROADMAP.md](ROADMAP.md)** |
 | Production | `scan-book-go` / `dpl_5XnaxYcqkrgWucD54TKgbmvHkfy1` READY |
 | Migrations | `0001`–`0022` |
 
