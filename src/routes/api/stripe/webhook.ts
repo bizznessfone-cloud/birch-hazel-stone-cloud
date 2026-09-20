@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { getSql } from "@/lib/db";
+import { domainAWebhookEligible } from "@/lib/aether/saas-commerce.server";
 
 function unixToIso(value: unknown) {
   return typeof value === "number" ? new Date(value * 1000).toISOString() : null;
@@ -85,6 +86,9 @@ export const Route = createFileRoute("/api/stripe/webhook")({
 
         const data = subscriptionData(event);
         if (!data.hotelId || !data.subscriptionId) {
+          return Response.json({ received: true });
+        }
+        if (!domainAWebhookEligible(event)) {
           return Response.json({ received: true });
         }
         await db.query(

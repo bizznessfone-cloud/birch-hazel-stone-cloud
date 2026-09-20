@@ -1,5 +1,9 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { SignJWT, jwtVerify } from "jose";
+import {
+  assertDomainACommerceAllowed,
+  assertDomainALivemode,
+} from "./saas-commerce.server.ts";
 
 const API = "https://api.stripe.com/v1";
 
@@ -49,7 +53,8 @@ export async function createSubscriptionCheckout(input: {
   cancelUrl: string;
   customerId?: string | null;
 }) {
-  return stripePost<{ id: string; url: string }>("/checkout/sessions", {
+  const { expectedLivemode } = assertDomainACommerceAllowed();
+  const session = await stripePost<{ id: string; url?: string; livemode?: boolean }>("/checkout/sessions", {
     mode: "subscription",
     "line_items[0][price]": input.priceId,
     "line_items[0][quantity]": "1",
@@ -61,13 +66,20 @@ export async function createSubscriptionCheckout(input: {
     "subscription_data[metadata][hotel_id]": input.hotelId,
     "subscription_data[metadata][user_id]": input.userId,
   });
+  assertDomainALivemode(session.livemode, expectedLivemode);
+  if (!session.url) throw new Error("Stripe Checkout URL was not returned.");
+  return { ...session, url: session.url };
 }
 
 export async function createBillingPortal(customerId: string, returnUrl: string) {
-  return stripePost<{ url: string }>("/billing_portal/sessions", {
+  const { expectedLivemode } = assertDomainACommerceAllowed();
+  const portal = await stripePost<{ url?: string; livemode?: boolean }>("/billing_portal/sessions", {
     customer: customerId,
     return_url: returnUrl,
   });
+  assertDomainALivemode(portal.livemode, expectedLivemode);
+  if (!portal.url) throw new Error("Stripe billing portal URL was not returned.");
+  return { ...portal, url: portal.url };
 }
 
 export function stripeConnectAuthorizeUrl(input: {
