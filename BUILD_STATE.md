@@ -2,6 +2,21 @@
 
 This file describes **current reality**, not intended future state.
 
+## CP26A.2B-GHA — controller created, NOT executed
+
+Single-use GitHub Actions controller for `0023_cp26a2_entitlement_publication_decoupling.sql`:
+
+| Field | Value |
+|---|---|
+| Workflow | `.github/workflows/cp26a2-0023-production-migrate.yml` |
+| Controller | `scripts/cp26a2-0023-production-migrate.mjs` |
+| Confirmation | `APPLY-0023` |
+| Status | **CREATED BUT NOT EXECUTED** |
+| Production Neon | still **0022** |
+| Next authorised step | explicit manual `workflow_dispatch` of this controller (separate checkpoint) |
+
+Do not dispatch this workflow without a dedicated execution checkpoint. Owner secret remains GitHub Actions `AETHER_DATABASE_OWNER_URL` only — never Vercel.
+
 ## Current accepted baseline (POST-CP25G.3)
 
 | Field | Value |

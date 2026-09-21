@@ -46,7 +46,8 @@ Next execution checkpoint is **CP26A**. CP26 builds/tests SBG SaaS subscriptions
 
 Source includes the hardened booking/occupancy/tenancy base plus CP20 email architecture, CP22 `/app` onboarding, CP23 public slug, CP24 Stripe Connect source, CP25 hotel-owned guest payment source, and CP25G.3 auth configuration.
 
-Production Vercel `scan-book-go` (`dpl_5XnaxYcqkrgWucD54TKgbmvHkfy1`) is READY on the current SHA. Neon is migrated through **0022**. `DATABASE_URL` is the runtime credential; `AETHER_DATABASE_OWNER_URL` must never be added to Vercel.
+Production Vercel `scan-book-go` (`dpl_CD9DuY7kD6LXSKjza8XcbaxkFqqe`) is READY on SHA `71cc457df26a91f111357ca2e091e2af0dc3cf14`. Neon is migrated through **0022**. Migration **0023** exists in source; the single-use GitHub Actions controller for 0023 is **CREATED BUT NOT EXECUTED**. `DATABASE_URL` is the runtime credential; `AETHER_DATABASE_OWNER_URL` must never be added to Vercel.
+
 
 ## V1 product layer
 
