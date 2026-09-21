@@ -5,11 +5,10 @@ Canonical living roadmap. Other living documents should **point here**, not rede
 | Field | Value |
 |---|---|
 | Formalised on parent | `91ba2c15c6f3b5b11106ebc006e433515e1f0f86` |
-| Application baseline | `4c20e9b9574309a0edbeb03f8675febdef38dede` |
+| Application baseline | `b35ef2fc8bdddef81fcc84aa59d358dba4346a30` |
 | CP25G.3 | **CLOSED** |
-| **Next execution checkpoint** | **CP26A — COMMERCIAL DORMANCY + SAAS TENANT FOUNDATION** |
-
-Do **not** execute CP26A in a documentation-only change.
+| CP26A.1 / CP26A.2 | **CLOSED** |
+| **Next execution checkpoint** | **CP26A remaining: operator-owned hotel lifecycle + fixture policy** |
 
 ---
 
@@ -74,12 +73,14 @@ Reuse, do not rebuild:
 - Stripe Connect, shared webhook, event idempotency, `/app/billing`
 - hotel-owned guest Checkout, `sbg_booking_payments`
 
-Known CP26 concerns (still open):
+Resolved in CP26A.1 / CP26A.2:
 
-- no explicit Stripe test/live enforcement
-- no independent commerce kill-switch
-- adding live Stripe configuration could currently make the existing billing CTA money-taking
-- `sbg_sync_hotel_entitlement` couples SaaS billing + Connect with hotel `live`
+- Domain A kill-switch + Stripe test/live enforcement (`SBG_SAAS_COMMERCE`)
+- live Stripe configuration alone cannot activate Domain A
+- `sbg_sync_hotel_entitlement` no longer writes `hotels.status` (Production 0023)
+
+Still open (later CP26 work):
+
 - possible duplicate SaaS subscriptions
 - incomplete failed-payment / past_due lifecycle
 - Stripe integration has not been exercised in test mode
@@ -101,16 +102,16 @@ Known CP26 concerns (still open):
 
 Must complete **before** Stripe integration testing.
 
-1. Explicit commerce dormancy / kill-switch architecture.
-2. Explicit Stripe test/live mode enforcement.
-3. Prevent adding Stripe configuration alone from silently activating real commerce.
-4. Decouple or safely gate SaaS billing entitlement from automatic public hotel LIVE status.
+1. ~~Explicit commerce dormancy / kill-switch architecture.~~ **DONE (CP26A.1)**
+2. ~~Explicit Stripe test/live mode enforcement.~~ **DONE (CP26A.1)**
+3. ~~Prevent adding Stripe configuration alone from silently activating real commerce.~~ **DONE (CP26A.1)**
+4. ~~Decouple or safely gate SaaS billing entitlement from automatic public hotel LIVE status.~~ **DONE (CP26A.2; Production 0023)**
 5. Establish/prove the controlled operator-owned hotel lifecycle required for hotel-scoped billing.
 6. Define safe Production/test fixture policy.
 7. Preserve payment-domain separation.
 
 **Mutation:** source (and tests) as required; no Production live Stripe keys; no real subscriptions.  
-**This documentation checkpoint does not implement CP26A.**
+**Remaining CP26A execution:** items 5–6. Do not start CP26B until those complete.
 
 ### CP26B — SAAS SUBSCRIPTION LIFECYCLE COMPLETION
 

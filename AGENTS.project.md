@@ -15,13 +15,14 @@ Use this order:
 
 Repository: `bizznessfone-cloud/birch-hazel-stone-cloud`.
 
-## Current accepted baseline (POST-CP25G.3)
+## Current accepted baseline (POST-CP26A.2)
 
 | Field | Value |
 |---|---|
-| Current source SHA | `91ba2c15c6f3b5b11106ebc006e433515e1f0f86` |
+| Last application SHA | `b35ef2fc8bdddef81fcc84aa59d358dba4346a30` |
 | CP25G.3 | **CLOSED** |
-| **Next execution checkpoint** | **CP26A — COMMERCIAL DORMANCY + SAAS TENANT FOUNDATION** |
+| CP26A.1 / CP26A.2 | **CLOSED** |
+| **Next execution checkpoint** | **CP26A remaining: operator-owned hotel lifecycle + fixture policy** |
 | Forward roadmap | **`docs/ROADMAP.md`** |
 
 Historical SHAs (not current `main`):
@@ -41,12 +42,14 @@ The internal code/history name **Aether Transfer** may remain in source and hist
 ## Current phase
 
 CP25G.3 Production Better Auth configuration is **CLOSED**.
+CP26A.1 Domain A commercial dormancy is **CLOSED**.
+CP26A.2 entitlement/publication decoupling is **CLOSED** (Production 0023 applied; dispatch path retired).
 
-Next execution checkpoint is **CP26A**. CP26 builds/tests SBG SaaS subscriptions and is **not** commercial go-live. Only **CP31** activates commerce. See `docs/ROADMAP.md`.
+Next execution is remaining **CP26A** items 5–6. CP26 builds/tests SBG SaaS subscriptions and is **not** commercial go-live. Only **CP31** activates commerce. See `docs/ROADMAP.md`.
 
-Source includes the hardened booking/occupancy/tenancy base plus CP20 email architecture, CP22 `/app` onboarding, CP23 public slug, CP24 Stripe Connect source, CP25 hotel-owned guest payment source, and CP25G.3 auth configuration.
+Source includes the hardened booking/occupancy/tenancy base plus CP20 email architecture, CP22 `/app` onboarding, CP23 public slug, CP24 Stripe Connect source, CP25 hotel-owned guest payment source, CP25G.3 auth configuration, CP26A.1 commerce gate, and CP26A.2 decoupled entitlement publication.
 
-Production Vercel `scan-book-go` (`dpl_CD9DuY7kD6LXSKjza8XcbaxkFqqe`) is READY on SHA `71cc457df26a91f111357ca2e091e2af0dc3cf14`. Neon is migrated through **0022**. Migration **0023** exists in source; the single-use GitHub Actions controller for 0023 is **CREATED BUT NOT EXECUTED**. `DATABASE_URL` is the runtime credential; `AETHER_DATABASE_OWNER_URL` must never be added to Vercel.
+Last observed Production Vercel `scan-book-go` (`dpl_7mJ8kBkd1m679TpriPUnYeX8X4qY`) is READY on SHA `b35ef2f`. A push to `main` auto-deploys Vercel Production. Neon is migrated through **0023**. `DATABASE_URL` is the runtime credential; `AETHER_DATABASE_OWNER_URL` must never be added to Vercel. `SBG_SAAS_COMMERCE` is unset (fail-closed).
 
 
 ## V1 product layer
@@ -71,7 +74,7 @@ Preserve:
 
 Production must not use `aether_runtime`, SET ROLE, `neon_superuser`, or owner credentials.
 
-Do not reopen CP15/CP16/CP19 security architecture. Do not reopen CP25G.3.
+Do not reopen CP15/CP16/CP19 security architecture. Do not reopen CP25G.3. Do not reopen CP26A.1/2.
 
 ## Route boundaries
 
@@ -111,4 +114,4 @@ Do not contact Neon, modify Vercel, change secrets, or deploy unless the active 
 
 Every checkpoint must identify the exact Git commit audited.
 
-Next execution checkpoint is **CP26A**. Canonical roadmap: `docs/ROADMAP.md`. CP26 is not go-live.
+Next execution checkpoint is remaining **CP26A** items 5–6. Canonical roadmap: `docs/ROADMAP.md`. CP26 is not go-live.

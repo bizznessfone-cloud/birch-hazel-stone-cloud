@@ -18,12 +18,56 @@ export const PASS_VERDICT = "GATE B PASS — MIGRATION PLAN PROVEN";
 export const BLOCKED_OWNER_URL = "BLOCKED — AETHER_DATABASE_OWNER_URL is not configured";
 
 const HISTORICAL_RE = /^00(0[2-9]|1[0-7])_.*\.sql$/;
-const EXPECTED_PENDING_RE = /^(0001_auth\.sql|0018_.*\.sql|0019_.*\.sql|0020_.*\.sql|0021_.*\.sql|0022_.*\.sql)$/;
 const AUTH_TABLES = ["user", "session", "account", "verification"];
 const OCCUPANCY_CONSTRAINTS = [
   "bookings_vehicle_occupancy_excl",
   "bookings_driver_occupancy_excl",
 ];
+
+/** Accepted Production history after CP26A.2. Not a future-pending allowlist. */
+export const ACCEPTED_LEDGER = [
+  "0001_auth.sql",
+  "0002_foundation.sql",
+  "0003_occupancy.sql",
+  "0004_ops_auth.sql",
+  "0005_time_domain.sql",
+  "0006_booking_engine.sql",
+  "0007_inventory.sql",
+  "0008_guest_ux.sql",
+  "0009_ops_desk.sql",
+  "0010_hotel_white_label.sql",
+  "0011_production_hardening.sql",
+  "0012_cp12_tenancy.sql",
+  "0013_cp12b_runtime_login.sql",
+  "0014_cp13a_production_app_role.sql",
+  "0015_cp14_hotel_configuration.sql",
+  "0016_cp14_hotel_timezone.sql",
+  "0017_cp16_runtime_privilege_hardening.sql",
+  "0018_cp22_saas_onboarding.sql",
+  "0019_cp23_public_hotel_slug.sql",
+  "0020_cp24_stripe_billing.sql",
+  "0021_cp25_hotel_guest_payments.sql",
+  "0022_cp25g3_better_auth_runtime_privileges.sql",
+  "0023_cp26a2_entitlement_publication_decoupling.sql",
+];
+
+export const REVIEWED_DIGESTS = {
+  "0020_cp24_stripe_billing.sql":
+    "e554f58f72ebe71a7048786b16890aaa4e125642f314407d49ab863ac8365e0c",
+  "0021_cp25_hotel_guest_payments.sql":
+    "b51166aab2016c2223cfe2e495d0e72e6677bfd216bfe029f1064ae18ae1e86a",
+  "0022_cp25g3_better_auth_runtime_privileges.sql":
+    "bf2563cbc13f773d0ec75865745ce1b6b6aa87ce7846fc8961c53beda77bccc3",
+  "0023_cp26a2_entitlement_publication_decoupling.sql":
+    "469eeee3c8707beb40a2a268bea53c77620265efb969bfbff12c524e17585ba1",
+};
+
+/** No pending migration is automatically authorised. Future files need their own checkpoint. */
+export const AUTHORISED_PENDING = [];
+
+export function isAuthorisedPending(name) {
+  return AUTHORISED_PENDING.includes(String(name));
+}
 
 export function redact(text) {
   return String(text ?? "")
@@ -55,8 +99,9 @@ export function evaluatePreflight(input) {
   const sourceMigrations = [...(input.sourceMigrations ?? [])].map(String);
   const historical = historicalSourceMigrations(sourceMigrations);
   const pending = pendingMigrations(sourceMigrations, ledger).map((row) => row.name);
-  const unexpectedPending = pending.filter((name) => !EXPECTED_PENDING_RE.test(name));
+  const unexpectedPending = pending.filter((name) => !isAuthorisedPending(name));
   const missingHistorical = historical.filter((name) => !ledger.includes(name));
+  const missingAccepted = ACCEPTED_LEDGER.filter((name) => !ledger.includes(name));
   const ledgerHas0001 = ledger.includes("0001_auth.sql");
   const authClass = classifyAuth(ledgerHas0001, input.authTables ?? {});
   const occupancy = input.occupancy ?? [];
@@ -75,9 +120,10 @@ export function evaluatePreflight(input) {
   if (!input.ledgerReadable) {
     return blocked("BLOCKED — PRODUCTION MIGRATION LEDGER CANNOT BE READ", { pending: [] });
   }
-  if (missingHistorical.length > 0 || unexpectedPending.length > 0) {
+  if (missingHistorical.length > 0 || missingAccepted.length > 0 || unexpectedPending.length > 0) {
     return blocked("BLOCKED — MIGRATION LEDGER INCONSISTENT", {
       missingHistorical,
+      missingAccepted,
       unexpectedPending,
       pending,
     });
@@ -303,6 +349,10 @@ export function report(result) {
   if (result.missingHistorical?.length) {
     say("missing historical:");
     for (const name of result.missingHistorical) say(`  ${name}`);
+  }
+  if (result.missingAccepted?.length) {
+    say("missing accepted:");
+    for (const name of result.missingAccepted) say(`  ${name}`);
   }
   if (result.unexpectedPending?.length) {
     say("unexpected pending:");

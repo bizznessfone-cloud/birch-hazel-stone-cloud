@@ -9,9 +9,10 @@ not trail the repository.
 |---|---|
 | Repository | `bizznessfone-cloud/birch-hazel-stone-cloud` |
 | Branch | `main` |
-| Current source SHA | `91ba2c15c6f3b5b11106ebc006e433515e1f0f86` |
+| Last application SHA | `b35ef2fc8bdddef81fcc84aa59d358dba4346a30` |
 | CP25G.3 | **CLOSED** |
-| **Next execution checkpoint** | **CP26A — COMMERCIAL DORMANCY + SAAS TENANT FOUNDATION** |
+| CP26A.1 / CP26A.2 | **CLOSED** |
+| **Next execution checkpoint** | **CP26A remaining: operator-owned hotel lifecycle + fixture policy** |
 | Forward roadmap | `docs/ROADMAP.md` (CP26–CP31) |
 
 `cp17-known-good` (`45e171a…`) and CP15/CP21B SHAs below are **historical**.
@@ -22,19 +23,21 @@ not trail the repository.
 ## Production
 
 - Vercel project: `scan-book-go`
-- Deployment: `dpl_5XnaxYcqkrgWucD54TKgbmvHkfy1` READY
+- Last observed deployment: `dpl_7mJ8kBkd1m679TpriPUnYeX8X4qY` READY on `b35ef2f`
 - Alias: `https://scan-book-go.vercel.app`
-- Deployed SHA matches current source SHA
+- Push to `main` auto-deploys Vercel Production
 - `DATABASE_URL` PRESENT (`aether_app`)
 - `AETHER_DATABASE_OWNER_URL` ABSENT
+- `SBG_SAAS_COMMERCE` ABSENT (fail-closed Domain A)
 - `BETTER_AUTH_SECRET` PRESENT
 - `BETTER_AUTH_URL` PRESENT
 
 ## Database
 
-Migrations **0001–0022** exist in source and are applied on Production Neon.
-0022 restored Better Auth runtime DML for `aether_app`. Application build does
-not migrate.
+Migrations **0001–0023** exist in source and are applied on Production Neon.
+0023 decoupled `sbg_sync_hotel_entitlement` from hotel publication.
+Single-use 0022/0023 mutation workflows are retired. Application build does
+not migrate. Permanent Gate B is read-only.
 
 ## Auth (do not reopen CP25G.3)
 
@@ -54,9 +57,10 @@ account → hotel → service → preview → QR → plan → Stripe → LIVE
 - `/app/*` exists (authenticated SaaS).
 - Onboarding source exists. First Production hotel through `/app` is not proven.
 - Stripe/Resend source exists. Production configuration is absent.
+- Domain A remains dormant until CP31.
 - `/ops/*` remains internal operations.
 - Public guest: `/{hotelSlug}` plus legacy `/book/{hotelCode}`.
-- Guest booking / `demo-kos` have Production evidence. Guest payment is not Production-proven.
+- Guest booking / `demo-kos` (live) have Production evidence. Guest payment is not Production-proven.
 
 ## V2 fence
 
@@ -66,9 +70,9 @@ explicitly opens them.
 
 ## Next checkpoint
 
-**CP26A — COMMERCIAL DORMANCY + SAAS TENANT FOUNDATION**
+**CP26A remaining: operator-owned hotel lifecycle + fixture policy**
 
 Canonical roadmap: `docs/ROADMAP.md`.
 
 CP26 = build/test Domain A SaaS subscriptions. **Not go-live.**
-CP31 = activate commerce. Do not skip CP26A before Stripe test-mode work.
+CP31 = activate commerce. Do not skip remaining CP26A items before Stripe test-mode work.

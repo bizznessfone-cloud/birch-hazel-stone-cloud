@@ -1,6 +1,6 @@
 # RESTORE.md — reconstruct SCAN / BOOK / GO without this conversation
 
-## Current accepted baseline (POST-CP25G.3)
+## Current accepted baseline (POST-CP26A.2)
 
 GitHub is authoritative for application source. Living status: **`BUILD_STATE.md`**.
 
@@ -8,13 +8,14 @@ GitHub is authoritative for application source. Living status: **`BUILD_STATE.md
 |---|---|
 | Repository | `https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud` |
 | Branch | `main` |
-| Current source SHA | `91ba2c15c6f3b5b11106ebc006e433515e1f0f86` |
+| Last application SHA | `b35ef2fc8bdddef81fcc84aa59d358dba4346a30` |
 | CP25G.3 | **CLOSED** |
-| **Next execution checkpoint** | **CP26A** |
+| CP26A.1 / CP26A.2 | **CLOSED** |
+| **Next execution checkpoint** | remaining **CP26A** items 5–6 |
 | Forward roadmap | **`docs/ROADMAP.md`** |
-| Production | Vercel `scan-book-go` / `dpl_5XnaxYcqkrgWucD54TKgbmvHkfy1` READY |
+| Production | Vercel `scan-book-go` / last observed `dpl_7mJ8kBkd1m679TpriPUnYeX8X4qY` READY |
 | Alias | `https://scan-book-go.vercel.app` |
-| Migrations | `0001`–`0022` (applied on Production Neon) |
+| Migrations | `0001`–`0023` (applied on Production Neon) |
 
 `cp17-known-good` (`45e171a23037b7c94005018cd2126033a449d6f0`) is an **immutable historical tag**. It is **not** current `main`. Checking it out would roll the product backwards.
 
@@ -83,7 +84,7 @@ Authoritative living status: `BUILD_STATE.md`. Architecture notes: `docs/ARCHITE
 git clone https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud.git
 cd birch-hazel-stone-cloud
 git checkout main
-# at this alignment: 4c20e9b9574309a0edbeb03f8675febdef38dede
+# last application SHA: b35ef2fc8bdddef81fcc84aa59d358dba4346a30
 ```
 
 Do **not** default to `git checkout cp17-known-good`.
@@ -100,9 +101,9 @@ Application code (once checked out):
 
 ## 4. Where is the database schema?
 
-SQL migrations in `migrations/`, applied in filename order. Better Auth schema is in the migration surface (`0001_auth.sql` and later privilege repair `0022`).
+SQL migrations in `migrations/`, applied in filename order. Better Auth schema is in the migration surface (`0001_auth.sql` and later privilege repair `0022`). Entitlement publication decoupling is `0023`.
 
-Source tree includes `0001` through `0022`. Production Neon has been migrated through **0022**.
+Source tree includes `0001` through `0023`. Production Neon has been migrated through **0023**.
 
 ## 5. What migrations must run?
 
@@ -113,10 +114,11 @@ Source tree includes `0001` through `0022`. Production Neon has been migrated th
 - `0020_cp24_stripe_billing.sql`
 - `0021_cp25_hotel_guest_payments.sql`
 - `0022_cp25g3_better_auth_runtime_privileges.sql`
+- `0023_cp26a2_entitlement_publication_decoupling.sql`
 
 Preview: `src/lib/db.ts` applies these to PGLite at startup, then SET ROLE `aether_runtime`.
 
-Production: `scripts/migrate.mjs` uses `AETHER_DATABASE_OWNER_URL` **only**. Missing owner URL fails. `DATABASE_URL` is never a migrate fallback. Dedicated GitHub Actions owner-plane workflows exist; they are not automatic on push. The deployed app must connect as `aether_app` LOGIN.
+Production: `scripts/migrate.mjs` uses `AETHER_DATABASE_OWNER_URL` **only**. Missing owner URL fails. `DATABASE_URL` is never a migrate fallback. The generic production-migrate GitHub Action is retired and fail-closed. Permanent owner-plane control is read-only Gate B (`production-database.yml`). Future SQL needs a dedicated single-use controller and an explicit checkpoint. The deployed app must connect as `aether_app` LOGIN.
 
 ## 6. Required environment variable names (never commit values)
 
@@ -128,13 +130,14 @@ See `.env.example`.
 | `AETHER_DATABASE_OWNER_URL` | **no** — owner plane only, never Vercel | yes |
 | `BETTER_AUTH_SECRET` | yes (CP25G.3) | yes |
 | `BETTER_AUTH_URL` | yes | no (URL only) |
-| Stripe / Resend / Ops | not currently configured on Production | yes when present |
+| `SBG_SAAS_COMMERCE` | optional — unset = Domain A fail-closed | no |
 
 ## 7. Do not
 
 - Do not extract the CP10 ZIP over current `main`.
-- Do not reopen CP25G.3.
+- Do not reopen CP25G.3 or CP26A.1/2.
 - Do not treat CP26 as go-live. Only CP31 activates commerce.
-- Next execution is **CP26A**. See `docs/ROADMAP.md`.
+- Next execution is remaining **CP26A** items 5–6. See `docs/ROADMAP.md`.
 - Do not add `AETHER_DATABASE_OWNER_URL` to Vercel.
 - Do not run migrations during `npm run build`.
+- Do not dispatch retired 0022/0023 production-migrate workflows.

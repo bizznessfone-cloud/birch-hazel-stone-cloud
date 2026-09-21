@@ -2,31 +2,40 @@
 
 This file describes **current reality**, not intended future state.
 
-## CP26A.2B-GHA — controller created, NOT executed
+## CP26A.2 — COMPLETE
 
-Single-use GitHub Actions controller for `0023_cp26a2_entitlement_publication_decoupling.sql`:
+Entitlement/publication decoupling is accepted Production history.
 
 | Field | Value |
 |---|---|
-| Workflow | `.github/workflows/cp26a2-0023-production-migrate.yml` |
-| Controller | `scripts/cp26a2-0023-production-migrate.mjs` |
-| Confirmation | `APPLY-0023` |
-| Status | **CREATED BUT NOT EXECUTED** |
-| Production Neon | still **0022** |
-| Next authorised step | explicit manual `workflow_dispatch` of this controller (separate checkpoint) |
+| CP26A.1 | **PASS** — Domain A commerce dormant (`SBG_SAAS_COMMERCE=off\|test\|live`; Production unset = fail-closed) |
+| CP26A.2A | **PASS** — source + `0023_cp26a2_entitlement_publication_decoupling.sql` |
+| CP26A.2B | **PASS** — Production apply via GHA run [35581165068](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/35581165068) |
+| Controller SHA | `b35ef2fc8bdddef81fcc84aa59d358dba4346a30` |
+| 0023 SHA-256 | `469eeee3c8707beb40a2a268bea53c77620265efb969bfbff12c524e17585ba1` |
+| Production function | `sbg_sync_hotel_entitlement` **decoupled** (reads `hotels.status`, no `UPDATE hotels`) |
+| demo-kos | remained **live** |
+| Domain A | remains dormant; only **CP31** may activate commerce |
+| Single-use 0022/0023 `workflow_dispatch` | **retired** |
+| Generic production migrate workflow | **retired** (script fail-closed: never applies) |
+| Accepted Production ledger | **0001–0023** |
+| **Next execution** | remaining CP26A items **5–6** (operator-owned hotel lifecycle; Production/test fixture policy) |
 
-Do not dispatch this workflow without a dedicated execution checkpoint. Owner secret remains GitHub Actions `AETHER_DATABASE_OWNER_URL` only — never Vercel.
+Do not dispatch historical 0022/0023 controllers. Owner secret remains GitHub Actions `AETHER_DATABASE_OWNER_URL` only — never Vercel. Future migrations need a dedicated single-use controller and an explicit checkpoint.
 
-## Current accepted baseline (POST-CP25G.3)
+Push to `main` currently auto-deploys Vercel Production. That is a known control-plane characteristic, not a commercial activation.
+
+## Current accepted baseline (POST-CP26A.2)
 
 | Field | Value |
 |---|---|
 | Product | **SCAN / BOOK / GO** (internal history name: Aether Transfer) |
 | Repository | `bizznessfone-cloud/birch-hazel-stone-cloud` |
 | Branch | `main` |
-| Current source SHA | `91ba2c15c6f3b5b11106ebc006e433515e1f0f86` (docs/roadmap on `main`; application baseline `4c20e9b…`) |
+| Last application SHA | `b35ef2fc8bdddef81fcc84aa59d358dba4346a30` (no runtime `src/` change in CP26A.2C) |
 | CP25G.3 | **CLOSED** |
-| **Next execution checkpoint** | **CP26A — COMMERCIAL DORMANCY + SAAS TENANT FOUNDATION** |
+| CP26A.1 / CP26A.2 | **CLOSED** |
+| **Next execution checkpoint** | **CP26A remaining: operator-owned hotel lifecycle + fixture policy** |
 | Forward roadmap | **[docs/ROADMAP.md](docs/ROADMAP.md)** (CP26–CP31) |
 
 ### Production
@@ -34,10 +43,10 @@ Do not dispatch this workflow without a dedicated execution checkpoint. Owner se
 | Field | Value |
 |---|---|
 | Vercel project | `scan-book-go` |
-| Deployment | `dpl_5XnaxYcqkrgWucD54TKgbmvHkfy1` |
+| Last observed deployment | `dpl_7mJ8kBkd1m679TpriPUnYeX8X4qY` |
 | State | READY |
 | Alias | `https://scan-book-go.vercel.app` |
-| Deployed SHA | `4c20e9b9574309a0edbeb03f8675febdef38dede` |
+| Deployed SHA (last observed) | `b35ef2fc8bdddef81fcc84aa59d358dba4346a30` |
 
 Environment (names/presence only):
 
@@ -45,6 +54,7 @@ Environment (names/presence only):
 |---|---|
 | `DATABASE_URL` | PRESENT (`aether_app` runtime LOGIN) |
 | `AETHER_DATABASE_OWNER_URL` | ABSENT |
+| `SBG_SAAS_COMMERCE` | ABSENT (fail-closed Domain A) |
 | `BETTER_AUTH_SECRET` | PRESENT |
 | `BETTER_AUTH_URL` | PRESENT |
 | Stripe / Resend / Ops credentials | ABSENT unless separately proven |
@@ -53,13 +63,14 @@ Environment (names/presence only):
 
 | Layer | State |
 |---|---|
-| Source migrations | `0001`–`0022` present |
-| Production Neon | migrated through **0022** |
-| 0022 | Better Auth runtime DML restored for `aether_app` |
+| Source migrations | `0001`–`0023` present |
+| Production Neon | migrated through **0023** |
+| 0023 | entitlement publication decoupling (`sbg_sync_hotel_entitlement` no longer writes `hotels.status`) |
 | Runtime | `DATABASE_URL` → `aether_app` |
 | Owner / migration plane | `AETHER_DATABASE_OWNER_URL` → `neondb_owner` (not on Vercel) |
 | Preview | PGLite; `aether_runtime` SET ROLE only |
 | Application build | `npm run build` does **not** migrate |
+| Permanent Gate B | `.github/workflows/production-database.yml` (read-only) |
 
 Roles: `neondb_owner` = schema/migration owner; `aether_app` = production LOGIN; `aether_runtime` = PGLite/preview only. Production must not use SET ROLE or owner credentials as runtime.
 
@@ -81,11 +92,12 @@ account → hotel → service → preview → QR → plan → Stripe → LIVE
 - Onboarding source exists. First Production hotel created **through `/app`** is **not** proven.
 - Tenancy exists structurally (`app_hotel_accounts`). Authenticated Production tenant runtime remains unproven.
 - Stripe Connect / SBG subscription / hotel-owned guest Checkout **source** exists. Production Stripe configuration is absent.
+- Domain A Checkout/portal/webhook is fail-closed until `SBG_SAAS_COMMERCE=test|live` (live only at CP31).
 - Resend confirmation-email **source** exists. Production Resend is absent.
 
 ### Guest / Ops
 
-- Guest booking exists. `demo-kos` has Production evidence.
+- Guest booking exists. `demo-kos` is **live** on Production.
 - Hotel-owned guest payment source exists; not Production-proven.
 - `/ops/*` remains isolated from SaaS `/app/*`. Production Ops credentials are absent.
 
@@ -97,10 +109,12 @@ account → hotel → service → preview → QR → plan → Stripe → LIVE
 - Do not claim migrations after 0017 are absent.
 - Do not claim `/app/*` does not exist.
 - Do not claim CP25G.3 remains open.
+- Do not claim 0023 is unapplied or that a 0023 dispatch workflow remains.
 - Do not treat CP26 as commercial go-live. Only CP31 activates commerce.
-- Do not skip CP26A before Stripe test-mode integration.
+- Do not skip remaining CP26A items 5–6 before Stripe test-mode integration (CP26C).
+- Do not start CP26B until remaining CP26A foundation work is authorised.
 
-Canonical forward path: **`docs/ROADMAP.md`**. Next execution: **CP26A**.
+Canonical forward path: **`docs/ROADMAP.md`**. Next execution: remaining **CP26A** items 5–6.
 
 GitHub `main` at the current SHA is authoritative application source. A workspace is never authoritative. Recovery ZIPs are secondary disaster-recovery artifacts. The CP10 ZIP must not be extracted over a newer Git tree without explicit human approval.
 
@@ -112,3 +126,4 @@ GitHub `main` at the current SHA is authoritative application source. A workspac
 - CP10 occupancy ZIP — historical disaster-recovery artifact only.
 - CP19 originally meant Neon binding/verification. That work completed in later controlled production checkpoints; do not treat the old “CP19 unfinished” wording as living state.
 - CP22–CP25 / CP25G.3 source and production work happened after CP17. See `docs/CP22_V1_OPERATOR_ONBOARDING.md`, `docs/CP23_PUBLIC_HOTEL_SLUG.md`, `docs/CP24_STRIPE_BILLING.md` as **completed checkpoint specifications**, not as the next task.
+- Single-use 0022/0023 GitHub Actions workflows existed to apply those migrations once. They were retired after successful Production application. Scripts remain as historical/test evidence (already-applied = no-op).

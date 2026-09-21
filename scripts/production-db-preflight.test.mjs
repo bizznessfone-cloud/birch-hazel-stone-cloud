@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { execFile } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
@@ -8,9 +9,12 @@ import { test } from "node:test";
 import {
   BLOCKED_OWNER_URL,
   PASS_VERDICT,
+  ACCEPTED_LEDGER,
+  REVIEWED_DIGESTS,
   classifyAuth,
   evaluatePreflight,
   historicalSourceMigrations,
+  isAuthorisedPending,
   redact,
 } from "./production-db-preflight.mjs";
 
@@ -20,29 +24,7 @@ const src = readFileSync(join(here, "production-db-preflight.mjs"), "utf8");
 const workflow = readFileSync(join(here, "../.github/workflows/production-database.yml"), "utf8");
 const pkg = JSON.parse(readFileSync(join(here, "../package.json"), "utf8"));
 
-const SOURCE = [
-  "0001_auth.sql",
-  "0002_foundation.sql",
-  "0003_occupancy.sql",
-  "0004_ops_auth.sql",
-  "0005_time_domain.sql",
-  "0006_booking_engine.sql",
-  "0007_inventory.sql",
-  "0008_guest_ux.sql",
-  "0009_ops_desk.sql",
-  "0010_hotel_white_label.sql",
-  "0011_production_hardening.sql",
-  "0012_cp12_tenancy.sql",
-  "0013_cp12b_runtime_login.sql",
-  "0014_cp13a_production_app_role.sql",
-  "0015_cp14_hotel_configuration.sql",
-  "0016_cp14_hotel_timezone.sql",
-  "0017_cp16_runtime_privilege_hardening.sql",
-  "0018_cp22_saas_onboarding.sql",
-  "0019_cp23_public_hotel_slug.sql",
-  "0020_cp24_stripe_billing.sql",
-  "0021_cp25_hotel_guest_payments.sql",
-];
+const SOURCE = [...ACCEPTED_LEDGER];
 
 const LEDGER_0017 = SOURCE.filter((name) => /^00(0[2-9]|1[0-7])_/.test(name));
 
@@ -64,14 +46,14 @@ function baseFacts(overrides = {}) {
     database: "neondb",
     currentUser: "neondb_owner",
     sessionUser: "neondb_owner",
-    ledger: LEDGER_0017,
+    ledger: [...ACCEPTED_LEDGER],
     ledgerReadable: true,
     sourceMigrations: SOURCE,
     authTables: {
-      user: "ABSENT",
-      session: "ABSENT",
-      account: "ABSENT",
-      verification: "ABSENT",
+      user: "PRESENT",
+      session: "PRESENT",
+      account: "PRESENT",
+      verification: "PRESENT",
     },
     aetherAppExists: true,
     occupancy,
@@ -125,58 +107,54 @@ test("missing occupancy invariant fails", () => {
   assert.equal(result.verdict, "BLOCKED — OCCUPANCY INVARIANT NOT PROVEN");
 });
 
-test("coherent migration plan succeeds with 0001 plus 0018-0021 pending", () => {
+test("accepted 0001-0023 ledger with empty pending passes", () => {
   const result = evaluatePreflight(baseFacts());
   assert.equal(result.ok, true);
   assert.equal(result.verdict, PASS_VERDICT);
-  assert.equal(result.authClass, "B");
-  assert.deepEqual(result.pending, [
-    "0001_auth.sql",
-    "0018_cp22_saas_onboarding.sql",
-    "0019_cp23_public_hotel_slug.sql",
-    "0020_cp24_stripe_billing.sql",
-    "0021_cp25_hotel_guest_payments.sql",
-  ]);
+  assert.equal(result.authClass, "A");
+  assert.deepEqual(result.pending, []);
   assert.deepEqual(historicalSourceMigrations(SOURCE), LEDGER_0017);
 });
 
-test("after 0001-0021 applied, only 0022 is the allowed pending migration", () => {
-  const source = [...SOURCE, "0022_cp25g3_better_auth_runtime_privileges.sql"];
-  const ledger = [
-    ...LEDGER_0017,
-    "0001_auth.sql",
-    "0018_cp22_saas_onboarding.sql",
-    "0019_cp23_public_hotel_slug.sql",
-    "0020_cp24_stripe_billing.sql",
-    "0021_cp25_hotel_guest_payments.sql",
-  ];
-  const result = evaluatePreflight(
-    baseFacts({
-      ledger,
-      sourceMigrations: source,
-      authTables: {
-        user: "PRESENT",
-        session: "PRESENT",
-        account: "PRESENT",
-        verification: "PRESENT",
-      },
-    }),
+test("pending 0023 is stale, not a newly authorised migration", () => {
+  const ledger = ACCEPTED_LEDGER.filter(
+    (name) => name !== "0023_cp26a2_entitlement_publication_decoupling.sql",
   );
-  assert.equal(result.ok, true);
-  assert.equal(result.verdict, PASS_VERDICT);
-  assert.equal(result.authClass, "A");
-  assert.deepEqual(result.pending, ["0022_cp25g3_better_auth_runtime_privileges.sql"]);
+  const result = evaluatePreflight(baseFacts({ ledger }));
+  assert.equal(result.ok, false);
+  assert.equal(result.verdict, "BLOCKED — MIGRATION LEDGER INCONSISTENT");
+  assert.deepEqual(result.pending, ["0023_cp26a2_entitlement_publication_decoupling.sql"]);
+  assert.deepEqual(result.unexpectedPending, ["0023_cp26a2_entitlement_publication_decoupling.sql"]);
 });
 
-test("unexpected production migration still fails", () => {
+test("pending 0024 is rejected", () => {
   const result = evaluatePreflight(
     baseFacts({
-      sourceMigrations: [...SOURCE, "0023_unexpected.sql"],
+      sourceMigrations: [...SOURCE, "0024_future.sql"],
     }),
   );
   assert.equal(result.ok, false);
   assert.equal(result.verdict, "BLOCKED — MIGRATION LEDGER INCONSISTENT");
-  assert.deepEqual(result.unexpectedPending, ["0023_unexpected.sql"]);
+  assert.deepEqual(result.unexpectedPending, ["0024_future.sql"]);
+  assert.equal(isAuthorisedPending("0024_future.sql"), false);
+});
+
+test("pending 0025+ is rejected", () => {
+  const result = evaluatePreflight(
+    baseFacts({
+      sourceMigrations: [...SOURCE, "0025_later.sql"],
+    }),
+  );
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.unexpectedPending, ["0025_later.sql"]);
+  assert.equal(isAuthorisedPending("0025_later.sql"), false);
+});
+
+test("no pending migration is automatically authorised", () => {
+  assert.equal(isAuthorisedPending("0001_auth.sql"), false);
+  assert.equal(isAuthorisedPending("0022_cp25g3_better_auth_runtime_privileges.sql"), false);
+  assert.equal(isAuthorisedPending("0023_cp26a2_entitlement_publication_decoupling.sql"), false);
+  assert.equal(isAuthorisedPending("0024_future.sql"), false);
 });
 
 test("auth classification A/B pass and C/D fail", () => {
@@ -198,7 +176,6 @@ test("auth classification A/B pass and C/D fail", () => {
   );
   const incoherent = evaluatePreflight(
     baseFacts({
-      ledger: [...LEDGER_0017, "0001_auth.sql"],
       authTables: { user: "ABSENT", session: "ABSENT", account: "ABSENT", verification: "ABSENT" },
     }),
   );
@@ -254,4 +231,19 @@ test("workflow is dispatch-only, read-only, and does not migrate", () => {
   assert.equal(pkg.scripts["db:preflight"], "node scripts/production-db-preflight.mjs");
   assert.doesNotMatch(pkg.scripts.build, /db:migrate/);
   assert.doesNotMatch(pkg.scripts.build, /db:preflight/);
+});
+
+test("reviewed 0020-0023 source checksums remain intact", () => {
+  for (const [name, expected] of Object.entries(REVIEWED_DIGESTS)) {
+    const bytes = readFileSync(join(here, "../migrations", name));
+    assert.equal(createHash("sha256").update(bytes).digest("hex"), expected, name);
+  }
+});
+
+test("single-use and generic production migrate workflows are retired", () => {
+  const workflows = join(here, "../.github/workflows");
+  assert.equal(existsSync(join(workflows, "cp26a2-0023-production-migrate.yml")), false);
+  assert.equal(existsSync(join(workflows, "cp25g3-0022-production-migrate.yml")), false);
+  assert.equal(existsSync(join(workflows, "production-database-migrate.yml")), false);
+  assert.equal(existsSync(join(workflows, "production-database.yml")), true);
 });

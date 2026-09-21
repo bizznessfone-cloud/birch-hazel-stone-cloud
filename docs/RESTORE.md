@@ -4,7 +4,7 @@ Canonical restore instructions: **`/RESTORE.md`** (repo root).
 Living status: **`BUILD_STATE.md`**.
 Machine-readable identity: **`AETHER_RECOVERY_MANIFEST.json`**.
 
-## Current accepted baseline (POST-CP25G.3)
+## Current accepted baseline (POST-CP26A.2)
 
 GitHub is authoritative for application source.
 
@@ -12,12 +12,13 @@ GitHub is authoritative for application source.
 |---|---|
 | Repository | `bizznessfone-cloud/birch-hazel-stone-cloud` |
 | Branch | `main` |
-| Current source SHA | `91ba2c15c6f3b5b11106ebc006e433515e1f0f86` |
+| Last application SHA | `b35ef2fc8bdddef81fcc84aa59d358dba4346a30` |
 | CP25G.3 | **CLOSED** |
-| **Next execution checkpoint** | **CP26A** |
+| CP26A.1 / CP26A.2 | **CLOSED** |
+| **Next execution checkpoint** | remaining **CP26A** items 5–6 |
 | Forward roadmap | **[ROADMAP.md](ROADMAP.md)** |
-| Production | `scan-book-go` / `dpl_5XnaxYcqkrgWucD54TKgbmvHkfy1` READY |
-| Migrations | `0001`–`0022` |
+| Production | `scan-book-go` / last observed `dpl_7mJ8kBkd1m679TpriPUnYeX8X4qY` READY |
+| Migrations | `0001`–`0023` |
 
 `cp17-known-good` (`45e171a…`) is a historical CP16C/CP17 tag. It is **not** current `main`.
 
@@ -29,14 +30,14 @@ The Grok workspace is ephemeral and **never authoritative**. Recovery ZIPs are *
 git clone https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud.git
 cd birch-hazel-stone-cloud
 git checkout main
-# current accepted SHA: 4c20e9b9574309a0edbeb03f8675febdef38dede
+# last application SHA: b35ef2fc8bdddef81fcc84aa59d358dba4346a30
 ```
 
 Then:
 
 1. Identify repository, branch, `HEAD` SHA before any edit.
 2. Read `BUILD_STATE.md` first, then `RESTORE.md`, `docs/RECOVERY_MANIFEST.md`.
-3. Inspect `migrations/` (must include through `0022`) and `src/lib/aether/`.
+3. Inspect `migrations/` (must include through `0023`) and `src/lib/aether/`.
 4. Do **not** restart the product from scratch.
 5. Do **not** check out `cp17-known-good` unless a human has explicitly authorised a historical rollback.
 6. Run `sh scripts/restore_aether.sh` as a sandbox helper after Git checkout if required by the workspace. If it fails, stop.

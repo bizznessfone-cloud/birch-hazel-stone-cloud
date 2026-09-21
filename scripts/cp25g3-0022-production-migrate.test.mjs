@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { execFile } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
@@ -39,10 +39,7 @@ import {
 const execFileAsync = promisify(execFile);
 const here = dirname(fileURLToPath(import.meta.url));
 const src = readFileSync(join(here, "cp25g3-0022-production-migrate.mjs"), "utf8");
-const workflow = readFileSync(
-  join(here, "../.github/workflows/cp25g3-0022-production-migrate.yml"),
-  "utf8",
-);
+const workflowPath = join(here, "../.github/workflows/cp25g3-0022-production-migrate.yml");
 const pkg = JSON.parse(readFileSync(join(here, "../package.json"), "utf8"));
 const migrationBytes = readFileSync(join(here, "../migrations", TARGET_MIGRATION));
 const migrationDigest = createHash("sha256").update(migrationBytes).digest("hex");
@@ -349,29 +346,10 @@ test("build and Vercel cannot invoke this controller", () => {
   assert.doesNotMatch(pkg.scripts.build, /cp25g3-0022/);
   assert.doesNotMatch(pkg.scripts.build, /production-db-migrate/);
   assert.equal(pkg.scripts["db:migrate:0022"], "node scripts/cp25g3-0022-production-migrate.mjs");
-  assert.doesNotMatch(workflow, /vercel/i);
-  assert.doesNotMatch(workflow, /deploy/i);
 });
 
-test("workflow is manual-only with exact confirmation and concurrency protection", () => {
-  assert.match(workflow, /workflow_dispatch:/);
-  assert.doesNotMatch(workflow, /\bpush\s*:/);
-  assert.doesNotMatch(workflow, /\bpull_request\s*:/);
-  assert.doesNotMatch(workflow, /\bschedule\s*:/);
-  assert.doesNotMatch(workflow, /\bworkflow_run\s*:/);
-  assert.match(workflow, /permissions:\s*\n\s*contents:\s*read/s);
-  assert.match(workflow, /persist-credentials:\s*false/);
-  assert.match(workflow, /node-version:\s*"22"/);
-  assert.match(workflow, /npm ci/);
-  assert.match(workflow, /APPLY-CP25G3-0022-PRODUCTION/);
-  assert.match(workflow, /cancel-in-progress:\s*false/);
-  assert.match(workflow, /concurrency:/);
-  assert.match(workflow, /CP25G3_CONFIRMATION/);
-  assert.match(workflow, /secrets\.AETHER_DATABASE_OWNER_URL/);
-  assert.doesNotMatch(workflow, /DATABASE_URL/);
-  assert.doesNotMatch(workflow, /set -x/);
-  assert.doesNotMatch(workflow, /db:migrate/);
-  assert.match(workflow, /node scripts\/cp25g3-0022-production-migrate\.mjs/);
+test("0022 workflow_dispatch mutation surface is retired", () => {
+  assert.equal(existsSync(workflowPath), false);
 });
 
 test("controller source never emits secrets and never uses DATABASE_URL", () => {

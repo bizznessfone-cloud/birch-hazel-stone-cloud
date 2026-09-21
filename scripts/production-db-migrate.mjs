@@ -1,40 +1,29 @@
 #!/usr/bin/env node
 /**
- * CP25E — guarded production migration controller.
+ * CP25E generic production migrator — RETIRED as an apply path (CP26A.2C).
  *
- * Read-only preflight + exact baseline guard, then scripts/migrate.mjs,
- * then read-only post-migration verification.
+ * Accepted Production history is 0001–0023. No pending migration is
+ * automatically authorised. This script never applies SQL and never
+ * connects to Production. Future migrations need a dedicated single-use
+ * controller plus explicit checkpoint authorisation.
  *
  * Never uses DATABASE_URL. Never prints secrets. Never deploys.
- * Never calls entitlement/provision/Stripe/booking functions.
  */
-import { execFile } from "node:child_process";
-import { dirname, join, resolve } from "node:path";
+import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { promisify } from "node:util";
-import pg from "pg";
 import {
   BLOCKED_OWNER_URL,
   EXPECTED_DATABASE,
   EXPECTED_OWNER,
-  EXPECTED_RUNTIME,
+  ACCEPTED_LEDGER,
   evaluatePreflight,
-  inspectProduction,
   redact,
-  report,
 } from "./production-db-preflight.mjs";
-import { readdir } from "node:fs/promises";
 import { resolveMigratePlan } from "./migrate-policy.mjs";
 
-const execFileAsync = promisify(execFile);
-
-export const EXPECTED_PENDING_PLAN = [
-  "0001_auth.sql",
-  "0018_cp22_saas_onboarding.sql",
-  "0019_cp23_public_hotel_slug.sql",
-  "0020_cp24_stripe_billing.sql",
-  "0021_cp25_hotel_guest_payments.sql",
-];
+export const EXPECTED_PENDING_PLAN = [];
+export const GENERIC_MIGRATE_BLOCKED = "BLOCKED — NO GENERIC PRODUCTION MIGRATION AUTHORISED";
+export const LEDGER_CURRENT = "GATE PASS — PRODUCTION LEDGER CURRENT — NO MUTATION";
 
 export const EXPECTED_HISTORICAL_LEDGER = [
   "0002_foundation.sql",
@@ -67,14 +56,6 @@ export const MIGRATE_FAILED = "BLOCKED — MIGRATION FAILED";
 const AUTH_TABLES = ["user", "session", "account", "verification"];
 const OCCUPANCY = ["bookings_driver_occupancy_excl", "bookings_vehicle_occupancy_excl"];
 
-function sameList(actual, expected) {
-  return (
-    Array.isArray(actual) &&
-    actual.length === expected.length &&
-    actual.every((value, index) => value === expected[index])
-  );
-}
-
 function hotelMatches(hotel) {
   return Boolean(
     hotel &&
@@ -106,11 +87,6 @@ function ledgerHasAll(ledger, names) {
   return names.every((name) => set.has(name));
 }
 
-function ledgerHasNone(ledger, names) {
-  const set = new Set(ledger ?? []);
-  return names.every((name) => !set.has(name));
-}
-
 export function evaluateMigrationBaseline(preflight) {
   if (!preflight?.ok) {
     return {
@@ -119,29 +95,30 @@ export function evaluateMigrationBaseline(preflight) {
       migrated: false,
     };
   }
-  const failures = [];
-  if (preflight.database !== EXPECTED_DATABASE) failures.push("database");
-  if (preflight.currentUser !== EXPECTED_OWNER || preflight.sessionUser !== EXPECTED_OWNER) {
-    failures.push("owner");
+  if ((preflight.pending ?? []).length > 0) {
+    return {
+      ok: false,
+      verdict: GENERIC_MIGRATE_BLOCKED,
+      pending: preflight.pending,
+      migrated: false,
+    };
   }
-  if (!ledgerHasAll(preflight.ledger, EXPECTED_HISTORICAL_LEDGER)) failures.push("historical-ledger");
-  if (!ledgerHasNone(preflight.ledger, EXPECTED_PENDING_PLAN)) failures.push("pending-already-applied");
-  if (!sameList(preflight.pending, EXPECTED_PENDING_PLAN)) failures.push("pending-plan");
-  if (preflight.authClass !== "B") failures.push("auth-class");
-  if (!authAll(preflight.authTables, "ABSENT")) failures.push("auth-tables");
-  if (String(preflight.schemaPhase) !== EXPECTED_SCHEMA_PHASE) failures.push("schema-phase");
-  if (String(preflight.checkpoint) !== EXPECTED_BASELINE_CHECKPOINT) failures.push("checkpoint");
-  if (!preflight.aetherAppExists) failures.push("aether-app");
-  if (!ownersAreOwner(preflight.tableOwners)) failures.push("table-owners");
-  if (!occupancyIntact(preflight.occupancy)) failures.push("occupancy");
-  if (!hotelMatches(preflight.hotel)) failures.push("demo-kos");
-  if (failures.length) {
-    return { ok: false, verdict: BASELINE_BLOCKED, failures, migrated: false };
+  const ledger = [...(preflight.ledger ?? [])].map(String);
+  const missingAccepted = ACCEPTED_LEDGER.filter((name) => !ledger.includes(name));
+  if (missingAccepted.length) {
+    return {
+      ok: false,
+      verdict: BASELINE_BLOCKED,
+      failures: ["accepted-ledger"],
+      missingAccepted,
+      migrated: false,
+    };
   }
   return {
     ok: true,
-    verdict: BASELINE_PASS,
-    pending: preflight.pending,
+    alreadyCurrent: true,
+    verdict: LEDGER_CURRENT,
+    pending: [],
     migrated: false,
   };
 }
@@ -160,7 +137,7 @@ export function evaluateMigrationAftermath(preflight) {
     failures.push("owner");
   }
   if (!ledgerHasAll(preflight.ledger, EXPECTED_HISTORICAL_LEDGER)) failures.push("historical-ledger");
-  if (!ledgerHasAll(preflight.ledger, EXPECTED_PENDING_PLAN)) failures.push("applied-plan");
+  if (!ledgerHasAll(preflight.ledger, ACCEPTED_LEDGER)) failures.push("accepted-ledger");
   if ((preflight.pending ?? []).length > 0) failures.push("pending-remain");
   if (preflight.authClass !== "A") failures.push("auth-class");
   if (!authAll(preflight.authTables, "PRESENT")) failures.push("auth-tables");
@@ -194,7 +171,7 @@ export function assertProductionMigrateWillNotSkip(env) {
   return { ok: true, plan };
 }
 
-export async function runGuardedMigrate({ env, loadFacts, applyMigrations }) {
+export async function runGuardedMigrate({ env, loadFacts }) {
   const owner = String(env.AETHER_DATABASE_OWNER_URL ?? "").trim();
   if (!owner) {
     return { ok: false, verdict: BLOCKED_OWNER_URL, migrated: false };
@@ -202,34 +179,7 @@ export async function runGuardedMigrate({ env, loadFacts, applyMigrations }) {
   const before = await loadFacts();
   const pre = evaluatePreflight(before);
   const baseline = evaluateMigrationBaseline(pre);
-  if (!baseline.ok) {
-    return { ...baseline, preflight: pre, migrated: false };
-  }
-  const mode = assertProductionMigrateWillNotSkip(env);
-  if (!mode.ok) {
-    return { ...mode, preflight: pre, migrated: false };
-  }
-  let applyError = null;
-  try {
-    await applyMigrations(productionMigrateChildEnv(env));
-  } catch (err) {
-    applyError = err;
-  }
-  const after = await loadFacts();
-  const postPre = evaluatePreflight(after);
-  if (applyError) {
-    return {
-      ok: false,
-      verdict: MIGRATE_FAILED,
-      migrated: true,
-      error: redact(applyError?.message || applyError),
-      preflight: pre,
-      postflight: postPre,
-      ledger: after?.ledger ?? [],
-    };
-  }
-  const aftermath = evaluateMigrationAftermath(postPre);
-  return { ...aftermath, preflight: pre, postflight: postPre, migrated: true };
+  return { ...baseline, preflight: pre, migrated: false };
 }
 
 function say(line) {
@@ -242,71 +192,13 @@ function fail(verdict, extra = "") {
   process.exitCode = 1;
 }
 
-async function loadSourceMigrations(rootDir) {
-  const entries = await readdir(join(rootDir, "migrations"));
-  return entries.filter((name) => name.endsWith(".sql")).sort((a, b) => a.localeCompare(b));
-}
-
-async function inspectWithOwner(ownerUrl, sourceMigrations) {
-  const pool = new pg.Pool({ connectionString: ownerUrl, max: 1 });
-  const client = await pool.connect();
-  let began = false;
-  try {
-    await client.query("BEGIN READ ONLY");
-    began = true;
-    return await inspectProduction(client, sourceMigrations);
-  } finally {
-    if (began) {
-      try {
-        await client.query("ROLLBACK");
-      } catch (err) {
-        say(redact(err?.message || err));
-      }
-    }
-    client.release();
-    await pool.end();
-  }
-}
-
-async function applyProductionMigrations(childEnv) {
-  const script = join(dirname(fileURLToPath(import.meta.url)), "migrate.mjs");
-  try {
-    const { stdout, stderr } = await execFileAsync(process.execPath, [script], {
-      env: childEnv,
-    });
-    const out = redact(`${stdout || ""}${stderr || ""}`);
-    if (out.trim()) say(out.trimEnd());
-  } catch (err) {
-    const out = redact(`${err?.stdout || ""}${err?.stderr || ""}${err?.message || err}`);
-    if (out.trim()) say(out.trimEnd());
-    throw err;
-  }
-}
-
 async function main() {
   const ownerUrl = String(process.env.AETHER_DATABASE_OWNER_URL ?? "").trim();
   if (!ownerUrl) {
     fail(BLOCKED_OWNER_URL);
     return;
   }
-  const rootDir = join(dirname(fileURLToPath(import.meta.url)), "..");
-  const sourceMigrations = await loadSourceMigrations(rootDir);
-  const result = await runGuardedMigrate({
-    env: process.env,
-    loadFacts: () => inspectWithOwner(ownerUrl, sourceMigrations),
-    applyMigrations: applyProductionMigrations,
-  });
-  if (result.preflight) report(result.preflight);
-  if (result.failures?.length) {
-    say("guard failures:");
-    for (const name of result.failures) say(`  ${name}`);
-  }
-  if (result.postflight) {
-    say("post-migration:");
-    report(result.postflight);
-  }
-  say(result.verdict);
-  if (!result.ok) process.exitCode = 1;
+  fail(GENERIC_MIGRATE_BLOCKED);
 }
 
 const invokedDirectly =

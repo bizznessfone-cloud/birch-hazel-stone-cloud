@@ -2,37 +2,40 @@
   "project": "SCAN / BOOK / GO",
   "guest_lockup": "SCAN. BOOK. GO.",
   "internal_history_name": "Aether Transfer",
-  "current_source_sha": "91ba2c15c6f3b5b11106ebc006e433515e1f0f86",
+  "current_source_sha": "b35ef2fc8bdddef81fcc84aa59d358dba4346a30",
   "cp25g3": "CLOSED",
-  "next_numbered_checkpoint": "CP26A",
-  "next_execution_checkpoint": "CP26A — COMMERCIAL DORMANCY + SAAS TENANT FOUNDATION",
+  "cp26a1": "CLOSED",
+  "cp26a2": "CLOSED",
+  "next_numbered_checkpoint": "CP26A-remaining-5-6",
+  "next_execution_checkpoint": "CP26A remaining: operator-owned hotel lifecycle + fixture policy",
   "forward_roadmap": "docs/ROADMAP.md",
   "do_not_invent_cp26": false,
-  "phase": "POST-CP25G.3. Next execution CP26A. CP26 builds/tests SaaS subscriptions and is NOT go-live. Only CP31 activates commerce. See docs/ROADMAP.md.",
-  "timestamp": "2026-09-20T19:19:00+03:00",
+  "phase": "POST-CP26A.2. Remaining CP26A items 5-6. CP26 builds/tests SaaS subscriptions and is NOT go-live. Only CP31 activates commerce. See docs/ROADMAP.md.",
+  "timestamp": "2026-09-21T12:07:00+03:00",
   "production": {
     "vercel_project": "scan-book-go",
-    "deployment_id": "dpl_5XnaxYcqkrgWucD54TKgbmvHkfy1",
+    "deployment_id": "dpl_7mJ8kBkd1m679TpriPUnYeX8X4qY",
     "state": "READY",
     "alias": "https://scan-book-go.vercel.app",
-    "deployed_sha": "4c20e9b9574309a0edbeb03f8675febdef38dede",
+    "deployed_sha": "b35ef2fc8bdddef81fcc84aa59d358dba4346a30",
     "DATABASE_URL": "PRESENT",
     "AETHER_DATABASE_OWNER_URL": "ABSENT",
+    "SBG_SAAS_COMMERCE": "ABSENT",
     "BETTER_AUTH_SECRET": "PRESENT",
     "BETTER_AUTH_URL": "PRESENT"
   },
   "migrations": {
-    "source": "0001-0022",
-    "production_neon": "through 0022"
+    "source": "0001-0023",
+    "production_neon": "through 0023"
   },
-  "restore_checkpoint_id": "main@4c20e9b9574309a0edbeb03f8675febdef38dede",
+  "restore_checkpoint_id": "main@b35ef2fc8bdddef81fcc84aa59d358dba4346a30",
   "historical_cp17_tag": "cp17-known-good",
   "historical_cp17_sha": "45e171a23037b7c94005018cd2126033a449d6f0",
-  "last_known_good_checkpoint": "POST-CP25G.3 at 4c20e9b9574309a0edbeb03f8675febdef38dede",
+  "last_known_good_checkpoint": "POST-CP26A.2 at b35ef2fc8bdddef81fcc84aa59d358dba4346a30",
   "restored_from": {
     "status": "HISTORICAL",
     "uploaded_archive": "attachments/AETHER_TRANSFER_CP010_DATABASE_2026-09-05.zip",
-    "warning": "The CP10 ZIP is a secondary disaster-recovery artifact. MUST NOT be extracted over a newer Git tree without explicit human approval. Current source is GitHub main at 4c20e9b, not 45e171a / cp17-known-good."
+    "warning": "The CP10 ZIP is a secondary disaster-recovery artifact. MUST NOT be extracted over a newer Git tree without explicit human approval. Current source is GitHub main at b35ef2f, not 45e171a / cp17-known-good."
   },
-  "note": "File hashes and file lists below (if present in git history of this file) were a CP17-era snapshot and are not the current tree inventory. Use git and BUILD_STATE.md for current source."
+  "note": "File hashes and file lists below (if present in git history of this file) were a CP17-era snapshot and are not the current tree inventory. Use git and BUILD_STATE.md for current source. Single-use 0022/0023 mutation workflows are retired."
 }
