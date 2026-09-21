@@ -3,7 +3,7 @@
 This file must let a new developer or coding agent continue without the
 original conversation. No secrets.
 
-## Current accepted baseline (POST-CP26A.4)
+## Current accepted baseline (POST-CP26A)
 
 GitHub is authoritative for application source. Living status: **`BUILD_STATE.md`**.
 
@@ -13,18 +13,17 @@ GitHub is authoritative for application source. Living status: **`BUILD_STATE.md
 | Branch | `main` |
 | Last application SHA | `b35ef2fc8bdddef81fcc84aa59d358dba4346a30` |
 | CP25G.3 | **CLOSED** |
-| CP26A.1 / CP26A.2 | **CLOSED** |
-| CP26A.4 | **CLOSED** (local tenant foundation + fixture policy) |
-| **Next execution checkpoint** | **CP26A.5** — Production verification identity + one owned hotel, commerce OFF |
+| **CP26A** | **CLOSED** |
+| **Next execution checkpoint** | **CP26B — Domain A subscription lifecycle completion** |
 | Forward roadmap | **[ROADMAP.md](ROADMAP.md)** |
 | Fixture policy | **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)** |
 | Product | SCAN / BOOK / GO |
-| Production | Vercel `scan-book-go` / last observed `dpl_7mJ8kBkd1m679TpriPUnYeX8X4qY` READY |
+| Production | Vercel `scan-book-go` / last observed `dpl_7MFpVnCV4CbyoUjev1ZjcLVm2vtn` READY |
 | Alias | `https://scan-book-go.vercel.app` |
 | Database | Production Neon migrated through **0023** |
 | Runtime | `DATABASE_URL` → `aether_app`; owner URL **ABSENT** from Vercel |
-| Auth | Better Auth Production configured; CP25G.3 closed |
-| SaaS | `/app/*` exists; first `/app` hotel not Production-proven |
+| Auth | Better Auth Production configured; returning sign-in **proven CP26A.5** |
+| SaaS | `/app/*` exists; verification hotel `sbg-verify-a5` **configured not live** |
 | Stripe / Resend | source present; Production configuration absent; Domain A fail-closed |
 
 `cp17-known-good` (`45e171a23037b7c94005018cd2126033a449d6f0`) is an immutable **historical** CP16C/CP17 tag, not current `main`.
@@ -37,10 +36,10 @@ A workspace is never authoritative. Recovery ZIPs are secondary artifacts. The C
 |---|---|
 | Product | SCAN / BOOK / GO (history name: Aether Transfer) |
 | Guest lockup | SCAN. BOOK. GO. |
-| Current source checkpoint | POST-CP26A.4 (local tenant foundation + fixture policy; Production 0023 applied; dispatch retired) |
+| Current source checkpoint | POST-CP26A (verification tenant retained; Production 0023 applied; dispatch retired) |
 | Trusted occupancy baseline | CP10 (historical occupancy engine; not current source SHA) |
 | Previous abandoned original CP11 used | **NO** |
-| Current phase | CP26A.1/2/4 CLOSED; next **CP26A.5**; see ROADMAP.md and FIXTURE_POLICY.md |
+| Current phase | **CP26A CLOSED**; next **CP26B**; see ROADMAP.md and FIXTURE_POLICY.md |
 | Date of this alignment | 2026-09-21 |
 
 ## Database migration state
@@ -51,8 +50,6 @@ Application build does not migrate. Generic production-migrate GitHub Action is 
 
 ## Auth (do not reopen CP25G.3)
 
-Proven: signup, session, cookies, `/app`, persistence, sign-out, signed-out boundary.
-
-Not Production-proven: returning sign-in POST; authenticated tenant runtime.
+Proven: signup, session, cookies, `/app`, persistence, sign-out, signed-out boundary, returning sign-in (CP26A.5).
 
 Deferred: copied-cookie stale replay; password recovery; email verification.

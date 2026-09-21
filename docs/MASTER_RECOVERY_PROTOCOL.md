@@ -3,7 +3,7 @@
 This file is the permanent copy of the rebuild protocol used to reconstruct
 Aether Transfer after the original implementation workspace was lost.
 
-## Current accepted baseline (POST-CP26A.4)
+## Current accepted baseline (POST-CP26A)
 
 GitHub is the authoritative source for application source code. Living status: **`BUILD_STATE.md`**.
 
@@ -13,11 +13,11 @@ GitHub is the authoritative source for application source code. Living status: *
 | Branch | `main` |
 | Last application SHA | `b35ef2fc8bdddef81fcc84aa59d358dba4346a30` |
 | CP25G.3 | **CLOSED** |
-| CP26A.1 / CP26A.2 / CP26A.4 | **CLOSED** |
-| **Next execution checkpoint** | **CP26A.5** |
+| **CP26A** | **CLOSED** |
+| **Next execution checkpoint** | **CP26B** |
 | Forward roadmap | **[ROADMAP.md](ROADMAP.md)** |
 | Fixture policy | **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)** |
-| Production | `scan-book-go` / last observed `dpl_7mJ8kBkd1m679TpriPUnYeX8X4qY` READY |
+| Production | `scan-book-go` / last observed `dpl_7MFpVnCV4CbyoUjev1ZjcLVm2vtn` READY |
 | Migrations | `0001`–`0023` |
 
 `cp17-known-good` (`45e171a23037b7c94005018cd2126033a449d6f0`) is an immutable **historical** tag. It is not current `main`.
@@ -70,7 +70,7 @@ CP20 email architecture, CP21/CP21B, CP22 onboarding, CP23 public slug, CP24
 Stripe Connect source, CP25 guest-payment source, CP25G.3 Production Better Auth
 (CLOSED).
 
-Next execution checkpoint: **CP26A.5**. Canonical roadmap: **[ROADMAP.md](ROADMAP.md)**. Fixture policy: **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)**.
+Next execution checkpoint: **CP26B**. Canonical roadmap: **[ROADMAP.md](ROADMAP.md)**. Fixture policy: **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)**.
 CP26 is not commercial go-live. Only CP31 activates commerce.
 
 ## If the workspace disappears

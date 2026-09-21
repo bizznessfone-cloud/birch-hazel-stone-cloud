@@ -1,4 +1,4 @@
-## CURRENT ACCEPTED BASELINE (POST-CP26A.4)
+## CURRENT ACCEPTED BASELINE (POST-CP26A)
 
 Living source-of-truth. Historical README text below is evidence only.
 
@@ -9,8 +9,8 @@ Living source-of-truth. Historical README text below is evidence only.
 | Branch | `main` |
 | Last application SHA | `b35ef2fc8bdddef81fcc84aa59d358dba4346a30` |
 | CP25G.3 | **CLOSED** |
-| CP26A.1 / CP26A.2 / CP26A.4 | **CLOSED** |
-| **Next execution checkpoint** | **CP26A.5** — Production verification identity + one owned hotel, commerce OFF |
+| **CP26A** | **CLOSED** |
+| **Next execution checkpoint** | **CP26B — Domain A subscription lifecycle completion** |
 | Forward roadmap | **[docs/ROADMAP.md](docs/ROADMAP.md)** |
 | Fixture policy | **[docs/FIXTURE_POLICY.md](docs/FIXTURE_POLICY.md)** |
 
@@ -21,10 +21,10 @@ CP26 builds/tests SBG SaaS subscriptions. **CP26 is not go-live.** Only **CP31**
 | Field | Value |
 |---|---|
 | Vercel project | `scan-book-go` |
-| Deployment | last observed `dpl_7mJ8kBkd1m679TpriPUnYeX8X4qY` |
+| Deployment | last observed `dpl_7MFpVnCV4CbyoUjev1ZjcLVm2vtn` |
 | State | READY |
 | Alias | `https://scan-book-go.vercel.app` |
-| Deployed SHA (last observed) | `b35ef2fc8bdddef81fcc84aa59d358dba4346a30` |
+| Deployed SHA (last observed) | `d42f7940c698c8b80f9af65a6d43a30f3b3f3831` |
 
 Environment (names/presence only; never secret values):
 
@@ -44,9 +44,7 @@ Environment (names/presence only; never secret values):
 
 ### Auth (do not reopen CP25G.3)
 
-**Proven in Production:** email/password signup, session creation, secure cookies, authenticated `/app`, session persistence, sign-out, signed-out `/app` boundary.
-
-**Implemented, not Production-proven:** returning email/password sign-in POST; authenticated tenant runtime.
+**Proven in Production:** email/password signup, session creation, secure cookies, authenticated `/app`, session persistence, sign-out, signed-out `/app` boundary, **returning email/password sign-in (CP26A.5)**.
 
 **Backlog / deferred:** copied-cookie stale-session replay; password recovery; email verification.
 
@@ -54,11 +52,11 @@ Environment (names/presence only; never secret values):
 
 V1 journey: `account → hotel → service → preview → QR → plan → Stripe → LIVE`
 
-- `/app/*` authenticated SaaS surface exists. First Production hotel **through `/app`** is not yet proven.
-- Tenancy (`app_hotel_accounts`) exists structurally; authenticated Production tenant runtime is unproven.
+- `/app/*` authenticated SaaS surface exists. First Production hotel **through `/app`** is proven **configured, not live** (`sbg-verify-a5`).
+- Tenancy (`app_hotel_accounts`) exists structurally; verification policy is one user / one hotel.
 - Stripe Connect / SBG subscription / hotel-owned guest payment **source** exists; Production Stripe configuration is absent.
 - Resend confirmation-email **source** exists; Production Resend configuration is absent.
-- Guest booking exists; `demo-kos` has Production evidence. Hotel-owned guest payment is not Production-proven.
+- Guest booking exists; canonical live demo is `/book/demo-kos`. Hotel-owned guest payment is not Production-proven.
 - `/ops/*` remains isolated. Production Ops credentials are absent.
 
 Read `BUILD_STATE.md` for the living status record. Restore from GitHub `main` at the current SHA, not from `cp17-known-good` (that tag is a historical CP16C/CP17 marker).
@@ -89,8 +87,7 @@ human approval.
 ## Restore
 
 See `RESTORE.md` (repo root) and `docs/RESTORE.md`. Clone the GitHub repository
-and check out **current `main`** (`4c20e9b9574309a0edbeb03f8675febdef38dede`
-at the time of this alignment). Do not restore from a checkpoint ZIP unless Git
+and check out **current `main`**. Do not restore from a checkpoint ZIP unless Git
 is unavailable and a human has approved that disaster-recovery path.
 
 ## Stack

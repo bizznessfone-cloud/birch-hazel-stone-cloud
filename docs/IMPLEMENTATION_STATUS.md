@@ -1,19 +1,20 @@
-## CURRENT STATE (POST-CP26A.4)
+## CURRENT STATE (POST-CP26A)
 
 Living status: **`BUILD_STATE.md`**.
 
 - Product: **SCAN / BOOK / GO**
 - Last application SHA: `b35ef2fc8bdddef81fcc84aa59d358dba4346a30`
-- CP25G.3 / CP26A.1 / CP26A.2 / CP26A.4: **CLOSED**
-- **Next execution checkpoint: CP26A.5 — Production verification identity + one owned hotel, commerce OFF**
+- CP25G.3 / **CP26A**: **CLOSED**
+- **Next execution checkpoint: CP26B — Domain A subscription lifecycle completion** (commerce OFF)
 - Forward roadmap: **[ROADMAP.md](ROADMAP.md)** (CP26 build/test commerce → CP31 activate)
 - Fixture policy: **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)**
-- Vercel Production `scan-book-go` / last observed `dpl_7mJ8kBkd1m679TpriPUnYeX8X4qY` READY
+- Vercel Production `scan-book-go` / last observed `dpl_7MFpVnCV4CbyoUjev1ZjcLVm2vtn` READY
 - Neon Production migrated through **0023**
 - `/app/*` exists (SaaS). `/ops/*` remains internal operations.
 - V1 journey: `account → hotel → service → preview → QR → plan → Stripe → LIVE`
 - Stripe/Resend Production configuration: **absent**
-- First Production hotel through `/app`: **not proven** (CP26A.5)
+- First Production hotel through `/app`: **configured, not live** (`sbg-verify-a5`)
+- Returning Production sign-in: **proven CP26A.5**
 
 The historical status table below is preserved as evidence and must not override current source.
 
@@ -49,8 +50,8 @@ Never mark a phase PASS merely because the UI renders.
 | 12B | Pre-Vercel production hardening | later completed on Neon/Vercel |
 | 13A | SQL-created production LOGIN `aether_app` | later completed on Neon |
 
-Later completed (not in the original table): CP14–CP17, CP19 production binding, CP20 email architecture, CP21/CP21B, CP22 onboarding, CP23 public slug, CP24 Stripe Connect source, CP25 guest-payment source, CP25G.3 Production Better Auth configuration (CLOSED).
+Later completed (not in the original table): CP14–CP17, CP19 production binding, CP20 email architecture, CP21/CP21B, CP22 onboarding, CP23 public slug, CP24 Stripe Connect source, CP25 guest-payment source, CP25G.3 Production Better Auth configuration (CLOSED), CP26A commercial dormancy + verification tenant (CLOSED).
 
 ## Next
 
-**CP26A.5.** Canonical definitions: **[ROADMAP.md](ROADMAP.md)**. CP26 is not go-live.
+**CP26B.** Canonical definitions: **[ROADMAP.md](ROADMAP.md)**. CP26 is not go-live.

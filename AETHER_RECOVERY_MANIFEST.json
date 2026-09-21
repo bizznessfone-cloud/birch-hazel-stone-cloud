@@ -4,27 +4,38 @@
   "internal_history_name": "Aether Transfer",
   "current_source_sha": "b35ef2fc8bdddef81fcc84aa59d358dba4346a30",
   "cp25g3": "CLOSED",
+  "cp26a": "CLOSED",
   "cp26a1": "CLOSED",
   "cp26a2": "CLOSED",
   "cp26a4": "CLOSED",
-  "next_numbered_checkpoint": "CP26A.5",
-  "next_execution_checkpoint": "CP26A.5 — operator-supervised Production verification identity + one owned hotel, commerce OFF",
+  "cp26a5": "CLOSED",
+  "cp26a6": "CLOSED",
+  "next_numbered_checkpoint": "CP26B",
+  "next_execution_checkpoint": "CP26B — Domain A subscription lifecycle completion (build/integrate/test only; commerce OFF)",
   "forward_roadmap": "docs/ROADMAP.md",
   "fixture_policy": "docs/FIXTURE_POLICY.md",
   "do_not_invent_cp26": false,
-  "phase": "POST-CP26A.4. Local tenant foundation and fixture policy proven. Next CP26A.5 Production verification fixture. CP26 builds/tests SaaS subscriptions and is NOT go-live. Only CP31 activates commerce. See docs/ROADMAP.md.",
-  "timestamp": "2026-09-21T12:07:00+03:00",
+  "phase": "POST-CP26A CLOSED. Persistent Production verification tenant sbg-verify-a5 configured-not-live. Returning sign-in proven. Next CP26B Domain A lifecycle source with commerce OFF. CP26 is NOT go-live. Only CP31 activates commerce. See docs/ROADMAP.md.",
+  "timestamp": "2026-09-21T19:25:00+03:00",
   "production": {
     "vercel_project": "scan-book-go",
-    "deployment_id": "dpl_7mJ8kBkd1m679TpriPUnYeX8X4qY",
+    "deployment_id": "dpl_7MFpVnCV4CbyoUjev1ZjcLVm2vtn",
     "state": "READY",
     "alias": "https://scan-book-go.vercel.app",
-    "deployed_sha": "b35ef2fc8bdddef81fcc84aa59d358dba4346a30",
+    "deployed_sha": "d42f7940c698c8b80f9af65a6d43a30f3b3f3831",
     "DATABASE_URL": "PRESENT",
     "AETHER_DATABASE_OWNER_URL": "ABSENT",
     "SBG_SAAS_COMMERCE": "ABSENT",
     "BETTER_AUTH_SECRET": "PRESENT",
     "BETTER_AUTH_URL": "PRESENT"
+  },
+  "verification_tenant": {
+    "classification": "PERSISTENT PRODUCTION VERIFICATION TENANT — RETAIN",
+    "hotel_name": "SBG Verification Hotel",
+    "booking_code": "sbg-verify-a5",
+    "public_slug": "erification-otel",
+    "status": "configured",
+    "email": "REDACTED"
   },
   "migrations": {
     "source": "0001-0023",
@@ -33,11 +44,11 @@
   "restore_checkpoint_id": "main@b35ef2fc8bdddef81fcc84aa59d358dba4346a30",
   "historical_cp17_tag": "cp17-known-good",
   "historical_cp17_sha": "45e171a23037b7c94005018cd2126033a449d6f0",
-  "last_known_good_checkpoint": "POST-CP26A.4 local tenant foundation + fixture policy; last application SHA b35ef2fc8bdddef81fcc84aa59d358dba4346a30",
+  "last_known_good_checkpoint": "POST-CP26A CLOSED; last application SHA b35ef2fc8bdddef81fcc84aa59d358dba4346a30",
   "restored_from": {
     "status": "HISTORICAL",
     "uploaded_archive": "attachments/AETHER_TRANSFER_CP010_DATABASE_2026-09-05.zip",
-    "warning": "The CP10 ZIP is a secondary disaster-recovery artifact. MUST NOT be extracted over a newer Git tree without explicit human approval. Current source is GitHub main at b35ef2f, not 45e171a / cp17-known-good."
+    "warning": "The CP10 ZIP is a secondary disaster-recovery artifact. MUST NOT be extracted over a newer Git tree without explicit human approval. Current last application SHA is b35ef2f, not 45e171a / cp17-known-good."
   },
-  "note": "File hashes and file lists below (if present in git history of this file) were a CP17-era snapshot and are not the current tree inventory. Use git and BUILD_STATE.md for current source. Single-use 0022/0023 mutation workflows are retired."
+  "note": "File hashes and file lists below (if present in git history of this file) were a CP17-era snapshot and are not the current tree inventory. Use git and BUILD_STATE.md for current source. Single-use 0022/0023 mutation workflows are retired. CP26A.6 is documentation only; auto-deploy of this SHA must not activate commerce."
 }

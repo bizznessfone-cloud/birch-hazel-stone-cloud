@@ -1,6 +1,6 @@
 # RESTORE.md — reconstruct SCAN / BOOK / GO without this conversation
 
-## Current accepted baseline (POST-CP26A.4)
+## Current accepted baseline (POST-CP26A)
 
 GitHub is authoritative for application source. Living status: **`BUILD_STATE.md`**.
 
@@ -10,12 +10,11 @@ GitHub is authoritative for application source. Living status: **`BUILD_STATE.md
 | Branch | `main` |
 | Last application SHA | `b35ef2fc8bdddef81fcc84aa59d358dba4346a30` |
 | CP25G.3 | **CLOSED** |
-| CP26A.1 / CP26A.2 | **CLOSED** |
-| CP26A.4 | **CLOSED** (local tenant foundation + fixture policy) |
-| **Next execution checkpoint** | **CP26A.5** — Production verification identity + one owned hotel, commerce OFF |
+| **CP26A** | **CLOSED** |
+| **Next execution checkpoint** | **CP26B — Domain A subscription lifecycle completion** |
 | Forward roadmap | **`docs/ROADMAP.md`** |
 | Fixture policy | **`docs/FIXTURE_POLICY.md`** |
-| Production | Vercel `scan-book-go` / last observed `dpl_7mJ8kBkd1m679TpriPUnYeX8X4qY` READY |
+| Production | Vercel `scan-book-go` / last observed `dpl_7MFpVnCV4CbyoUjev1ZjcLVm2vtn` READY |
 | Alias | `https://scan-book-go.vercel.app` |
 | Migrations | `0001`–`0023` (applied on Production Neon) |
 
@@ -137,9 +136,11 @@ See `.env.example`.
 ## 7. Do not
 
 - Do not extract the CP10 ZIP over current `main`.
-- Do not reopen CP25G.3 or CP26A.1/2/4.
+- Do not reopen CP25G.3 or CP26A.
 - Do not treat CP26 as go-live. Only CP31 activates commerce.
-- Next execution is **CP26A.5**. See `docs/ROADMAP.md` and `docs/FIXTURE_POLICY.md`.
+- Next execution is **CP26B**. See `docs/ROADMAP.md` and `docs/FIXTURE_POLICY.md`.
 - Do not add `AETHER_DATABASE_OWNER_URL` to Vercel.
 - Do not run migrations during `npm run build`.
 - Do not dispatch retired 0022/0023 production-migrate workflows.
+- Do not mutate or delete the Production verification tenant (`sbg-verify-a5`) unless a later checkpoint explicitly authorises it.
+- Do not set `SBG_SAAS_COMMERCE=test` on public Production in CP26B.

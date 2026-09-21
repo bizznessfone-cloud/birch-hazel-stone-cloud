@@ -1,7 +1,7 @@
 # Test results
 
 > **Living status:** `BUILD_STATE.md`. This file is a **historical test ledger**, not current Production proof.
-> Current living roadmap: `docs/ROADMAP.md`. Next execution **CP26A.5**. CP25G.3 / CP26A.1 / CP26A.2 / CP26A.4 **CLOSED**.
+> Current living roadmap: `docs/ROADMAP.md`. Next execution **CP26B**. CP25G.3 / **CP26A CLOSED**.
 
 Two sections. Never mix them.
 

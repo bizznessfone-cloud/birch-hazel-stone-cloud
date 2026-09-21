@@ -1,6 +1,6 @@
 # SCAN / BOOK / GO — fixture policy
 
-Canonical fixture classes for CP26A–CP30. Living status: `BUILD_STATE.md`.
+Canonical fixture classes for CP26–CP30. Living status: `BUILD_STATE.md`.
 Roadmap: `docs/ROADMAP.md`. Only **CP31** may activate real commerce.
 
 Verification policy (not a database constraint): **one verification user owns
@@ -27,30 +27,43 @@ Source harness: `src/lib/aether/cp26a4-fixture.ts` (tests only; not a runtime im
 
 ---
 
-## B. PRODUCTION VERIFICATION (future CP26A.5)
+## B. PRODUCTION VERIFICATION (established CP26A.5)
 
-Create **only** in an authorised operator-supervised child. Not this checkpoint.
+**Exists.** Classification: **PERSISTENT PRODUCTION VERIFICATION TENANT — RETAIN**.
 
-| Field | Rule |
+Created in authorised operator-supervised CP26A.5. Retained for authorised
+CP26–CP30 work. Never a real customer. Do not delete casually.
+
+| Field | Established value |
 |---|---|
-| Count | exactly one declared operator identity; exactly one owned hotel |
-| Persistence | through CP26–CP30 as required |
-| Customer | **never** a real customer |
-| Publication | **never `live` during CP26A**; never guest-bookable |
+| Count | exactly one operator identity; exactly one owned hotel |
+| Identity | operator-controlled real mailbox **REDACTED**; password in human password manager only |
+| Hotel name | SBG Verification Hotel |
+| Internal booking code | `sbg-verify-a5` |
+| Public slug | `erification-otel` |
+| Locality / timezone / currency | Verification Locality · Europe/Athens · EUR |
+| Status | **configured** — **not live**; not guest-bookable |
+| Catalogue | Verification Transfer · Verification Airport · EUR 10.00 |
+| Publication | `/erification-otel` and `/book/sbg-verify-a5` are `hotel_not_live` |
+| Billing | configured hotel is sufficient for Domain A billing GET; live and Connect are not required |
 | Domain A money | **none** before CP31 |
-| Email | operator-controlled real mailbox or plus-address (not created here) |
-| Password | generated/stored by the human operator password manager |
-| Grok | never receives, stores, logs, or pastes the password |
-| Git / `.env` / Vercel env / chat | never hold the password |
-| Signup | **exactly once**. Failed signup → **STOP**. No retry-user loop |
+| Grok / git / `.env` / Vercel / chat | never hold the password or full email |
 | Spent CP25G.3 users | **must not reuse** |
 | Unknown unconfigured hotels | **must not reuse** |
 | `demo-kos` | **must not reuse or mutate** |
-| Commerce | `SBG_SAAS_COMMERCE` remains unset / fail-closed during CP26A.5 |
+| Commerce | `SBG_SAAS_COMMERCE` remains unset / fail-closed unless a later checkpoint explicitly changes that |
 
-Allowed in CP26A.5/A.6: signup once; onboarding to **configured**; returning
-sign-in / sign-out; ownership / IDOR; billing **GET**.  
-Prohibited: `goLive`, Connect, Checkout, Stripe env, guest booking.
+Allowed on this tenant without a new identity/hotel: returning sign-in / sign-out;
+ownership / IDOR; billing **GET**; later authorised CP26B source work with
+commerce **OFF**.
+
+Prohibited unless a later checkpoint **explicitly** changes fixture policy:
+`goLive` / publication; Connect; Checkout; Stripe env; guest booking; second
+signup; second hotel; password reset; deletion.
+
+CP26C must **not** attach Stripe test billing state to this tenant until the
+process-global `SBG_SAAS_COMMERCE=test` blast-radius architecture is explicitly
+solved. This tenant is not an automatic test-commerce allowlist.
 
 ---
 
@@ -58,9 +71,11 @@ Prohibited: `goLive`, Connect, Checkout, Stripe env, guest booking.
 
 `demo-kos` is the public Production demo.
 
+- Canonical live route: **`/book/demo-kos`**.
 - Independent of SaaS verification.
 - Not a Domain A billing tenant unless a later checkpoint separately authorises it.
 - CP26 fixture work must not depend on mutating it.
+- `/demo-kos` slug route currently returns `hotel_not_found` (pre-existing presentation/data inconsistency; do not “fix” by mutating the demo).
 
 Seeded `gate` / `harbor` are reserved demo codes, not SaaS fixtures.
 
@@ -68,7 +83,8 @@ Seeded `gate` / `harbor` are reserved demo codes, not SaaS fixtures.
 
 ## Credential / email (Production verification)
 
-Identity will use an operator-controlled real mailbox or plus-address.
+Identity uses an operator-controlled real mailbox or plus-address. The address
+is **REDACTED** in this repository.
 
 Password:
 
@@ -79,7 +95,7 @@ Password:
 - never placed in Vercel env
 - never written to `.env`
 - never stored in the repository
-- retained through CP26A.5/A.6 so returning sign-in can actually be proven
+- retained so returning sign-in remains usable through CP26–CP30
 
 Grok has no workspace secret store. GitHub Actions secrets are not a Grok-readable
 password vault. Operator password manager is the system of record.
@@ -105,5 +121,5 @@ commerce. Stripe test-mode remains a later, separately authorised problem.
 
 ## Next authorised execution
 
-**CP26A.5** — operator-supervised creation of exactly one persistent Production
-verification identity and exactly one owned hotel, with commerce **OFF**.
+**CP26B** — Domain A subscription lifecycle completion in source, with commerce
+**OFF**. Do not enable test commerce on public Production in CP26B.

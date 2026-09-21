@@ -11,9 +11,8 @@ not trail the repository.
 | Branch | `main` |
 | Last application SHA | `b35ef2fc8bdddef81fcc84aa59d358dba4346a30` |
 | CP25G.3 | **CLOSED** |
-| CP26A.1 / CP26A.2 | **CLOSED** |
-| CP26A.4 | **CLOSED** (local tenant foundation + fixture policy) |
-| **Next execution checkpoint** | **CP26A.5** — Production verification identity + one owned hotel, commerce OFF |
+| **CP26A** | **CLOSED** |
+| **Next execution checkpoint** | **CP26B — Domain A subscription lifecycle completion** |
 | Forward roadmap | `docs/ROADMAP.md` (CP26–CP31) |
 | Fixture policy | `docs/FIXTURE_POLICY.md` |
 
@@ -25,9 +24,9 @@ not trail the repository.
 ## Production
 
 - Vercel project: `scan-book-go`
-- Last observed deployment: `dpl_7mJ8kBkd1m679TpriPUnYeX8X4qY` READY on `b35ef2f`
+- Last observed deployment (CP26A.5): `dpl_7MFpVnCV4CbyoUjev1ZjcLVm2vtn` READY on `d42f794`
 - Alias: `https://scan-book-go.vercel.app`
-- Push to `main` auto-deploys Vercel Production
+- Push to `main` auto-deploys Vercel Production (docs-only deploys must not activate commerce)
 - `DATABASE_URL` PRESENT (`aether_app`)
 - `AETHER_DATABASE_OWNER_URL` ABSENT
 - `SBG_SAAS_COMMERCE` ABSENT (fail-closed Domain A)
@@ -46,9 +45,16 @@ not migrate. Permanent Gate B is read-only.
 Proven: signup, session, secure cookies, authenticated `/app`, persistence,
 sign-out, signed-out `/app` boundary.
 
-Not Production-proven: returning sign-in POST; authenticated tenant runtime.
+**Production returning email/password authentication — PROVEN CP26A.5.**
 
 Deferred: copied-cookie stale replay; password recovery; email verification.
+
+## Production verification tenant (RETAIN)
+
+- Code `sbg-verify-a5`, slug `erification-otel`, **configured not live**
+- Operator-controlled email REDACTED; password in human password manager only
+- Billing GET resolved; no Stripe/Connect/Checkout
+- Do not publish, delete, or attach test commerce until CP26C blast-radius is solved
 
 ## V1 operator journey
 
@@ -57,13 +63,13 @@ account → hotel → service → preview → QR → plan → Stripe → LIVE
 ```
 
 - `/app/*` exists (authenticated SaaS).
-- Onboarding source exists and is locally proven (CP26A.4): configured ≠ live.
-- First Production hotel through `/app` is not proven (CP26A.5).
+- First Production hotel through `/app` is proven to **configured, not live**.
 - Stripe/Resend source exists. Production configuration is absent.
 - Domain A remains dormant until CP31.
 - `/ops/*` remains internal operations.
 - Public guest: `/{hotelSlug}` plus legacy `/book/{hotelCode}`.
-- Guest booking / `demo-kos` (live) have Production evidence. Guest payment is not Production-proven.
+- Canonical live demo: `/book/demo-kos`. `/demo-kos` slug currently hotel_not_found (pre-existing).
+- Guest payment is not Production-proven.
 - `demo-kos` is the operational demo, not the SaaS verification tenant.
 
 ## V2 fence
@@ -74,10 +80,10 @@ explicitly opens them.
 
 ## Next checkpoint
 
-**CP26A.5 — operator-supervised Production verification identity + one owned hotel, commerce OFF**
+**CP26B — Domain A subscription lifecycle completion** (build/integrate/test only; commerce OFF)
 
 Canonical roadmap: `docs/ROADMAP.md`. Fixture policy: `docs/FIXTURE_POLICY.md`.
 
 CP26 = build/test Domain A SaaS subscriptions. **Not go-live.**
-CP31 = activate commerce. Do not skip CP26A.5 before Stripe test-mode work.
-Do not start CP26B yet.
+CP31 = activate commerce.
+Do not enable `SBG_SAAS_COMMERCE=test` on public Production in CP26B.

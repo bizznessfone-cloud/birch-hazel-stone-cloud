@@ -7,9 +7,8 @@ Canonical living roadmap. Other living documents should **point here**, not rede
 | Formalised on parent | `91ba2c15c6f3b5b11106ebc006e433515e1f0f86` |
 | Application baseline | `b35ef2fc8bdddef81fcc84aa59d358dba4346a30` |
 | CP25G.3 | **CLOSED** |
-| CP26A.1 / CP26A.2 | **CLOSED** |
-| CP26A.4 | **CLOSED** (local tenant foundation + fixture policy) |
-| **Next execution checkpoint** | **CP26A.5** — Production verification identity + one owned hotel, commerce OFF |
+| **CP26A** | **CLOSED** |
+| **Next execution checkpoint** | **CP26B — Domain A subscription lifecycle completion** |
 
 ---
 
@@ -74,11 +73,13 @@ Reuse, do not rebuild:
 - Stripe Connect, shared webhook, event idempotency, `/app/billing`
 - hotel-owned guest Checkout, `sbg_booking_payments`
 
-Resolved in CP26A.1 / CP26A.2:
+Resolved in CP26A:
 
 - Domain A kill-switch + Stripe test/live enforcement (`SBG_SAAS_COMMERCE`)
 - live Stripe configuration alone cannot activate Domain A
 - `sbg_sync_hotel_entitlement` no longer writes `hotels.status` (Production 0023)
+- persistent Production verification tenant exists (`sbg-verify-a5`, **configured not live**)
+- configured hotel is sufficient for Domain A billing GET; live and Connect are not required
 
 Still open (later CP26 work):
 
@@ -86,6 +87,7 @@ Still open (later CP26 work):
 - incomplete failed-payment / past_due lifecycle
 - Stripe integration has not been exercised in test mode
 - Production Stripe configuration remains **absent** (must stay absent until an authorised child)
+- `SBG_SAAS_COMMERCE=test` is process-global (CP26C blast-radius; do not flip on public Production in CP26B)
 
 ---
 
@@ -99,30 +101,46 @@ Still open (later CP26 work):
 
 **Exclusions:** No `sk_live`; no real charges; no CP31 activation; no Domain B rebuild unless a defect is found.
 
-### CP26A — COMMERCIAL DORMANCY + SAAS TENANT FOUNDATION
+### CP26A — COMMERCIAL DORMANCY + SAAS TENANT FOUNDATION — CLOSED
 
-Must complete **before** Stripe integration testing.
+Completed **before** Stripe integration testing.
 
 1. ~~Explicit commerce dormancy / kill-switch architecture.~~ **DONE (CP26A.1)**
 2. ~~Explicit Stripe test/live mode enforcement.~~ **DONE (CP26A.1)**
 3. ~~Prevent adding Stripe configuration alone from silently activating real commerce.~~ **DONE (CP26A.1)**
 4. ~~Decouple or safely gate SaaS billing entitlement from automatic public hotel LIVE status.~~ **DONE (CP26A.2; Production 0023)**
-5. ~~Establish/prove the controlled operator-owned hotel lifecycle required for hotel-scoped billing.~~ **SOURCE/LOCAL PROVEN (CP26A.4).** Production verification tenant is **CP26A.5**.
-6. ~~Define safe Production/test fixture policy.~~ **DONE (CP26A.4 — `docs/FIXTURE_POLICY.md`).** Production fixture creation is **CP26A.5**.
+5. ~~Establish/prove the controlled operator-owned hotel lifecycle required for hotel-scoped billing.~~ **DONE (CP26A.4 local; CP26A.5 Production)**
+6. ~~Define safe Production/test fixture policy.~~ **DONE (`docs/FIXTURE_POLICY.md`; Production tenant retained)**
 7. Preserve payment-domain separation. (standing invariant; CP26A.4 Domain B non-regression holds)
 
-**Mutation:** source (and tests) as required; no Production live Stripe keys; no real subscriptions.  
-**Remaining CP26A execution:** **CP26A.5** — operator-supervised creation of exactly one persistent Production verification identity and exactly one owned hotel, with commerce **OFF**. Do not start CP26B until that Production fixture exists. Do not reuse CP25G.3 spent users, unknown unconfigured hotels, or `demo-kos`.
+**Mutation:** source (and tests) as required; no Production live Stripe keys; no real subscriptions.
 
 ### CP26B — SAAS SUBSCRIPTION LIFECYCLE COMPLETION
 
+**BUILD / INTEGRATE / TEST ONLY.** Not real SaaS commerce, not live customer orders, not real subscription charging, not CP31 activation.
+
 Complete Domain A lifecycle in source (exact design in CP26B preflight): creation; single-subscription / duplicate prevention; customer mapping; updates; upgrade/downgrade; cancellation; period end; incomplete/failed/past_due; invoice events where required; webhook idempotency; portal; entitlement state.
+
+**Entry conditions now satisfied:**
+
+- authenticated tenant exists
+- tenant ownership proven
+- configured tenant exists (`sbg-verify-a5`)
+- billing context resolves without live or Connect
+- publication independent of billing
+- commerce kill-switch exists
+- persistent verification identity exists
+- fixture policy exists
+
+Commerce remains **OFF**. Do not set `SBG_SAAS_COMMERCE=test` on public Production in this checkpoint.
 
 ### CP26C — STRIPE TEST-MODE INTEGRATION
 
-Exercise Domain A against Stripe **TEST MODE ONLY** (`sk_test`, test products/prices, test Checkout/cards/webhooks/portal/failures).  
+Exercise Domain A against Stripe **TEST MODE ONLY** (`sk_test`, test products/prices, test Checkout/cards/webhooks/portal/failures).
 
 **Hard prohibition:** no `sk_live`; no real customer charge; no real SaaS subscription.
+
+**Do not enable test commerce on public Production until blast-radius architecture is explicitly authorised.** `SBG_SAAS_COMMERCE=test` is process-global and would offer test Checkout to any `/login` signup.
 
 ### CP26D — HOTEL-OWNED GUEST PAYMENT REGRESSION
 

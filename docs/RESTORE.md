@@ -4,7 +4,7 @@ Canonical restore instructions: **`/RESTORE.md`** (repo root).
 Living status: **`BUILD_STATE.md`**.
 Machine-readable identity: **`AETHER_RECOVERY_MANIFEST.json`**.
 
-## Current accepted baseline (POST-CP26A.4)
+## Current accepted baseline (POST-CP26A)
 
 GitHub is authoritative for application source.
 
@@ -14,12 +14,11 @@ GitHub is authoritative for application source.
 | Branch | `main` |
 | Last application SHA | `b35ef2fc8bdddef81fcc84aa59d358dba4346a30` |
 | CP25G.3 | **CLOSED** |
-| CP26A.1 / CP26A.2 | **CLOSED** |
-| CP26A.4 | **CLOSED** (local tenant foundation + fixture policy) |
-| **Next execution checkpoint** | **CP26A.5** — Production verification identity + one owned hotel, commerce OFF |
+| **CP26A** | **CLOSED** |
+| **Next execution checkpoint** | **CP26B — Domain A subscription lifecycle completion** |
 | Forward roadmap | **[ROADMAP.md](ROADMAP.md)** |
 | Fixture policy | **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)** |
-| Production | `scan-book-go` / last observed `dpl_7mJ8kBkd1m679TpriPUnYeX8X4qY` READY |
+| Production | `scan-book-go` / last observed `dpl_7MFpVnCV4CbyoUjev1ZjcLVm2vtn` READY |
 | Migrations | `0001`–`0023` |
 
 `cp17-known-good` (`45e171a…`) is a historical CP16C/CP17 tag. It is **not** current `main`.
