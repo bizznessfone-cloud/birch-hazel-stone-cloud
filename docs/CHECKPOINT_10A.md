@@ -2,7 +2,7 @@
 
 Not current living state. See `BUILD_STATE.md`.
 Current source SHA `4c20e9b9574309a0edbeb03f8675febdef38dede`. CP25G.3 CLOSED.
-Current living roadmap: `docs/ROADMAP.md`. Next execution **CP26A**. CP25G.3 CLOSED.
+Current living roadmap: `docs/ROADMAP.md`. Next execution **CP26A.5**. CP25G.3 CLOSED.
 
 ---
 

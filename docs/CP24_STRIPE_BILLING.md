@@ -2,7 +2,7 @@
 
 **Status: historical checkpoint specification (source complete). Production Stripe configuration remains absent. Not the next numbered checkpoint.**
 
-Current living next execution checkpoint is **CP26A**. See `docs/ROADMAP.md`.
+Current living next execution checkpoint is **CP26A.5**. See `docs/ROADMAP.md`.
 CP26 reuses this work; it is **not** go-live. Only CP31 activates commerce.
 
 ---

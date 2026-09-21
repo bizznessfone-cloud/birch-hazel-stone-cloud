@@ -12,8 +12,10 @@ not trail the repository.
 | Last application SHA | `b35ef2fc8bdddef81fcc84aa59d358dba4346a30` |
 | CP25G.3 | **CLOSED** |
 | CP26A.1 / CP26A.2 | **CLOSED** |
-| **Next execution checkpoint** | **CP26A remaining: operator-owned hotel lifecycle + fixture policy** |
+| CP26A.4 | **CLOSED** (local tenant foundation + fixture policy) |
+| **Next execution checkpoint** | **CP26A.5** — Production verification identity + one owned hotel, commerce OFF |
 | Forward roadmap | `docs/ROADMAP.md` (CP26–CP31) |
+| Fixture policy | `docs/FIXTURE_POLICY.md` |
 
 `cp17-known-good` (`45e171a…`) and CP15/CP21B SHAs below are **historical**.
 
@@ -55,12 +57,14 @@ account → hotel → service → preview → QR → plan → Stripe → LIVE
 ```
 
 - `/app/*` exists (authenticated SaaS).
-- Onboarding source exists. First Production hotel through `/app` is not proven.
+- Onboarding source exists and is locally proven (CP26A.4): configured ≠ live.
+- First Production hotel through `/app` is not proven (CP26A.5).
 - Stripe/Resend source exists. Production configuration is absent.
 - Domain A remains dormant until CP31.
 - `/ops/*` remains internal operations.
 - Public guest: `/{hotelSlug}` plus legacy `/book/{hotelCode}`.
 - Guest booking / `demo-kos` (live) have Production evidence. Guest payment is not Production-proven.
+- `demo-kos` is the operational demo, not the SaaS verification tenant.
 
 ## V2 fence
 
@@ -70,9 +74,10 @@ explicitly opens them.
 
 ## Next checkpoint
 
-**CP26A remaining: operator-owned hotel lifecycle + fixture policy**
+**CP26A.5 — operator-supervised Production verification identity + one owned hotel, commerce OFF**
 
-Canonical roadmap: `docs/ROADMAP.md`.
+Canonical roadmap: `docs/ROADMAP.md`. Fixture policy: `docs/FIXTURE_POLICY.md`.
 
 CP26 = build/test Domain A SaaS subscriptions. **Not go-live.**
-CP31 = activate commerce. Do not skip remaining CP26A items before Stripe test-mode work.
+CP31 = activate commerce. Do not skip CP26A.5 before Stripe test-mode work.
+Do not start CP26B yet.

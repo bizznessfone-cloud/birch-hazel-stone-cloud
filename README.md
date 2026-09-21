@@ -1,4 +1,4 @@
-## CURRENT ACCEPTED BASELINE (POST-CP25G.3)
+## CURRENT ACCEPTED BASELINE (POST-CP26A.4)
 
 Living source-of-truth. Historical README text below is evidence only.
 
@@ -7,10 +7,12 @@ Living source-of-truth. Historical README text below is evidence only.
 | Product | **SCAN / BOOK / GO** (internal history name: Aether Transfer) |
 | Repository | [`bizznessfone-cloud/birch-hazel-stone-cloud`](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud) |
 | Branch | `main` |
-| Current source SHA | `91ba2c15c6f3b5b11106ebc006e433515e1f0f86` |
+| Last application SHA | `b35ef2fc8bdddef81fcc84aa59d358dba4346a30` |
 | CP25G.3 | **CLOSED** |
-| **Next execution checkpoint** | **CP26A — COMMERCIAL DORMANCY + SAAS TENANT FOUNDATION** |
+| CP26A.1 / CP26A.2 / CP26A.4 | **CLOSED** |
+| **Next execution checkpoint** | **CP26A.5** — Production verification identity + one owned hotel, commerce OFF |
 | Forward roadmap | **[docs/ROADMAP.md](docs/ROADMAP.md)** |
+| Fixture policy | **[docs/FIXTURE_POLICY.md](docs/FIXTURE_POLICY.md)** |
 
 CP26 builds/tests SBG SaaS subscriptions. **CP26 is not go-live.** Only **CP31** may activate real commerce.
 
@@ -19,23 +21,24 @@ CP26 builds/tests SBG SaaS subscriptions. **CP26 is not go-live.** Only **CP31**
 | Field | Value |
 |---|---|
 | Vercel project | `scan-book-go` |
-| Deployment | `dpl_5XnaxYcqkrgWucD54TKgbmvHkfy1` |
+| Deployment | last observed `dpl_7mJ8kBkd1m679TpriPUnYeX8X4qY` |
 | State | READY |
 | Alias | `https://scan-book-go.vercel.app` |
-| Deployed SHA | same as source SHA above |
+| Deployed SHA (last observed) | `b35ef2fc8bdddef81fcc84aa59d358dba4346a30` |
 
 Environment (names/presence only; never secret values):
 
 - `DATABASE_URL` — PRESENT (production runtime `aether_app`)
 - `AETHER_DATABASE_OWNER_URL` — ABSENT from Vercel
+- `SBG_SAAS_COMMERCE` — ABSENT (fail-closed Domain A)
 - `BETTER_AUTH_SECRET` — PRESENT
 - `BETTER_AUTH_URL` — PRESENT
 - Stripe / Resend / Ops credentials — not present on the application plane unless separately proven
 
 ### Database
 
-- Source and Production Neon migrations: **0001–0022**
-- 0022 restored Better Auth runtime DML for `aether_app`
+- Source and Production Neon migrations: **0001–0023**
+- 0023 decoupled `sbg_sync_hotel_entitlement` from hotel publication
 - `neondb_owner` = migration/schema owner; `aether_app` = production LOGIN; `aether_runtime` = PGLite/preview SET ROLE only
 - `npm run build` does **not** run migrations. Production migration is a separate owner-plane control.
 

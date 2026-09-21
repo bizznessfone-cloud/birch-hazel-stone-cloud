@@ -1,18 +1,19 @@
-## CURRENT STATE (POST-CP25G.3)
+## CURRENT STATE (POST-CP26A.4)
 
 Living status: **`BUILD_STATE.md`**.
 
 - Product: **SCAN / BOOK / GO**
-- Current source SHA: `91ba2c15c6f3b5b11106ebc006e433515e1f0f86`
-- CP25G.3: **CLOSED**
-- **Next execution checkpoint: CP26A — COMMERCIAL DORMANCY + SAAS TENANT FOUNDATION**
+- Last application SHA: `b35ef2fc8bdddef81fcc84aa59d358dba4346a30`
+- CP25G.3 / CP26A.1 / CP26A.2 / CP26A.4: **CLOSED**
+- **Next execution checkpoint: CP26A.5 — Production verification identity + one owned hotel, commerce OFF**
 - Forward roadmap: **[ROADMAP.md](ROADMAP.md)** (CP26 build/test commerce → CP31 activate)
-- Vercel Production `scan-book-go` / `dpl_5XnaxYcqkrgWucD54TKgbmvHkfy1` READY
-- Neon Production migrated through **0022**
+- Fixture policy: **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)**
+- Vercel Production `scan-book-go` / last observed `dpl_7mJ8kBkd1m679TpriPUnYeX8X4qY` READY
+- Neon Production migrated through **0023**
 - `/app/*` exists (SaaS). `/ops/*` remains internal operations.
 - V1 journey: `account → hotel → service → preview → QR → plan → Stripe → LIVE`
 - Stripe/Resend Production configuration: **absent**
-- First Production hotel through `/app`: **not proven**
+- First Production hotel through `/app`: **not proven** (CP26A.5)
 
 The historical status table below is preserved as evidence and must not override current source.
 
@@ -52,4 +53,4 @@ Later completed (not in the original table): CP14–CP17, CP19 production bindin
 
 ## Next
 
-**CP26A.** Canonical definitions: **[ROADMAP.md](ROADMAP.md)**. CP26 is not go-live.
+**CP26A.5.** Canonical definitions: **[ROADMAP.md](ROADMAP.md)**. CP26 is not go-live.

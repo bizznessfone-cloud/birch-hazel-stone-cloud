@@ -4,7 +4,7 @@ Canonical restore instructions: **`/RESTORE.md`** (repo root).
 Living status: **`BUILD_STATE.md`**.
 Machine-readable identity: **`AETHER_RECOVERY_MANIFEST.json`**.
 
-## Current accepted baseline (POST-CP26A.2)
+## Current accepted baseline (POST-CP26A.4)
 
 GitHub is authoritative for application source.
 
@@ -15,8 +15,10 @@ GitHub is authoritative for application source.
 | Last application SHA | `b35ef2fc8bdddef81fcc84aa59d358dba4346a30` |
 | CP25G.3 | **CLOSED** |
 | CP26A.1 / CP26A.2 | **CLOSED** |
-| **Next execution checkpoint** | remaining **CP26A** items 5–6 |
+| CP26A.4 | **CLOSED** (local tenant foundation + fixture policy) |
+| **Next execution checkpoint** | **CP26A.5** — Production verification identity + one owned hotel, commerce OFF |
 | Forward roadmap | **[ROADMAP.md](ROADMAP.md)** |
+| Fixture policy | **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)** |
 | Production | `scan-book-go` / last observed `dpl_7mJ8kBkd1m679TpriPUnYeX8X4qY` READY |
 | Migrations | `0001`–`0023` |
 

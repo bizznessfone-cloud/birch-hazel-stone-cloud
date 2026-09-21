@@ -15,14 +15,15 @@ Use this order:
 
 Repository: `bizznessfone-cloud/birch-hazel-stone-cloud`.
 
-## Current accepted baseline (POST-CP26A.2)
+## Current accepted baseline (POST-CP26A.4)
 
 | Field | Value |
 |---|---|
 | Last application SHA | `b35ef2fc8bdddef81fcc84aa59d358dba4346a30` |
 | CP25G.3 | **CLOSED** |
 | CP26A.1 / CP26A.2 | **CLOSED** |
-| **Next execution checkpoint** | **CP26A remaining: operator-owned hotel lifecycle + fixture policy** |
+| CP26A.4 | **CLOSED** (local tenant foundation + `docs/FIXTURE_POLICY.md`) |
+| **Next execution checkpoint** | **CP26A.5** — operator-supervised Production verification identity + one owned hotel, commerce OFF |
 | Forward roadmap | **`docs/ROADMAP.md`** |
 
 Historical SHAs (not current `main`):
@@ -44,10 +45,11 @@ The internal code/history name **Aether Transfer** may remain in source and hist
 CP25G.3 Production Better Auth configuration is **CLOSED**.
 CP26A.1 Domain A commercial dormancy is **CLOSED**.
 CP26A.2 entitlement/publication decoupling is **CLOSED** (Production 0023 applied; dispatch path retired).
+CP26A.4 local SaaS tenant foundation + fixture policy is **CLOSED**.
 
-Next execution is remaining **CP26A** items 5–6. CP26 builds/tests SBG SaaS subscriptions and is **not** commercial go-live. Only **CP31** activates commerce. See `docs/ROADMAP.md`.
+Next execution is **CP26A.5** (operator-supervised Production verification identity + one owned hotel, commerce OFF). CP26 builds/tests SBG SaaS subscriptions and is **not** commercial go-live. Only **CP31** activates commerce. See `docs/ROADMAP.md` and `docs/FIXTURE_POLICY.md`.
 
-Source includes the hardened booking/occupancy/tenancy base plus CP20 email architecture, CP22 `/app` onboarding, CP23 public slug, CP24 Stripe Connect source, CP25 hotel-owned guest payment source, CP25G.3 auth configuration, CP26A.1 commerce gate, and CP26A.2 decoupled entitlement publication.
+Source includes the hardened booking/occupancy/tenancy base plus CP20 email architecture, CP22 `/app` onboarding, CP23 public slug, CP24 Stripe Connect source, CP25 hotel-owned guest payment source, CP25G.3 auth configuration, CP26A.1 commerce gate, CP26A.2 decoupled entitlement publication, and CP26A.4 local tenant/fixture proofs.
 
 Last observed Production Vercel `scan-book-go` (`dpl_7mJ8kBkd1m679TpriPUnYeX8X4qY`) is READY on SHA `b35ef2f`. A push to `main` auto-deploys Vercel Production. Neon is migrated through **0023**. `DATABASE_URL` is the runtime credential; `AETHER_DATABASE_OWNER_URL` must never be added to Vercel. `SBG_SAAS_COMMERCE` is unset (fail-closed).
 
@@ -74,7 +76,7 @@ Preserve:
 
 Production must not use `aether_runtime`, SET ROLE, `neon_superuser`, or owner credentials.
 
-Do not reopen CP15/CP16/CP19 security architecture. Do not reopen CP25G.3. Do not reopen CP26A.1/2.
+Do not reopen CP15/CP16/CP19 security architecture. Do not reopen CP25G.3. Do not reopen CP26A.1/2/4.
 
 ## Route boundaries
 
@@ -114,4 +116,4 @@ Do not contact Neon, modify Vercel, change secrets, or deploy unless the active 
 
 Every checkpoint must identify the exact Git commit audited.
 
-Next execution checkpoint is remaining **CP26A** items 5–6. Canonical roadmap: `docs/ROADMAP.md`. CP26 is not go-live.
+Next execution checkpoint is **CP26A.5**. Canonical roadmap: `docs/ROADMAP.md`. Fixture policy: `docs/FIXTURE_POLICY.md`. CP26 is not go-live.

@@ -8,7 +8,8 @@ Canonical living roadmap. Other living documents should **point here**, not rede
 | Application baseline | `b35ef2fc8bdddef81fcc84aa59d358dba4346a30` |
 | CP25G.3 | **CLOSED** |
 | CP26A.1 / CP26A.2 | **CLOSED** |
-| **Next execution checkpoint** | **CP26A remaining: operator-owned hotel lifecycle + fixture policy** |
+| CP26A.4 | **CLOSED** (local tenant foundation + fixture policy) |
+| **Next execution checkpoint** | **CP26A.5** — Production verification identity + one owned hotel, commerce OFF |
 
 ---
 
@@ -106,12 +107,12 @@ Must complete **before** Stripe integration testing.
 2. ~~Explicit Stripe test/live mode enforcement.~~ **DONE (CP26A.1)**
 3. ~~Prevent adding Stripe configuration alone from silently activating real commerce.~~ **DONE (CP26A.1)**
 4. ~~Decouple or safely gate SaaS billing entitlement from automatic public hotel LIVE status.~~ **DONE (CP26A.2; Production 0023)**
-5. Establish/prove the controlled operator-owned hotel lifecycle required for hotel-scoped billing.
-6. Define safe Production/test fixture policy.
-7. Preserve payment-domain separation.
+5. ~~Establish/prove the controlled operator-owned hotel lifecycle required for hotel-scoped billing.~~ **SOURCE/LOCAL PROVEN (CP26A.4).** Production verification tenant is **CP26A.5**.
+6. ~~Define safe Production/test fixture policy.~~ **DONE (CP26A.4 — `docs/FIXTURE_POLICY.md`).** Production fixture creation is **CP26A.5**.
+7. Preserve payment-domain separation. (standing invariant; CP26A.4 Domain B non-regression holds)
 
 **Mutation:** source (and tests) as required; no Production live Stripe keys; no real subscriptions.  
-**Remaining CP26A execution:** items 5–6. Do not start CP26B until those complete.
+**Remaining CP26A execution:** **CP26A.5** — operator-supervised creation of exactly one persistent Production verification identity and exactly one owned hotel, with commerce **OFF**. Do not start CP26B until that Production fixture exists. Do not reuse CP25G.3 spent users, unknown unconfigured hotels, or `demo-kos`.
 
 ### CP26B — SAAS SUBSCRIPTION LIFECYCLE COMPLETION
 

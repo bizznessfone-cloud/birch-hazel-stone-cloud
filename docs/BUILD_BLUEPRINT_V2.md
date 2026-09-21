@@ -2,7 +2,7 @@
 
 **Status:** frozen historical MVP build contract. Not living current-state.
 
-Living status: `BUILD_STATE.md` + `docs/ROADMAP.md`. Next execution **CP26A**.
+Living status: `BUILD_STATE.md` + `docs/ROADMAP.md`. Next execution **CP26A.5**.
 CP26 is not go-live; only CP31 activates commerce. Payments were later layered in CP24/CP25
 over this frozen base; do not rewrite this Blueprint to pretend otherwise.
 

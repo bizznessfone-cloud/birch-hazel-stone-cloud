@@ -2,7 +2,7 @@
 
 **Status: historical checkpoint specification (source complete). Not the next task.**
 
-Current living next execution checkpoint is **CP26A**. See `docs/ROADMAP.md`.
+Current living next execution checkpoint is **CP26A.5**. See `docs/ROADMAP.md`.
 CP26 is not go-live; only CP31 activates commerce.
 
 ---

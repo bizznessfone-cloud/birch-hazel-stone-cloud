@@ -1,7 +1,7 @@
 # Recovery notes
 
 > **Living status:** `BUILD_STATE.md`. Notes below are historical implementation decisions.
-> Current living roadmap: `docs/ROADMAP.md`. Next execution **CP26A**. CP25G.3 **CLOSED**.
+> Current living roadmap: `docs/ROADMAP.md`. Next execution **CP26A.5**. CP25G.3 / CP26A.1 / CP26A.2 / CP26A.4 **CLOSED**.
 
 Implementation decisions and unresolved UNKNOWNs **at the time of writing**.
 Decisions are **not** recovered historical facts unless still true in current source.

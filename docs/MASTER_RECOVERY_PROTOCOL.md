@@ -3,7 +3,7 @@
 This file is the permanent copy of the rebuild protocol used to reconstruct
 Aether Transfer after the original implementation workspace was lost.
 
-## Current accepted baseline (POST-CP25G.3)
+## Current accepted baseline (POST-CP26A.4)
 
 GitHub is the authoritative source for application source code. Living status: **`BUILD_STATE.md`**.
 
@@ -11,12 +11,14 @@ GitHub is the authoritative source for application source code. Living status: *
 |---|---|
 | Repository | `bizznessfone-cloud/birch-hazel-stone-cloud` |
 | Branch | `main` |
-| Current source SHA | `91ba2c15c6f3b5b11106ebc006e433515e1f0f86` |
+| Last application SHA | `b35ef2fc8bdddef81fcc84aa59d358dba4346a30` |
 | CP25G.3 | **CLOSED** |
-| **Next execution checkpoint** | **CP26A** |
+| CP26A.1 / CP26A.2 / CP26A.4 | **CLOSED** |
+| **Next execution checkpoint** | **CP26A.5** |
 | Forward roadmap | **[ROADMAP.md](ROADMAP.md)** |
-| Production | `scan-book-go` / `dpl_5XnaxYcqkrgWucD54TKgbmvHkfy1` READY |
-| Migrations | `0001`–`0022` |
+| Fixture policy | **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)** |
+| Production | `scan-book-go` / last observed `dpl_7mJ8kBkd1m679TpriPUnYeX8X4qY` READY |
+| Migrations | `0001`–`0023` |
 
 `cp17-known-good` (`45e171a23037b7c94005018cd2126033a449d6f0`) is an immutable **historical** tag. It is not current `main`.
 
@@ -68,7 +70,7 @@ CP20 email architecture, CP21/CP21B, CP22 onboarding, CP23 public slug, CP24
 Stripe Connect source, CP25 guest-payment source, CP25G.3 Production Better Auth
 (CLOSED).
 
-Next execution checkpoint: **CP26A**. Canonical roadmap: **[ROADMAP.md](ROADMAP.md)**.
+Next execution checkpoint: **CP26A.5**. Canonical roadmap: **[ROADMAP.md](ROADMAP.md)**. Fixture policy: **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)**.
 CP26 is not commercial go-live. Only CP31 activates commerce.
 
 ## If the workspace disappears

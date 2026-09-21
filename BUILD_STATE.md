@@ -2,40 +2,42 @@
 
 This file describes **current reality**, not intended future state.
 
-## CP26A.2 — COMPLETE
+## CP26A.4 — COMPLETE
 
-Entitlement/publication decoupling is accepted Production history.
+Local/PGLite SaaS tenant foundation and fixture policy are proven in source.
+No Production identity, hotel, Stripe, or database mutation.
 
 | Field | Value |
 |---|---|
 | CP26A.1 | **PASS** — Domain A commerce dormant (`SBG_SAAS_COMMERCE=off\|test\|live`; Production unset = fail-closed) |
-| CP26A.2A | **PASS** — source + `0023_cp26a2_entitlement_publication_decoupling.sql` |
-| CP26A.2B | **PASS** — Production apply via GHA run [35581165068](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/35581165068) |
-| Controller SHA | `b35ef2fc8bdddef81fcc84aa59d358dba4346a30` |
-| 0023 SHA-256 | `469eeee3c8707beb40a2a268bea53c77620265efb969bfbff12c524e17585ba1` |
-| Production function | `sbg_sync_hotel_entitlement` **decoupled** (reads `hotels.status`, no `UPDATE hotels`) |
-| demo-kos | remained **live** |
+| CP26A.2 | **PASS** — entitlement/publication decoupling; Production 0023 applied; dispatch retired |
+| CP26A.3 | **READY** — read-only preflight of operator-owned hotel lifecycle + fixture policy |
+| CP26A.4 | **PASS** — local ownership → configured-not-live → billing UUID resolution; Domain A fail-closed; Domain B non-regression; `docs/FIXTURE_POLICY.md` |
+| Last application SHA | `b35ef2fc8bdddef81fcc84aa59d358dba4346a30` (no runtime `src/` change in CP26A.2C or CP26A.4) |
+| Fixture policy | [`docs/FIXTURE_POLICY.md`](docs/FIXTURE_POLICY.md) |
+| Local harness | `src/lib/aether/cp26a4-fixture.ts` (tests only; not a runtime import) |
 | Domain A | remains dormant; only **CP31** may activate commerce |
-| Single-use 0022/0023 `workflow_dispatch` | **retired** |
-| Generic production migrate workflow | **retired** (script fail-closed: never applies) |
 | Accepted Production ledger | **0001–0023** |
-| **Next execution** | remaining CP26A items **5–6** (operator-owned hotel lifecycle; Production/test fixture policy) |
+| **Next execution** | **CP26A.5** — operator-supervised creation of exactly one persistent Production verification identity + exactly one owned hotel, commerce **OFF** |
 
 Do not dispatch historical 0022/0023 controllers. Owner secret remains GitHub Actions `AETHER_DATABASE_OWNER_URL` only — never Vercel. Future migrations need a dedicated single-use controller and an explicit checkpoint.
 
-Push to `main` currently auto-deploys Vercel Production. That is a known control-plane characteristic, not a commercial activation.
+Push to `main` currently auto-deploys Vercel Production. That is a known control-plane characteristic, not a commercial activation. CP26A.4 source is tests/docs/harness only.
 
-## Current accepted baseline (POST-CP26A.2)
+Do not start CP26B. Do not create the Production verification identity in an unsupervised child. Password never enters git/chat/Grok/Vercel/`.env`.
+
+## Current accepted baseline (POST-CP26A.4)
 
 | Field | Value |
 |---|---|
 | Product | **SCAN / BOOK / GO** (internal history name: Aether Transfer) |
 | Repository | `bizznessfone-cloud/birch-hazel-stone-cloud` |
 | Branch | `main` |
-| Last application SHA | `b35ef2fc8bdddef81fcc84aa59d358dba4346a30` (no runtime `src/` change in CP26A.2C) |
+| Last application SHA | `b35ef2fc8bdddef81fcc84aa59d358dba4346a30` (no runtime `src/` change in CP26A.4) |
 | CP25G.3 | **CLOSED** |
 | CP26A.1 / CP26A.2 | **CLOSED** |
-| **Next execution checkpoint** | **CP26A remaining: operator-owned hotel lifecycle + fixture policy** |
+| CP26A.4 | **CLOSED** (local tenant foundation + fixture policy) |
+| **Next execution checkpoint** | **CP26A.5** — Production verification identity + one owned hotel, commerce OFF |
 | Forward roadmap | **[docs/ROADMAP.md](docs/ROADMAP.md)** (CP26–CP31) |
 
 ### Production
@@ -89,16 +91,19 @@ account → hotel → service → preview → QR → plan → Stripe → LIVE
 ```
 
 - `/app/*` exists and is authentication-gated.
-- Onboarding source exists. First Production hotel created **through `/app`** is **not** proven.
-- Tenancy exists structurally (`app_hotel_accounts`). Authenticated Production tenant runtime remains unproven.
+- Onboarding source exists and is **locally proven** (CP26A.4): user → `app_hotel_accounts` → unconfigured hotel → service → destination → **configured, not live**.
+- First Production hotel created **through `/app`** is **not** proven. That is **CP26A.5**.
+- Tenancy exists structurally (`app_hotel_accounts`). Schema remains many-to-many. Verification **policy** is one user / one hotel (not a new DB constraint).
+- Billing ownership resolves by UUID then `ownedHotel`. Configured-not-live is valid for billing state. Live and Connect are not required.
 - Stripe Connect / SBG subscription / hotel-owned guest Checkout **source** exists. Production Stripe configuration is absent.
 - Domain A Checkout/portal/webhook is fail-closed until `SBG_SAAS_COMMERCE=test|live` (live only at CP31).
 - Resend confirmation-email **source** exists. Production Resend is absent.
+- `SBG_SAAS_COMMERCE=test` is process-global (CP26C blast-radius risk; not solved here).
 
 ### Guest / Ops
 
-- Guest booking exists. `demo-kos` is **live** on Production.
-- Hotel-owned guest payment source exists; not Production-proven.
+- Guest booking exists. `demo-kos` is **live** on Production and is **not** the SaaS verification tenant.
+- Hotel-owned guest payment source exists; not Production-proven. Domain B is outside the Domain A kill-switch.
 - `/ops/*` remains isolated from SaaS `/app/*`. Production Ops credentials are absent.
 
 ### What must not be claimed
@@ -111,10 +116,11 @@ account → hotel → service → preview → QR → plan → Stripe → LIVE
 - Do not claim CP25G.3 remains open.
 - Do not claim 0023 is unapplied or that a 0023 dispatch workflow remains.
 - Do not treat CP26 as commercial go-live. Only CP31 activates commerce.
-- Do not skip remaining CP26A items 5–6 before Stripe test-mode integration (CP26C).
-- Do not start CP26B until remaining CP26A foundation work is authorised.
+- Do not skip **CP26A.5** (Production verification fixture) before Stripe test-mode integration (CP26C).
+- Do not start CP26B until remaining CP26A Production fixture work is authorised.
+- Do not reuse CP25G.3 spent Better Auth users, unknown unconfigured hotels, or `demo-kos` as the SaaS verification tenant.
 
-Canonical forward path: **`docs/ROADMAP.md`**. Next execution: remaining **CP26A** items 5–6.
+Canonical forward path: **`docs/ROADMAP.md`**. Fixture policy: **`docs/FIXTURE_POLICY.md`**. Next execution: **CP26A.5**.
 
 GitHub `main` at the current SHA is authoritative application source. A workspace is never authoritative. Recovery ZIPs are secondary disaster-recovery artifacts. The CP10 ZIP must not be extracted over a newer Git tree without explicit human approval.
 
@@ -122,6 +128,7 @@ GitHub `main` at the current SHA is authoritative application source. A workspac
 
 ## Historical (not current)
 
+- CP26A.2 COMPLETE — Production 0023 via GHA run [35581165068](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/35581165068); controller SHA `b35ef2f`; 0023 SHA-256 `469eeee3c8707beb40a2a268bea53c77620265efb969bfbff12c524e17585ba1`; demo-kos remained live; single-use 0022/0023 `workflow_dispatch` retired.
 - `cp17-known-good` / `45e171a23037b7c94005018cd2126033a449d6f0` — immutable CP16C/CP17 source tag. Not current `main`.
 - CP10 occupancy ZIP — historical disaster-recovery artifact only.
 - CP19 originally meant Neon binding/verification. That work completed in later controlled production checkpoints; do not treat the old “CP19 unfinished” wording as living state.
