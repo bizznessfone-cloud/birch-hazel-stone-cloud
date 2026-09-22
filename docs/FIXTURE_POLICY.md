@@ -1,8 +1,8 @@
 # SCAN / BOOK / GO — fixture policy
 
 Canonical fixture classes for CP26–CP30. Living status: `BUILD_STATE.md`.
-Roadmap: `docs/ROADMAP.md`. **CP26B is CLOSED.** CP26C.1/C.2 isolation is in source.
-Next execution is **CP26C.3** (Stripe TEST resource/config preparation; not started).
+Roadmap: `docs/ROADMAP.md`. Owner architecture: `docs/OWNER_CONTROL_PLANE.md`.
+**CP26B is CLOSED.** CP26C.3 is **paused**. Next execution is **CP26C-O2**.
 Only **CP31** may activate real commerce.
 
 Verification policy (not a database constraint): **one verification user owns
@@ -123,6 +123,6 @@ commerce.
 
 ## Next authorised execution
 
-**CP26C.3** — Stripe TEST resource/config preparation. Do not enable test
-commerce on public Production in this child. Only **CP31** activates live
-commerce.
+**CP26C-O2** — Owner dashboard foundation. Do not resume CP26C.3 until O3.
+Do not enable test commerce on public Production in this child. Only **CP31**
+activates live commerce.

@@ -19,8 +19,11 @@ not trail the repository.
 | **CP26B** | **CLOSED** |
 | CP26C.1 | **PASS** |
 | CP26C.2 | **PASS** — test hotel UUID allowlist in source |
-| **Next execution checkpoint** | **CP26C.3 — Stripe TEST resource/config preparation (not started)** |
+| CP26C.3 | **PAUSED AFTER SAFE PREFLIGHT** |
+| CP26C-O1 | **PASS** — Owner Control Plane architecture |
+| **Next execution checkpoint** | **CP26C-O2 — Owner dashboard foundation (not started)** |
 | Forward roadmap | `docs/ROADMAP.md` (CP26–CP31) |
+| Owner architecture | `docs/OWNER_CONTROL_PLANE.md` |
 | Fixture policy | `docs/FIXTURE_POLICY.md` |
 
 `cp17-known-good` (`45e171a…`) and CP15/CP21B SHAs below are **historical**.
@@ -92,10 +95,10 @@ explicitly opens them.
 
 ## Next checkpoint
 
-**CP26C — Stripe test-mode integration (design/preflight; not started)**
+**CP26C-O2 — Owner dashboard foundation (not started)**
 
-Canonical roadmap: `docs/ROADMAP.md`. Fixture policy: `docs/FIXTURE_POLICY.md`.
+Canonical roadmap: `docs/ROADMAP.md`. Owner architecture: `docs/OWNER_CONTROL_PLANE.md`. Fixture policy: `docs/FIXTURE_POLICY.md`.
 
 CP26 = build/test Domain A SaaS subscriptions. **Not go-live.**
 CP31 = activate commerce.
-Do not enable `SBG_SAAS_COMMERCE=test` on public Production until CP26C isolation is authorised.
+CP26C.3 remains paused until CP26C-O3. Do not enable `SBG_SAAS_COMMERCE=test` on public Production until CP26C.4.

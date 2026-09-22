@@ -15,7 +15,9 @@ Canonical living roadmap. Other living documents should **point here**, not rede
 | **CP26B** | **CLOSED** |
 | CP26C.1 | **PASS** — test-mode isolation architecture (hotel-UUID dual-control allowlist) |
 | CP26C.2 | **PASS** — fail-closed Domain A test-hotel isolation in source |
-| **Next execution checkpoint** | **CP26C.3 — Stripe TEST resource/config preparation (not started)** |
+| CP26C.3 | **PAUSED AFTER SAFE PREFLIGHT** — no Stripe objects; no Vercel Stripe env; amounts not invented |
+| CP26C-O1 | **PASS** — Owner Control Plane architecture |
+| **Next execution checkpoint** | **CP26C-O2 — Owner dashboard foundation (not started)** |
 
 ---
 
@@ -102,7 +104,8 @@ Resolved in CP26B (application + Production schema; commerce still OFF):
 
 Still open (later CP26 work):
 
-- Stripe TEST products/prices/webhook endpoint preparation (**CP26C.3**)
+- Owner Control Plane implementation (**CP26C-O2**, **CP26C-O3**) — architecture: [`OWNER_CONTROL_PLANE.md`](OWNER_CONTROL_PLANE.md)
+- Stripe TEST products/prices/webhook endpoint preparation (**CP26C.3**, paused until O3)
 - Production Stripe configuration remains **absent** (must stay absent until CP26C.4)
 - Do **not** set `SBG_SAAS_COMMERCE=test` on public Production until CP26C.4 explicitly authorises it **after** the CP26C.2 hotel allowlist is deployed. Empty `SBG_SAAS_TEST_HOTEL_IDS` fail-closes every hotel even if mode=test.
 
@@ -158,9 +161,19 @@ Exercise Domain A against Stripe **TEST MODE ONLY** (`sk_test`, test products/pr
 
 **CP26C.2 PASS:** isolation implemented in source (Checkout, portal, Domain A webhook). Production commerce remains **OFF**. No Stripe Production configuration.
 
-**Next: CP26C.3** Stripe TEST resource/config preparation. Do not set Production `SBG_SAAS_COMMERCE=test` in this child.
+**CP26C.3 PAUSED AFTER SAFE PREFLIGHT:** source Stripe contract inspected; canonical BASIC / PRO / PREMIUM **amounts are not defined** and were not invented. No Stripe TEST objects created. No Vercel Stripe configuration installed. Commerce remains OFF. Allowlist remains absent.
 
-**Do not enable test commerce on public Production until CP26C.4.** Empty allowlist = nobody authorised.
+**CP26C-O1 PASS:** Owner Control Plane architecture. Canonical document: [`OWNER_CONTROL_PLANE.md`](OWNER_CONTROL_PLANE.md). SBG database will own the commercial catalogue (plans + versioned prices + Stripe TEST/LIVE mappings). Vercel env Price IDs are transitional.
+
+**Next: CP26C-O2** Owner dashboard foundation (authorization, `/owner` shell, Overview, Hotels, funnel, read-only system health). Do not implement Plans mutation in O2. Do not resume CP26C.3 until O3.
+
+Sequence:
+
+```
+CP26C.2 PASS → CP26C-O1 → CP26C-O2 → CP26C-O3 → resume CP26C.3 → CP26C.4
+```
+
+**Do not enable test commerce on public Production until CP26C.4.** Empty allowlist = nobody authorised. Only **CP31** activates live commerce.
 
 ### CP26D — HOTEL-OWNED GUEST PAYMENT REGRESSION
 
