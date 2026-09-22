@@ -37,8 +37,34 @@ export const TARGET_DIGEST =
   "23cdc44037e0e886444477fdb693536a95c32b6080984de4076cc7a5f71d13c0";
 export const REQUIRED_CONFIRMATION = "APPLY-0024";
 export const AETHER_RUNTIME_ROLE = "aether_runtime";
-export const EXPECTED_FUNCTION_IDENTITY =
-  "text, text, bigint, uuid, text, text, text, text, timestamp with time zone, boolean";
+export const EXPECTED_APPLY_NARGS = 10;
+export const EXPECTED_APPLY_RETURN_TYPE = "text";
+export const EXPECTED_APPLY_ARG_TYPES = [
+  "text",
+  "text",
+  "bigint",
+  "uuid",
+  "text",
+  "text",
+  "text",
+  "text",
+  "timestamp with time zone",
+  "boolean",
+];
+export const EXPECTED_APPLY_ARG_NAMES = [
+  "p_event_id",
+  "p_event_type",
+  "p_event_created",
+  "p_hotel_id",
+  "p_customer_id",
+  "p_subscription_id",
+  "p_price_id",
+  "p_status",
+  "p_current_period_end",
+  "p_cancel_at_period_end",
+];
+/** Unnamed type list only. Never used as an equality key against pg_get_function_identity_arguments(). */
+export const EXPECTED_FUNCTION_IDENTITY = EXPECTED_APPLY_ARG_TYPES.join(", ");
 export const REQUIRED_BILLING_COLUMNS = [
   "last_stripe_event_created",
   "last_stripe_event_id",
@@ -96,6 +122,7 @@ export const APPLY_FAILED = "BLOCKED — 0024 APPLICATION FAILED";
 export const UNAUTHORISED_MIGRATION = "BLOCKED — UNAUTHORISED MIGRATION";
 export const FUNCTION_NOT_HISTORICAL = "BLOCKED — INSTALLED BILLING FUNCTION NOT HISTORICAL LAST-WRITE-WINS";
 export const FUNCTION_LEDGER_SPLIT = "BLOCKED — 0024 LEDGER APPLIED BUT FUNCTION NOT ORDERED";
+export const FUNCTION_IDENTITY_BLOCKED = "BLOCKED — ORDERED BILLING FUNCTION IDENTITY INVALID";
 export const IDENTITY_BLOCKED = "BLOCKED — DATABASE IDENTITY MISMATCH";
 export const OWNER_BLOCKED = "BLOCKED — OWNER IDENTITY MISMATCH";
 export const ROLE_BLOCKED = "BLOCKED — AETHER_APP ROLE ESCALATED";
@@ -169,6 +196,46 @@ export function classifyBillingApplyFunction(definition) {
   if (hasCreated && hasStale && hasAmbiguous) return "ordered";
   if (lastWriteWins && !hasCreated) return "historical";
   return "unexpected";
+}
+
+export function normalizePgType(value) {
+  const raw = String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/^pg_catalog\./, "");
+  if (raw === "timestamptz") return "timestamp with time zone";
+  if (raw === "bool") return "boolean";
+  if (raw === "int8") return "bigint";
+  return raw;
+}
+
+export function orderedBillingApplyContractFailures(facts) {
+  const failures = [];
+  if (Number(facts?.functionCount ?? 0) !== 1) failures.push("function-count");
+  const nargs = Number(facts?.functionArgCount ?? -1);
+  if (nargs !== EXPECTED_APPLY_NARGS) failures.push("function-nargs");
+  const types = [...(facts?.functionArgTypes ?? [])].map(normalizePgType);
+  if (
+    types.length !== EXPECTED_APPLY_NARGS ||
+    EXPECTED_APPLY_ARG_TYPES.some((expected, index) => types[index] !== expected)
+  ) {
+    failures.push("function-arg-types");
+  }
+  const names = Array.isArray(facts?.functionArgNames)
+    ? facts.functionArgNames.map((name) => String(name ?? ""))
+    : [];
+  if (names.length > 0) {
+    if (
+      names.length !== EXPECTED_APPLY_NARGS ||
+      EXPECTED_APPLY_ARG_NAMES.some((expected, index) => names[index] !== expected)
+    ) {
+      failures.push("function-arg-names");
+    }
+  }
+  const returnType = normalizePgType(facts?.functionReturnType);
+  if (returnType !== EXPECTED_APPLY_RETURN_TYPE) failures.push("function-return-type");
+  if (failures.length) failures.push("function-identity");
+  return failures;
 }
 
 function sameList(actual, expected) {
@@ -267,6 +334,14 @@ export function evaluate0024Baseline(facts, file) {
   }
   if (appliedCount === 1) {
     if (pending.length === 0 && kind === "ordered") {
+      const contract = orderedBillingApplyContractFailures(facts);
+      if (contract.length) {
+        return blocked(FUNCTION_IDENTITY_BLOCKED, {
+          pending: [],
+          functionKind: kind,
+          failures: contract,
+        });
+      }
       return {
         ok: true,
         alreadyApplied: true,
@@ -311,8 +386,9 @@ export function evaluate0024Aftermath(facts, beforeHotel, beforeBilling) {
   if (appliedCount !== 1) failures.push("0024-ledger");
   if (pending.length > 0) failures.push("pending-remain");
   if (kind !== "ordered") failures.push("function-not-ordered");
-  if (Number(facts?.functionCount ?? 0) !== 1) failures.push("function-count");
-  if (String(facts?.functionIdentity ?? "") !== EXPECTED_FUNCTION_IDENTITY) failures.push("function-identity");
+  for (const failure of orderedBillingApplyContractFailures(facts)) {
+    if (!failures.includes(failure)) failures.push(failure);
+  }
   if (facts?.functionExecuteAetherApp !== true) failures.push("execute-grant");
   if (String(facts?.functionOwner ?? "") !== EXPECTED_OWNER) failures.push("function-owner");
   if (facts?.paymentFunctionPresent !== true) failures.push("payment-function");
@@ -441,6 +517,9 @@ function reportFacts(label, facts) {
   say(`billing.function.kind: ${classifyBillingApplyFunction(facts?.functionDefinition)}`);
   say(`billing.function.identity: ${facts?.functionIdentity ?? "UNKNOWN"}`);
   say(`billing.function.count: ${facts?.functionCount ?? "UNKNOWN"}`);
+  say(`billing.function.nargs: ${facts?.functionArgCount ?? "UNKNOWN"}`);
+  say(`billing.function.return: ${facts?.functionReturnType ?? "UNKNOWN"}`);
+  say(`billing.function.arg_types: ${(facts?.functionArgTypes ?? []).join(" | ") || "UNKNOWN"}`);
   say(`hotels.total: ${facts?.hotelSnapshot?.hotelCount ?? "UNKNOWN"}`);
   say(`billing.accounts: ${facts?.billingSnapshot?.accountCount ?? "UNKNOWN"}`);
   say(`stripe.events: ${facts?.billingSnapshot?.eventCount ?? "UNKNOWN"}`);
@@ -488,6 +567,12 @@ export async function inspect0024State(client, sourceMigrations) {
       `select p.oid,
               pg_get_functiondef(p.oid) as definition,
               pg_get_function_identity_arguments(p.oid) as identity,
+              p.pronargs as nargs,
+              p.proargnames as arg_names,
+              p.prorettype::regtype::text as return_type,
+              (select coalesce(array_agg(format_type(u.t, null) order by u.ord), '{}'::text[])
+                 from unnest(p.proargtypes) with ordinality as u(t, ord)
+              ) as arg_types,
               r.rolname as owner
          from pg_proc p
          join pg_namespace n on n.oid = p.pronamespace
@@ -501,10 +586,18 @@ export async function inspect0024State(client, sourceMigrations) {
   let functionOwner = null;
   let functionIdentity = null;
   let functionExecuteAetherApp = false;
+  let functionArgCount = null;
+  let functionArgNames = [];
+  let functionArgTypes = [];
+  let functionReturnType = null;
   if (fnRows.length === 1) {
     functionDefinition = fnRows[0].definition;
     functionOwner = fnRows[0].owner;
     functionIdentity = fnRows[0].identity;
+    functionArgCount = Number(fnRows[0].nargs ?? 0);
+    functionArgNames = Array.isArray(fnRows[0].arg_names) ? fnRows[0].arg_names : [];
+    functionArgTypes = Array.isArray(fnRows[0].arg_types) ? fnRows[0].arg_types : [];
+    functionReturnType = fnRows[0].return_type ?? "";
     functionExecuteAetherApp =
       (
         await client.query("select has_function_privilege($1, $2::oid, 'EXECUTE') as ok", [
@@ -599,6 +692,10 @@ export async function inspect0024State(client, sourceMigrations) {
     functionOwner,
     functionIdentity,
     functionCount: fnRows.length,
+    functionArgCount,
+    functionArgNames,
+    functionArgTypes,
+    functionReturnType,
     functionExecuteAetherApp,
     entitlementDefinition: entitlement?.definition ?? "",
     paymentFunctionPresent: payment?.ok === true,

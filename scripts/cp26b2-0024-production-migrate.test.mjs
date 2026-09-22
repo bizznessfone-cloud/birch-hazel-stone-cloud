@@ -16,6 +16,7 @@ import {
   DIGEST_BLOCKED,
   FUNCTION_LEDGER_SPLIT,
   FUNCTION_NOT_HISTORICAL,
+  FUNCTION_IDENTITY_BLOCKED,
   POST_BLOCKED,
   REQUIRED_CONFIRMATION,
   REQUIRED_LEDGER,
@@ -24,6 +25,10 @@ import {
   TARGET_MIGRATION,
   UNAUTHORISED_MIGRATION,
   UNEXPECTED_PLAN,
+  EXPECTED_APPLY_ARG_NAMES,
+  EXPECTED_APPLY_ARG_TYPES,
+  EXPECTED_APPLY_NARGS,
+  EXPECTED_APPLY_RETURN_TYPE,
   applyExact0024,
   assertAuthorisedMigrationName,
   assertConfirmation,
@@ -33,6 +38,7 @@ import {
   classifyBillingApplyFunction,
   evaluate0024Aftermath,
   evaluate0024Baseline,
+  orderedBillingApplyContractFailures,
   ownerUrlFromEnv,
   runSingleUse0024,
   sha256,
@@ -84,6 +90,16 @@ const hotelSnapshot = buildHotelSnapshot({
   liveHotels: [{ id: DEMO_ID, code: "demo-kos", status: "live" }],
 });
 const billingSnapshot = { accountCount: 0, statusCounts: {}, eventCount: 0 };
+
+const PRODUCTION_NAMED_IDENTITY =
+  "p_event_id text, p_event_type text, p_event_created bigint, p_hotel_id uuid, p_customer_id text, p_subscription_id text, p_price_id text, p_status text, p_current_period_end timestamp with time zone, p_cancel_at_period_end boolean";
+
+const ORDERED_CATALOG = {
+  functionArgCount: EXPECTED_APPLY_NARGS,
+  functionArgNames: [...EXPECTED_APPLY_ARG_NAMES],
+  functionArgTypes: [...EXPECTED_APPLY_ARG_TYPES],
+  functionReturnType: EXPECTED_APPLY_RETURN_TYPE,
+};
 
 function canonicalFile(overrides = {}) {
   return {
@@ -158,8 +174,9 @@ function appliedFacts(overrides = {}) {
   return authorisedFacts({
     ledger: [...REQUIRED_LEDGER, TARGET_MIGRATION],
     functionDefinition: sql0024,
-    functionIdentity: "text, text, bigint, uuid, text, text, text, text, timestamp with time zone, boolean",
+    functionIdentity: PRODUCTION_NAMED_IDENTITY,
     functionCount: 1,
+    ...ORDERED_CATALOG,
     billingColumns: [
       "cancel_at_period_end",
       "current_period_end",
@@ -448,4 +465,179 @@ test("direct invocation without secret exits before connecting", async () => {
 test("workflow file exists (created, not dispatched)", () => {
   assert.equal(existsSync(workflowPath), true);
   assert.equal(billingSnapshotKey(billingSnapshot), billingSnapshotKey({ accountCount: 0, statusCounts: {}, eventCount: 0 }));
+});
+
+test("named PostgreSQL 10-argument identity is accepted", () => {
+  const failures = orderedBillingApplyContractFailures(appliedFacts());
+  assert.deepEqual(failures, []);
+  const aftermath = evaluate0024Aftermath(appliedFacts(), hotelSnapshot, billingSnapshot);
+  assert.equal(aftermath.ok, true);
+  assert.equal(aftermath.verdict, APPLIED_VERIFIED);
+});
+
+test("unnamed equivalent 10-argument types are accepted", () => {
+  const unnamed = appliedFacts({
+    functionIdentity: EXPECTED_APPLY_ARG_TYPES.join(", "),
+    functionArgNames: [],
+  });
+  assert.deepEqual(orderedBillingApplyContractFailures(unnamed), []);
+  assert.equal(evaluate0024Aftermath(unnamed, hotelSnapshot, billingSnapshot).ok, true);
+});
+
+test("historical 8-argument function is rejected by catalog identity", () => {
+  const historical = appliedFacts({
+    functionIdentity: "p_event_id text, p_event_type text, p_hotel_id uuid, p_customer_id text, p_subscription_id text, p_price_id text, p_status text, p_current_period_end timestamp with time zone",
+    functionArgCount: 8,
+    functionArgNames: [
+      "p_event_id",
+      "p_event_type",
+      "p_hotel_id",
+      "p_customer_id",
+      "p_subscription_id",
+      "p_price_id",
+      "p_status",
+      "p_current_period_end",
+    ],
+    functionArgTypes: [
+      "text",
+      "text",
+      "uuid",
+      "text",
+      "text",
+      "text",
+      "text",
+      "timestamp with time zone",
+    ],
+  });
+  const failures = orderedBillingApplyContractFailures(historical);
+  assert.ok(failures.includes("function-nargs"));
+  assert.ok(failures.includes("function-arg-types"));
+  assert.ok(failures.includes("function-identity"));
+  assert.equal(evaluate0024Aftermath(historical, hotelSnapshot, billingSnapshot).ok, false);
+});
+
+test("wrong argument order is rejected", () => {
+  const swapped = appliedFacts({
+    functionArgNames: [
+      "p_event_id",
+      "p_event_type",
+      "p_hotel_id",
+      "p_event_created",
+      "p_customer_id",
+      "p_subscription_id",
+      "p_price_id",
+      "p_status",
+      "p_current_period_end",
+      "p_cancel_at_period_end",
+    ],
+    functionArgTypes: [
+      "text",
+      "text",
+      "uuid",
+      "bigint",
+      "text",
+      "text",
+      "text",
+      "text",
+      "timestamp with time zone",
+      "boolean",
+    ],
+  });
+  const failures = orderedBillingApplyContractFailures(swapped);
+  assert.ok(failures.includes("function-arg-types"));
+  assert.ok(failures.includes("function-arg-names"));
+  assert.ok(failures.includes("function-identity"));
+});
+
+test("wrong bigint position is rejected", () => {
+  const types = [...EXPECTED_APPLY_ARG_TYPES];
+  types[0] = "bigint";
+  types[2] = "text";
+  const failures = orderedBillingApplyContractFailures(appliedFacts({ functionArgTypes: types, functionArgNames: [] }));
+  assert.ok(failures.includes("function-arg-types"));
+  assert.equal(failures.includes("function-nargs"), false);
+});
+
+test("missing boolean argument is rejected", () => {
+  const failures = orderedBillingApplyContractFailures(
+    appliedFacts({
+      functionArgCount: 9,
+      functionArgNames: EXPECTED_APPLY_ARG_NAMES.slice(0, 9),
+      functionArgTypes: EXPECTED_APPLY_ARG_TYPES.slice(0, 9),
+    }),
+  );
+  assert.ok(failures.includes("function-nargs"));
+  assert.ok(failures.includes("function-arg-types"));
+  assert.ok(failures.includes("function-identity"));
+});
+
+test("extra overload is rejected", () => {
+  const extra = appliedFacts({ functionCount: 2 });
+  const failures = orderedBillingApplyContractFailures(extra);
+  assert.ok(failures.includes("function-count"));
+  const aftermath = evaluate0024Aftermath(extra, hotelSnapshot, billingSnapshot);
+  assert.equal(aftermath.ok, false);
+  assert.ok(aftermath.failures.includes("function-count"));
+});
+
+test("wrong return type is rejected", () => {
+  const failures = orderedBillingApplyContractFailures(appliedFacts({ functionReturnType: "boolean" }));
+  assert.ok(failures.includes("function-return-type"));
+  assert.ok(failures.includes("function-identity"));
+});
+
+test("wrong owner remains rejected", () => {
+  const aftermath = evaluate0024Aftermath(
+    appliedFacts({ functionOwner: "aether_app" }),
+    hotelSnapshot,
+    billingSnapshot,
+  );
+  assert.equal(aftermath.ok, false);
+  assert.ok(aftermath.failures.includes("function-owner"));
+});
+
+test("missing aether_app EXECUTE remains rejected", () => {
+  const aftermath = evaluate0024Aftermath(
+    appliedFacts({ functionExecuteAetherApp: false }),
+    hotelSnapshot,
+    billingSnapshot,
+  );
+  assert.equal(aftermath.ok, false);
+  assert.ok(aftermath.failures.includes("execute-grant"));
+});
+
+test("already-applied 0024 with invalid catalog identity is refused without mutation", async () => {
+  let applied = 0;
+  const result = await runSingleUse0024({
+    env: { AETHER_DATABASE_OWNER_URL: "postgres://owner@host/neondb" },
+    confirmation: REQUIRED_CONFIRMATION,
+    file: canonicalFile(),
+    sourceChecksums: reviewedChecksums(),
+    loadFacts: async () =>
+      appliedFacts({
+        functionArgCount: 8,
+        functionArgTypes: EXPECTED_APPLY_ARG_TYPES.slice(0, 8),
+        functionArgNames: EXPECTED_APPLY_ARG_NAMES.slice(0, 8),
+      }),
+    applyMigration: async () => {
+      applied += 1;
+    },
+  });
+  assert.equal(result.ok, false);
+  assert.equal(result.verdict, FUNCTION_IDENTITY_BLOCKED);
+  assert.equal(result.migrated, false);
+  assert.equal(applied, 0);
+});
+
+test("missing catalog identity fails closed and does not use unnamed string equality", () => {
+  const missing = appliedFacts({
+    functionArgCount: undefined,
+    functionArgNames: undefined,
+    functionArgTypes: undefined,
+    functionReturnType: undefined,
+    functionIdentity: EXPECTED_APPLY_ARG_TYPES.join(", "),
+  });
+  const failures = orderedBillingApplyContractFailures(missing);
+  assert.ok(failures.includes("function-identity"));
+  assert.ok(failures.includes("function-arg-types"));
 });
