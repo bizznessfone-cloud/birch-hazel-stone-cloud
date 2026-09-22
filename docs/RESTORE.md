@@ -4,7 +4,7 @@ Canonical restore instructions: **`/RESTORE.md`** (repo root).
 Living status: **`BUILD_STATE.md`**.
 Machine-readable identity: **`AETHER_RECOVERY_MANIFEST.json`**.
 
-## Current accepted baseline (POST-CP26A)
+## Current accepted baseline (POST-CP26B CLOSED)
 
 GitHub is authoritative for application source.
 
@@ -12,14 +12,15 @@ GitHub is authoritative for application source.
 |---|---|
 | Repository | `bizznessfone-cloud/birch-hazel-stone-cloud` |
 | Branch | `main` |
-| Last application SHA | `b35ef2fc8bdddef81fcc84aa59d358dba4346a30` |
+| Last application SHA | `19512c295830fbc6fd9712d688ce364d940f87c3` |
 | CP25G.3 | **CLOSED** |
 | **CP26A** | **CLOSED** |
-| **Next execution checkpoint** | **CP26B — Domain A subscription lifecycle completion** |
+| **CP26B** | **CLOSED** |
+| **Next execution checkpoint** | **CP26C — Stripe test-mode integration (design/preflight; not started)** |
 | Forward roadmap | **[ROADMAP.md](ROADMAP.md)** |
 | Fixture policy | **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)** |
-| Production | `scan-book-go` / last observed `dpl_7MFpVnCV4CbyoUjev1ZjcLVm2vtn` READY |
-| Migrations | `0001`–`0023` |
+| Production | `scan-book-go` / last observed `dpl_FmUosqz2wy7aCT51rNjdanJnuviZ` READY |
+| Migrations | `0001`–`0024` |
 
 `cp17-known-good` (`45e171a…`) is a historical CP16C/CP17 tag. It is **not** current `main`.
 
@@ -31,14 +32,14 @@ The Grok workspace is ephemeral and **never authoritative**. Recovery ZIPs are *
 git clone https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud.git
 cd birch-hazel-stone-cloud
 git checkout main
-# last application SHA: b35ef2fc8bdddef81fcc84aa59d358dba4346a30
+# last application SHA: 19512c295830fbc6fd9712d688ce364d940f87c3
 ```
 
 Then:
 
 1. Identify repository, branch, `HEAD` SHA before any edit.
 2. Read `BUILD_STATE.md` first, then `RESTORE.md`, `docs/RECOVERY_MANIFEST.md`.
-3. Inspect `migrations/` (must include through `0023`) and `src/lib/aether/`.
+3. Inspect `migrations/` (must include through `0024`) and `src/lib/aether/`.
 4. Do **not** restart the product from scratch.
 5. Do **not** check out `cp17-known-good` unless a human has explicitly authorised a historical rollback.
 6. Run `sh scripts/restore_aether.sh` as a sandbox helper after Git checkout if required by the workspace. If it fails, stop.

@@ -1,4 +1,4 @@
-## CURRENT ACCEPTED BASELINE (POST-CP26A)
+## CURRENT ACCEPTED BASELINE (POST-CP26B CLOSED)
 
 Living source-of-truth. Historical README text below is evidence only.
 
@@ -7,10 +7,11 @@ Living source-of-truth. Historical README text below is evidence only.
 | Product | **SCAN / BOOK / GO** (internal history name: Aether Transfer) |
 | Repository | [`bizznessfone-cloud/birch-hazel-stone-cloud`](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud) |
 | Branch | `main` |
-| Last application SHA | `b35ef2fc8bdddef81fcc84aa59d358dba4346a30` |
+| Last application SHA | `19512c295830fbc6fd9712d688ce364d940f87c3` |
 | CP25G.3 | **CLOSED** |
 | **CP26A** | **CLOSED** |
-| **Next execution checkpoint** | **CP26B — Domain A subscription lifecycle completion** |
+| **CP26B** | **CLOSED** |
+| **Next execution checkpoint** | **CP26C — Stripe test-mode integration (design/preflight; not started)** |
 | Forward roadmap | **[docs/ROADMAP.md](docs/ROADMAP.md)** |
 | Fixture policy | **[docs/FIXTURE_POLICY.md](docs/FIXTURE_POLICY.md)** |
 
@@ -21,10 +22,10 @@ CP26 builds/tests SBG SaaS subscriptions. **CP26 is not go-live.** Only **CP31**
 | Field | Value |
 |---|---|
 | Vercel project | `scan-book-go` |
-| Deployment | last observed `dpl_7MFpVnCV4CbyoUjev1ZjcLVm2vtn` |
+| Deployment | last observed `dpl_FmUosqz2wy7aCT51rNjdanJnuviZ` |
 | State | READY |
 | Alias | `https://scan-book-go.vercel.app` |
-| Deployed SHA (last observed) | `d42f7940c698c8b80f9af65a6d43a30f3b3f3831` |
+| Deployed SHA (last observed) | `19512c295830fbc6fd9712d688ce364d940f87c3` |
 
 Environment (names/presence only; never secret values):
 
@@ -37,10 +38,12 @@ Environment (names/presence only; never secret values):
 
 ### Database
 
-- Source and Production Neon migrations: **0001–0023**
+- Source and Production Neon migrations: **0001–0024**
+- 0024 ordered Domain A billing events (`sbg_apply_billing_event` 10-argument; digest `23cdc44037e0e886444477fdb693536a95c32b6080984de4076cc7a5f71d13c0`)
 - 0023 decoupled `sbg_sync_hotel_entitlement` from hotel publication
 - `neondb_owner` = migration/schema owner; `aether_app` = production LOGIN; `aether_runtime` = PGLite/preview SET ROLE only
 - `npm run build` does **not** run migrations. Production migration is a separate owner-plane control.
+- Generic Production migrator is retired/fail-closed. Spent 0022/0023/0024 dispatch workflows are retired.
 
 ### Auth (do not reopen CP25G.3)
 
@@ -58,6 +61,7 @@ V1 journey: `account → hotel → service → preview → QR → plan → Strip
 - Resend confirmation-email **source** exists; Production Resend configuration is absent.
 - Guest booking exists; canonical live demo is `/book/demo-kos`. Hotel-owned guest payment is not Production-proven.
 - `/ops/*` remains isolated. Production Ops credentials are absent.
+- `SBG_SAAS_COMMERCE=test` is process-global (CP26C blast-radius). Do not enable it on public Production until an authorised isolation strategy exists.
 
 Read `BUILD_STATE.md` for the living status record. Restore from GitHub `main` at the current SHA, not from `cp17-known-good` (that tag is a historical CP16C/CP17 marker).
 

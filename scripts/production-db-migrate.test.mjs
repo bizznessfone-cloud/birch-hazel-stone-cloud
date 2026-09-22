@@ -108,7 +108,7 @@ test("spawned controller with owner URL still never migrates", async () => {
   assert.doesNotMatch(out, /GATE C PASS/);
 });
 
-test("current 0001-0023 ledger is a no-mutation current state", () => {
+test("current 0001-0024 ledger is a no-mutation current state", () => {
   const result = evaluateMigrationBaseline(evaluatePreflight(currentFacts()));
   assert.equal(result.ok, true);
   assert.equal(result.alreadyCurrent, true);
@@ -117,17 +117,17 @@ test("current 0001-0023 ledger is a no-mutation current state", () => {
   assert.deepEqual(result.pending, []);
 });
 
-test("pending 0023/0024/0025 are not generically authorised", () => {
-  const pending0023 = evaluateMigrationBaseline(
+test("pending 0024/0025/0026 are not generically authorised", () => {
+  const pending0024 = evaluateMigrationBaseline(
     evaluatePreflight(
       currentFacts({
-        ledger: ACCEPTED_LEDGER.filter((name) => name !== "0023_cp26a2_entitlement_publication_decoupling.sql"),
+        ledger: ACCEPTED_LEDGER.filter((name) => name !== "0024_cp26b2_ordered_billing_events.sql"),
       }),
     ),
   );
-  assert.equal(pending0023.ok, false);
+  assert.equal(pending0024.ok, false);
 
-  for (const extra of ["0024_cp26b2_ordered_billing_events.sql", "0024_future.sql", "0025_later.sql"]) {
+  for (const extra of ["0025_later.sql", "0026_later.sql", "0027_later.sql"]) {
     const result = evaluateMigrationBaseline(
       evaluatePreflight(currentFacts({ sourceMigrations: [...ACCEPTED_LEDGER, extra] })),
     );

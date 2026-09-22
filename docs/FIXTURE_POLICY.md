@@ -1,7 +1,8 @@
 # SCAN / BOOK / GO — fixture policy
 
 Canonical fixture classes for CP26–CP30. Living status: `BUILD_STATE.md`.
-Roadmap: `docs/ROADMAP.md`. Only **CP31** may activate real commerce.
+Roadmap: `docs/ROADMAP.md`. **CP26B is CLOSED.** Next execution is **CP26C**
+(design/preflight; not started). Only **CP31** may activate real commerce.
 
 Verification policy (not a database constraint): **one verification user owns
 exactly one verification hotel.** Schema still allows many-to-many
@@ -54,8 +55,9 @@ CP26–CP30 work. Never a real customer. Do not delete casually.
 | Commerce | `SBG_SAAS_COMMERCE` remains unset / fail-closed unless a later checkpoint explicitly changes that |
 
 Allowed on this tenant without a new identity/hotel: returning sign-in / sign-out;
-ownership / IDOR; billing **GET**; later authorised CP26B source work with
-commerce **OFF**.
+ownership / IDOR; billing **GET**. CP26B source work with commerce **OFF** is
+complete. Do not attach Stripe test billing here until CP26C blast-radius
+architecture is explicitly solved.
 
 Prohibited unless a later checkpoint **explicitly** changes fixture policy:
 `goLive` / publication; Connect; Checkout; Stripe env; guest booking; second

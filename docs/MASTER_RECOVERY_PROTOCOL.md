@@ -3,7 +3,7 @@
 This file is the permanent copy of the rebuild protocol used to reconstruct
 Aether Transfer after the original implementation workspace was lost.
 
-## Current accepted baseline (POST-CP26A)
+## Current accepted baseline (POST-CP26B CLOSED)
 
 GitHub is the authoritative source for application source code. Living status: **`BUILD_STATE.md`**.
 
@@ -11,14 +11,15 @@ GitHub is the authoritative source for application source code. Living status: *
 |---|---|
 | Repository | `bizznessfone-cloud/birch-hazel-stone-cloud` |
 | Branch | `main` |
-| Last application SHA | `b35ef2fc8bdddef81fcc84aa59d358dba4346a30` |
+| Last application SHA | `19512c295830fbc6fd9712d688ce364d940f87c3` |
 | CP25G.3 | **CLOSED** |
 | **CP26A** | **CLOSED** |
-| **Next execution checkpoint** | **CP26B** |
+| **CP26B** | **CLOSED** |
+| **Next execution checkpoint** | **CP26C** |
 | Forward roadmap | **[ROADMAP.md](ROADMAP.md)** |
 | Fixture policy | **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)** |
-| Production | `scan-book-go` / last observed `dpl_7MFpVnCV4CbyoUjev1ZjcLVm2vtn` READY |
-| Migrations | `0001`–`0023` |
+| Production | `scan-book-go` / last observed `dpl_FmUosqz2wy7aCT51rNjdanJnuviZ` READY |
+| Migrations | `0001`–`0024` |
 
 `cp17-known-good` (`45e171a23037b7c94005018cd2126033a449d6f0`) is an immutable **historical** tag. It is not current `main`.
 
@@ -68,9 +69,10 @@ the current source SHA.
 Later completed work (see living `BUILD_STATE.md`): CP19 production binding,
 CP20 email architecture, CP21/CP21B, CP22 onboarding, CP23 public slug, CP24
 Stripe Connect source, CP25 guest-payment source, CP25G.3 Production Better Auth
-(CLOSED).
+(CLOSED), CP26A commercial dormancy (CLOSED), CP26B Domain A lifecycle +
+Production 0024 (CLOSED).
 
-Next execution checkpoint: **CP26B**. Canonical roadmap: **[ROADMAP.md](ROADMAP.md)**. Fixture policy: **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)**.
+Next execution checkpoint: **CP26C**. Canonical roadmap: **[ROADMAP.md](ROADMAP.md)**. Fixture policy: **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)**.
 CP26 is not commercial go-live. Only CP31 activates commerce.
 
 ## If the workspace disappears

@@ -9,12 +9,15 @@ not trail the repository.
 |---|---|
 | Repository | `bizznessfone-cloud/birch-hazel-stone-cloud` |
 | Branch | `main` |
-| Last application SHA | ff2581fddf658bc3fc09ca5f26ffb676c5c6926f (0024 source; Production ledger 0001–0023) |
+| Last application SHA | 19512c295830fbc6fd9712d688ce364d940f87c3 (CP26B.3R; Production 0024 applied) |
 | CP25G.3 | **CLOSED** |
 | **CP26A** | **CLOSED** |
 | CP26B.1 | **PASS** |
-| CP26B.2 | **SOURCE COMPLETE — 0024 DEFINED, NOT APPLIED** |
-| **Next execution checkpoint** | **CP26B.3 — controlled Production application of migration 0024** |
+| CP26B.2 | **SOURCE COMPLETE then APPLIED via CP26B.3** |
+| CP26B.3 | **CLOSED** |
+| CP26B.4 | **PASS** — Gate B 0001–0024; 0024 dispatch retired |
+| **CP26B** | **CLOSED** |
+| **Next execution checkpoint** | **CP26C — Stripe test-mode integration (design/preflight; not started)** |
 | Forward roadmap | `docs/ROADMAP.md` (CP26–CP31) |
 | Fixture policy | `docs/FIXTURE_POLICY.md` |
 
@@ -26,9 +29,9 @@ not trail the repository.
 ## Production
 
 - Vercel project: `scan-book-go`
-- Last observed deployment (CP26A.5): `dpl_7MFpVnCV4CbyoUjev1ZjcLVm2vtn` READY on `d42f794`
+- Last observed deployment (CP26B.3V): `dpl_FmUosqz2wy7aCT51rNjdanJnuviZ` READY on `19512c2`
 - Alias: `https://scan-book-go.vercel.app`
-- Push to `main` auto-deploys Vercel Production (docs-only deploys must not activate commerce)
+- Push to `main` auto-deploys Vercel Production (docs/control-plane deploys must not activate commerce)
 - `DATABASE_URL` PRESENT (`aether_app`)
 - `AETHER_DATABASE_OWNER_URL` ABSENT
 - `SBG_SAAS_COMMERCE` ABSENT (fail-closed Domain A)
@@ -37,9 +40,12 @@ not trail the repository.
 
 ## Database
 
-Migrations **0001–0024** exist in source. Production Neon is applied through **0023**.
-**0024 is not applied.** Single-use 0024 controller exists and must not be dispatched until CP26B.3.
-Gate B treats 0024 as unauthorised pending. Generic migrator remains fail-closed.
+Migrations **0001–0024** exist in source and are applied on Production Neon.
+Pending **NONE**. Gate B accepted ledger is **0001–0024**. `AUTHORISED_PENDING=[]`.
+Generic migrator remains fail-closed. Spent 0024 `workflow_dispatch` is retired.
+0024 digest `23cdc44037e0e886444477fdb693536a95c32b6080984de4076cc7a5f71d13c0`.
+Apply run [35697938230](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/35697938230).
+Verification run [35699337916](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/35699337916) (`0024 ALREADY APPLIED — NO MUTATION`).
 
 ## Auth (do not reopen CP25G.3)
 
@@ -68,8 +74,8 @@ account → hotel → service → preview → QR → plan → Stripe → LIVE
 - Stripe/Resend source exists. Production configuration is absent.
 - Domain A remains dormant until CP31.
 - CP26B.1 hardened Domain A application lifecycle (gate-before-write, one subscription, portal-first).
-- CP26B.2 ordered billing persistence is **source-complete** (`event.created` bigint, `cancel_at_period_end`, stale/ambiguous/duplicate). Production 0024 is **not** applied; next is CP26B.3.
-- CP26C still owns Stripe test-mode integration. Do not set `SBG_SAAS_COMMERCE=test` on public Production in CP26B.
+- CP26B.2/3 ordered billing persistence is **applied** (`event.created` bigint, `cancel_at_period_end`, stale/ambiguous/duplicate).
+- CP26C owns Stripe test-mode integration. Do not set `SBG_SAAS_COMMERCE=test` on public Production until an authorised isolation strategy exists.
 - `/ops/*` remains internal operations.
 - Public guest: `/{hotelSlug}` plus legacy `/book/{hotelCode}`.
 - Canonical live demo: `/book/demo-kos`. `/demo-kos` slug currently hotel_not_found (pre-existing).
@@ -84,10 +90,10 @@ explicitly opens them.
 
 ## Next checkpoint
 
-**CP26B.2 — ordered billing persistence + migration 0024 source** (commerce OFF)
+**CP26C — Stripe test-mode integration (design/preflight; not started)**
 
 Canonical roadmap: `docs/ROADMAP.md`. Fixture policy: `docs/FIXTURE_POLICY.md`.
 
 CP26 = build/test Domain A SaaS subscriptions. **Not go-live.**
 CP31 = activate commerce.
-Do not enable `SBG_SAAS_COMMERCE=test` on public Production in CP26B.
+Do not enable `SBG_SAAS_COMMERCE=test` on public Production until CP26C isolation is authorised.

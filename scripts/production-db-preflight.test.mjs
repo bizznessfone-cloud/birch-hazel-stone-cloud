@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { execFile } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
@@ -107,13 +107,26 @@ test("missing occupancy invariant fails", () => {
   assert.equal(result.verdict, "BLOCKED — OCCUPANCY INVARIANT NOT PROVEN");
 });
 
-test("accepted 0001-0023 ledger with empty pending passes", () => {
+test("accepted 0001-0024 ledger with empty pending passes", () => {
   const result = evaluatePreflight(baseFacts());
   assert.equal(result.ok, true);
   assert.equal(result.verdict, PASS_VERDICT);
   assert.equal(result.authClass, "A");
   assert.deepEqual(result.pending, []);
   assert.deepEqual(historicalSourceMigrations(SOURCE), LEDGER_0017);
+  assert.equal(ACCEPTED_LEDGER.includes("0024_cp26b2_ordered_billing_events.sql"), true);
+});
+
+test("pending 0024 is stale, not a newly authorised migration", () => {
+  const ledger = ACCEPTED_LEDGER.filter(
+    (name) => name !== "0024_cp26b2_ordered_billing_events.sql",
+  );
+  const result = evaluatePreflight(baseFacts({ ledger }));
+  assert.equal(result.ok, false);
+  assert.equal(result.verdict, "BLOCKED — MIGRATION LEDGER INCONSISTENT");
+  assert.deepEqual(result.pending, ["0024_cp26b2_ordered_billing_events.sql"]);
+  assert.deepEqual(result.unexpectedPending, ["0024_cp26b2_ordered_billing_events.sql"]);
+  assert.deepEqual(result.missingAccepted, ["0024_cp26b2_ordered_billing_events.sql"]);
 });
 
 test("pending 0023 is stale, not a newly authorised migration", () => {
@@ -127,15 +140,15 @@ test("pending 0023 is stale, not a newly authorised migration", () => {
   assert.deepEqual(result.unexpectedPending, ["0023_cp26a2_entitlement_publication_decoupling.sql"]);
 });
 
-test("pending 0024 is rejected", () => {
+test("pending 0024 is rejected as unauthorised when treated as extra future file", () => {
   const result = evaluatePreflight(
     baseFacts({
-      sourceMigrations: [...SOURCE, "0024_cp26b2_ordered_billing_events.sql"],
+      sourceMigrations: [...SOURCE, "0024_future.sql"],
     }),
   );
   assert.equal(result.ok, false);
   assert.equal(result.verdict, "BLOCKED — MIGRATION LEDGER INCONSISTENT");
-  assert.deepEqual(result.unexpectedPending, ["0024_cp26b2_ordered_billing_events.sql"]);
+  assert.deepEqual(result.unexpectedPending, ["0024_future.sql"]);
   assert.equal(isAuthorisedPending("0024_cp26b2_ordered_billing_events.sql"), false);
   assert.equal(isAuthorisedPending("0024_future.sql"), false);
 });
@@ -151,11 +164,24 @@ test("pending 0025+ is rejected", () => {
   assert.equal(isAuthorisedPending("0025_later.sql"), false);
 });
 
+test("pending 0026+ is rejected", () => {
+  const result = evaluatePreflight(
+    baseFacts({
+      sourceMigrations: [...SOURCE, "0026_later.sql"],
+    }),
+  );
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.unexpectedPending, ["0026_later.sql"]);
+  assert.equal(isAuthorisedPending("0026_later.sql"), false);
+});
+
 test("no pending migration is automatically authorised", () => {
   assert.equal(isAuthorisedPending("0001_auth.sql"), false);
   assert.equal(isAuthorisedPending("0022_cp25g3_better_auth_runtime_privileges.sql"), false);
   assert.equal(isAuthorisedPending("0023_cp26a2_entitlement_publication_decoupling.sql"), false);
+  assert.equal(isAuthorisedPending("0024_cp26b2_ordered_billing_events.sql"), false);
   assert.equal(isAuthorisedPending("0024_future.sql"), false);
+  assert.equal(isAuthorisedPending("0025_later.sql"), false);
 });
 
 test("auth classification A/B pass and C/D fail", () => {
@@ -234,7 +260,7 @@ test("workflow is dispatch-only, read-only, and does not migrate", () => {
   assert.doesNotMatch(pkg.scripts.build, /db:preflight/);
 });
 
-test("reviewed 0020-0023 source checksums remain intact", () => {
+test("reviewed 0020-0024 source checksums remain intact", () => {
   for (const [name, expected] of Object.entries(REVIEWED_DIGESTS)) {
     const bytes = readFileSync(join(here, "../migrations", name));
     assert.equal(createHash("sha256").update(bytes).digest("hex"), expected, name);
@@ -245,6 +271,9 @@ test("single-use and generic production migrate workflows are retired", () => {
   const workflows = join(here, "../.github/workflows");
   assert.equal(existsSync(join(workflows, "cp26a2-0023-production-migrate.yml")), false);
   assert.equal(existsSync(join(workflows, "cp25g3-0022-production-migrate.yml")), false);
+  assert.equal(existsSync(join(workflows, "cp26b2-0024-production-migrate.yml")), false);
   assert.equal(existsSync(join(workflows, "production-database-migrate.yml")), false);
   assert.equal(existsSync(join(workflows, "production-database.yml")), true);
+  const yaml = readdirSync(workflows).filter((name) => name.endsWith(".yml") || name.endsWith(".yaml")).sort();
+  assert.deepEqual(yaml, ["production-database.yml"]);
 });

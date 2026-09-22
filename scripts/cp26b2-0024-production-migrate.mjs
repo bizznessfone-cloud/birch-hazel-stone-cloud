@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 /**
- * CP26B.2 — single-use production controller for 0024 only.
+ * CP26B.2 — historical single-use production controller for 0024 only.
  *
- * Applies migrations/0024_cp26b2_ordered_billing_events.sql and nothing else.
- * Never uses DATABASE_URL. Never prints secrets. Never deploys.
- * Does not invoke the generic production migrator.
- * Do not dispatch until CP26B.3.
+ * Applied once in CP26B.3 (GHA 35697938230). Independently verified
+ * already-applied in CP26B.3V (GHA 35699337916). The workflow_dispatch
+ * surface is retired; this script remains as a historical/already-applied
+ * no-op record. Never uses DATABASE_URL. Never prints secrets. Never
+ * deploys. Does not invoke the generic production migrator.
  */
 import { createHash } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";

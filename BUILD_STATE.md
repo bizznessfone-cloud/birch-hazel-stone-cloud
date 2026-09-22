@@ -2,11 +2,12 @@
 
 This file describes **current reality**, not intended future state.
 
-## CP26A — CLOSED
+## CP26B — CLOSED
 
-Commercial dormancy, publication decoupling, fixture policy, and a persistent
-Production verification tenant are accepted. Domain A commerce remains **OFF**.
-Only **CP31** may activate real commerce.
+Domain A subscription lifecycle, ordered billing persistence, and Production
+migration 0024 are accepted. Domain A commerce remains **OFF**. Only **CP31**
+may activate real commerce. Next execution is **CP26C** (Stripe test-mode
+design/preflight; not started).
 
 | Field | Value |
 |---|---|
@@ -17,33 +18,38 @@ Only **CP31** may activate real commerce.
 | CP26A.5 | **PASS** — one persistent Production verification identity + one owned hotel, **configured not live**, returning sign-in, billing GET |
 | CP26A.6 | **PASS** — evidence reconciled; CP26A closed |
 | CP26B.1 | **PASS** — Domain A application lifecycle: gate-before-write, one subscription, portal-first plan management |
-| CP26B.2 | **SOURCE COMPLETE** — ordered Domain A webhook persistence; migration **0024 defined, not applied** |
-| Last application SHA | ff2581fddf658bc3fc09ca5f26ffb676c5c6926f (runtime `src/` + 0024 source; Production ledger still **0001–0023**) |
+| CP26B.2 | **SOURCE COMPLETE** — ordered Domain A webhook persistence |
+| CP26B.3 | **CLOSED** — Production 0024 applied (GHA [35697938230](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/35697938230)); already-applied verified (GHA [35699337916](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/35699337916)) |
+| CP26B.4 | **PASS** — Gate B accepted ledger **0001–0024**; 0024 `workflow_dispatch` retired; generic migrator remains fail-closed |
+| **CP26B** | **CLOSED** |
+| Last application SHA | 19512c295830fbc6fd9712d688ce364d940f87c3 (CP26B.3R catalog identity; Production 0024 already applied) |
 | Fixture policy | [`docs/FIXTURE_POLICY.md`](docs/FIXTURE_POLICY.md) |
 | Local harness | `src/lib/aether/cp26a4-fixture.ts` (tests only; not a runtime import) |
 | Domain A | remains dormant; only **CP31** may activate commerce |
-| Accepted Production ledger | **0001–0023** (0024 is source-only until CP26B.3) |
-| **Next execution** | **CP26B.3 — controlled Production application of migration 0024** |
+| Accepted Production ledger | **0001–0024** |
+| 0024 digest | `23cdc44037e0e886444477fdb693536a95c32b6080984de4076cc7a5f71d13c0` |
+| **Next execution** | **CP26C — Stripe test-mode integration (design/preflight; not started)** |
 
-Do not dispatch historical 0022/0023 controllers. Owner secret remains GitHub Actions `AETHER_DATABASE_OWNER_URL` only — never Vercel. Future migrations need a dedicated single-use controller and an explicit checkpoint.
+Do not dispatch historical 0022/0023/0024 controllers. Owner secret remains GitHub Actions `AETHER_DATABASE_OWNER_URL` only — never Vercel. Future migrations need a dedicated single-use controller and an explicit checkpoint.
 
-Push to `main` currently auto-deploys Vercel Production. That is a known control-plane characteristic, not a commercial activation. CP26B.2 deploys ordered-webhook **source** that is schema-capability gated: Production remains on 0023 until CP26B.3 applies 0024. Domain A webhooks return 503 if commerce were enabled before 0024; with commerce OFF they are acknowledged without apply. Billing GET stays 0023-column compatible.
+Push to `main` currently auto-deploys Vercel Production. That is a known control-plane characteristic, not a commercial activation. Ordered-webhook source is schema-capable on Production 0024. Domain A webhooks remain fail-closed while commerce is OFF (acknowledged without apply).
 
 Password never enters git/chat/Grok/Vercel/`.env`. Do not delete the Production verification tenant.
 
-## Current accepted baseline (POST-CP26B.2 source)
+`SBG_SAAS_COMMERCE=test` is process-global and must **not** be enabled on the public Production deployment until CP26C establishes an authorised isolation strategy.
+
+## Current accepted baseline (POST-CP26B CLOSED)
 
 | Field | Value |
 |---|---|
 | Product | **SCAN / BOOK / GO** (internal history name: Aether Transfer) |
 | Repository | `bizznessfone-cloud/birch-hazel-stone-cloud` |
 | Branch | `main` |
-| Last application SHA | ff2581fddf658bc3fc09ca5f26ffb676c5c6926f (runtime `src/` + 0024 source; Production ledger still **0001–0023**) |
+| Last application SHA | 19512c295830fbc6fd9712d688ce364d940f87c3 (CP26B.3R; Production 0024 applied) |
 | CP25G.3 | **CLOSED** |
 | **CP26A** | **CLOSED** |
-| CP26B.1 | **PASS** |
-| CP26B.2 | **SOURCE COMPLETE — 0024 DEFINED, NOT APPLIED** |
-| **Next execution checkpoint** | **CP26B.3 — controlled Production application of migration 0024** |
+| **CP26B** | **CLOSED** |
+| **Next execution checkpoint** | **CP26C — Stripe test-mode integration (design/preflight; not started)** |
 | Forward roadmap | **[docs/ROADMAP.md](docs/ROADMAP.md)** (CP26–CP31) |
 
 ### Production
@@ -51,12 +57,12 @@ Password never enters git/chat/Grok/Vercel/`.env`. Do not delete the Production 
 | Field | Value |
 |---|---|
 | Vercel project | `scan-book-go` |
-| Last observed deployment (CP26A.5) | `dpl_7MFpVnCV4CbyoUjev1ZjcLVm2vtn` |
+| Last observed deployment (CP26B.3V) | `dpl_FmUosqz2wy7aCT51rNjdanJnuviZ` |
 | State | READY |
 | Alias | `https://scan-book-go.vercel.app` |
-| Deployed SHA (last observed) | `d42f7940c698c8b80f9af65a6d43a30f3b3f3831` |
+| Deployed SHA (last observed) | `19512c295830fbc6fd9712d688ce364d940f87c3` |
 
-A later push of this documentation child may auto-deploy a docs-only SHA. That must not activate commerce.
+A later push of this documentation/control-plane child may auto-deploy a new SHA. That must not activate commerce.
 
 Environment (names/presence only):
 
@@ -74,16 +80,18 @@ Environment (names/presence only):
 | Layer | State |
 |---|---|
 | Source migrations | `0001`–`0024` present (`0024_cp26b2_ordered_billing_events.sql`) |
-| Production Neon | migrated through **0023** — **0024 NOT APPLIED** |
-| 0024 | ordered Domain A billing events (`event.created` bigint, `cancel_at_period_end`, stale/ambiguous/duplicate) |
+| Production Neon | migrated through **0024** — pending **NONE** |
+| 0024 | ordered Domain A billing events (`event.created` bigint, `cancel_at_period_end`, stale/ambiguous/duplicate); 10-argument `sbg_apply_billing_event`; 8-argument function **absent** |
 | 0023 | entitlement publication decoupling (`sbg_sync_hotel_entitlement` no longer writes `hotels.status`) |
 | Runtime | `DATABASE_URL` → `aether_app` |
 | Owner / migration plane | `AETHER_DATABASE_OWNER_URL` → `neondb_owner` (not on Vercel) |
 | Preview | PGLite; `aether_runtime` SET ROLE only |
 | Application build | `npm run build` does **not** migrate |
-| Permanent Gate B | `.github/workflows/production-database.yml` (read-only) |
+| Permanent Gate B | `.github/workflows/production-database.yml` (read-only); accepted ledger **0001–0024**; `AUTHORISED_PENDING=[]` |
 
 Roles: `neondb_owner` = schema/migration owner; `aether_app` = production LOGIN; `aether_runtime` = PGLite/preview only. Production must not use SET ROLE or owner credentials as runtime.
+
+CP26B.3V invariants (do not re-query merely to reproduce): hotels 4; billing accounts 0; Stripe events 0; demo-kos live; sbg-verify-a5 configured/non-bookable.
 
 ### Auth (CP25G.3 CLOSED — do not reopen)
 
@@ -128,9 +136,8 @@ account → hotel → service → preview → QR → plan → Stripe → LIVE
 - Existing subscription states cannot start a second Checkout; plan changes go to Manage billing (portal-first).
 - Domain A webhooks persist Stripe `event.created` (bigint Unix seconds) and `cancel_at_period_end`. Duplicate event IDs are idempotent; older events are stale no-ops; equal-timestamp different IDs are ambiguous fail-closed.
 - SaaS entitlement (`active`/`trialing`/`past_due`) is independent of `hotels.status`.
-- Remaining for **CP26B.3**: apply 0024 on Production via the dedicated controller; do not widen the generic migrator.
-- First post-0024 Domain A event becomes the ordering baseline for historical rows with null `last_stripe_event_created` (accepted evidence: no Production Domain A Stripe events; verification tenant never Checkout).
-- `SBG_SAAS_COMMERCE=test` is process-global (CP26C blast-radius risk; not solved here). CP26C still owns Stripe test-mode integration.
+- Production 0024 is **applied**. First Domain A event (none exist yet) becomes the ordering baseline for historical rows with null `last_stripe_event_created`.
+- `SBG_SAAS_COMMERCE=test` is process-global (CP26C blast-radius risk; not solved here). CP26C owns Stripe test-mode integration.
 
 ### Guest / Ops
 
@@ -139,7 +146,7 @@ account → hotel → service → preview → QR → plan → Stripe → LIVE
 - Hotel-owned guest payment source exists; not Production-proven. Domain B is outside the Domain A kill-switch.
 - `/ops/*` remains isolated from SaaS `/app/*`. Production Ops credentials are absent.
 
-### Known non-blocking findings (do not fix in CP26A.6)
+### Known non-blocking findings (do not fix in CP26B.4)
 
 - **Slug normalisation:** `sbg_slug_base` strips uppercase before `lower()`. `"SBG Verification Hotel"` → `erification-otel`. Do not rewrite the persisted verification slug without a later migration/redirect plan.
 - **Auth UX:** `/login` defaults to account creation; returning users must choose Sign in. Security boundary passed.
@@ -154,15 +161,14 @@ account → hotel → service → preview → QR → plan → Stripe → LIVE
 - Do not claim migrations after 0017 are absent.
 - Do not claim `/app/*` does not exist.
 - Do not claim CP25G.3 remains open.
-- Do not claim 0023 is unapplied or that a 0023 dispatch workflow remains.
+- Do not claim 0023 or 0024 is unapplied, or that a 0022/0023/0024 dispatch workflow remains.
 - Do not claim returning Production sign-in is unproven.
 - Do not claim the Production verification tenant does not exist.
 - Do not treat CP26 as commercial go-live. Only CP31 activates commerce.
 - Do not start CP26C test commerce on public Production until blast-radius architecture is authorised.
-- Do not claim 0024 is applied on Production. Source has 0024; accepted ledger remains 0001–0023 until CP26B.3.
-- Do not dispatch the 0024 controller until CP26B.3.
+- Do not invent CP26B.5.
 
-Canonical forward path: **`docs/ROADMAP.md`**. Fixture policy: **`docs/FIXTURE_POLICY.md`**. Next execution: **CP26B.3**.
+Canonical forward path: **`docs/ROADMAP.md`**. Fixture policy: **`docs/FIXTURE_POLICY.md`**. Next execution: **CP26C**.
 
 GitHub `main` at the current SHA is authoritative application source. A workspace is never authoritative. Recovery ZIPs are secondary disaster-recovery artifacts. The CP10 ZIP must not be extracted over a newer Git tree without explicit human approval.
 
@@ -170,10 +176,12 @@ GitHub `main` at the current SHA is authoritative application source. A workspac
 
 ## Historical (not current)
 
+- CP26B.3 CLOSED — Production 0024 via GHA [35697938230](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/35697938230); already-applied verification GHA [35699337916](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/35699337916); digest `23cdc44037e0e886444477fdb693536a95c32b6080984de4076cc7a5f71d13c0`; controller identity repair SHA `19512c2`; demo-kos remained live; billing 0; events 0.
+- CP26B.2 SOURCE COMPLETE — ordered persistence source SHA `ff2581f`; docs SHA `2939948`; 0024 not applied in that child.
 - CP26A.5 COMPLETE — one Production verification identity + hotel `sbg-verify-a5` configured-not-live; returning sign-in proven; billing GET only; no Stripe.
 - CP26A.2 COMPLETE — Production 0023 via GHA run [35581165068](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/35581165068); controller SHA `b35ef2f`; 0023 SHA-256 `469eeee3c8707beb40a2a268bea53c77620265efb969bfbff12c524e17585ba1`; demo-kos remained live; single-use 0022/0023 `workflow_dispatch` retired.
 - `cp17-known-good` / `45e171a23037b7c94005018cd2126033a449d6f0` — immutable CP16C/CP17 source tag. Not current `main`.
 - CP10 occupancy ZIP — historical disaster-recovery artifact only.
 - CP19 originally meant Neon binding/verification. That work completed in later controlled production checkpoints; do not treat the old “CP19 unfinished” wording as living state.
 - CP22–CP25 / CP25G.3 source and production work happened after CP17. See `docs/CP22_V1_OPERATOR_ONBOARDING.md`, `docs/CP23_PUBLIC_HOTEL_SLUG.md`, `docs/CP24_STRIPE_BILLING.md` as **completed checkpoint specifications**, not as the next task.
-- Single-use 0022/0023 GitHub Actions workflows existed to apply those migrations once. They were retired after successful Production application. Scripts remain as historical/test evidence (already-applied = no-op).
+- Single-use 0022/0023/0024 GitHub Actions workflows existed to apply those migrations once. They were retired after successful Production application. Scripts remain as historical/test evidence (already-applied = no-op).

@@ -368,39 +368,51 @@ test("authorised 0024 applies once and aftermath requires ordered function plus 
   assert.equal(changedHotel.verdict, POST_BLOCKED);
 });
 
-test("Gate B and generic migrator still refuse 0024 pending", () => {
+test("Gate B accepts 0024 as current history and still rejects later pending", () => {
   assert.equal(isAuthorisedPending(TARGET_MIGRATION), false);
   assert.ok(ACCEPTED_LEDGER.includes("0023_cp26a2_entitlement_publication_decoupling.sql"));
-  assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), false);
-  const preflight = evaluatePreflight({
+  assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), true);
+  const currentFacts = {
     database: "neondb",
     currentUser: "neondb_owner",
     sessionUser: "neondb_owner",
     ledger: [...ACCEPTED_LEDGER],
     ledgerReadable: true,
-    sourceMigrations: [...ACCEPTED_LEDGER, TARGET_MIGRATION],
+    sourceMigrations: [...ACCEPTED_LEDGER],
     authTables: { user: "PRESENT", session: "PRESENT", account: "PRESENT", verification: "PRESENT" },
     aetherAppExists: true,
     occupancy,
     tableOwners: { hotels: "neondb_owner", bookings: "neondb_owner" },
+  };
+  const current = evaluatePreflight(currentFacts);
+  assert.equal(current.ok, true);
+  assert.deepEqual(current.pending, []);
+  const genericCurrent = evaluateMigrationBaseline(current);
+  assert.equal(genericCurrent.ok, true);
+  assert.equal(genericCurrent.alreadyCurrent, true);
+  assert.equal(genericCurrent.migrated, false);
+
+  const missing0024 = evaluatePreflight({
+    ...currentFacts,
+    ledger: ACCEPTED_LEDGER.filter((name) => name !== TARGET_MIGRATION),
   });
-  assert.equal(preflight.ok, false);
-  assert.deepEqual(preflight.unexpectedPending, [TARGET_MIGRATION]);
-  const generic = evaluateMigrationBaseline(preflight);
+  assert.equal(missing0024.ok, false);
+  assert.deepEqual(missing0024.unexpectedPending, [TARGET_MIGRATION]);
+
+  const pending0025 = evaluatePreflight({
+    ...currentFacts,
+    sourceMigrations: [...ACCEPTED_LEDGER, "0025_later.sql"],
+  });
+  assert.equal(pending0025.ok, false);
+  assert.deepEqual(pending0025.unexpectedPending, ["0025_later.sql"]);
+  const generic = evaluateMigrationBaseline(pending0025);
   assert.equal(generic.ok, false);
   assert.match(generic.verdict, /NO GENERIC PRODUCTION MIGRATION AUTHORISED|MIGRATION LEDGER INCONSISTENT/);
   assert.equal(GENERIC_MIGRATE_BLOCKED.includes("GENERIC"), true);
 });
 
-test("workflow is dispatch-only with APPLY-0024 and production-database-mutation lock", () => {
-  const workflow = readFileSync(workflowPath, "utf8");
-  assert.match(workflow, /workflow_dispatch/);
-  assert.match(workflow, /APPLY-0024/);
-  assert.match(workflow, /production-database-mutation/);
-  assert.match(workflow, /AETHER_DATABASE_OWNER_URL/);
-  assert.doesNotMatch(workflow, /DATABASE_URL/);
-  assert.doesNotMatch(workflow, /schedule:/);
-  assert.doesNotMatch(workflow, /push:/);
+test("0024 workflow_dispatch mutation surface is retired", () => {
+  assert.equal(existsSync(workflowPath), false);
 });
 
 test("build and Vercel cannot invoke this controller", () => {
@@ -462,8 +474,8 @@ test("direct invocation without secret exits before connecting", async () => {
   assert.doesNotMatch(output, /postgres:\/\//);
 });
 
-test("workflow file exists (created, not dispatched)", () => {
-  assert.equal(existsSync(workflowPath), true);
+test("0024 workflow file is deleted (spent mutation surface retired)", () => {
+  assert.equal(existsSync(workflowPath), false);
   assert.equal(billingSnapshotKey(billingSnapshot), billingSnapshotKey({ accountCount: 0, statusCounts: {}, eventCount: 0 }));
 });
 

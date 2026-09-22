@@ -4,16 +4,19 @@ Living status: **`BUILD_STATE.md`** (repo root).
 
 | Field | Value |
 |---|---|
-| Last application SHA | ff2581fddf658bc3fc09ca5f26ffb676c5c6926f (0024 source; Production ledger 0001–0023) |
+| Last application SHA | 19512c295830fbc6fd9712d688ce364d940f87c3 (CP26B.3R; Production 0024 applied) |
 | CP25G.3 | **CLOSED** |
 | **CP26A** | **CLOSED** |
 | CP26B.1 | **PASS** |
-| CP26B.2 | **SOURCE COMPLETE — 0024 NOT APPLIED** |
-| **Next execution checkpoint** | **CP26B.3** |
+| CP26B.2 | **SOURCE COMPLETE then APPLIED via CP26B.3** |
+| CP26B.3 | **CLOSED** |
+| CP26B.4 | **PASS** |
+| **CP26B** | **CLOSED** |
+| **Next execution checkpoint** | **CP26C** |
 | Forward roadmap | **[ROADMAP.md](ROADMAP.md)** (CP26–CP31) |
 | Fixture policy | **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)** |
-| Production | Vercel `scan-book-go` last observed `dpl_7MFpVnCV4CbyoUjev1ZjcLVm2vtn` READY |
-| Migrations | source `0001`–`0024`; Production accepted **0001–0023** |
+| Production | Vercel `scan-book-go` last observed `dpl_FmUosqz2wy7aCT51rNjdanJnuviZ` READY |
+| Migrations | source and Production accepted **0001–0024** |
 
 This file’s remainder is a **historical Checkpoint 10** record only.
 

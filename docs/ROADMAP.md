@@ -5,12 +5,15 @@ Canonical living roadmap. Other living documents should **point here**, not rede
 | Field | Value |
 |---|---|
 | Formalised on parent | `91ba2c15c6f3b5b11106ebc006e433515e1f0f86` |
-| Application baseline | `b35ef2fc8bdddef81fcc84aa59d358dba4346a30` |
+| Last application SHA | `19512c295830fbc6fd9712d688ce364d940f87c3` (CP26B.3R catalog identity) |
 | CP25G.3 | **CLOSED** |
 | **CP26A** | **CLOSED** |
 | CP26B.1 | **PASS** — application lifecycle hardened (gate-before-write, one subscription, portal-first) |
-| CP26B.2 | **SOURCE COMPLETE** — ordered billing persistence; migration 0024 **defined, not applied** |
-| **Next execution checkpoint** | **CP26B.3 — controlled Production application of migration 0024** |
+| CP26B.2 | **SOURCE COMPLETE** then **APPLIED** via CP26B.3 |
+| CP26B.3 | **CLOSED** — Production 0024 applied and independently verified |
+| CP26B.4 | **PASS** — Gate B 0001–0024; 0024 dispatch retired |
+| **CP26B** | **CLOSED** |
+| **Next execution checkpoint** | **CP26C — Stripe test-mode integration (design/preflight; not started)** |
 
 ---
 
@@ -83,19 +86,23 @@ Resolved in CP26A:
 - persistent Production verification tenant exists (`sbg-verify-a5`, **configured not live**)
 - configured hotel is sufficient for Domain A billing GET; live and Connect are not required
 
-Resolved in CP26B.1 (application layer only; commerce still OFF):
+Resolved in CP26B (application + Production schema; commerce still OFF):
 
 - one-subscription Checkout invariant (duplicate SaaS Checkout blocked)
 - portal-first plan management (no custom upgrade/downgrade/cancel APIs)
 - application classification of `past_due` / `unpaid` / `incomplete` / `paused`
 - commerce gate before any Domain A billing write
+- ordered Domain A webhook persistence (`event.created` bigint; duplicate / stale / ambiguous)
+- `cancel_at_period_end` persisted without cancelling or publishing
+- Production migration **0024** applied exactly once (GHA [35697938230](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/35697938230)) and independently verified already-applied (GHA [35699337916](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/35699337916)); digest `23cdc44037e0e886444477fdb693536a95c32b6080984de4076cc7a5f71d13c0`
+- ordered 10-argument `sbg_apply_billing_event` installed; historical 8-argument last-write-wins function absent
+- 0024 `workflow_dispatch` retired; generic Production migrator remains fail-closed
 
 Still open (later CP26 work):
 
-- Production application of migration **0024** (**CP26B.3**)
 - Stripe integration has not been exercised in test mode (**CP26C**)
 - Production Stripe configuration remains **absent** (must stay absent until an authorised child)
-- `SBG_SAAS_COMMERCE=test` is process-global (CP26C blast-radius; do not flip on public Production in CP26B)
+- `SBG_SAAS_COMMERCE=test` is process-global (CP26C blast-radius; do **not** enable on the public Production deployment until CP26C establishes an authorised isolation strategy)
 
 ---
 
@@ -123,19 +130,21 @@ Completed **before** Stripe integration testing.
 
 **Mutation:** source (and tests) as required; no Production live Stripe keys; no real subscriptions.
 
-### CP26B — SAAS SUBSCRIPTION LIFECYCLE COMPLETION
+### CP26B — SAAS SUBSCRIPTION LIFECYCLE COMPLETION — CLOSED
 
 **BUILD / INTEGRATE / TEST ONLY.** Not real SaaS commerce, not live customer orders, not real subscription charging, not CP31 activation.
 
-Complete Domain A lifecycle in source (exact design in CP26B preflight): creation; single-subscription / duplicate prevention; customer mapping; updates; upgrade/downgrade; cancellation; period end; incomplete/failed/past_due; invoice events where required; webhook idempotency; portal; entitlement state.
+Completed Domain A lifecycle in source: creation; single-subscription / duplicate prevention; customer mapping; updates; upgrade/downgrade; cancellation; period end; incomplete/failed/past_due; invoice events where required; webhook idempotency; portal; entitlement state.
 
 **CP26B.1 PASS:** application lifecycle — commerce gate before billing write; one-subscription Checkout invariant; portal-first plan management; SaaS entitlement classification independent of `hotels.status`.
 
-**CP26B.2 SOURCE COMPLETE:** ordered Domain A webhook persistence in source. Migration `0024_cp26b2_ordered_billing_events.sql` is defined. Production accepted ledger remains **0001–0023**. Controller created, **not executed**.
+**CP26B.2 SOURCE COMPLETE:** ordered Domain A webhook persistence in source. Migration `0024_cp26b2_ordered_billing_events.sql` defined. Ordering: Stripe `event.created` (bigint Unix seconds). Duplicate event ID → idempotent no-op. Newer → apply. Older → stale no-op. Equal timestamp, different event IDs → ambiguous, no billing mutation. `cancel_at_period_end` is persisted and does not itself cancel or publish.
 
-Ordering: Stripe `event.created` (bigint Unix seconds). Duplicate event ID → idempotent no-op. Newer → apply. Older → stale no-op. Equal timestamp, different event IDs → ambiguous, no billing mutation. `cancel_at_period_end` is persisted and does not itself cancel or publish.
+**CP26B.3 CLOSED:** controlled Production application of 0024. Apply run [35697938230](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/35697938230) committed SQL (ledger 0001–0024). Aftermath then failed only catalog `function-identity` (unnamed vs named). Repair SHA `19512c2`. Verification run [35699337916](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/35699337916) verdict `0024 ALREADY APPLIED — NO MUTATION`. Ordered 10-argument function installed; 8-argument function gone. Billing accounts 0; Stripe events 0. Commerce OFF.
 
-**Next: CP26B.3** controlled Production 0024 application. Commerce remains **OFF**. Do not dispatch the 0024 controller in this child. CP26C still owns real Stripe test-mode integration.
+**CP26B.4 PASS:** control-plane / documentation reconciliation. Gate B accepted ledger **0001–0024**. `AUTHORISED_PENDING` remains empty. Spent 0024 `workflow_dispatch` deleted. Generic migrator remains fail-closed. No CP26B.5.
+
+**CP26B — CLOSED.** Next execution: **CP26C**. Do not start CP26C in this child.
 
 ### CP26C — STRIPE TEST-MODE INTEGRATION
 
@@ -144,6 +153,8 @@ Exercise Domain A against Stripe **TEST MODE ONLY** (`sk_test`, test products/pr
 **Hard prohibition:** no `sk_live`; no real customer charge; no real SaaS subscription.
 
 **Do not enable test commerce on public Production until blast-radius architecture is explicitly authorised.** `SBG_SAAS_COMMERCE=test` is process-global and would offer test Checkout to any `/login` signup.
+
+Possible isolation strategies remain subject to CP26C design; they are not chosen here.
 
 ### CP26D — HOTEL-OWNED GUEST PAYMENT REGRESSION
 

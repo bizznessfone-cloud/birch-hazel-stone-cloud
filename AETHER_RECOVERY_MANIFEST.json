@@ -2,7 +2,7 @@
   "project": "SCAN / BOOK / GO",
   "guest_lockup": "SCAN. BOOK. GO.",
   "internal_history_name": "Aether Transfer",
-  "current_source_sha": "b35ef2fc8bdddef81fcc84aa59d358dba4346a30",
+  "current_source_sha": "19512c295830fbc6fd9712d688ce364d940f87c3",
   "cp25g3": "CLOSED",
   "cp26a": "CLOSED",
   "cp26a1": "CLOSED",
@@ -10,19 +10,24 @@
   "cp26a4": "CLOSED",
   "cp26a5": "CLOSED",
   "cp26a6": "CLOSED",
-  "next_numbered_checkpoint": "CP26B",
-  "next_execution_checkpoint": "CP26B — Domain A subscription lifecycle completion (build/integrate/test only; commerce OFF)",
+  "cp26b": "CLOSED",
+  "cp26b1": "PASS",
+  "cp26b2": "SOURCE COMPLETE then APPLIED via CP26B.3",
+  "cp26b3": "CLOSED",
+  "cp26b4": "PASS",
+  "next_numbered_checkpoint": "CP26C",
+  "next_execution_checkpoint": "CP26C — Stripe test-mode integration (design/preflight; not started)",
   "forward_roadmap": "docs/ROADMAP.md",
   "fixture_policy": "docs/FIXTURE_POLICY.md",
   "do_not_invent_cp26": false,
-  "phase": "POST-CP26A CLOSED. Persistent Production verification tenant sbg-verify-a5 configured-not-live. Returning sign-in proven. Next CP26B Domain A lifecycle source with commerce OFF. CP26 is NOT go-live. Only CP31 activates commerce. See docs/ROADMAP.md.",
-  "timestamp": "2026-09-21T19:25:00+03:00",
+  "phase": "POST-CP26B CLOSED. Production ledger 0001-0024. Ordered 10-argument sbg_apply_billing_event installed. 0024 dispatch retired. Persistent Production verification tenant sbg-verify-a5 configured-not-live. Domain A commerce OFF. Next CP26C Stripe test-mode design/preflight. SBG_SAAS_COMMERCE=test is process-global and must not be enabled on public Production until CP26C isolation is authorised. CP26 is NOT go-live. Only CP31 activates commerce. See docs/ROADMAP.md.",
+  "timestamp": "2026-09-22T10:28:00+03:00",
   "production": {
     "vercel_project": "scan-book-go",
-    "deployment_id": "dpl_7MFpVnCV4CbyoUjev1ZjcLVm2vtn",
+    "deployment_id": "dpl_FmUosqz2wy7aCT51rNjdanJnuviZ",
     "state": "READY",
     "alias": "https://scan-book-go.vercel.app",
-    "deployed_sha": "d42f7940c698c8b80f9af65a6d43a30f3b3f3831",
+    "deployed_sha": "19512c295830fbc6fd9712d688ce364d940f87c3",
     "DATABASE_URL": "PRESENT",
     "AETHER_DATABASE_OWNER_URL": "ABSENT",
     "SBG_SAAS_COMMERCE": "ABSENT",
@@ -38,17 +43,20 @@
     "email": "REDACTED"
   },
   "migrations": {
-    "source": "0001-0023",
-    "production_neon": "through 0023"
+    "source": "0001-0024",
+    "production_neon": "through 0024",
+    "0024_digest": "23cdc44037e0e886444477fdb693536a95c32b6080984de4076cc7a5f71d13c0",
+    "0024_apply_run": "35697938230",
+    "0024_verify_run": "35699337916"
   },
-  "restore_checkpoint_id": "main@b35ef2fc8bdddef81fcc84aa59d358dba4346a30",
+  "restore_checkpoint_id": "main@19512c295830fbc6fd9712d688ce364d940f87c3",
   "historical_cp17_tag": "cp17-known-good",
   "historical_cp17_sha": "45e171a23037b7c94005018cd2126033a449d6f0",
-  "last_known_good_checkpoint": "POST-CP26A CLOSED; last application SHA b35ef2fc8bdddef81fcc84aa59d358dba4346a30",
+  "last_known_good_checkpoint": "POST-CP26B CLOSED; last application SHA 19512c295830fbc6fd9712d688ce364d940f87c3",
   "restored_from": {
     "status": "HISTORICAL",
     "uploaded_archive": "attachments/AETHER_TRANSFER_CP010_DATABASE_2026-09-05.zip",
-    "warning": "The CP10 ZIP is a secondary disaster-recovery artifact. MUST NOT be extracted over a newer Git tree without explicit human approval. Current last application SHA is b35ef2f, not 45e171a / cp17-known-good."
+    "warning": "The CP10 ZIP is a secondary disaster-recovery artifact. MUST NOT be extracted over a newer Git tree without explicit human approval. Current last application SHA is 19512c2, not 45e171a / cp17-known-good."
   },
-  "note": "File hashes and file lists below (if present in git history of this file) were a CP17-era snapshot and are not the current tree inventory. Use git and BUILD_STATE.md for current source. Single-use 0022/0023 mutation workflows are retired. CP26A.6 is documentation only; auto-deploy of this SHA must not activate commerce."
+  "note": "File hashes and file lists below (if present in git history of this file) were a CP17-era snapshot and are not the current tree inventory. Use git and BUILD_STATE.md for current source. Single-use 0022/0023/0024 mutation workflows are retired. CP26B.4 is documentation/control-plane only; auto-deploy of this SHA must not activate commerce."
 }
