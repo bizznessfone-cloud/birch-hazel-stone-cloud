@@ -74,6 +74,10 @@ const COMMERCE_TEST = {
   STRIPE_PREMIUM_PRICE_ID: "price_sbg_test_premium",
 };
 
+function commerceTestFor(...hotelIds: string[]) {
+  return { ...COMMERCE_TEST, SBG_SAAS_TEST_HOTEL_IDS: hotelIds.join(",") };
+}
+
 const COMMERCE_OFF = {
   ...COMMERCE_TEST,
   SBG_SAAS_COMMERCE: "off",
@@ -150,7 +154,7 @@ test("CP26B.1 first subscription builds Checkout request and persists price afte
   try {
     await insertAuthUser(pg, OWNER_USER);
     const fixture = await onboardConfiguredFixture(pg, OWNER_USER.id);
-    await withEnv(COMMERCE_TEST, async () => {
+    await withEnv(commerceTestFor(fixture.hotelId), async () => {
       const result = await startDomainACheckout({
         db: asSql(pg),
         userId: OWNER_USER.id,
@@ -194,7 +198,7 @@ test("CP26B.1 existing subscription cannot start a second Checkout", async () =>
     await insertAuthUser(pg, OWNER_USER);
     const fixture = await onboardConfiguredFixture(pg, OWNER_USER.id);
     await applyBillingEvent(pg, fixture.hotelId, "active");
-    await withEnv(COMMERCE_TEST, async () => {
+    await withEnv(commerceTestFor(fixture.hotelId), async () => {
       await assert.rejects(
         () =>
           startDomainACheckout({
@@ -226,7 +230,7 @@ test("CP26B.1 past_due unpaid paused incomplete reject Checkout; portal requires
     const fixture = await onboardConfiguredFixture(pg, OWNER_USER.id);
     for (const status of ["past_due", "unpaid", "paused", "incomplete", "trialing"] as const) {
       await applyBillingEvent(pg, fixture.hotelId, status);
-      await withEnv(COMMERCE_TEST, async () => {
+      await withEnv(commerceTestFor(fixture.hotelId), async () => {
         await assert.rejects(
           () =>
             startDomainACheckout({
@@ -266,7 +270,7 @@ test("CP26B.1 existing subscription without customer fails portal closed", async
       "insert into sbg_billing_accounts (hotel_id, stripe_price_id, status, updated_at) values ($1::uuid, $2, 'active', now())",
       [fixture.hotelId, PRICE_BASIC],
     );
-    await withEnv(COMMERCE_TEST, async () => {
+    await withEnv(commerceTestFor(fixture.hotelId), async () => {
       await assert.rejects(
         () =>
           startDomainAPortal({
@@ -303,7 +307,7 @@ test("CP26B.1 canceled resubscribe reuses stored customer", async () => {
     await insertAuthUser(pg, OWNER_USER);
     const fixture = await onboardConfiguredFixture(pg, OWNER_USER.id);
     await applyBillingEvent(pg, fixture.hotelId, "canceled");
-    await withEnv(COMMERCE_TEST, async () => {
+    await withEnv(commerceTestFor(fixture.hotelId), async () => {
       const result = await startDomainACheckout({
         db: asSql(pg),
         userId: OWNER_USER.id,
@@ -329,7 +333,7 @@ test("CP26B.1 incomplete_expired is checkout-eligible", async () => {
     await insertAuthUser(pg, OWNER_USER);
     const fixture = await onboardConfiguredFixture(pg, OWNER_USER.id);
     await applyBillingEvent(pg, fixture.hotelId, "incomplete_expired");
-    await withEnv(COMMERCE_TEST, async () => {
+    await withEnv(commerceTestFor(fixture.hotelId), async () => {
       const result = await startDomainACheckout({
         db: asSql(pg),
         userId: OWNER_USER.id,
@@ -355,7 +359,7 @@ test("CP26B.1 tenant isolation, two hotels, configured-not-live", async () => {
     const fixture = await onboardConfiguredFixture(pg, OWNER_USER.id);
     const second = await createHotelForUser(pg, OWNER_USER.id, SECOND_HOTEL);
     await applyBillingEvent(pg, fixture.hotelId, "active");
-    await withEnv(COMMERCE_TEST, async () => {
+    await withEnv(commerceTestFor(fixture.hotelId, second.hotelId), async () => {
       await assert.rejects(
         () =>
           startDomainACheckout({

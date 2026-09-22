@@ -1,9 +1,10 @@
 /**
  * CP26B.1 — Domain A Checkout / portal orchestration.
  * Commerce gate runs before any billing mutation. No Domain B imports.
+ * CP26C.2 — hotel-aware test isolation before price write / portal Stripe call.
  */
 import type { Sql } from "@/lib/db";
-import { assertDomainACommerceAllowed } from "./saas-commerce.server.ts";
+import { assertDomainACommerceAllowedForHotel } from "./saas-commerce.server.ts";
 import {
   SaasLifecycleError,
   assertCheckoutAllowed,
@@ -71,7 +72,7 @@ export async function startDomainACheckout(input: {
   const billing = await loadBillingAccount(input.db, input.hotelId);
   assertCheckoutAllowed(billing);
   const priceId = stripePriceId(input.plan);
-  assertDomainACommerceAllowed();
+  assertDomainACommerceAllowedForHotel(input.hotelId);
   await input.db.query("select sbg_set_billing_price_for_user($1, $2::uuid, $3)", [
     input.userId,
     input.hotelId,
@@ -103,6 +104,7 @@ export async function startDomainAPortal(input: {
       "portal_customer_missing",
     );
   }
+  assertDomainACommerceAllowedForHotel(input.hotelId);
   const portal = await createBillingPortal(
     billing.stripe_customer_id,
     `${input.origin}/app/billing?hotelId=${input.hotelId}`,

@@ -1,8 +1,9 @@
 # SCAN / BOOK / GO — fixture policy
 
 Canonical fixture classes for CP26–CP30. Living status: `BUILD_STATE.md`.
-Roadmap: `docs/ROADMAP.md`. **CP26B is CLOSED.** Next execution is **CP26C**
-(design/preflight; not started). Only **CP31** may activate real commerce.
+Roadmap: `docs/ROADMAP.md`. **CP26B is CLOSED.** CP26C.1/C.2 isolation is in source.
+Next execution is **CP26C.3** (Stripe TEST resource/config preparation; not started).
+Only **CP31** may activate real commerce.
 
 Verification policy (not a database constraint): **one verification user owns
 exactly one verification hotel.** Schema still allows many-to-many
@@ -56,16 +57,17 @@ CP26–CP30 work. Never a real customer. Do not delete casually.
 
 Allowed on this tenant without a new identity/hotel: returning sign-in / sign-out;
 ownership / IDOR; billing **GET**. CP26B source work with commerce **OFF** is
-complete. Do not attach Stripe test billing here until CP26C blast-radius
-architecture is explicitly solved.
+complete. Do not attach Stripe test billing here until CP26C.4/C.5 explicitly
+authorise it. Isolation (`SBG_SAAS_TEST_HOTEL_IDS`) is in source; Production
+commerce remains OFF. This tenant is not an automatic test-commerce allowlist.
 
 Prohibited unless a later checkpoint **explicitly** changes fixture policy:
 `goLive` / publication; Connect; Checkout; Stripe env; guest booking; second
 signup; second hotel; password reset; deletion.
 
-CP26C must **not** attach Stripe test billing state to this tenant until the
-process-global `SBG_SAAS_COMMERCE=test` blast-radius architecture is explicitly
-solved. This tenant is not an automatic test-commerce allowlist.
+CP26C must **not** attach Stripe test billing state to this tenant until CP26C.4
+authorises Production test commerce **and** CP26C.5 names this hotel in the
+allowlist. This tenant is not an automatic test-commerce allowlist.
 
 ---
 
@@ -104,24 +106,23 @@ password vault. Operator password manager is the system of record.
 
 ---
 
-## CP26C forward risk (do not solve here)
+## CP26C test isolation (source complete in CP26C.2)
 
-`SBG_SAAS_COMMERCE=test` is **process-global**. Enabling it on public Production
-would offer test Checkout to any `/login` signup and write test customers into
-Production `sbg_billing_accounts`.
+`SBG_SAAS_COMMERCE=test` is **process-global**. CP26C.2 therefore requires a
+non-empty `SBG_SAAS_TEST_HOTEL_IDS` hotel-UUID allowlist before any Domain A
+Checkout, portal, or webhook persistence in test mode. Empty/malformed
+allowlist fail-closes every hotel. Live mode ignores this allowlist.
 
-CP26C must not simply flip that flag. Candidate later solutions:
-
-- tenant-scoped / allowlisted test-commerce gate
-- staging app + database
-- explicitly authorised time-boxed Production window
+Do **not** set `SBG_SAAS_COMMERCE=test` on public Production until CP26C.4.
+Do **not** put a Production hotel UUID in git.
 
 `main` auto-deploys Vercel Production. Source/docs changes here do not activate
-commerce. Stripe test-mode remains a later, separately authorised problem.
+commerce.
 
 ---
 
 ## Next authorised execution
 
-**CP26B** — Domain A subscription lifecycle completion in source, with commerce
-**OFF**. Do not enable test commerce on public Production in CP26B.
+**CP26C.3** — Stripe TEST resource/config preparation. Do not enable test
+commerce on public Production in this child. Only **CP31** activates live
+commerce.

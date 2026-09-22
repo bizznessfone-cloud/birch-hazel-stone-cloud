@@ -17,7 +17,9 @@ not trail the repository.
 | CP26B.3 | **CLOSED** |
 | CP26B.4 | **PASS** — Gate B 0001–0024; 0024 dispatch retired |
 | **CP26B** | **CLOSED** |
-| **Next execution checkpoint** | **CP26C — Stripe test-mode integration (design/preflight; not started)** |
+| CP26C.1 | **PASS** |
+| CP26C.2 | **PASS** — test hotel UUID allowlist in source |
+| **Next execution checkpoint** | **CP26C.3 — Stripe TEST resource/config preparation (not started)** |
 | Forward roadmap | `docs/ROADMAP.md` (CP26–CP31) |
 | Fixture policy | `docs/FIXTURE_POLICY.md` |
 
@@ -61,7 +63,7 @@ Deferred: copied-cookie stale replay; password recovery; email verification.
 - Code `sbg-verify-a5`, slug `erification-otel`, **configured not live**
 - Operator-controlled email REDACTED; password in human password manager only
 - Billing GET resolved; no Stripe/Connect/Checkout
-- Do not publish, delete, or attach test commerce until CP26C blast-radius is solved
+- Do not publish, delete, or attach test commerce until CP26C.4/C.5 explicitly authorise it (hotel allowlist is in source; Production commerce remains OFF)
 
 ## V1 operator journey
 
@@ -75,7 +77,7 @@ account → hotel → service → preview → QR → plan → Stripe → LIVE
 - Domain A remains dormant until CP31.
 - CP26B.1 hardened Domain A application lifecycle (gate-before-write, one subscription, portal-first).
 - CP26B.2/3 ordered billing persistence is **applied** (`event.created` bigint, `cancel_at_period_end`, stale/ambiguous/duplicate).
-- CP26C owns Stripe test-mode integration. Do not set `SBG_SAAS_COMMERCE=test` on public Production until an authorised isolation strategy exists.
+- CP26C.2 isolates Domain A test commerce to `SBG_SAAS_TEST_HOTEL_IDS`. Do not set `SBG_SAAS_COMMERCE=test` on public Production until CP26C.4.
 - `/ops/*` remains internal operations.
 - Public guest: `/{hotelSlug}` plus legacy `/book/{hotelCode}`.
 - Canonical live demo: `/book/demo-kos`. `/demo-kos` slug currently hotel_not_found (pre-existing).

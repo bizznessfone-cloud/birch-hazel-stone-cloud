@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { getSql } from "@/lib/db";
-import { domainAWebhookEligible } from "@/lib/aether/saas-commerce.server";
+import { domainAWebhookEligible, domainAWebhookHotelAllowed } from "@/lib/aether/saas-commerce.server";
 import {
   DomainAWebhookExtractError,
   OrderedBillingSchemaError,
@@ -85,6 +85,10 @@ export const Route = createFileRoute("/api/stripe/webhook")({
             return Response.json({ received: true, outcome: "rejected" });
           }
           throw error;
+        }
+
+        if (!domainAWebhookHotelAllowed(extracted.hotelId)) {
+          return Response.json({ received: true, outcome: "isolated" });
         }
 
         try {

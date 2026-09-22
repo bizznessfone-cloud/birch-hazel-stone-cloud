@@ -13,7 +13,9 @@ Canonical living roadmap. Other living documents should **point here**, not rede
 | CP26B.3 | **CLOSED** — Production 0024 applied and independently verified |
 | CP26B.4 | **PASS** — Gate B 0001–0024; 0024 dispatch retired |
 | **CP26B** | **CLOSED** |
-| **Next execution checkpoint** | **CP26C — Stripe test-mode integration (design/preflight; not started)** |
+| CP26C.1 | **PASS** — test-mode isolation architecture (hotel-UUID dual-control allowlist) |
+| CP26C.2 | **PASS** — fail-closed Domain A test-hotel isolation in source |
+| **Next execution checkpoint** | **CP26C.3 — Stripe TEST resource/config preparation (not started)** |
 
 ---
 
@@ -100,9 +102,9 @@ Resolved in CP26B (application + Production schema; commerce still OFF):
 
 Still open (later CP26 work):
 
-- Stripe integration has not been exercised in test mode (**CP26C**)
-- Production Stripe configuration remains **absent** (must stay absent until an authorised child)
-- `SBG_SAAS_COMMERCE=test` is process-global (CP26C blast-radius; do **not** enable on the public Production deployment until CP26C establishes an authorised isolation strategy)
+- Stripe TEST products/prices/webhook endpoint preparation (**CP26C.3**)
+- Production Stripe configuration remains **absent** (must stay absent until CP26C.4)
+- Do **not** set `SBG_SAAS_COMMERCE=test` on public Production until CP26C.4 explicitly authorises it **after** the CP26C.2 hotel allowlist is deployed. Empty `SBG_SAAS_TEST_HOTEL_IDS` fail-closes every hotel even if mode=test.
 
 ---
 
@@ -152,9 +154,13 @@ Exercise Domain A against Stripe **TEST MODE ONLY** (`sk_test`, test products/pr
 
 **Hard prohibition:** no `sk_live`; no real customer charge; no real SaaS subscription.
 
-**Do not enable test commerce on public Production until blast-radius architecture is explicitly authorised.** `SBG_SAAS_COMMERCE=test` is process-global and would offer test Checkout to any `/login` signup.
+**CP26C.1 PASS:** isolation architecture — Domain A test commerce requires dual control: `SBG_SAAS_COMMERCE=test` + Stripe test credentials + non-empty `SBG_SAAS_TEST_HOTEL_IDS` containing the hotel UUID. Live mode ignores the test allowlist. CP31 remains the only live activation.
 
-Possible isolation strategies remain subject to CP26C design; they are not chosen here.
+**CP26C.2 PASS:** isolation implemented in source (Checkout, portal, Domain A webhook). Production commerce remains **OFF**. No Stripe Production configuration.
+
+**Next: CP26C.3** Stripe TEST resource/config preparation. Do not set Production `SBG_SAAS_COMMERCE=test` in this child.
+
+**Do not enable test commerce on public Production until CP26C.4.** Empty allowlist = nobody authorised.
 
 ### CP26D — HOTEL-OWNED GUEST PAYMENT REGRESSION
 

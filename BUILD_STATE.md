@@ -6,8 +6,8 @@ This file describes **current reality**, not intended future state.
 
 Domain A subscription lifecycle, ordered billing persistence, and Production
 migration 0024 are accepted. Domain A commerce remains **OFF**. Only **CP31**
-may activate real commerce. Next execution is **CP26C** (Stripe test-mode
-design/preflight; not started).
+may activate real commerce. CP26C.1/C.2 isolation is in source. Next execution is
+**CP26C.3** (Stripe TEST resource/config preparation). Production commerce remains **OFF**.
 
 | Field | Value |
 |---|---|
@@ -22,13 +22,15 @@ design/preflight; not started).
 | CP26B.3 | **CLOSED** — Production 0024 applied (GHA [35697938230](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/35697938230)); already-applied verified (GHA [35699337916](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/35699337916)) |
 | CP26B.4 | **PASS** — Gate B accepted ledger **0001–0024**; 0024 `workflow_dispatch` retired; generic migrator remains fail-closed |
 | **CP26B** | **CLOSED** |
+| CP26C.1 | **PASS** — test-mode isolation architecture defined |
+| CP26C.2 | **PASS** — Domain A test commerce isolated by hotel UUID allowlist (source) |
 | Last application SHA | 19512c295830fbc6fd9712d688ce364d940f87c3 (CP26B.3R catalog identity; Production 0024 already applied) |
 | Fixture policy | [`docs/FIXTURE_POLICY.md`](docs/FIXTURE_POLICY.md) |
 | Local harness | `src/lib/aether/cp26a4-fixture.ts` (tests only; not a runtime import) |
 | Domain A | remains dormant; only **CP31** may activate commerce |
 | Accepted Production ledger | **0001–0024** |
 | 0024 digest | `23cdc44037e0e886444477fdb693536a95c32b6080984de4076cc7a5f71d13c0` |
-| **Next execution** | **CP26C — Stripe test-mode integration (design/preflight; not started)** |
+| **Next execution** | **CP26C.3 — Stripe TEST resource/config preparation (not started)** |
 
 Do not dispatch historical 0022/0023/0024 controllers. Owner secret remains GitHub Actions `AETHER_DATABASE_OWNER_URL` only — never Vercel. Future migrations need a dedicated single-use controller and an explicit checkpoint.
 
@@ -36,7 +38,10 @@ Push to `main` currently auto-deploys Vercel Production. That is a known control
 
 Password never enters git/chat/Grok/Vercel/`.env`. Do not delete the Production verification tenant.
 
-`SBG_SAAS_COMMERCE=test` is process-global and must **not** be enabled on the public Production deployment until CP26C establishes an authorised isolation strategy.
+`SBG_SAAS_COMMERCE=test` remains process-global and must **not** be enabled on the
+public Production deployment until CP26C.4. CP26C.2 adds `SBG_SAAS_TEST_HOTEL_IDS`
+(comma-separated hotel UUIDs). In test mode an empty/malformed allowlist fail-closes
+every hotel. Live mode ignores this allowlist. Do not put a Production hotel UUID in git.
 
 ## Current accepted baseline (POST-CP26B CLOSED)
 
@@ -49,7 +54,7 @@ Password never enters git/chat/Grok/Vercel/`.env`. Do not delete the Production 
 | CP25G.3 | **CLOSED** |
 | **CP26A** | **CLOSED** |
 | **CP26B** | **CLOSED** |
-| **Next execution checkpoint** | **CP26C — Stripe test-mode integration (design/preflight; not started)** |
+| **Next execution checkpoint** | **CP26C.3 — Stripe TEST resource/config preparation (not started)** |
 | Forward roadmap | **[docs/ROADMAP.md](docs/ROADMAP.md)** (CP26–CP31) |
 
 ### Production
@@ -118,7 +123,7 @@ Classification: **PERSISTENT PRODUCTION VERIFICATION TENANT — RETAIN**.
 | Billing | authenticated GET `/app/billing` resolved this configured hotel; Connect/Checkout not invoked |
 | Customer | **never** |
 
-Do not delete casually. Do not publish. Do not attach Stripe test billing to this tenant until CP26C blast-radius architecture is explicitly solved. Do not reuse CP25G.3 spent users or `demo-kos`.
+Do not delete casually. Do not publish. Do not attach Stripe test billing to this tenant until CP26C.4/C.5 explicitly authorise it (isolation is in source; Production commerce remains OFF). Do not reuse CP25G.3 spent users or `demo-kos`.
 
 ### SaaS operator journey
 
@@ -137,7 +142,7 @@ account → hotel → service → preview → QR → plan → Stripe → LIVE
 - Domain A webhooks persist Stripe `event.created` (bigint Unix seconds) and `cancel_at_period_end`. Duplicate event IDs are idempotent; older events are stale no-ops; equal-timestamp different IDs are ambiguous fail-closed.
 - SaaS entitlement (`active`/`trialing`/`past_due`) is independent of `hotels.status`.
 - Production 0024 is **applied**. First Domain A event (none exist yet) becomes the ordering baseline for historical rows with null `last_stripe_event_created`.
-- `SBG_SAAS_COMMERCE=test` is process-global (CP26C blast-radius risk; not solved here). CP26C owns Stripe test-mode integration.
+- `SBG_SAAS_COMMERCE=test` is process-global. CP26C.2 isolates test commerce to `SBG_SAAS_TEST_HOTEL_IDS`. Do not set test mode on public Production until CP26C.4.
 
 ### Guest / Ops
 
@@ -165,10 +170,10 @@ account → hotel → service → preview → QR → plan → Stripe → LIVE
 - Do not claim returning Production sign-in is unproven.
 - Do not claim the Production verification tenant does not exist.
 - Do not treat CP26 as commercial go-live. Only CP31 activates commerce.
-- Do not start CP26C test commerce on public Production until blast-radius architecture is authorised.
+- Do not start CP26C test commerce on public Production until CP26C.4. Empty `SBG_SAAS_TEST_HOTEL_IDS` fail-closes every hotel.
 - Do not invent CP26B.5.
 
-Canonical forward path: **`docs/ROADMAP.md`**. Fixture policy: **`docs/FIXTURE_POLICY.md`**. Next execution: **CP26C**.
+Canonical forward path: **`docs/ROADMAP.md`**. Fixture policy: **`docs/FIXTURE_POLICY.md`**. Next execution: **CP26C.3**.
 
 GitHub `main` at the current SHA is authoritative application source. A workspace is never authoritative. Recovery ZIPs are secondary disaster-recovery artifacts. The CP10 ZIP must not be extracted over a newer Git tree without explicit human approval.
 

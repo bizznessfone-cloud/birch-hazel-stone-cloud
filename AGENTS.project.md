@@ -27,7 +27,9 @@ Repository: `bizznessfone-cloud/birch-hazel-stone-cloud`.
 | CP26B.3 | **CLOSED** — Production 0024 applied + independently verified |
 | CP26B.4 | **PASS** — Gate B 0001–0024; 0024 dispatch retired |
 | **CP26B** | **CLOSED** |
-| **Next execution checkpoint** | **CP26C — Stripe test-mode integration (design/preflight; not started)** |
+| CP26C.1 | **PASS** — test-mode isolation architecture |
+| CP26C.2 | **PASS** — hotel-UUID test allowlist in source |
+| **Next execution checkpoint** | **CP26C.3 — Stripe TEST resource/config preparation (not started)** |
 | Forward roadmap | **`docs/ROADMAP.md`** |
 | Fixture policy | **`docs/FIXTURE_POLICY.md`** |
 
@@ -49,15 +51,15 @@ The internal code/history name **Aether Transfer** may remain in source and hist
 
 CP25G.3 Production Better Auth configuration is **CLOSED**.
 CP26A is **CLOSED** (dormancy, 0023 decoupling, local tenant proofs, Production verification tenant `sbg-verify-a5` configured-not-live, returning sign-in proven).
-**CP26B is CLOSED** (Domain A lifecycle, ordered billing persistence, Production 0024, control-plane recon).
+**CP26B is CLOSED**. CP26C.1/C.2 isolation is in source. Production commerce remains **OFF**.
 
-Next execution is **CP26C** (Stripe test-mode design/preflight). Do **not** start CP26C until an authorised child. CP26 is **not** commercial go-live. Only **CP31** activates commerce. See `docs/ROADMAP.md` and `docs/FIXTURE_POLICY.md`.
+Next execution is **CP26C.3** (Stripe TEST resource/config preparation). Do **not** start CP26C.3 Stripe Dashboard work until authorised. Do **not** set `SBG_SAAS_COMMERCE=test` on public Production until CP26C.4. Only **CP31** activates commerce. See `docs/ROADMAP.md` and `docs/FIXTURE_POLICY.md`.
 
 Source includes the hardened booking/occupancy/tenancy base plus CP20 email architecture, CP22 `/app` onboarding, CP23 public slug, CP24 Stripe Connect source, CP25 hotel-owned guest payment source, CP25G.3 auth configuration, CP26A.1 commerce gate, CP26A.2 decoupled entitlement publication, CP26A.4 local tenant/fixture proofs, CP26A.5 Production verification tenant, CP26B.1 Domain A application lifecycle, and CP26B.2/3 ordered billing persistence **applied on Production**.
 
 Last observed Production Vercel `scan-book-go` (`dpl_FmUosqz2wy7aCT51rNjdanJnuviZ`) is READY on SHA `19512c2`. A push to `main` auto-deploys Vercel Production (docs/control-plane deploys must not activate commerce). Neon is migrated through **0024**. `DATABASE_URL` is the runtime credential; `AETHER_DATABASE_OWNER_URL` must never be added to Vercel. `SBG_SAAS_COMMERCE` is unset (fail-closed).
 
-Do not reopen CP26A or CP26B. Do not mutate the Production verification tenant unless a later checkpoint explicitly authorises it. Do **not** set `SBG_SAAS_COMMERCE=test` on public Production until CP26C establishes an authorised isolation strategy. Do not dispatch retired 0022/0023/0024 controllers. Future SQL needs a new dedicated single-use controller.
+Do not reopen CP26A or CP26B. Do not mutate the Production verification tenant unless a later checkpoint explicitly authorises it. Do **not** set `SBG_SAAS_COMMERCE=test` on public Production until CP26C.4. Isolation (`SBG_SAAS_TEST_HOTEL_IDS`) is in source as of CP26C.2; empty allowlist fail-closes every hotel. Do not dispatch retired 0022/0023/0024 controllers. Future SQL needs a new dedicated single-use controller.
 
 ## V1 product layer
 
@@ -121,4 +123,4 @@ Do not contact Neon, modify Vercel, change secrets, or deploy unless the active 
 
 Every checkpoint must identify the exact Git commit audited.
 
-Next execution checkpoint is **CP26C**. Canonical roadmap: `docs/ROADMAP.md`. Fixture policy: `docs/FIXTURE_POLICY.md`. CP26 is not go-live.
+Next execution checkpoint is **CP26C.3**. Canonical roadmap: `docs/ROADMAP.md`. Fixture policy: `docs/FIXTURE_POLICY.md`. CP26 is not go-live. Do not mark CP26C closed.

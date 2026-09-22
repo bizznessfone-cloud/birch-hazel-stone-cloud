@@ -12,7 +12,9 @@ Living status: **`BUILD_STATE.md`** (repo root).
 | CP26B.3 | **CLOSED** |
 | CP26B.4 | **PASS** |
 | **CP26B** | **CLOSED** |
-| **Next execution checkpoint** | **CP26C** |
+| CP26C.1 | **PASS** |
+| CP26C.2 | **PASS** |
+| **Next execution checkpoint** | **CP26C.3** |
 | Forward roadmap | **[ROADMAP.md](ROADMAP.md)** (CP26–CP31) |
 | Fixture policy | **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)** |
 | Production | Vercel `scan-book-go` last observed `dpl_FmUosqz2wy7aCT51rNjdanJnuviZ` READY |
