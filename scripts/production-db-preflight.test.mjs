@@ -267,13 +267,17 @@ test("reviewed 0020-0024 source checksums remain intact", () => {
   }
 });
 
-test("single-use and generic production migrate workflows are retired", () => {
+test("spent single-use and generic production migrate workflows stay retired", () => {
   const workflows = join(here, "../.github/workflows");
   assert.equal(existsSync(join(workflows, "cp26a2-0023-production-migrate.yml")), false);
   assert.equal(existsSync(join(workflows, "cp25g3-0022-production-migrate.yml")), false);
   assert.equal(existsSync(join(workflows, "cp26b2-0024-production-migrate.yml")), false);
   assert.equal(existsSync(join(workflows, "production-database-migrate.yml")), false);
   assert.equal(existsSync(join(workflows, "production-database.yml")), true);
+  assert.equal(existsSync(join(workflows, "cp26co2a-0025-production-migrate.yml")), true);
   const yaml = readdirSync(workflows).filter((name) => name.endsWith(".yml") || name.endsWith(".yaml")).sort();
-  assert.deepEqual(yaml, ["production-database.yml"]);
+  assert.deepEqual(yaml, [
+    "cp26co2a-0025-production-migrate.yml",
+    "production-database.yml",
+  ]);
 });

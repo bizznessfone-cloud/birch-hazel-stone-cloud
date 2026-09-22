@@ -1,0 +1,42 @@
+name: CP26C-O2A Single-Use 0025 Production Migrate
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Type APPLY-0025
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-database-mutation
+  cancel-in-progress: false
+
+jobs:
+  apply-0025:
+    name: apply-0025
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout dispatched commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply reviewed 0025 only
+        env:
+          AETHER_DATABASE_OWNER_URL: ${{ secrets.AETHER_DATABASE_OWNER_URL }}
+          CP26CO2A_CONFIRMATION: ${{ inputs.confirmation }}
+        run: node scripts/cp26co2a-0025-production-migrate.mjs

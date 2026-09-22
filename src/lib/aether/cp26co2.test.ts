@@ -344,7 +344,11 @@ test("CP26C-O2 source: protected /owner shell, no commerce mutation, no Domain B
   }
   assert.match(pkg.scripts["test:aether"], /cp26co2\.test\.ts/);
   assert.doesNotMatch(pkg.scripts.build, /db:migrate/);
-  assert.equal(pkg.scripts["db:migrate:0025"], undefined);
+  assert.equal(
+    pkg.scripts["db:migrate:0025"],
+    "node scripts/cp26co2a-0025-production-migrate.mjs",
+  );
+  assert.doesNotMatch(pkg.scripts["db:migrate:0025"] ?? "", /production-db-migrate/);
 
   const files = readdirSync(join(root, "migrations")).filter((name) => name.endsWith(".sql")).sort();
   assert.ok(files.includes("0025_cp26co2_platform_owners.sql"));

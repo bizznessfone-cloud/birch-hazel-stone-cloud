@@ -13,6 +13,7 @@ until **CP31**.
 |---|---|
 | Defined | **CP26C-O1** |
 | Foundation | **CP26C-O2 PASS** (source; 0025 not Production-applied) |
+| 0025 controller | **CP26C-O2A READY — NOT EXECUTED** |
 | Next implementation | **CP26C-O3** |
 | Catalogue implementation | **CP26C-O3** |
 | Stripe TEST resources | **CP26C.3** (paused until O3) |
