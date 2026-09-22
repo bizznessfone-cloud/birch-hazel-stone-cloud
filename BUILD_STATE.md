@@ -18,7 +18,7 @@ Only **CP31** may activate real commerce.
 | CP26A.6 | **PASS** — evidence reconciled; CP26A closed |
 | CP26B.1 | **PASS** — Domain A application lifecycle: gate-before-write, one subscription, portal-first plan management |
 | CP26B.2 | **SOURCE COMPLETE** — ordered Domain A webhook persistence; migration **0024 defined, not applied** |
-| Last application SHA | this CP26B.2 commit (runtime `src/` + 0024 source; Production ledger still **0001–0023**) |
+| Last application SHA | ff2581fddf658bc3fc09ca5f26ffb676c5c6926f (runtime `src/` + 0024 source; Production ledger still **0001–0023**) |
 | Fixture policy | [`docs/FIXTURE_POLICY.md`](docs/FIXTURE_POLICY.md) |
 | Local harness | `src/lib/aether/cp26a4-fixture.ts` (tests only; not a runtime import) |
 | Domain A | remains dormant; only **CP31** may activate commerce |
@@ -38,7 +38,7 @@ Password never enters git/chat/Grok/Vercel/`.env`. Do not delete the Production 
 | Product | **SCAN / BOOK / GO** (internal history name: Aether Transfer) |
 | Repository | `bizznessfone-cloud/birch-hazel-stone-cloud` |
 | Branch | `main` |
-| Last application SHA | this CP26B.2 commit (runtime `src/` + 0024 source; Production ledger still **0001–0023**) |
+| Last application SHA | ff2581fddf658bc3fc09ca5f26ffb676c5c6926f (runtime `src/` + 0024 source; Production ledger still **0001–0023**) |
 | CP25G.3 | **CLOSED** |
 | **CP26A** | **CLOSED** |
 | CP26B.1 | **PASS** |

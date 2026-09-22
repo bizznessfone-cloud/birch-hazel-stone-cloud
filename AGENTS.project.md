@@ -19,7 +19,7 @@ Repository: `bizznessfone-cloud/birch-hazel-stone-cloud`.
 
 | Field | Value |
 |---|---|
-| Last application SHA | this CP26B.2 commit (runtime `src/` + migration 0024 **source**; Production ledger still 0001–0023) |
+| Last application SHA | ff2581fddf658bc3fc09ca5f26ffb676c5c6926f (runtime `src/` + migration 0024 **source**; Production ledger still 0001–0023) |
 | CP25G.3 | **CLOSED** |
 | **CP26A** | **CLOSED** |
 | CP26B.1 | **PASS** |
