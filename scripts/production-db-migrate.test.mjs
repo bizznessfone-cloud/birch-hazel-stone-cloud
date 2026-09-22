@@ -127,7 +127,7 @@ test("pending 0023/0024/0025 are not generically authorised", () => {
   );
   assert.equal(pending0023.ok, false);
 
-  for (const extra of ["0024_future.sql", "0025_later.sql"]) {
+  for (const extra of ["0024_cp26b2_ordered_billing_events.sql", "0024_future.sql", "0025_later.sql"]) {
     const result = evaluateMigrationBaseline(
       evaluatePreflight(currentFacts({ sourceMigrations: [...ACCEPTED_LEDGER, extra] })),
     );

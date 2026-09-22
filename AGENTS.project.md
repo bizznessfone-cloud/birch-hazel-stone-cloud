@@ -19,11 +19,12 @@ Repository: `bizznessfone-cloud/birch-hazel-stone-cloud`.
 
 | Field | Value |
 |---|---|
-| Last application SHA | `8cc0bc4916ebb79f0c3f2e511779a71b78583e3c` (runtime `src/`; no migration) |
+| Last application SHA | this CP26B.2 commit (runtime `src/` + migration 0024 **source**; Production ledger still 0001–0023) |
 | CP25G.3 | **CLOSED** |
 | **CP26A** | **CLOSED** |
 | CP26B.1 | **PASS** |
-| **Next execution checkpoint** | **CP26B.2 — ordered billing persistence + migration 0024 source** |
+| CP26B.2 | **SOURCE COMPLETE — 0024 DEFINED, NOT APPLIED** |
+| **Next execution checkpoint** | **CP26B.3 — controlled Production application of migration 0024** |
 | Forward roadmap | **`docs/ROADMAP.md`** |
 | Fixture policy | **`docs/FIXTURE_POLICY.md`** |
 
@@ -46,13 +47,13 @@ The internal code/history name **Aether Transfer** may remain in source and hist
 CP25G.3 Production Better Auth configuration is **CLOSED**.
 CP26A is **CLOSED** (dormancy, 0023 decoupling, local tenant proofs, Production verification tenant `sbg-verify-a5` configured-not-live, returning sign-in proven).
 
-Next execution is **CP26B.2** (ordered billing persistence + migration 0024 source; commerce OFF). CP26 is **not** commercial go-live. Only **CP31** activates commerce. See `docs/ROADMAP.md` and `docs/FIXTURE_POLICY.md`.
+Next execution is **CP26B.3** (controlled Production application of migration 0024; commerce OFF). CP26B is **not** closed. CP26 is **not** commercial go-live. Only **CP31** activates commerce. See `docs/ROADMAP.md` and `docs/FIXTURE_POLICY.md`.
 
-Source includes the hardened booking/occupancy/tenancy base plus CP20 email architecture, CP22 `/app` onboarding, CP23 public slug, CP24 Stripe Connect source, CP25 hotel-owned guest payment source, CP25G.3 auth configuration, CP26A.1 commerce gate, CP26A.2 decoupled entitlement publication, CP26A.4 local tenant/fixture proofs, and CP26A.5 Production verification tenant.
+Source includes the hardened booking/occupancy/tenancy base plus CP20 email architecture, CP22 `/app` onboarding, CP23 public slug, CP24 Stripe Connect source, CP25 hotel-owned guest payment source, CP25G.3 auth configuration, CP26A.1 commerce gate, CP26A.2 decoupled entitlement publication, CP26A.4 local tenant/fixture proofs, CP26A.5 Production verification tenant, CP26B.1 Domain A application lifecycle, and CP26B.2 ordered billing persistence **source** (migration 0024 present in git, **not** applied on Production).
 
-Last observed Production Vercel `scan-book-go` (`dpl_7MFpVnCV4CbyoUjev1ZjcLVm2vtn`) is READY on SHA `d42f794`. A push to `main` auto-deploys Vercel Production (docs-only deploys must not activate commerce). Neon is migrated through **0023**. `DATABASE_URL` is the runtime credential; `AETHER_DATABASE_OWNER_URL` must never be added to Vercel. `SBG_SAAS_COMMERCE` is unset (fail-closed).
+Last observed Production Vercel `scan-book-go` (`dpl_7MFpVnCV4CbyoUjev1ZjcLVm2vtn`) is READY on SHA `d42f794`. A push to `main` auto-deploys Vercel Production (docs-only deploys must not activate commerce). Neon is migrated through **0023**. Source contains **0024** (unapplied). `DATABASE_URL` is the runtime credential; `AETHER_DATABASE_OWNER_URL` must never be added to Vercel. `SBG_SAAS_COMMERCE` is unset (fail-closed).
 
-Do not reopen CP26A. Do not mutate the Production verification tenant unless a later checkpoint explicitly authorises it. Do not set `SBG_SAAS_COMMERCE=test` on public Production in CP26B.
+Do not reopen CP26A. Do not mutate the Production verification tenant unless a later checkpoint explicitly authorises it. Do not set `SBG_SAAS_COMMERCE=test` on public Production in CP26B. Do not dispatch the 0024 controller until CP26B.3.
 
 ## V1 product layer
 
@@ -116,4 +117,4 @@ Do not contact Neon, modify Vercel, change secrets, or deploy unless the active 
 
 Every checkpoint must identify the exact Git commit audited.
 
-Next execution checkpoint is **CP26B.2**. Canonical roadmap: `docs/ROADMAP.md`. Fixture policy: `docs/FIXTURE_POLICY.md`. CP26 is not go-live.
+Next execution checkpoint is **CP26B.3**. Canonical roadmap: `docs/ROADMAP.md`. Fixture policy: `docs/FIXTURE_POLICY.md`. CP26 is not go-live.

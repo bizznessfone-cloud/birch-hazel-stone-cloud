@@ -130,12 +130,13 @@ test("pending 0023 is stale, not a newly authorised migration", () => {
 test("pending 0024 is rejected", () => {
   const result = evaluatePreflight(
     baseFacts({
-      sourceMigrations: [...SOURCE, "0024_future.sql"],
+      sourceMigrations: [...SOURCE, "0024_cp26b2_ordered_billing_events.sql"],
     }),
   );
   assert.equal(result.ok, false);
   assert.equal(result.verdict, "BLOCKED — MIGRATION LEDGER INCONSISTENT");
-  assert.deepEqual(result.unexpectedPending, ["0024_future.sql"]);
+  assert.deepEqual(result.unexpectedPending, ["0024_cp26b2_ordered_billing_events.sql"]);
+  assert.equal(isAuthorisedPending("0024_cp26b2_ordered_billing_events.sql"), false);
   assert.equal(isAuthorisedPending("0024_future.sql"), false);
 });
 

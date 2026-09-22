@@ -219,6 +219,7 @@ test("CP26A.2 source: 0023 replaces entitlement without writing hotels; 0020 sta
 test("CP26A.2 callers remain compatible; Stripe paths no longer own publication", () => {
   const stripe = read("src/lib/aether/stripe.server.ts");
   const webhook = read("src/routes/api/stripe/webhook.ts");
+  const billingWebhook = read("src/lib/aether/saas-billing-webhook.ts");
   const provision = read("src/lib/aether/provision.ts");
   const onboarding = read("migrations/0018_cp22_saas_onboarding.sql");
   const commerce = read("src/lib/aether/saas-commerce.server.ts");
@@ -226,7 +227,7 @@ test("CP26A.2 callers remain compatible; Stripe paths no longer own publication"
   assert.match(stripe, /sbg_sync_hotel_entitlement/);
   assert.match(webhook, /sbg_sync_hotel_entitlement/);
   assert.match(stripe, /completeStripeConnect/);
-  assert.match(webhook, /sbg_apply_billing_event/);
+  assert.match(billingWebhook, /sbg_apply_billing_event/);
   assert.doesNotMatch(commerce, /sbg_sync_hotel_entitlement/);
   assert.doesNotMatch(commerce, /update hotels set status/i);
 

@@ -9,11 +9,12 @@ not trail the repository.
 |---|---|
 | Repository | `bizznessfone-cloud/birch-hazel-stone-cloud` |
 | Branch | `main` |
-| Last application SHA | `8cc0bc4916ebb79f0c3f2e511779a71b78583e3c` (runtime `src/`; no migration) |
+| Last application SHA | this CP26B.2 commit (0024 source; Production ledger 0001–0023) |
 | CP25G.3 | **CLOSED** |
 | **CP26A** | **CLOSED** |
 | CP26B.1 | **PASS** |
-| **Next execution checkpoint** | **CP26B.2 — ordered billing persistence + migration 0024 source** |
+| CP26B.2 | **SOURCE COMPLETE — 0024 DEFINED, NOT APPLIED** |
+| **Next execution checkpoint** | **CP26B.3 — controlled Production application of migration 0024** |
 | Forward roadmap | `docs/ROADMAP.md` (CP26–CP31) |
 | Fixture policy | `docs/FIXTURE_POLICY.md` |
 
@@ -36,10 +37,9 @@ not trail the repository.
 
 ## Database
 
-Migrations **0001–0023** exist in source and are applied on Production Neon.
-0023 decoupled `sbg_sync_hotel_entitlement` from hotel publication.
-Single-use 0022/0023 mutation workflows are retired. Application build does
-not migrate. Permanent Gate B is read-only.
+Migrations **0001–0024** exist in source. Production Neon is applied through **0023**.
+**0024 is not applied.** Single-use 0024 controller exists and must not be dispatched until CP26B.3.
+Gate B treats 0024 as unauthorised pending. Generic migrator remains fail-closed.
 
 ## Auth (do not reopen CP25G.3)
 
@@ -68,7 +68,7 @@ account → hotel → service → preview → QR → plan → Stripe → LIVE
 - Stripe/Resend source exists. Production configuration is absent.
 - Domain A remains dormant until CP31.
 - CP26B.1 hardened Domain A application lifecycle (gate-before-write, one subscription, portal-first).
-- Remaining CP26B.2 / 0024: durable Stripe event ordering, event `created`, `cancel_at_period_end`, stale-event rejection.
+- CP26B.2 ordered billing persistence is **source-complete** (`event.created` bigint, `cancel_at_period_end`, stale/ambiguous/duplicate). Production 0024 is **not** applied; next is CP26B.3.
 - CP26C still owns Stripe test-mode integration. Do not set `SBG_SAAS_COMMERCE=test` on public Production in CP26B.
 - `/ops/*` remains internal operations.
 - Public guest: `/{hotelSlug}` plus legacy `/book/{hotelCode}`.

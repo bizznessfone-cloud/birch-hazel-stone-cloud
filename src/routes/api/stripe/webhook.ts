@@ -1,24 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { getSql } from "@/lib/db";
 import { domainAWebhookEligible } from "@/lib/aether/saas-commerce.server";
-
-function unixToIso(value: unknown) {
-  return typeof value === "number" ? new Date(value * 1000).toISOString() : null;
-}
-
-function subscriptionData(event: any) {
-  const object = event?.data?.object;
-  const metadata = object?.metadata ?? {};
-  const item = object?.items?.data?.[0];
-  return {
-    hotelId: typeof metadata.hotel_id === "string" ? metadata.hotel_id : null,
-    customerId: typeof object?.customer === "string" ? object.customer : null,
-    subscriptionId: typeof object?.id === "string" ? object.id : null,
-    priceId: typeof item?.price?.id === "string" ? item.price.id : null,
-    status: typeof object?.status === "string" ? object.status : "inactive",
-    currentPeriodEnd: unixToIso(object?.current_period_end),
-  };
-}
+import {
+  DomainAWebhookExtractError,
+  OrderedBillingSchemaError,
+  applyDomainABillingEvent,
+  extractDomainASubscriptionEvent,
+} from "@/lib/aether/saas-billing-webhook";
+import { SaasLifecycleError } from "@/lib/aether/saas-lifecycle";
 
 export const Route = createFileRoute("/api/stripe/webhook")({
   server: {
@@ -84,29 +73,33 @@ export const Route = createFileRoute("/api/stripe/webhook")({
           return Response.json({ received: true });
         }
 
-        const data = subscriptionData(event);
-        if (!data.hotelId || !data.subscriptionId) {
-          return Response.json({ received: true });
-        }
         if (!domainAWebhookEligible(event)) {
           return Response.json({ received: true });
         }
-        await db.query(
-          "select sbg_apply_billing_event($1, $2, $3::uuid, $4, $5, $6, $7, $8::timestamptz)",
-          [
-            event.id,
-            event.type,
-            data.hotelId,
-            data.customerId,
-            data.subscriptionId,
-            data.priceId,
-            data.status,
-            data.currentPeriodEnd,
-          ],
-        );
-        await db.query("select sbg_sync_hotel_entitlement($1::uuid)", [data.hotelId]);
 
-        return Response.json({ received: true });
+        let extracted;
+        try {
+          extracted = extractDomainASubscriptionEvent(event);
+        } catch (error) {
+          if (error instanceof DomainAWebhookExtractError) {
+            return Response.json({ received: true, outcome: "rejected" });
+          }
+          throw error;
+        }
+
+        try {
+          const outcome = await applyDomainABillingEvent(db, extracted);
+          await db.query("select sbg_sync_hotel_entitlement($1::uuid)", [extracted.hotelId]);
+          return Response.json({ received: true, outcome });
+        } catch (error) {
+          if (error instanceof OrderedBillingSchemaError) {
+            return new Response("Ordered billing persistence is not installed.", { status: 503 });
+          }
+          if (error instanceof SaasLifecycleError) {
+            return Response.json({ received: true, outcome: "rejected" });
+          }
+          throw error;
+        }
       },
     },
   },

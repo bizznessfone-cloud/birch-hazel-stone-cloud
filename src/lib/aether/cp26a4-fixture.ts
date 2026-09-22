@@ -80,9 +80,14 @@ export const MIGRATIONS_THROUGH_0023 = [
   "0023_cp26a2_entitlement_publication_decoupling.sql",
 ] as const;
 
+export const MIGRATIONS_THROUGH_0024 = [
+  ...MIGRATIONS_THROUGH_0023,
+  "0024_cp26b2_ordered_billing_events.sql",
+] as const;
+
 export type FixtureUser = { id: string; email: string; name: string };
 
-export async function openCp26a4Db(): Promise<PGlite> {
+async function openFixtureDb(migrations: readonly string[]): Promise<PGlite> {
   const { btree_gist } = await import("@electric-sql/pglite/contrib/btree_gist");
   const pg = new PGlite({ extensions: { btree_gist } });
   await pg.waitReady;
@@ -91,10 +96,18 @@ export async function openCp26a4Db(): Promise<PGlite> {
   } catch {
     /* preview name may already exist */
   }
-  for (const name of MIGRATIONS_THROUGH_0023) {
+  for (const name of migrations) {
     await pg.exec(read(`migrations/${name}`));
   }
   return pg;
+}
+
+export async function openCp26a4Db(): Promise<PGlite> {
+  return openFixtureDb(MIGRATIONS_THROUGH_0024);
+}
+
+export async function openCp26a4DbThrough0023(): Promise<PGlite> {
+  return openFixtureDb(MIGRATIONS_THROUGH_0023);
 }
 
 export function asBookingDb(pg: PGlite): BookingDb {
@@ -225,24 +238,39 @@ export async function saveConnectForUser(
   ]);
 }
 
+let billingEventCreated = 1_700_000_000;
+
 export async function applyBillingEvent(
   pg: PGlite,
   hotelId: string,
   status: string,
-): Promise<void> {
-  await pg.query(
-    `select sbg_apply_billing_event($1, $2, $3::uuid, $4, $5, $6, $7, $8::timestamptz)`,
+  extra: {
+    created?: number;
+    eventId?: string;
+    subscriptionId?: string;
+    customerId?: string;
+    priceId?: string;
+    cancelAtPeriodEnd?: boolean;
+  } = {},
+): Promise<string> {
+  const created = extra.created ?? ++billingEventCreated;
+  const eventId = extra.eventId ?? `evt_sbg_test_${status}_${hotelId.slice(0, 8)}_${created}`;
+  const rows = await pg.query<{ sbg_apply_billing_event: string }>(
+    `select sbg_apply_billing_event($1, $2, $3::bigint, $4::uuid, $5, $6, $7, $8, $9::timestamptz, $10::boolean)`,
     [
-      `evt_sbg_test_${status}_${hotelId.slice(0, 8)}`,
+      eventId,
       "customer.subscription.updated",
+      created,
       hotelId,
-      `cus_sbg_test_${hotelId.slice(0, 8)}`,
-      `sub_sbg_test_${hotelId.slice(0, 8)}`,
-      "price_sbg_test_basic",
+      extra.customerId ?? `cus_sbg_test_${hotelId.slice(0, 8)}`,
+      extra.subscriptionId ?? `sub_sbg_test_${hotelId.slice(0, 8)}`,
+      extra.priceId ?? "price_sbg_test_basic",
       status,
       new Date(Date.now() + 86400000).toISOString(),
+      extra.cancelAtPeriodEnd ?? false,
     ],
   );
+  return rows.rows[0]?.sbg_apply_billing_event ?? "";
 }
 
 export async function syncEntitlement(pg: PGlite, hotelId: string): Promise<string> {

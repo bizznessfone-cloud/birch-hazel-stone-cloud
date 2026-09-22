@@ -9,7 +9,8 @@ Canonical living roadmap. Other living documents should **point here**, not rede
 | CP25G.3 | **CLOSED** |
 | **CP26A** | **CLOSED** |
 | CP26B.1 | **PASS** — application lifecycle hardened (gate-before-write, one subscription, portal-first) |
-| **Next execution checkpoint** | **CP26B.2 — ordered billing persistence + migration 0024 source** |
+| CP26B.2 | **SOURCE COMPLETE** — ordered billing persistence; migration 0024 **defined, not applied** |
+| **Next execution checkpoint** | **CP26B.3 — controlled Production application of migration 0024** |
 
 ---
 
@@ -91,7 +92,7 @@ Resolved in CP26B.1 (application layer only; commerce still OFF):
 
 Still open (later CP26 work):
 
-- durable Stripe event ordering, event `created`, `cancel_at_period_end`, stale-event rejection (**CP26B.2** / migration **0024**)
+- Production application of migration **0024** (**CP26B.3**)
 - Stripe integration has not been exercised in test mode (**CP26C**)
 - Production Stripe configuration remains **absent** (must stay absent until an authorised child)
 - `SBG_SAAS_COMMERCE=test` is process-global (CP26C blast-radius; do not flip on public Production in CP26B)
@@ -130,15 +131,11 @@ Complete Domain A lifecycle in source (exact design in CP26B preflight): creatio
 
 **CP26B.1 PASS:** application lifecycle — commerce gate before billing write; one-subscription Checkout invariant; portal-first plan management; SaaS entitlement classification independent of `hotels.status`.
 
-**CP26B.2 remaining database gaps (schema 0001–0023; do not invent application hacks):**
+**CP26B.2 SOURCE COMPLETE:** ordered Domain A webhook persistence in source. Migration `0024_cp26b2_ordered_billing_events.sql` is defined. Production accepted ledger remains **0001–0023**. Controller created, **not executed**.
 
-- durable Stripe event ordering
-- Stripe event `created`
-- `cancel_at_period_end`
-- stale / out-of-order event rejection
-- any stronger billing constraints discovered while writing 0024
+Ordering: Stripe `event.created` (bigint Unix seconds). Duplicate event ID → idempotent no-op. Newer → apply. Older → stale no-op. Equal timestamp, different event IDs → ambiguous, no billing mutation. `cancel_at_period_end` is persisted and does not itself cancel or publish.
 
-Commerce remains **OFF**. Do not set `SBG_SAAS_COMMERCE=test` on public Production in this checkpoint. CP26C still owns real Stripe test-mode integration.
+**Next: CP26B.3** controlled Production 0024 application. Commerce remains **OFF**. Do not dispatch the 0024 controller in this child. CP26C still owns real Stripe test-mode integration.
 
 ### CP26C — STRIPE TEST-MODE INTEGRATION
 

@@ -17,31 +17,33 @@ Only **CP31** may activate real commerce.
 | CP26A.5 | **PASS** — one persistent Production verification identity + one owned hotel, **configured not live**, returning sign-in, billing GET |
 | CP26A.6 | **PASS** — evidence reconciled; CP26A closed |
 | CP26B.1 | **PASS** — Domain A application lifecycle: gate-before-write, one subscription, portal-first plan management |
-| Last application SHA | 8cc0bc4916ebb79f0c3f2e511779a71b78583e3c (runtime `src/` change; no migration) |
+| CP26B.2 | **SOURCE COMPLETE** — ordered Domain A webhook persistence; migration **0024 defined, not applied** |
+| Last application SHA | this CP26B.2 commit (runtime `src/` + 0024 source; Production ledger still **0001–0023**) |
 | Fixture policy | [`docs/FIXTURE_POLICY.md`](docs/FIXTURE_POLICY.md) |
 | Local harness | `src/lib/aether/cp26a4-fixture.ts` (tests only; not a runtime import) |
 | Domain A | remains dormant; only **CP31** may activate commerce |
-| Accepted Production ledger | **0001–0023** |
-| **Next execution** | **CP26B.2 — ordered billing persistence + migration 0024 source** |
+| Accepted Production ledger | **0001–0023** (0024 is source-only until CP26B.3) |
+| **Next execution** | **CP26B.3 — controlled Production application of migration 0024** |
 
 Do not dispatch historical 0022/0023 controllers. Owner secret remains GitHub Actions `AETHER_DATABASE_OWNER_URL` only — never Vercel. Future migrations need a dedicated single-use controller and an explicit checkpoint.
 
-Push to `main` currently auto-deploys Vercel Production. That is a known control-plane characteristic, not a commercial activation. CP26B.1 introduces no migration and does not enable commerce.
+Push to `main` currently auto-deploys Vercel Production. That is a known control-plane characteristic, not a commercial activation. CP26B.2 deploys ordered-webhook **source** that is schema-capability gated: Production remains on 0023 until CP26B.3 applies 0024. Domain A webhooks return 503 if commerce were enabled before 0024; with commerce OFF they are acknowledged without apply. Billing GET stays 0023-column compatible.
 
 Password never enters git/chat/Grok/Vercel/`.env`. Do not delete the Production verification tenant.
 
-## Current accepted baseline (POST-CP26B.1)
+## Current accepted baseline (POST-CP26B.2 source)
 
 | Field | Value |
 |---|---|
 | Product | **SCAN / BOOK / GO** (internal history name: Aether Transfer) |
 | Repository | `bizznessfone-cloud/birch-hazel-stone-cloud` |
 | Branch | `main` |
-| Last application SHA | 8cc0bc4916ebb79f0c3f2e511779a71b78583e3c (runtime `src/` change; no migration) |
+| Last application SHA | this CP26B.2 commit (runtime `src/` + 0024 source; Production ledger still **0001–0023**) |
 | CP25G.3 | **CLOSED** |
 | **CP26A** | **CLOSED** |
 | CP26B.1 | **PASS** |
-| **Next execution checkpoint** | **CP26B.2 — ordered billing persistence + migration 0024 source** |
+| CP26B.2 | **SOURCE COMPLETE — 0024 DEFINED, NOT APPLIED** |
+| **Next execution checkpoint** | **CP26B.3 — controlled Production application of migration 0024** |
 | Forward roadmap | **[docs/ROADMAP.md](docs/ROADMAP.md)** (CP26–CP31) |
 
 ### Production
@@ -71,8 +73,9 @@ Environment (names/presence only):
 
 | Layer | State |
 |---|---|
-| Source migrations | `0001`–`0023` present |
-| Production Neon | migrated through **0023** |
+| Source migrations | `0001`–`0024` present (`0024_cp26b2_ordered_billing_events.sql`) |
+| Production Neon | migrated through **0023** — **0024 NOT APPLIED** |
+| 0024 | ordered Domain A billing events (`event.created` bigint, `cancel_at_period_end`, stale/ambiguous/duplicate) |
 | 0023 | entitlement publication decoupling (`sbg_sync_hotel_entitlement` no longer writes `hotels.status`) |
 | Runtime | `DATABASE_URL` → `aether_app` |
 | Owner / migration plane | `AETHER_DATABASE_OWNER_URL` → `neondb_owner` (not on Vercel) |
@@ -123,8 +126,10 @@ account → hotel → service → preview → QR → plan → Stripe → LIVE
 - Domain A Checkout/portal/webhook is fail-closed until `SBG_SAAS_COMMERCE=test|live` (live only at CP31).
 - Choose plan cannot mutate billing or call Stripe while commerce is OFF.
 - Existing subscription states cannot start a second Checkout; plan changes go to Manage billing (portal-first).
+- Domain A webhooks persist Stripe `event.created` (bigint Unix seconds) and `cancel_at_period_end`. Duplicate event IDs are idempotent; older events are stale no-ops; equal-timestamp different IDs are ambiguous fail-closed.
 - SaaS entitlement (`active`/`trialing`/`past_due`) is independent of `hotels.status`.
-- Remaining for **CP26B.2 / 0024**: durable Stripe event ordering, event `created`, `cancel_at_period_end`, stale-event rejection.
+- Remaining for **CP26B.3**: apply 0024 on Production via the dedicated controller; do not widen the generic migrator.
+- First post-0024 Domain A event becomes the ordering baseline for historical rows with null `last_stripe_event_created` (accepted evidence: no Production Domain A Stripe events; verification tenant never Checkout).
 - `SBG_SAAS_COMMERCE=test` is process-global (CP26C blast-radius risk; not solved here). CP26C still owns Stripe test-mode integration.
 
 ### Guest / Ops
@@ -154,9 +159,10 @@ account → hotel → service → preview → QR → plan → Stripe → LIVE
 - Do not claim the Production verification tenant does not exist.
 - Do not treat CP26 as commercial go-live. Only CP31 activates commerce.
 - Do not start CP26C test commerce on public Production until blast-radius architecture is authorised.
-- Do not reuse CP25G.3 spent Better Auth users, unknown unconfigured hotels, or `demo-kos` as the SaaS verification tenant.
+- Do not claim 0024 is applied on Production. Source has 0024; accepted ledger remains 0001–0023 until CP26B.3.
+- Do not dispatch the 0024 controller until CP26B.3.
 
-Canonical forward path: **`docs/ROADMAP.md`**. Fixture policy: **`docs/FIXTURE_POLICY.md`**. Next execution: **CP26B.2**.
+Canonical forward path: **`docs/ROADMAP.md`**. Fixture policy: **`docs/FIXTURE_POLICY.md`**. Next execution: **CP26B.3**.
 
 GitHub `main` at the current SHA is authoritative application source. A workspace is never authoritative. Recovery ZIPs are secondary disaster-recovery artifacts. The CP10 ZIP must not be extracted over a newer Git tree without explicit human approval.
 
