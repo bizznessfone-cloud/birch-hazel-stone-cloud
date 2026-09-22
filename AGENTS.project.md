@@ -31,7 +31,8 @@ Repository: `bizznessfone-cloud/birch-hazel-stone-cloud`.
 | CP26C.2 | **PASS** — hotel-UUID test allowlist in source |
 | CP26C.3 | **PAUSED AFTER SAFE PREFLIGHT** |
 | CP26C-O1 | **PASS** — Owner Control Plane architecture |
-| **Next execution checkpoint** | **CP26C-O2 — Owner dashboard foundation (not started)** |
+| CP26C-O2 | **PASS** — Owner dashboard foundation; 0025 SOURCE ONLY |
+| **Next execution checkpoint** | **CP26C-O3 — commercial catalogue persistence** |
 | Forward roadmap | **`docs/ROADMAP.md`** |
 | Fixture policy | **`docs/FIXTURE_POLICY.md`** |
 
@@ -56,8 +57,9 @@ CP26A is **CLOSED** (dormancy, 0023 decoupling, local tenant proofs, Production 
 **CP26B is CLOSED**. CP26C.1/C.2 isolation is in source. CP26C.3 is **paused**.
 Production commerce remains **OFF**.
 
-Next execution is **CP26C-O2** (Owner dashboard foundation). Do **not** start
-CP26C.3 Stripe Dashboard work until O3. Do **not** set `SBG_SAAS_COMMERCE=test`
+Next execution is **CP26C-O3** (commercial catalogue). Do **not** start
+CP26C.3 Stripe Dashboard work until O3. 0025 is source-only; do not apply it
+in this workspace. Do **not** set `SBG_SAAS_COMMERCE=test`
 on public Production until CP26C.4. Only **CP31** activates commerce. See
 `docs/ROADMAP.md`, `docs/OWNER_CONTROL_PLANE.md`, and `docs/FIXTURE_POLICY.md`.
 
@@ -100,6 +102,7 @@ Do not reopen CP15/CP16/CP19 security architecture. Do not reopen CP25G.3. Do no
 - `/login` — SaaS email/password
 - `/ops/*` — internal authenticated operations
 - `/app/*` — V1 SaaS operator application
+- `/owner/*` — platform Owner Control Plane (Better Auth **and** `sbg_platform_owners` grant)
 
 ## Feature fence
 
@@ -129,4 +132,4 @@ Do not contact Neon, modify Vercel, change secrets, or deploy unless the active 
 
 Every checkpoint must identify the exact Git commit audited.
 
-Next execution checkpoint is **CP26C-O2**. Canonical roadmap: `docs/ROADMAP.md`. Owner architecture: `docs/OWNER_CONTROL_PLANE.md`. Fixture policy: `docs/FIXTURE_POLICY.md`. CP26 is not go-live. Do not mark CP26C closed.
+Next execution checkpoint is **CP26C-O3**. Canonical roadmap: `docs/ROADMAP.md`. Owner architecture: `docs/OWNER_CONTROL_PLANE.md`. Fixture policy: `docs/FIXTURE_POLICY.md`. CP26 is not go-live. Do not mark CP26C closed.

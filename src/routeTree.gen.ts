@@ -14,6 +14,7 @@ import { Route as HotelSlugRouteImport } from './routes/$hotelSlug'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as OpsRouteImport } from './routes/ops'
+import { Route as OwnerRouteImport } from './routes/owner'
 import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as AppBillingRouteImport } from './routes/app.billing'
 import { Route as AppOnboardingRouteImport } from './routes/app.onboarding'
@@ -24,12 +25,18 @@ import { Route as OpsDriversRouteImport } from './routes/ops.drivers'
 import { Route as OpsHotelsRouteImport } from './routes/ops.hotels'
 import { Route as OpsLoginRouteImport } from './routes/ops.login'
 import { Route as OpsVehiclesRouteImport } from './routes/ops.vehicles'
+import { Route as OwnerIndexRouteImport } from './routes/owner.index'
+import { Route as OwnerPlansRouteImport } from './routes/owner.plans'
+import { Route as OwnerRevenueRouteImport } from './routes/owner.revenue'
+import { Route as OwnerSystemRouteImport } from './routes/owner.system'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe/webhook'
 import { Route as AppHotelsHotelIdRouteImport } from './routes/app.hotels.$hotelId'
 import { Route as OpsBookingsIndexRouteImport } from './routes/ops.bookings.index'
 import { Route as OpsBookingsBookingIdRouteImport } from './routes/ops.bookings.$bookingId'
 import { Route as OpsInternalRuntimeIdentityRouteImport } from './routes/ops.internal.runtime-identity'
+import { Route as OwnerHotelsIndexRouteImport } from './routes/owner.hotels.index'
+import { Route as OwnerHotelsHotelIdRouteImport } from './routes/owner.hotels.$hotelId'
 import { Route as ApiStripeConnectCallbackRouteImport } from './routes/api/stripe/connect/callback'
 import { Route as AppHotelsHotelIdPreviewRouteImport } from './routes/app.hotels.$hotelId.preview'
 import { Route as AppHotelsHotelIdQrRouteImport } from './routes/app.hotels.$hotelId.qr'
@@ -57,6 +64,11 @@ const LoginRoute = LoginRouteImport.update({
 const OpsRoute = OpsRouteImport.update({
   id: '/ops',
   path: '/ops',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OwnerRoute = OwnerRouteImport.update({
+  id: '/owner',
+  path: '/owner',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppIndexRoute = AppIndexRouteImport.update({
@@ -109,6 +121,26 @@ const OpsVehiclesRoute = OpsVehiclesRouteImport.update({
   path: '/vehicles',
   getParentRoute: () => OpsRoute,
 } as any)
+const OwnerIndexRoute = OwnerIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => OwnerRoute,
+} as any)
+const OwnerPlansRoute = OwnerPlansRouteImport.update({
+  id: '/plans',
+  path: '/plans',
+  getParentRoute: () => OwnerRoute,
+} as any)
+const OwnerRevenueRoute = OwnerRevenueRouteImport.update({
+  id: '/revenue',
+  path: '/revenue',
+  getParentRoute: () => OwnerRoute,
+} as any)
+const OwnerSystemRoute = OwnerSystemRouteImport.update({
+  id: '/system',
+  path: '/system',
+  getParentRoute: () => OwnerRoute,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -140,6 +172,16 @@ const OpsInternalRuntimeIdentityRoute =
     path: '/internal/runtime-identity',
     getParentRoute: () => OpsRoute,
   } as any)
+const OwnerHotelsIndexRoute = OwnerHotelsIndexRouteImport.update({
+  id: '/hotels/',
+  path: '/hotels/',
+  getParentRoute: () => OwnerRoute,
+} as any)
+const OwnerHotelsHotelIdRoute = OwnerHotelsHotelIdRouteImport.update({
+  id: '/hotels/$hotelId',
+  path: '/hotels/$hotelId',
+  getParentRoute: () => OwnerRoute,
+} as any)
 const ApiStripeConnectCallbackRoute =
   ApiStripeConnectCallbackRouteImport.update({
     id: '/api/stripe/connect/callback',
@@ -163,6 +205,7 @@ export interface FileRoutesByFullPath {
   '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/ops': typeof OpsRouteWithChildren
+  '/owner': typeof OwnerRouteWithChildren
   '/app/billing': typeof AppBillingRoute
   '/app/onboarding': typeof AppOnboardingRoute
   '/book/$hotelCode': typeof BookHotelCodeRoute
@@ -171,14 +214,20 @@ export interface FileRoutesByFullPath {
   '/ops/hotels': typeof OpsHotelsRoute
   '/ops/login': typeof OpsLoginRoute
   '/ops/vehicles': typeof OpsVehiclesRoute
+  '/owner/plans': typeof OwnerPlansRoute
+  '/owner/revenue': typeof OwnerRevenueRoute
+  '/owner/system': typeof OwnerSystemRoute
   '/app/': typeof AppIndexRoute
   '/ops/': typeof OpsIndexRoute
+  '/owner/': typeof OwnerIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/app/hotels/$hotelId': typeof AppHotelsHotelIdRouteWithChildren
   '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
   '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/owner/hotels/$hotelId': typeof OwnerHotelsHotelIdRoute
   '/ops/bookings/': typeof OpsBookingsIndexRoute
+  '/owner/hotels/': typeof OwnerHotelsIndexRoute
   '/api/stripe/connect/callback': typeof ApiStripeConnectCallbackRoute
   '/app/hotels/$hotelId/preview': typeof AppHotelsHotelIdPreviewRoute
   '/app/hotels/$hotelId/qr': typeof AppHotelsHotelIdQrRoute
@@ -195,14 +244,20 @@ export interface FileRoutesByTo {
   '/ops/hotels': typeof OpsHotelsRoute
   '/ops/login': typeof OpsLoginRoute
   '/ops/vehicles': typeof OpsVehiclesRoute
+  '/owner/plans': typeof OwnerPlansRoute
+  '/owner/revenue': typeof OwnerRevenueRoute
+  '/owner/system': typeof OwnerSystemRoute
   '/app': typeof AppIndexRoute
   '/ops': typeof OpsIndexRoute
+  '/owner': typeof OwnerIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/app/hotels/$hotelId': typeof AppHotelsHotelIdRouteWithChildren
   '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
   '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/owner/hotels/$hotelId': typeof OwnerHotelsHotelIdRoute
   '/ops/bookings': typeof OpsBookingsIndexRoute
+  '/owner/hotels': typeof OwnerHotelsIndexRoute
   '/api/stripe/connect/callback': typeof ApiStripeConnectCallbackRoute
   '/app/hotels/$hotelId/preview': typeof AppHotelsHotelIdPreviewRoute
   '/app/hotels/$hotelId/qr': typeof AppHotelsHotelIdQrRoute
@@ -214,6 +269,7 @@ export interface FileRoutesById {
   '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/ops': typeof OpsRouteWithChildren
+  '/owner': typeof OwnerRouteWithChildren
   '/app/billing': typeof AppBillingRoute
   '/app/onboarding': typeof AppOnboardingRoute
   '/book/$hotelCode': typeof BookHotelCodeRoute
@@ -222,14 +278,20 @@ export interface FileRoutesById {
   '/ops/hotels': typeof OpsHotelsRoute
   '/ops/login': typeof OpsLoginRoute
   '/ops/vehicles': typeof OpsVehiclesRoute
+  '/owner/plans': typeof OwnerPlansRoute
+  '/owner/revenue': typeof OwnerRevenueRoute
+  '/owner/system': typeof OwnerSystemRoute
   '/app/': typeof AppIndexRoute
   '/ops/': typeof OpsIndexRoute
+  '/owner/': typeof OwnerIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/app/hotels/$hotelId': typeof AppHotelsHotelIdRouteWithChildren
   '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
   '/ops/internal/runtime-identity': typeof OpsInternalRuntimeIdentityRoute
+  '/owner/hotels/$hotelId': typeof OwnerHotelsHotelIdRoute
   '/ops/bookings/': typeof OpsBookingsIndexRoute
+  '/owner/hotels/': typeof OwnerHotelsIndexRoute
   '/api/stripe/connect/callback': typeof ApiStripeConnectCallbackRoute
   '/app/hotels/$hotelId/preview': typeof AppHotelsHotelIdPreviewRoute
   '/app/hotels/$hotelId/qr': typeof AppHotelsHotelIdQrRoute
@@ -242,6 +304,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/login'
     | '/ops'
+    | '/owner'
     | '/app/billing'
     | '/app/onboarding'
     | '/book/$hotelCode'
@@ -250,14 +313,20 @@ export interface FileRouteTypes {
     | '/ops/hotels'
     | '/ops/login'
     | '/ops/vehicles'
+    | '/owner/plans'
+    | '/owner/revenue'
+    | '/owner/system'
     | '/app/'
     | '/ops/'
+    | '/owner/'
     | '/api/auth/$'
     | '/api/stripe/webhook'
     | '/app/hotels/$hotelId'
     | '/ops/bookings/$bookingId'
     | '/ops/internal/runtime-identity'
+    | '/owner/hotels/$hotelId'
     | '/ops/bookings/'
+    | '/owner/hotels/'
     | '/api/stripe/connect/callback'
     | '/app/hotels/$hotelId/preview'
     | '/app/hotels/$hotelId/qr'
@@ -274,14 +343,20 @@ export interface FileRouteTypes {
     | '/ops/hotels'
     | '/ops/login'
     | '/ops/vehicles'
+    | '/owner/plans'
+    | '/owner/revenue'
+    | '/owner/system'
     | '/app'
     | '/ops'
+    | '/owner'
     | '/api/auth/$'
     | '/api/stripe/webhook'
     | '/app/hotels/$hotelId'
     | '/ops/bookings/$bookingId'
     | '/ops/internal/runtime-identity'
+    | '/owner/hotels/$hotelId'
     | '/ops/bookings'
+    | '/owner/hotels'
     | '/api/stripe/connect/callback'
     | '/app/hotels/$hotelId/preview'
     | '/app/hotels/$hotelId/qr'
@@ -292,6 +367,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/login'
     | '/ops'
+    | '/owner'
     | '/app/billing'
     | '/app/onboarding'
     | '/book/$hotelCode'
@@ -300,14 +376,20 @@ export interface FileRouteTypes {
     | '/ops/hotels'
     | '/ops/login'
     | '/ops/vehicles'
+    | '/owner/plans'
+    | '/owner/revenue'
+    | '/owner/system'
     | '/app/'
     | '/ops/'
+    | '/owner/'
     | '/api/auth/$'
     | '/api/stripe/webhook'
     | '/app/hotels/$hotelId'
     | '/ops/bookings/$bookingId'
     | '/ops/internal/runtime-identity'
+    | '/owner/hotels/$hotelId'
     | '/ops/bookings/'
+    | '/owner/hotels/'
     | '/api/stripe/connect/callback'
     | '/app/hotels/$hotelId/preview'
     | '/app/hotels/$hotelId/qr'
@@ -319,6 +401,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
   OpsRoute: typeof OpsRouteWithChildren
+  OwnerRoute: typeof OwnerRouteWithChildren
   BookHotelCodeRoute: typeof BookHotelCodeRoute
   ConfirmedTokenRoute: typeof ConfirmedTokenRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
@@ -361,6 +444,13 @@ declare module '@tanstack/react-router' {
       path: '/ops'
       fullPath: '/ops'
       preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/owner': {
+      id: '/owner'
+      path: '/owner'
+      fullPath: '/owner'
+      preLoaderRoute: typeof OwnerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app/': {
@@ -433,6 +523,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OpsVehiclesRouteImport
       parentRoute: typeof OpsRoute
     }
+    '/owner/': {
+      id: '/owner/'
+      path: '/'
+      fullPath: '/owner/'
+      preLoaderRoute: typeof OwnerIndexRouteImport
+      parentRoute: typeof OwnerRoute
+    }
+    '/owner/plans': {
+      id: '/owner/plans'
+      path: '/plans'
+      fullPath: '/owner/plans'
+      preLoaderRoute: typeof OwnerPlansRouteImport
+      parentRoute: typeof OwnerRoute
+    }
+    '/owner/revenue': {
+      id: '/owner/revenue'
+      path: '/revenue'
+      fullPath: '/owner/revenue'
+      preLoaderRoute: typeof OwnerRevenueRouteImport
+      parentRoute: typeof OwnerRoute
+    }
+    '/owner/system': {
+      id: '/owner/system'
+      path: '/system'
+      fullPath: '/owner/system'
+      preLoaderRoute: typeof OwnerSystemRouteImport
+      parentRoute: typeof OwnerRoute
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -474,6 +592,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/ops/internal/runtime-identity'
       preLoaderRoute: typeof OpsInternalRuntimeIdentityRouteImport
       parentRoute: typeof OpsRoute
+    }
+    '/owner/hotels/': {
+      id: '/owner/hotels/'
+      path: '/hotels'
+      fullPath: '/owner/hotels/'
+      preLoaderRoute: typeof OwnerHotelsIndexRouteImport
+      parentRoute: typeof OwnerRoute
+    }
+    '/owner/hotels/$hotelId': {
+      id: '/owner/hotels/$hotelId'
+      path: '/hotels/$hotelId'
+      fullPath: '/owner/hotels/$hotelId'
+      preLoaderRoute: typeof OwnerHotelsHotelIdRouteImport
+      parentRoute: typeof OwnerRoute
     }
     '/api/stripe/connect/callback': {
       id: '/api/stripe/connect/callback'
@@ -552,12 +684,33 @@ const OpsRouteChildren: OpsRouteChildren = {
 
 const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
 
+interface OwnerRouteChildren {
+  OwnerPlansRoute: typeof OwnerPlansRoute
+  OwnerRevenueRoute: typeof OwnerRevenueRoute
+  OwnerSystemRoute: typeof OwnerSystemRoute
+  OwnerIndexRoute: typeof OwnerIndexRoute
+  OwnerHotelsHotelIdRoute: typeof OwnerHotelsHotelIdRoute
+  OwnerHotelsIndexRoute: typeof OwnerHotelsIndexRoute
+}
+
+const OwnerRouteChildren: OwnerRouteChildren = {
+  OwnerPlansRoute: OwnerPlansRoute,
+  OwnerRevenueRoute: OwnerRevenueRoute,
+  OwnerSystemRoute: OwnerSystemRoute,
+  OwnerIndexRoute: OwnerIndexRoute,
+  OwnerHotelsHotelIdRoute: OwnerHotelsHotelIdRoute,
+  OwnerHotelsIndexRoute: OwnerHotelsIndexRoute,
+}
+
+const OwnerRouteWithChildren = OwnerRoute._addFileChildren(OwnerRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   HotelSlugRoute: HotelSlugRoute,
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
   OpsRoute: OpsRouteWithChildren,
+  OwnerRoute: OwnerRouteWithChildren,
   BookHotelCodeRoute: BookHotelCodeRoute,
   ConfirmedTokenRoute: ConfirmedTokenRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,

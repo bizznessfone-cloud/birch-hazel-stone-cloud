@@ -21,7 +21,8 @@ not trail the repository.
 | CP26C.2 | **PASS** — test hotel UUID allowlist in source |
 | CP26C.3 | **PAUSED AFTER SAFE PREFLIGHT** |
 | CP26C-O1 | **PASS** — Owner Control Plane architecture |
-| **Next execution checkpoint** | **CP26C-O2 — Owner dashboard foundation (not started)** |
+| CP26C-O2 | **PASS** — Owner dashboard foundation; 0025 SOURCE ONLY |
+| **Next execution checkpoint** | **CP26C-O3 — commercial catalogue persistence** |
 | Forward roadmap | `docs/ROADMAP.md` (CP26–CP31) |
 | Owner architecture | `docs/OWNER_CONTROL_PLANE.md` |
 | Fixture policy | `docs/FIXTURE_POLICY.md` |
@@ -45,8 +46,9 @@ not trail the repository.
 
 ## Database
 
-Migrations **0001–0024** exist in source and are applied on Production Neon.
-Pending **NONE**. Gate B accepted ledger is **0001–0024**. `AUTHORISED_PENDING=[]`.
+Migrations **0001–0025** exist in source. Production Neon is applied through **0024**.
+**0025 is SOURCE ONLY — not Production-applied.** Gate B accepted ledger remains **0001–0024**.
+`AUTHORISED_PENDING=[]`. Generic migrator remains fail-closed. 0025 needs a dedicated later controller.
 Generic migrator remains fail-closed. Spent 0024 `workflow_dispatch` is retired.
 0024 digest `23cdc44037e0e886444477fdb693536a95c32b6080984de4076cc7a5f71d13c0`.
 Apply run [35697938230](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/35697938230).

@@ -34,6 +34,12 @@ export const ZERO_USER = {
   name: "SBG Test Zero",
 } as const;
 
+export const PLATFORM_OWNER_USER = {
+  id: "user-sbg-platform-owner",
+  email: `${LOCAL_FIXTURE_EMAIL_PREFIX}platform-owner@${LOCAL_FIXTURE_EMAIL_DOMAIN}`,
+  name: "SBG Platform Owner",
+} as const;
+
 export const FIXTURE_HOTEL = {
   code: `${LOCAL_FIXTURE_CODE_PREFIX}kos`,
   name: `SBG Test Kos ${LOCAL_FIXTURE_NAME_MARKER}`,
@@ -85,6 +91,11 @@ export const MIGRATIONS_THROUGH_0024 = [
   "0024_cp26b2_ordered_billing_events.sql",
 ] as const;
 
+export const MIGRATIONS_THROUGH_0025 = [
+  ...MIGRATIONS_THROUGH_0024,
+  "0025_cp26co2_platform_owners.sql",
+] as const;
+
 export type FixtureUser = { id: string; email: string; name: string };
 
 async function openFixtureDb(migrations: readonly string[]): Promise<PGlite> {
@@ -108,6 +119,10 @@ export async function openCp26a4Db(): Promise<PGlite> {
 
 export async function openCp26a4DbThrough0023(): Promise<PGlite> {
   return openFixtureDb(MIGRATIONS_THROUGH_0023);
+}
+
+export async function openCp26cO2Db(): Promise<PGlite> {
+  return openFixtureDb(MIGRATIONS_THROUGH_0025);
 }
 
 export function asBookingDb(pg: PGlite): BookingDb {
@@ -306,4 +321,12 @@ export async function onboardConfiguredFixture(
   const promoted = await promoteConfiguredForUser(pg, userId, created.hotelId);
   if (!promoted) throw new Error("sbg_promote_configured_for_user did not succeed");
   return { ...created, serviceId, destinationId };
+}
+
+export async function bootstrapPlatformOwner(
+  pg: PGlite,
+  userId: string,
+  note = "test bootstrap",
+): Promise<void> {
+  await pg.query("select sbg_bootstrap_platform_owner($1, $2)", [userId, note]);
 }

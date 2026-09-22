@@ -12,7 +12,8 @@ until **CP31**.
 | Field | Value |
 |---|---|
 | Defined | **CP26C-O1** |
-| Next implementation | **CP26C-O2** |
+| Foundation | **CP26C-O2 PASS** (source; 0025 not Production-applied) |
+| Next implementation | **CP26C-O3** |
 | Catalogue implementation | **CP26C-O3** |
 | Stripe TEST resources | **CP26C.3** (paused until O3) |
 | LIVE commerce | **CP31 only** |
@@ -54,8 +55,8 @@ Invariants:
 - Email-address comparison is **not** permanent Owner authorization.
 - Every operator is **not** an Owner.
 
-Current source has Guest, Hotel/operator, and Ops. Owner is the missing layer.
-`/owner` does not exist yet (O2).
+Current source has Guest, Hotel/operator, Ops, and Owner (`/owner`).
+O2 foundation is in source. First Production Owner grant is owner-plane after 0025 is applied in a later controlled child.
 
 ---
 
