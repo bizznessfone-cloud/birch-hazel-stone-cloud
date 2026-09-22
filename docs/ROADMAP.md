@@ -8,7 +8,8 @@ Canonical living roadmap. Other living documents should **point here**, not rede
 | Application baseline | `b35ef2fc8bdddef81fcc84aa59d358dba4346a30` |
 | CP25G.3 | **CLOSED** |
 | **CP26A** | **CLOSED** |
-| **Next execution checkpoint** | **CP26B — Domain A subscription lifecycle completion** |
+| CP26B.1 | **PASS** — application lifecycle hardened (gate-before-write, one subscription, portal-first) |
+| **Next execution checkpoint** | **CP26B.2 — ordered billing persistence + migration 0024 source** |
 
 ---
 
@@ -81,11 +82,17 @@ Resolved in CP26A:
 - persistent Production verification tenant exists (`sbg-verify-a5`, **configured not live**)
 - configured hotel is sufficient for Domain A billing GET; live and Connect are not required
 
+Resolved in CP26B.1 (application layer only; commerce still OFF):
+
+- one-subscription Checkout invariant (duplicate SaaS Checkout blocked)
+- portal-first plan management (no custom upgrade/downgrade/cancel APIs)
+- application classification of `past_due` / `unpaid` / `incomplete` / `paused`
+- commerce gate before any Domain A billing write
+
 Still open (later CP26 work):
 
-- possible duplicate SaaS subscriptions
-- incomplete failed-payment / past_due lifecycle
-- Stripe integration has not been exercised in test mode
+- durable Stripe event ordering, event `created`, `cancel_at_period_end`, stale-event rejection (**CP26B.2** / migration **0024**)
+- Stripe integration has not been exercised in test mode (**CP26C**)
 - Production Stripe configuration remains **absent** (must stay absent until an authorised child)
 - `SBG_SAAS_COMMERCE=test` is process-global (CP26C blast-radius; do not flip on public Production in CP26B)
 
@@ -121,18 +128,17 @@ Completed **before** Stripe integration testing.
 
 Complete Domain A lifecycle in source (exact design in CP26B preflight): creation; single-subscription / duplicate prevention; customer mapping; updates; upgrade/downgrade; cancellation; period end; incomplete/failed/past_due; invoice events where required; webhook idempotency; portal; entitlement state.
 
-**Entry conditions now satisfied:**
+**CP26B.1 PASS:** application lifecycle — commerce gate before billing write; one-subscription Checkout invariant; portal-first plan management; SaaS entitlement classification independent of `hotels.status`.
 
-- authenticated tenant exists
-- tenant ownership proven
-- configured tenant exists (`sbg-verify-a5`)
-- billing context resolves without live or Connect
-- publication independent of billing
-- commerce kill-switch exists
-- persistent verification identity exists
-- fixture policy exists
+**CP26B.2 remaining database gaps (schema 0001–0023; do not invent application hacks):**
 
-Commerce remains **OFF**. Do not set `SBG_SAAS_COMMERCE=test` on public Production in this checkpoint.
+- durable Stripe event ordering
+- Stripe event `created`
+- `cancel_at_period_end`
+- stale / out-of-order event rejection
+- any stronger billing constraints discovered while writing 0024
+
+Commerce remains **OFF**. Do not set `SBG_SAAS_COMMERCE=test` on public Production in this checkpoint. CP26C still owns real Stripe test-mode integration.
 
 ### CP26C — STRIPE TEST-MODE INTEGRATION
 

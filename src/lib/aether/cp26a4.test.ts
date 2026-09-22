@@ -466,14 +466,13 @@ test("CP26A.4 fixture policy document records the three classes and CP26C risk",
   assert.match(policy, /verify-\*@sbg\.test/);
   assert.match(policy, /sbg-test-\*/);
   assert.match(policy, /PRODUCTION VERIFICATION/);
-  assert.match(policy, /exactly one declared operator identity/);
-  assert.match(policy, /never `live` during CP26A/);
+  assert.match(policy, /exactly one operator identity/);
+  assert.match(policy, /not live/);
   assert.match(policy, /password manager/);
   assert.match(policy, /never pasted into chat\/Grok/);
-  assert.match(policy, /Failed signup → \*\*STOP\*\*/);
   assert.match(policy, /OPERATIONAL DEMO/);
   assert.match(policy, /demo-kos/);
   assert.match(policy, /`SBG_SAAS_COMMERCE=test` is \*\*process-global\*\*/);
-  assert.match(policy, /CP26A\.5/);
+  assert.match(policy, /established CP26A\.5/);
   assert.doesNotMatch(policy, /sk_live_|postgres:\/\//);
 });

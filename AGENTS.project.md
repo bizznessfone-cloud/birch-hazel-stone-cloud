@@ -19,10 +19,11 @@ Repository: `bizznessfone-cloud/birch-hazel-stone-cloud`.
 
 | Field | Value |
 |---|---|
-| Last application SHA | `b35ef2fc8bdddef81fcc84aa59d358dba4346a30` |
+| Last application SHA | CP26B.1 (runtime `src/`; no migration) |
 | CP25G.3 | **CLOSED** |
 | **CP26A** | **CLOSED** |
-| **Next execution checkpoint** | **CP26B — Domain A subscription lifecycle completion** |
+| CP26B.1 | **PASS** |
+| **Next execution checkpoint** | **CP26B.2 — ordered billing persistence + migration 0024 source** |
 | Forward roadmap | **`docs/ROADMAP.md`** |
 | Fixture policy | **`docs/FIXTURE_POLICY.md`** |
 
@@ -45,7 +46,7 @@ The internal code/history name **Aether Transfer** may remain in source and hist
 CP25G.3 Production Better Auth configuration is **CLOSED**.
 CP26A is **CLOSED** (dormancy, 0023 decoupling, local tenant proofs, Production verification tenant `sbg-verify-a5` configured-not-live, returning sign-in proven).
 
-Next execution is **CP26B** (Domain A subscription lifecycle completion — build/integrate/test **only**, commerce OFF). CP26 is **not** commercial go-live. Only **CP31** activates commerce. See `docs/ROADMAP.md` and `docs/FIXTURE_POLICY.md`.
+Next execution is **CP26B.2** (ordered billing persistence + migration 0024 source; commerce OFF). CP26 is **not** commercial go-live. Only **CP31** activates commerce. See `docs/ROADMAP.md` and `docs/FIXTURE_POLICY.md`.
 
 Source includes the hardened booking/occupancy/tenancy base plus CP20 email architecture, CP22 `/app` onboarding, CP23 public slug, CP24 Stripe Connect source, CP25 hotel-owned guest payment source, CP25G.3 auth configuration, CP26A.1 commerce gate, CP26A.2 decoupled entitlement publication, CP26A.4 local tenant/fixture proofs, and CP26A.5 Production verification tenant.
 
@@ -115,4 +116,4 @@ Do not contact Neon, modify Vercel, change secrets, or deploy unless the active 
 
 Every checkpoint must identify the exact Git commit audited.
 
-Next execution checkpoint is **CP26B**. Canonical roadmap: `docs/ROADMAP.md`. Fixture policy: `docs/FIXTURE_POLICY.md`. CP26 is not go-live.
+Next execution checkpoint is **CP26B.2**. Canonical roadmap: `docs/ROADMAP.md`. Fixture policy: `docs/FIXTURE_POLICY.md`. CP26 is not go-live.

@@ -7,6 +7,7 @@ import {
   getBillingState,
   startStripeConnectFn,
 } from "@/lib/aether/stripe-fns";
+import { billingViewModel } from "@/lib/aether/saas-lifecycle";
 
 export const Route = createFileRoute("/app/billing")({
   validateSearch: z.object({ hotelId: z.string().uuid().catch("") }),
@@ -63,9 +64,8 @@ function Billing() {
     return <div className="space-y-4"><h1 className="text-3xl font-semibold">Billing</h1><p className="text-sm text-muted">Select a hotel first.</p><Link to="/app/onboarding" className="text-sm underline">Back to setup</Link></div>;
   }
 
-  const billingState = state?.billing;
+  const lifecycle = state?.lifecycle ?? billingViewModel(state?.billing ?? null);
   const connected = !!state?.connection && !state.connection.disconnected_at;
-  const active = billingState?.status === "active" || billingState?.status === "trialing";
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
@@ -91,26 +91,44 @@ function Billing() {
         </button>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-3">
-        {(["basic", "pro", "premium"] as const).map((plan) => (
-          <article key={plan} className="border border-line bg-surface p-5">
-            <p className="text-xs font-medium tracking-widest text-muted uppercase">{plan}</p>
-            <p className="mt-3 text-sm text-muted">Subscription plan</p>
-            <button disabled={busy} onClick={() => void subscribe(plan)} className="mt-5 min-h-11 w-full border border-line px-4 text-sm font-semibold tracking-wide uppercase disabled:opacity-50">
-              {active && billingState?.stripe_price_id ? "Change / activate" : "Choose plan"}
-            </button>
-          </article>
-        ))}
-      </section>
-
-      {billingState ? (
-        <section className="border border-line bg-surface p-5">
-          <p className="text-xs font-medium tracking-widest text-muted uppercase">Current subscription</p>
-          <p className="mt-2 text-lg font-semibold uppercase">{billingState.status}</p>
-          {billingState.current_period_end ? <p className="mt-1 text-sm text-muted">Current period ends {new Date(billingState.current_period_end).toLocaleDateString()}</p> : null}
-          {billingState.stripe_customer_id ? <button disabled={busy} onClick={() => void portal()} className="mt-4 min-h-11 border border-line px-4 text-sm font-semibold tracking-wide uppercase">Manage billing</button> : null}
+      {lifecycle.showPlanSelection ? (
+        <section className="grid gap-4 md:grid-cols-3">
+          {(["basic", "pro", "premium"] as const).map((plan) => (
+            <article key={plan} className="border border-line bg-surface p-5">
+              <p className="text-xs font-medium tracking-widest text-muted uppercase">{plan}</p>
+              <p className="mt-3 text-sm text-muted">Subscription plan</p>
+              <button disabled={busy} onClick={() => void subscribe(plan)} className="mt-5 min-h-11 w-full border border-line px-4 text-sm font-semibold tracking-wide uppercase disabled:opacity-50">
+                Choose plan
+              </button>
+            </article>
+          ))}
         </section>
-      ) : null}
+      ) : (
+        <section className="border border-line bg-surface p-5">
+          <p className="text-xs font-medium tracking-widest text-muted uppercase">Plan changes</p>
+          <p className="mt-2 text-sm text-muted">
+            This hotel already has a SCAN / BOOK / GO subscription. Use Manage billing to change plan, update payment details, or cancel.
+          </p>
+        </section>
+      )}
+
+      <section className="border border-line bg-surface p-5">
+        <p className="text-xs font-medium tracking-widest text-muted uppercase">Current subscription</p>
+        <p className="mt-2 text-lg font-semibold uppercase">{lifecycle.displayStatus}</p>
+        {lifecycle.isEntitled ? (
+          <p className="mt-1 text-sm text-muted">SaaS access is currently entitled. This does not publish the hotel.</p>
+        ) : (
+          <p className="mt-1 text-sm text-muted">No entitled SCAN / BOOK / GO subscription. Selecting a price is not commercial activation.</p>
+        )}
+        {state?.billing?.current_period_end ? (
+          <p className="mt-1 text-sm text-muted">Current period ends {new Date(state.billing.current_period_end).toLocaleDateString()}</p>
+        ) : null}
+        {lifecycle.shouldManageBilling ? (
+          <button disabled={busy} onClick={() => void portal()} className="mt-4 min-h-11 border border-line px-4 text-sm font-semibold tracking-wide uppercase">
+            Manage billing
+          </button>
+        ) : null}
+      </section>
 
       <Link to="/app/onboarding" className="text-sm underline underline-offset-4">Back to hotel setup</Link>
     </div>

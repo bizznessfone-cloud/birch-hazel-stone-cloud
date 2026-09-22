@@ -4,10 +4,11 @@ Living status: **`BUILD_STATE.md`** (repo root).
 
 | Field | Value |
 |---|---|
-| Last application SHA | `b35ef2fc8bdddef81fcc84aa59d358dba4346a30` (no runtime `src/` in CP26A.4–A.6) |
+| Last application SHA | CP26B.1 (runtime `src/`; no migration) |
 | CP25G.3 | **CLOSED** |
 | **CP26A** | **CLOSED** |
-| **Next execution checkpoint** | **CP26B** |
+| CP26B.1 | **PASS** |
+| **Next execution checkpoint** | **CP26B.2** |
 | Forward roadmap | **[ROADMAP.md](ROADMAP.md)** (CP26–CP31) |
 | Fixture policy | **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)** |
 | Production | Vercel `scan-book-go` last observed `dpl_7MFpVnCV4CbyoUjev1ZjcLVm2vtn` READY |

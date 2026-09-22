@@ -241,6 +241,7 @@ test("CP26A.1 source isolation: Domain A gated, Domain B and entitlement untouch
   const helper = read("src/lib/aether/saas-commerce.server.ts");
   const stripe = read("src/lib/aether/stripe.server.ts");
   const fns = read("src/lib/aether/stripe-fns.ts");
+  const billingOrch = read("src/lib/aether/saas-billing.server.ts");
   const webhook = read("src/routes/api/stripe/webhook.ts");
   const example = read(".env.example");
   const entitlement = read("migrations/0020_cp24_stripe_billing.sql");
@@ -251,8 +252,8 @@ test("CP26A.1 source isolation: Domain A gated, Domain B and entitlement untouch
   assert.match(stripe, /assertDomainACommerceAllowed/);
   assert.match(webhook, /domainAWebhookEligible/);
   assert.match(fns, /authMiddleware/);
-  assert.match(fns, /ownedHotel/);
-  assert.match(fns, /createSubscriptionCheckout/);
+  assert.match(billingOrch, /createSubscriptionCheckout/);
+  assert.match(billingOrch, /assertDomainACommerceAllowed/);
 
   const guestFn = stripe.slice(stripe.indexOf("export async function createGuestTransferCheckout"));
   assert.doesNotMatch(guestFn, /assertDomainACommerceAllowed/);

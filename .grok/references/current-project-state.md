@@ -9,10 +9,11 @@ not trail the repository.
 |---|---|
 | Repository | `bizznessfone-cloud/birch-hazel-stone-cloud` |
 | Branch | `main` |
-| Last application SHA | `b35ef2fc8bdddef81fcc84aa59d358dba4346a30` |
+| Last application SHA | CP26B.1 (runtime `src/`; no migration) |
 | CP25G.3 | **CLOSED** |
 | **CP26A** | **CLOSED** |
-| **Next execution checkpoint** | **CP26B — Domain A subscription lifecycle completion** |
+| CP26B.1 | **PASS** |
+| **Next execution checkpoint** | **CP26B.2 — ordered billing persistence + migration 0024 source** |
 | Forward roadmap | `docs/ROADMAP.md` (CP26–CP31) |
 | Fixture policy | `docs/FIXTURE_POLICY.md` |
 
@@ -66,6 +67,9 @@ account → hotel → service → preview → QR → plan → Stripe → LIVE
 - First Production hotel through `/app` is proven to **configured, not live**.
 - Stripe/Resend source exists. Production configuration is absent.
 - Domain A remains dormant until CP31.
+- CP26B.1 hardened Domain A application lifecycle (gate-before-write, one subscription, portal-first).
+- Remaining CP26B.2 / 0024: durable Stripe event ordering, event `created`, `cancel_at_period_end`, stale-event rejection.
+- CP26C still owns Stripe test-mode integration. Do not set `SBG_SAAS_COMMERCE=test` on public Production in CP26B.
 - `/ops/*` remains internal operations.
 - Public guest: `/{hotelSlug}` plus legacy `/book/{hotelCode}`.
 - Canonical live demo: `/book/demo-kos`. `/demo-kos` slug currently hotel_not_found (pre-existing).
@@ -80,7 +84,7 @@ explicitly opens them.
 
 ## Next checkpoint
 
-**CP26B — Domain A subscription lifecycle completion** (build/integrate/test only; commerce OFF)
+**CP26B.2 — ordered billing persistence + migration 0024 source** (commerce OFF)
 
 Canonical roadmap: `docs/ROADMAP.md`. Fixture policy: `docs/FIXTURE_POLICY.md`.
 

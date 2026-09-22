@@ -16,30 +16,32 @@ Only **CP31** may activate real commerce.
 | CP26A.4 | **PASS** — local ownership → configured-not-live → billing UUID resolution; Domain A fail-closed; Domain B non-regression |
 | CP26A.5 | **PASS** — one persistent Production verification identity + one owned hotel, **configured not live**, returning sign-in, billing GET |
 | CP26A.6 | **PASS** — evidence reconciled; CP26A closed |
-| Last application SHA | `b35ef2fc8bdddef81fcc84aa59d358dba4346a30` (no runtime `src/` change in CP26A.4–A.6) |
+| CP26B.1 | **PASS** — Domain A application lifecycle: gate-before-write, one subscription, portal-first plan management |
+| Last application SHA | this CP26B.1 commit (runtime `src/` change; no migration) |
 | Fixture policy | [`docs/FIXTURE_POLICY.md`](docs/FIXTURE_POLICY.md) |
 | Local harness | `src/lib/aether/cp26a4-fixture.ts` (tests only; not a runtime import) |
 | Domain A | remains dormant; only **CP31** may activate commerce |
 | Accepted Production ledger | **0001–0023** |
-| **Next execution** | **CP26B — Domain A subscription lifecycle completion** (build/integrate/test **only**; commerce remains OFF) |
+| **Next execution** | **CP26B.2 — ordered billing persistence + migration 0024 source** |
 
 Do not dispatch historical 0022/0023 controllers. Owner secret remains GitHub Actions `AETHER_DATABASE_OWNER_URL` only — never Vercel. Future migrations need a dedicated single-use controller and an explicit checkpoint.
 
-Push to `main` currently auto-deploys Vercel Production. That is a known control-plane characteristic, not a commercial activation. CP26A.6 is documentation/source-of-truth only.
+Push to `main` currently auto-deploys Vercel Production. That is a known control-plane characteristic, not a commercial activation. CP26B.1 introduces no migration and does not enable commerce.
 
 Password never enters git/chat/Grok/Vercel/`.env`. Do not delete the Production verification tenant.
 
-## Current accepted baseline (POST-CP26A)
+## Current accepted baseline (POST-CP26B.1)
 
 | Field | Value |
 |---|---|
 | Product | **SCAN / BOOK / GO** (internal history name: Aether Transfer) |
 | Repository | `bizznessfone-cloud/birch-hazel-stone-cloud` |
 | Branch | `main` |
-| Last application SHA | `b35ef2fc8bdddef81fcc84aa59d358dba4346a30` (no runtime `src/` change in CP26A.4–A.6) |
+| Last application SHA | this CP26B.1 commit (runtime `src/` change; no migration) |
 | CP25G.3 | **CLOSED** |
 | **CP26A** | **CLOSED** |
-| **Next execution checkpoint** | **CP26B — Domain A subscription lifecycle completion** |
+| CP26B.1 | **PASS** |
+| **Next execution checkpoint** | **CP26B.2 — ordered billing persistence + migration 0024 source** |
 | Forward roadmap | **[docs/ROADMAP.md](docs/ROADMAP.md)** (CP26–CP31) |
 
 ### Production
@@ -119,8 +121,11 @@ account → hotel → service → preview → QR → plan → Stripe → LIVE
 - Billing ownership resolves by UUID then `ownedHotel`. Configured-not-live is valid for billing state. Live and Connect are not required.
 - Stripe Connect / SBG subscription / hotel-owned guest Checkout **source** exists. Production Stripe configuration is absent.
 - Domain A Checkout/portal/webhook is fail-closed until `SBG_SAAS_COMMERCE=test|live` (live only at CP31).
-- Resend confirmation-email **source** exists. Production Resend is absent.
-- `SBG_SAAS_COMMERCE=test` is process-global (CP26C blast-radius risk; not solved here).
+- Choose plan cannot mutate billing or call Stripe while commerce is OFF.
+- Existing subscription states cannot start a second Checkout; plan changes go to Manage billing (portal-first).
+- SaaS entitlement (`active`/`trialing`/`past_due`) is independent of `hotels.status`.
+- Remaining for **CP26B.2 / 0024**: durable Stripe event ordering, event `created`, `cancel_at_period_end`, stale-event rejection.
+- `SBG_SAAS_COMMERCE=test` is process-global (CP26C blast-radius risk; not solved here). CP26C still owns Stripe test-mode integration.
 
 ### Guest / Ops
 
@@ -151,7 +156,7 @@ account → hotel → service → preview → QR → plan → Stripe → LIVE
 - Do not start CP26C test commerce on public Production until blast-radius architecture is authorised.
 - Do not reuse CP25G.3 spent Better Auth users, unknown unconfigured hotels, or `demo-kos` as the SaaS verification tenant.
 
-Canonical forward path: **`docs/ROADMAP.md`**. Fixture policy: **`docs/FIXTURE_POLICY.md`**. Next execution: **CP26B**.
+Canonical forward path: **`docs/ROADMAP.md`**. Fixture policy: **`docs/FIXTURE_POLICY.md`**. Next execution: **CP26B.2**.
 
 GitHub `main` at the current SHA is authoritative application source. A workspace is never authoritative. Recovery ZIPs are secondary disaster-recovery artifacts. The CP10 ZIP must not be extracted over a newer Git tree without explicit human approval.
 

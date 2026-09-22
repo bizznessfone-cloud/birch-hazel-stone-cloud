@@ -45,11 +45,12 @@ test("CP24 keeps Stripe secrets server-side and uses Connect account scoping", (
 
 test("CP24 subscription flow is authenticated and webhook-signed", () => {
   const fns = read("src/lib/aether/stripe-fns.ts");
+  const billingOrch = read("src/lib/aether/saas-billing.server.ts");
   const webhook = read("src/routes/api/stripe/webhook.ts");
   const callback = read("src/routes/api/stripe/connect/callback.ts");
   assert.match(fns, /authMiddleware/);
-  assert.match(fns, /createSubscriptionCheckout/);
-  assert.match(fns, /createBillingPortal/);
+  assert.match(billingOrch, /createSubscriptionCheckout/);
+  assert.match(billingOrch, /createBillingPortal/);
   assert.match(fns, /startStripeConnectFn/);
   assert.match(webhook, /stripe-signature/);
   assert.match(webhook, /verifyStripeSignature/);

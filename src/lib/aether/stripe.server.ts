@@ -4,6 +4,7 @@ import {
   assertDomainACommerceAllowed,
   assertDomainALivemode,
 } from "./saas-commerce.server.ts";
+import { assertStripePriceId } from "./saas-lifecycle.ts";
 
 const API = "https://api.stripe.com/v1";
 
@@ -21,11 +22,9 @@ function hmacSecret() {
 
 export type StripePlan = "basic" | "pro" | "premium";
 
-export function stripePriceId(plan: StripePlan): string {
+export function stripePriceId(plan: StripePlan, env: NodeJS.Dict<string> = process.env): string {
   const key = `STRIPE_${plan.toUpperCase()}_PRICE_ID`;
-  const value = process.env[key];
-  if (!value) throw new Error(`${key} is not configured.`);
-  return value;
+  return assertStripePriceId(String(env[key] ?? ""), key);
 }
 
 async function stripePost<T>(path: string, params: Record<string, string>, accountId?: string): Promise<T> {
