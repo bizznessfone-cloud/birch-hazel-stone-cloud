@@ -12,8 +12,9 @@ until **CP31**.
 | Field | Value |
 |---|---|
 | Defined | **CP26C-O1** |
-| Foundation | **CP26C-O2 PASS** (source; 0025 not Production-applied) |
-| 0025 controller | **CP26C-O2A READY — NOT EXECUTED** |
+| Foundation | **CP26C-O2 PASS** (source; 0025 Production-applied) |
+| 0025 controller | **CP26C-O2A/O2B PASS** |
+| First-Owner controller | **CP26C-O2C.1 READY — NOT EXECUTED** |
 | Next implementation | **CP26C-O3** |
 | Catalogue implementation | **CP26C-O3** |
 | Stripe TEST resources | **CP26C.3** (paused until O3) |
@@ -57,7 +58,7 @@ Invariants:
 - Every operator is **not** an Owner.
 
 Current source has Guest, Hotel/operator, Ops, and Owner (`/owner`).
-O2 foundation is in source. First Production Owner grant is owner-plane after 0025 is applied in a later controlled child.
+O2 foundation is in source. 0025 is Production-applied. First Production Owner grant uses the CP26C-O2C.1 controller (**READY — NOT EXECUTED**).
 
 ---
 

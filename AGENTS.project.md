@@ -31,9 +31,11 @@ Repository: `bizznessfone-cloud/birch-hazel-stone-cloud`.
 | CP26C.2 | **PASS** — hotel-UUID test allowlist in source |
 | CP26C.3 | **PAUSED AFTER SAFE PREFLIGHT** |
 | CP26C-O1 | **PASS** — Owner Control Plane architecture |
-| CP26C-O2 | **PASS** — Owner dashboard foundation; 0025 SOURCE ONLY |
-| CP26C-O2A | **READY — NOT EXECUTED** — single-use 0025 controller |
-| **Next control-plane action** | authorised 0025 dispatch (`APPLY-0025`) |
+| CP26C-O2 | **PASS** — Owner dashboard foundation; 0025 Production-applied |
+| CP26C-O2A | **PASS** — single-use 0025 controller |
+| CP26C-O2B | **PASS** — Production 0025 applied (GHA 35758982641) |
+| CP26C-O2C.1 | **READY — NOT EXECUTED** — first Owner bootstrap controller |
+| **Next control-plane action** | authorised first-Owner bootstrap (`BOOTSTRAP-FIRST-OWNER`) |
 | **Next product checkpoint** | **CP26C-O3 — commercial catalogue persistence** |
 | Forward roadmap | **`docs/ROADMAP.md`** |
 | Fixture policy | **`docs/FIXTURE_POLICY.md`** |
@@ -59,17 +61,17 @@ CP26A is **CLOSED** (dormancy, 0023 decoupling, local tenant proofs, Production 
 **CP26B is CLOSED**. CP26C.1/C.2 isolation is in source. CP26C.3 is **paused**.
 Production commerce remains **OFF**.
 
-Next control-plane action is **authorised 0025 Production apply**. Do **not**
+Next control-plane action is **authorised first-Owner bootstrap**. Do **not**
 dispatch it from this workspace. Next product execution is **CP26C-O3**
 (commercial catalogue). Do **not** start CP26C.3 Stripe Dashboard work until O3.
-0025 is source-only plus a ready unexecuted controller; do not apply it
-in this workspace. Do **not** set `SBG_SAAS_COMMERCE=test`
+0025 is Production-applied. First Owner bootstrap controller is READY and
+**not executed**. Do **not** set `SBG_SAAS_COMMERCE=test`
 on public Production until CP26C.4. Only **CP31** activates commerce. See
 `docs/ROADMAP.md`, `docs/OWNER_CONTROL_PLANE.md`, and `docs/FIXTURE_POLICY.md`.
 
 Source includes the hardened booking/occupancy/tenancy base plus CP20 email architecture, CP22 `/app` onboarding, CP23 public slug, CP24 Stripe Connect source, CP25 hotel-owned guest payment source, CP25G.3 auth configuration, CP26A.1 commerce gate, CP26A.2 decoupled entitlement publication, CP26A.4 local tenant/fixture proofs, CP26A.5 Production verification tenant, CP26B.1 Domain A application lifecycle, and CP26B.2/3 ordered billing persistence **applied on Production**.
 
-Last observed Production Vercel `scan-book-go` (`dpl_FmUosqz2wy7aCT51rNjdanJnuviZ`) is READY on SHA `19512c2`. A push to `main` auto-deploys Vercel Production (docs/control-plane deploys must not activate commerce). Neon is migrated through **0024**. `DATABASE_URL` is the runtime credential; `AETHER_DATABASE_OWNER_URL` must never be added to Vercel. `SBG_SAAS_COMMERCE` is unset (fail-closed).
+Last observed Production Vercel `scan-book-go` (`dpl_FmUosqz2wy7aCT51rNjdanJnuviZ`) is READY on SHA `19512c2`. A push to `main` auto-deploys Vercel Production (docs/control-plane deploys must not activate commerce). Neon is migrated through **0025**. `DATABASE_URL` is the runtime credential; `AETHER_DATABASE_OWNER_URL` must never be added to Vercel. `SBG_SAAS_COMMERCE` is unset (fail-closed).
 
 Do not reopen CP26A or CP26B. Do not mutate the Production verification tenant unless a later checkpoint explicitly authorises it. Do **not** set `SBG_SAAS_COMMERCE=test` on public Production until CP26C.4. Isolation (`SBG_SAAS_TEST_HOTEL_IDS`) is in source as of CP26C.2; empty allowlist fail-closes every hotel. Do not dispatch retired 0022/0023/0024 controllers. Future SQL needs a new dedicated single-use controller.
 
@@ -136,4 +138,4 @@ Do not contact Neon, modify Vercel, change secrets, or deploy unless the active 
 
 Every checkpoint must identify the exact Git commit audited.
 
-Next control-plane action is **authorised 0025 dispatch**. Next product checkpoint is **CP26C-O3**. Canonical roadmap: `docs/ROADMAP.md`. Owner architecture: `docs/OWNER_CONTROL_PLANE.md`. Fixture policy: `docs/FIXTURE_POLICY.md`. CP26 is not go-live. Do not mark CP26C closed.
+Next control-plane action is **authorised first-Owner bootstrap**. Next product checkpoint is **CP26C-O3**. Canonical roadmap: `docs/ROADMAP.md`. Owner architecture: `docs/OWNER_CONTROL_PLANE.md`. Fixture policy: `docs/FIXTURE_POLICY.md`. CP26 is not go-live. Do not mark CP26C closed.

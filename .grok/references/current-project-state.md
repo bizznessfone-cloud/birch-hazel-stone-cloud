@@ -21,9 +21,11 @@ not trail the repository.
 | CP26C.2 | **PASS** — test hotel UUID allowlist in source |
 | CP26C.3 | **PAUSED AFTER SAFE PREFLIGHT** |
 | CP26C-O1 | **PASS** — Owner Control Plane architecture |
-| CP26C-O2 | **PASS** — Owner dashboard foundation; 0025 SOURCE ONLY |
-| CP26C-O2A | **READY — NOT EXECUTED** — single-use 0025 controller |
-| **Next control-plane action** | authorised 0025 dispatch (`APPLY-0025`) |
+| CP26C-O2 | **PASS** — Owner dashboard foundation; 0025 Production-applied |
+| CP26C-O2A | **PASS** — single-use 0025 controller |
+| CP26C-O2B | **PASS** — Production 0025 applied |
+| CP26C-O2C.1 | **READY — NOT EXECUTED** — first Owner bootstrap controller |
+| **Next control-plane action** | authorised first-Owner bootstrap (`BOOTSTRAP-FIRST-OWNER`) |
 | **Next product checkpoint** | **CP26C-O3 — commercial catalogue persistence** |
 | Forward roadmap | `docs/ROADMAP.md` (CP26–CP31) |
 | Owner architecture | `docs/OWNER_CONTROL_PLANE.md` |
@@ -48,10 +50,10 @@ not trail the repository.
 
 ## Database
 
-Migrations **0001–0025** exist in source. Production Neon is applied through **0024**.
-**0025 is SOURCE ONLY — not Production-applied.** CP26C-O2A controller is READY
-and **not executed**. Gate B accepted ledger remains **0001–0024**.
-`AUTHORISED_PENDING=[]`. Generic migrator remains fail-closed.
+Migrations **0001–0025** exist in source. Production Neon is applied through **0025**.
+**0025 is Production-applied.** CP26C-O2C.1 first-Owner bootstrap controller is READY
+and **not executed**. Gate B accepted ledger pin remains **0001–0024** (generic
+migrator fail-closed). `AUTHORISED_PENDING=[]`.
 0025 digest `575aabcb7322fc8ca63c8a3dd137d358f76375f1777ed59cf04c1d98d6c066fd`.
 Generic migrator remains fail-closed. Spent 0024 `workflow_dispatch` is retired.
 0024 digest `23cdc44037e0e886444477fdb693536a95c32b6080984de4076cc7a5f71d13c0`.
