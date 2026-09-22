@@ -4,7 +4,7 @@ Living status: **`BUILD_STATE.md`** (repo root).
 
 | Field | Value |
 |---|---|
-| Last application SHA | CP26B.1 (runtime `src/`; no migration) |
+| Last application SHA | `8cc0bc4916ebb79f0c3f2e511779a71b78583e3c` (runtime `src/`; no migration) |
 | CP25G.3 | **CLOSED** |
 | **CP26A** | **CLOSED** |
 | CP26B.1 | **PASS** |
