@@ -5,9 +5,14 @@ Canonical architecture for the **SBG Owner** business surface. Implemented in
 This document is design authority. It is **not** a migration and **not** a
 runtime module.
 
-Living execution: [`ROADMAP.md`](ROADMAP.md). Fixture policy:
+Living execution: [`ROADMAP.md`](ROADMAP.md). Commercial catalogue contract
+(CP26C-O3.1, canonical where it differs from §5.3, §6, §7, §8, and §19):
+[`COMMERCIAL_CATALOGUE.md`](COMMERCIAL_CATALOGUE.md). Fixture policy:
 [`FIXTURE_POLICY.md`](FIXTURE_POLICY.md). Domain A commerce remains **OFF**
 until **CP31**.
+
+Example minor-unit figures in §6 are **not** prices. Canonical amounts are
+**UNDEFINED**.
 
 | Field | Value |
 |---|---|
@@ -15,9 +20,9 @@ until **CP31**.
 | Foundation | **CP26C-O2 CLOSED** (Production-proven; 0025 applied) |
 | 0025 controller | **CP26C-O2A/O2B PASS** |
 | First Owner | **bootstrapped** — 1 active grant; workflow **RETIRED** (GHA 36116463589) |
-| Next implementation | **CP26C-O3** |
-| Catalogue implementation | **CP26C-O3** |
-| Stripe TEST resources | **CP26C.3** (paused until O3) |
+| Next implementation | **CP26C-O3.2** — source migration 0026 |
+| Catalogue contract | **CP26C-O3.1 PASS** — [`COMMERCIAL_CATALOGUE.md`](COMMERCIAL_CATALOGUE.md) |
+| Stripe TEST resources | **CP26C.3** (paused until O3.4 canonical amounts) |
 | LIVE commerce | **CP31 only** |
 
 ---
@@ -319,6 +324,11 @@ in V1.
 
 ### Env Price-ID retirement path (do not remove in O1)
 
+**Superseded for execution by CP26C-O3.1.** Do not dual-read env Price IDs.
+Do not copy them into Vercel during CP26C.3. Cutover is CP26C.4 only.
+See [`COMMERCIAL_CATALOGUE.md`](COMMERCIAL_CATALOGUE.md) §11. The table below
+is the O1 proposal, kept as history.
+
 Current source: `stripePriceId(plan)` → `STRIPE_${PLAN}_PRICE_ID`.
 
 | Step | Behaviour |
@@ -550,23 +560,17 @@ Out of O1–O3 unless a later checkpoint reopens them:
 
 ## 19. CP26C-O3 — Commercial catalogue
 
-**Implement:**
+**CP26C-O3.1 PASS.** The executable contract is
+[`COMMERCIAL_CATALOGUE.md`](COMMERCIAL_CATALOGUE.md). It supersedes this
+section where they disagree: separate Stripe mapping table (not test/live
+columns on the price version), no env dual-read, no Vercel Price ID copy in
+C.3, Checkout cutover only in **CP26C.4**, amounts still UNDEFINED, 0026 not
+created here.
 
-- `sbg_saas_plans` + `sbg_saas_price_versions` + audit actions
-- seed BASIC / PRO / PREMIUM (**amounts are an operator decision recorded in
-  O3, not invented here**)
-- Owner Plans & Pricing UI: current vs retired, create version, make current
-- TEST/LIVE Price ID fields (nullable)
-- dual-read Checkout/webhook Price IDs (catalogue then env)
-- fail closed if no Price ID for the active commerce mode
-- tests: grandfathering; env fallback; inactive plan hidden from new Checkout;
-  LIVE mapping unused while mode is not live; no amount rewrite in place
+**O3.2 implements** the 0026 schema in that contract (source only).
 
 **Do not:** create Stripe TEST/LIVE Prices (that is CP26C.3 / CP31); set
-commerce mode; allowlist the verification hotel; charge anyone.
-
-O3 **unblocks** CP26C.3: TEST Prices are created from canonical version
-amounts, then mapped onto those versions.
+commerce mode; allowlist the verification hotel; charge anyone; invent amounts.
 
 ---
 
@@ -584,15 +588,18 @@ because Vercel Price IDs must not remain the permanent catalogue.
 | Commerce | **OFF** / ABSENT |
 | Allowlist | **ABSENT** |
 
-Resume **after O3**:
+Resume **after O3.4 canonical amounts exist**:
 
 ```
 CP26C.2 PASS
   → CP26C-O1 (this document)
   → CP26C-O2
-  → CP26C-O3
-  → resume CP26C.3
-  → CP26C.4
+  → CP26C-O3.1 (catalogue contract)
+  → CP26C-O3.2 (source 0026)
+  → dedicated 0026 Production controller
+  → CP26C-O3.3 / O3.4
+  → resume CP26C.3 (TEST mappings only)
+  → CP26C.4 (checkout cutover; no env fallback)
 ```
 
 Only **CP31** activates LIVE commerce.

@@ -23,7 +23,8 @@ Canonical living roadmap. Other living documents should **point here**, not rede
 | CP26C-O2C.1 | **PASS** — first-Owner bootstrap controller built |
 | CP26C-O2C.2 | **PASS** — first Owner bootstrapped (GHA 36116463589) |
 | CP26C-O2C.3 | **PASS** — bootstrap workflow retired |
-| **Next product checkpoint** | **CP26C-O3 — commercial catalogue persistence** (not started) |
+| CP26C-O3.1 | **PASS** — commercial catalogue contract ([`COMMERCIAL_CATALOGUE.md`](COMMERCIAL_CATALOGUE.md)); amounts UNDEFINED |
+| **Next product checkpoint** | **CP26C-O3.2 — source migration 0026** (not applied; Gate B stays 0001–0025) |
 
 ---
 
@@ -179,12 +180,12 @@ Exercise Domain A against Stripe **TEST MODE ONLY** (`sk_test`, test products/pr
 
 Non-blocking UI backlog: Owner header showed “SSBG Verification”. Deferred to UI polish. Not an authorization defect.
 
-**Next product: CP26C-O3** commercial catalogue persistence (plans + versioned prices). Do not invent amounts until the operator records them in O3. Do not resume CP26C.3 until O3.
+**Next product: CP26C-O3.2** source migration `0026` for the catalogue in [`COMMERCIAL_CATALOGUE.md`](COMMERCIAL_CATALOGUE.md). **CP26C-O3.1 PASS.** Amounts remain UNDEFINED. Do not invent them. Do not resume CP26C.3 until O3.4 records canonical versions. Checkout stays on transitional env Price IDs until **CP26C.4** (no env fallback). C.3 may create Stripe TEST objects only and must not write Vercel Price IDs.
 
 Sequence:
 
 ```
-CP26C.2 PASS → CP26C-O1 → CP26C-O2 → CP26C-O2A → CP26C-O2B (0025 applied) → CP26C-O2C (first Owner bootstrapped; workflow retired) → CP26C-O3 → resume CP26C.3 → CP26C.4
+CP26C.2 PASS → CP26C-O1 → CP26C-O2 → CP26C-O2A → CP26C-O2B (0025 applied) → CP26C-O2C (first Owner bootstrapped; workflow retired) → CP26C-O3.1 (contract) → CP26C-O3.2 (source 0026) → dedicated 0026 Production controller → CP26C-O3.3 (Owner plans UI) → CP26C-O3.4 (human canonical prices) → resume CP26C.3 (TEST mappings only) → CP26C.4 (checkout cutover) → CP31 (LIVE)
 ```
 
 **Do not enable test commerce on public Production until CP26C.4.** Empty allowlist = nobody authorised. Only **CP31** activates live commerce.

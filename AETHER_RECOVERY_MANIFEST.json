@@ -16,11 +16,11 @@
   "cp26b3": "CLOSED",
   "cp26b4": "PASS",
   "next_numbered_checkpoint": "CP26C",
-  "next_execution_checkpoint": "CP26C-O3 — commercial catalogue persistence",
+  "next_execution_checkpoint": "CP26C-O3.2 — source migration 0026",
   "forward_roadmap": "docs/ROADMAP.md",
   "fixture_policy": "docs/FIXTURE_POLICY.md",
   "do_not_invent_cp26": false,
-  "phase": "CP26C-O2 CLOSED. Production ledger 0001-0025. One platform Owner (OPERATOR CONTROLLED / REDACTED). First-Owner bootstrap workflow RETIRED (GHA 36116463589). sbg-verify-a5 configured-not-live. Domain A commerce OFF. Next CP26C-O3 commercial catalogue. CP26C.3 paused until O3. Only CP31 activates commerce. See docs/ROADMAP.md.",
+  "phase": "CP26C-O3.1 PASS. Commercial catalogue contract docs/COMMERCIAL_CATALOGUE.md. Amounts UNDEFINED. Next CP26C-O3.2 source migration 0026 (not applied). Gate B 0001-0025. One platform Owner (OPERATOR CONTROLLED / REDACTED). First-Owner bootstrap workflow RETIRED (GHA 36116463589). sbg-verify-a5 configured-not-live. Domain A commerce OFF. CP26C.3 paused until O3.4. Checkout cutover is CP26C.4. Only CP31 activates commerce.",
   "timestamp": "2026-09-22T10:28:00+03:00",
   "production": {
     "vercel_project": "scan-book-go",

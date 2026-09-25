@@ -37,8 +37,10 @@ Repository: `bizznessfone-cloud/birch-hazel-stone-cloud`.
 | CP26C-O2C.1 | **PASS** — first-Owner bootstrap controller built |
 | CP26C-O2C.2 | **PASS** — first Owner bootstrapped (GHA 36116463589) |
 | CP26C-O2C.3 | **PASS** — bootstrap dispatch retired |
-| **Next product checkpoint** | **CP26C-O3 — commercial catalogue persistence** |
+| CP26C-O3.1 | **PASS** — commercial catalogue contract (`docs/COMMERCIAL_CATALOGUE.md`) |
+| **Next product checkpoint** | **CP26C-O3.2 — source migration 0026** |
 | Forward roadmap | **`docs/ROADMAP.md`** |
+| Commercial catalogue | **`docs/COMMERCIAL_CATALOGUE.md`** |
 | Fixture policy | **`docs/FIXTURE_POLICY.md`** |
 
 Historical SHAs (not current `main`):
@@ -62,8 +64,10 @@ CP26A is **CLOSED** (dormancy, 0023 decoupling, local tenant proofs, Production 
 **CP26B is CLOSED**. CP26C.1/C.2 isolation is in source. CP26C.3 is **paused**.
 **CP26C-O2 is CLOSED**. Production commerce remains **OFF**.
 
-Next product execution is **CP26C-O3** (commercial catalogue). Do **not**
-start CP26C.3 Stripe Dashboard work until O3. 0025 is Production-applied.
+Next product execution is **CP26C-O3.2** (source migration 0026). The
+commercial contract is **CP26C-O3.1 PASS** (`docs/COMMERCIAL_CATALOGUE.md`).
+Do **not** start CP26C.3 until O3.4 records canonical amounts. Do **not**
+apply 0026 through the generic migrator. 0025 is Production-applied.
 Exactly one platform Owner exists (OPERATOR CONTROLLED / REDACTED, hotel
 `sbg-verify-a5`). The first-Owner bootstrap workflow is **RETIRED**. Do
 **not** set `SBG_SAAS_COMMERCE=test` on public Production until CP26C.4.
@@ -139,4 +143,4 @@ Do not contact Neon, modify Vercel, change secrets, or deploy unless the active 
 
 Every checkpoint must identify the exact Git commit audited.
 
-Next product checkpoint is **CP26C-O3**. Canonical roadmap: `docs/ROADMAP.md`. Owner architecture: `docs/OWNER_CONTROL_PLANE.md`. Fixture policy: `docs/FIXTURE_POLICY.md`. CP26C-O2 is **CLOSED**. CP26C remains open. CP26 is not go-live. Do not mark CP26C closed.
+Next product checkpoint is **CP26C-O3.2**. Canonical roadmap: `docs/ROADMAP.md`. Commercial catalogue: `docs/COMMERCIAL_CATALOGUE.md`. Owner architecture: `docs/OWNER_CONTROL_PLANE.md`. Fixture policy: `docs/FIXTURE_POLICY.md`. CP26C-O3.1 is **PASS**. CP26C-O2 is **CLOSED**. CP26C remains open. CP26 is not go-live. Do not mark CP26C closed.

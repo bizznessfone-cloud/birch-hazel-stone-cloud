@@ -45,7 +45,7 @@ CP26–CP30 work. Never a real customer. Do not delete casually.
 | Public slug | `erification-otel` |
 | Locality / timezone / currency | Verification Locality · Europe/Athens · EUR |
 | Status | **configured** — **not live**; not guest-bookable |
-| Catalogue | Verification Transfer · Verification Airport · EUR 10.00 |
+| Catalogue | Verification Transfer · Verification Airport · EUR 10.00 (**Domain B** hotel transfer money, not a SaaS plan amount) |
 | Publication | `/erification-otel` and `/book/sbg-verify-a5` are `hotel_not_live` |
 | Billing | configured hotel is sufficient for Domain A billing GET; live and Connect are not required |
 | Domain A money | **none** before CP31 |
