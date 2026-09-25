@@ -6,7 +6,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { test } from "node:test";
-import { BLOCKED_OWNER_URL } from "./production-db-preflight.mjs";
+import { BLOCKED_OWNER_URL, evaluatePreflight, isAuthorisedPending } from "./production-db-preflight.mjs";
 import { evaluateMigrationBaseline } from "./production-db-migrate.mjs";
 import { buildHotelSnapshot } from "./cp26a2-0023-production-migrate.mjs";
 import { EXPECTED_FUNCTIONS as OWNER_FUNCTIONS } from "./cp26co2a-0025-production-migrate.mjs";
@@ -60,7 +60,6 @@ const execFileAsync = promisify(execFile);
 const here = dirname(fileURLToPath(import.meta.url));
 const src = readFileSync(join(here, "cp26co32a-0026-production-migrate.mjs"), "utf8");
 const workflowPath = join(here, "../.github/workflows/cp26co32a-0026-production-migrate.yml");
-const workflow = readFileSync(workflowPath, "utf8");
 const pkg = JSON.parse(readFileSync(join(here, "../package.json"), "utf8"));
 const migrationBytes = readFileSync(join(here, "../migrations", TARGET_MIGRATION));
 const migrationDigest = createHash("sha256").update(migrationBytes).digest("hex");
@@ -321,10 +320,13 @@ test("canonical 0026 digest is pinned and 0001-0025 digests match", () => {
   assert.equal(sha256(migrationBytes), TARGET_DIGEST);
   assert.equal(assertMigrationFile(canonicalFile()).ok, true);
   assert.equal(REQUIRED_CONFIRMATION, "APPLY-0026");
-  assert.equal(ACCEPTED_LEDGER.at(-1), "0025_cp26co2_platform_owners.sql");
-  assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), false);
+  assert.equal(ACCEPTED_LEDGER.at(-1), TARGET_MIGRATION);
+  assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), true);
   assert.deepEqual(AUTHORISED_PENDING, []);
-  assert.deepEqual(REQUIRED_LEDGER, ACCEPTED_LEDGER);
+  assert.equal(isAuthorisedPending(TARGET_MIGRATION), false);
+  assert.equal(REQUIRED_LEDGER.at(-1), "0025_cp26co2_platform_owners.sql");
+  assert.equal(REQUIRED_LEDGER.includes(TARGET_MIGRATION), false);
+  assert.deepEqual(ACCEPTED_LEDGER, [...REQUIRED_LEDGER, TARGET_MIGRATION]);
   for (const [name, expected] of Object.entries(REVIEWED_DIGESTS)) {
     const bytes = readFileSync(join(here, "../migrations", name));
     assert.equal(sha256(bytes), expected, name);
@@ -698,48 +700,63 @@ test("apply failure rolls back the transaction and redacts secrets", async () =>
   assert.match(result.error, /redacted/);
 });
 
-test("Gate B remains 0001-0025 and build does not invoke the controller", () => {
-  assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), false);
+test("Gate B accepts 0001-0026; build and the npm alias do not apply 0026", () => {
+  assert.equal(ACCEPTED_LEDGER.at(-1), TARGET_MIGRATION);
   assert.deepEqual(AUTHORISED_PENDING, []);
-  const generic = evaluateMigrationBaseline({
-    ok: false,
-    verdict: "BLOCKED — NO GENERIC PRODUCTION MIGRATION AUTHORISED",
-    pending: [TARGET_MIGRATION],
-    unexpectedPending: [TARGET_MIGRATION],
+  assert.equal(isAuthorisedPending(TARGET_MIGRATION), false);
+  assert.equal(isAuthorisedPending("0027_later.sql"), false);
+  const current = evaluatePreflight({
+    database: "neondb",
+    currentUser: "neondb_owner",
+    sessionUser: "neondb_owner",
+    ledger: [...ACCEPTED_LEDGER],
+    ledgerReadable: true,
+    sourceMigrations: [...ACCEPTED_LEDGER],
+    authTables: { user: "PRESENT", session: "PRESENT", account: "PRESENT", verification: "PRESENT" },
+    aetherAppExists: true,
+    occupancy,
   });
+  assert.equal(current.ok, true);
+  assert.deepEqual(current.pending, []);
+  const future = evaluatePreflight({
+    ...current,
+    ok: undefined,
+    sourceMigrations: [...ACCEPTED_LEDGER, "0027_later.sql"],
+    ledger: [...ACCEPTED_LEDGER],
+    ledgerReadable: true,
+    database: "neondb",
+    currentUser: "neondb_owner",
+    sessionUser: "neondb_owner",
+    authTables: { user: "PRESENT", session: "PRESENT", account: "PRESENT", verification: "PRESENT" },
+    aetherAppExists: true,
+    occupancy,
+  });
+  assert.equal(future.ok, false);
+  assert.deepEqual(future.unexpectedPending, ["0027_later.sql"]);
+  const generic = evaluateMigrationBaseline(future);
   assert.equal(generic.ok, false);
   assert.equal(generic.migrated, false);
   assert.doesNotMatch(pkg.scripts.build, /db:migrate/);
   assert.doesNotMatch(pkg.scripts.build, /cp26co32a-0026/);
-  assert.equal(pkg.scripts["db:migrate:0026"], "node scripts/cp26co32a-0026-production-migrate.mjs");
+  assert.equal(pkg.scripts["db:migrate:0026"], undefined);
   const genericSrc = readFileSync(join(here, "production-db-migrate.mjs"), "utf8");
-  assert.match(genericSrc, /0001–0025/);
+  assert.match(genericSrc, /0001–0026/);
   assert.doesNotMatch(genericSrc, new RegExp(TARGET_MIGRATION));
 });
 
-test("workflow is workflow_dispatch only with the shared mutation lock", () => {
-  assert.equal(existsSync(workflowPath), true);
-  assert.match(workflow, /workflow_dispatch:/);
-  assert.match(workflow, /Type APPLY-0026/);
-  assert.match(workflow, /permissions:\n  contents: read/);
-  assert.match(workflow, /persist-credentials: false/);
-  assert.match(workflow, /group: production-database-mutation/);
-  assert.match(workflow, /cancel-in-progress: false/);
-  assert.match(workflow, /node-version: "22"/);
-  assert.match(workflow, /npm ci/);
-  assert.match(workflow, /secrets\.AETHER_DATABASE_OWNER_URL/);
-  assert.match(workflow, /CP26CO32A_CONFIRMATION/);
-  assert.match(workflow, /scripts\/cp26co32a-0026-production-migrate\.mjs/);
-  assert.deepEqual(workflow.match(/secrets\.[A-Z0-9_]+/g), ["secrets.AETHER_DATABASE_OWNER_URL"]);
-  assert.doesNotMatch(workflow, /\bpull_request\b/);
-  assert.doesNotMatch(workflow, /\bschedule\b/);
-  assert.doesNotMatch(workflow, /\brepository_dispatch\b/);
-  assert.doesNotMatch(workflow, /\bworkflow_run\b/);
-  assert.doesNotMatch(workflow, /\brelease:/);
-  assert.doesNotMatch(workflow, /\n\s+push:/);
-  assert.doesNotMatch(workflow, /DATABASE_URL/);
-  assert.doesNotMatch(workflow, /vercel/i);
-  assert.doesNotMatch(workflow, /stripe/i);
+test("spent 0026 workflow is absent and no workflow dispatches the controller", () => {
+  assert.equal(existsSync(workflowPath), false);
+  const workflows = readdirSync(join(here, "../.github/workflows"));
+  assert.deepEqual(workflows.sort(), [
+    "cp26co2a-0025-production-migrate.yml",
+    "production-database.yml",
+  ]);
+  for (const name of workflows) {
+    const text = readFileSync(join(here, "../.github/workflows", name), "utf8");
+    assert.equal(text.includes("cp26co32a-0026-production-migrate.mjs"), false, name);
+    assert.equal(text.includes("APPLY-0026"), false, name);
+    assert.equal(text.includes(TARGET_MIGRATION), false, name);
+  }
 });
 
 test("controller source never uses DATABASE_URL, Stripe, or the generic migrator", () => {

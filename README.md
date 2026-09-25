@@ -38,7 +38,8 @@ Environment (names/presence only; never secret values):
 
 ### Database
 
-- Source and Production Neon migrations: **0001–0025**
+- Source and Production Neon migrations: **0001–0026**
+- 0026 commercial catalogue (`sbg_saas_plans` basic/pro/premium; zero price versions; zero Stripe mappings; locks false/false; digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446`; apply run 36135836457; workflow retired)
 - 0025 platform owners (`sbg_platform_owners`; digest `575aabcb7322fc8ca63c8a3dd137d358f76375f1777ed59cf04c1d98d6c066fd`); one Production Owner bootstrapped; bootstrap workflow retired
 - 0024 ordered Domain A billing events (`sbg_apply_billing_event` 10-argument; digest `23cdc44037e0e886444477fdb693536a95c32b6080984de4076cc7a5f71d13c0`)
 - 0023 decoupled `sbg_sync_hotel_entitlement` from hotel publication

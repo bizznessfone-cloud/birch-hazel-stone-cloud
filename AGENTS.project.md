@@ -38,9 +38,11 @@ Repository: `bizznessfone-cloud/birch-hazel-stone-cloud`.
 | CP26C-O2C.2 | **PASS** — first Owner bootstrapped (GHA 36116463589) |
 | CP26C-O2C.3 | **PASS** — bootstrap dispatch retired |
 | CP26C-O3.1 | **PASS** — commercial catalogue contract (`docs/COMMERCIAL_CATALOGUE.md`) |
-| CP26C-O3.2 | **PASS** — source `0026` verified, **not applied** |
-| CP26C-O3.2A | **READY / CONTROLLER BUILT / NOT EXECUTED** |
-| **Next product checkpoint** | **CP26C-O3.2B** — explicit authorisation required before 0026 Production apply |
+| CP26C-O3.2 | **PASS** — source `0026` verified, then Production-applied |
+| CP26C-O3.2A | **PASS** — controller built; dispatch **RETIRED** |
+| CP26C-O3.2B | **PASS** — Production 0026 applied (GHA 36135836457) |
+| CP26C-O3.2C | **PASS** — Gate B **0001–0026**; 0026 workflow retired |
+| **Next product checkpoint** | **CP26C-O3.3** — Owner Commercial Catalogue UI |
 | Forward roadmap | **`docs/ROADMAP.md`** |
 | Commercial catalogue | **`docs/COMMERCIAL_CATALOGUE.md`** |
 | Fixture policy | **`docs/FIXTURE_POLICY.md`** |
@@ -66,7 +68,7 @@ CP26A is **CLOSED** (dormancy, 0023 decoupling, local tenant proofs, Production 
 **CP26B is CLOSED**. CP26C.1/C.2 isolation is in source. CP26C.3 is **paused**.
 **CP26C-O2 is CLOSED**. Production commerce remains **OFF**.
 
-Next product execution is **CP26C-O3.2B** (explicit authorisation required; do not apply 0026 here). **CP26C-O3.2A READY / CONTROLLER BUILT / NOT EXECUTED.** **CP26C-O3.2 PASS** — `migrations/0026_cp26co3_commercial_catalogue.sql` verified and unapplied. Digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446`. Gate B stays **0001–0025**. No Production connection in O3.2A. Do **not** mark O3.2B complete. Do **not** start O3.3. Do **not** start CP26C.3 until O3.4 records canonical amounts. Do **not** apply 0026 through the generic migrator. 0025 is Production-applied.
+Next product execution is **CP26C-O3.3** (Owner Commercial Catalogue UI; do not start it here). **CP26C-O3.2C PASS** — Gate B is **0001–0026**. **CP26C-O3.2B PASS** — `migrations/0026_cp26co3_commercial_catalogue.sql` applied once. Digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446`. Apply run [36135836457](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36135836457), job `108073574672`. The 0026 workflow and `db:migrate:0026` alias are **RETIRED**. `AUTHORISED_PENDING=[]`. 0027+ stays fail-closed. Amounts remain **UNDEFINED**. Do **not** start CP26C.3 until O3.4 records canonical amounts. Do **not** apply further migrations through the generic migrator.
 Exactly one platform Owner exists (OPERATOR CONTROLLED / REDACTED, hotel
 `sbg-verify-a5`). The first-Owner bootstrap workflow is **RETIRED**. Do
 **not** set `SBG_SAAS_COMMERCE=test` on public Production until CP26C.4.
@@ -75,7 +77,7 @@ Only **CP31** activates commerce. See `docs/ROADMAP.md`,
 
 Source includes the hardened booking/occupancy/tenancy base plus CP20 email architecture, CP22 `/app` onboarding, CP23 public slug, CP24 Stripe Connect source, CP25 hotel-owned guest payment source, CP25G.3 auth configuration, CP26A.1 commerce gate, CP26A.2 decoupled entitlement publication, CP26A.4 local tenant/fixture proofs, CP26A.5 Production verification tenant, CP26B.1 Domain A application lifecycle, and CP26B.2/3 ordered billing persistence **applied on Production**.
 
-Last observed Production Vercel `scan-book-go` (`dpl_FmUosqz2wy7aCT51rNjdanJnuviZ`) is READY on SHA `19512c2`. A push to `main` auto-deploys Vercel Production (docs/control-plane deploys must not activate commerce). Neon is migrated through **0025**. `DATABASE_URL` is the runtime credential; `AETHER_DATABASE_OWNER_URL` must never be added to Vercel. `SBG_SAAS_COMMERCE` is unset (fail-closed).
+Last observed Production Vercel `scan-book-go` (`dpl_FmUosqz2wy7aCT51rNjdanJnuviZ`) is READY on SHA `19512c2`. A push to `main` auto-deploys Vercel Production (docs/control-plane deploys must not activate commerce). Neon is migrated through **0026**. `DATABASE_URL` is the runtime credential; `AETHER_DATABASE_OWNER_URL` must never be added to Vercel. `SBG_SAAS_COMMERCE` is unset (fail-closed).
 
 Do not reopen CP26A or CP26B. Do not mutate the Production verification tenant unless a later checkpoint explicitly authorises it. Do **not** set `SBG_SAAS_COMMERCE=test` on public Production until CP26C.4. Isolation (`SBG_SAAS_TEST_HOTEL_IDS`) is in source as of CP26C.2; empty allowlist fail-closes every hotel. Do not dispatch retired 0022/0023/0024 controllers. Future SQL needs a new dedicated single-use controller.
 
@@ -142,4 +144,4 @@ Do not contact Neon, modify Vercel, change secrets, or deploy unless the active 
 
 Every checkpoint must identify the exact Git commit audited.
 
-Next product checkpoint is **CP26C-O3.2B** (explicit authorisation required; do not apply). Canonical roadmap: `docs/ROADMAP.md`. Commercial catalogue: `docs/COMMERCIAL_CATALOGUE.md`. Owner architecture: `docs/OWNER_CONTROL_PLANE.md`. Fixture policy: `docs/FIXTURE_POLICY.md`. CP26C-O3.2A is **READY / NOT EXECUTED**. CP26C-O3.2 is **PASS / NOT APPLIED**. CP26C-O3.1 is **PASS**. CP26C-O2 is **CLOSED**. CP26C remains open. CP26 is not go-live. Do not mark CP26C closed.
+Next product checkpoint is **CP26C-O3.3** (Owner Commercial Catalogue UI; do not implement it here). Canonical roadmap: `docs/ROADMAP.md`. Commercial catalogue: `docs/COMMERCIAL_CATALOGUE.md`. Owner architecture: `docs/OWNER_CONTROL_PLANE.md`. Fixture policy: `docs/FIXTURE_POLICY.md`. CP26C-O3.2C is **PASS**. CP26C-O3.2B is **PASS**. CP26C-O2 is **CLOSED**. CP26C remains open. CP26 is not go-live. Do not mark CP26C closed. Do not resume CP26C.3.

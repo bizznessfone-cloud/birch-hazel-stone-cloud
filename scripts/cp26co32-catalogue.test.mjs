@@ -1,6 +1,6 @@
 /**
- * CP26C-O3.2 — commercial catalogue source verification.
- * No Production connection. 0026 stays off the accepted ledger.
+ * CP26C-O3.2 source verification, reconciled in O3.2C.
+ * 0026 is on the accepted ledger. 0027+ stays fail-closed. No Production connection.
  */
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
@@ -75,19 +75,26 @@ test("0026 exists once and 0001-0025 are unchanged versus the source commit", ()
   }
 });
 
-test("Gate B still accepts only 0001-0025 and refuses 0026", async () => {
-  assert.equal(ACCEPTED_LEDGER.at(-1), "0025_cp26co2_platform_owners.sql");
-  assert.equal(ACCEPTED_LEDGER.includes(migrationName), false);
+test("Gate B accepts 0001-0026 and refuses 0027", async () => {
+  assert.equal(ACCEPTED_LEDGER.at(-1), migrationName);
+  assert.equal(ACCEPTED_LEDGER.includes(migrationName), true);
   assert.deepEqual(AUTHORISED_PENDING, []);
   assert.equal(isAuthorisedPending(migrationName), false);
-  assert.equal(isAuthorisedPending("0026_later.sql"), false);
+  assert.equal(isAuthorisedPending("0027_later.sql"), false);
 
   const preflight = evaluatePreflight(acceptedFacts());
-  assert.equal(preflight.ok, false);
-  assert.deepEqual(preflight.unexpectedPending, [migrationName]);
+  assert.equal(preflight.ok, true);
+  assert.deepEqual(preflight.pending, []);
   const baseline = evaluateMigrationBaseline(preflight);
-  assert.equal(baseline.ok, false);
+  assert.equal(baseline.ok, true);
   assert.equal(baseline.migrated, false);
+
+  const future = evaluatePreflight({
+    ...acceptedFacts(),
+    sourceMigrations: [...sourceMigrations(), "0027_later.sql"],
+  });
+  assert.equal(future.ok, false);
+  assert.deepEqual(future.unexpectedPending, ["0027_later.sql"]);
 
   let applied = 0;
   const guarded = await runGuardedMigrate({
@@ -99,38 +106,34 @@ test("Gate B still accepts only 0001-0025 and refuses 0026", async () => {
   });
   assert.equal(applied, 0);
   assert.equal(guarded.migrated, false);
-  assert.equal(guarded.ok, false);
+  assert.equal(guarded.ok, true);
 });
 
-test("generic migrator cannot apply 0026; only the dedicated controller may", () => {
+test("generic migrator cannot apply 0026 and the spent dispatch surface is gone", () => {
   const workflows = readdirSync(join(root, ".github/workflows"));
   assert.deepEqual(workflows.sort(), [
     "cp26co2a-0025-production-migrate.yml",
-    "cp26co32a-0026-production-migrate.yml",
     "production-database.yml",
   ]);
-  for (const name of ["cp26co2a-0025-production-migrate.yml", "production-database.yml"]) {
+  for (const name of workflows) {
     const text = readFileSync(join(root, ".github/workflows", name), "utf8");
     assert.equal(text.includes("0026"), false, name);
     assert.equal(text.includes(migrationName), false, name);
+    assert.equal(text.includes("cp26co32a-0026-production-migrate.mjs"), false, name);
   }
-  const dedicated = readFileSync(join(root, ".github/workflows/cp26co32a-0026-production-migrate.yml"), "utf8");
-  assert.match(dedicated, /workflow_dispatch:/);
-  assert.match(dedicated, /APPLY-0026/);
-  assert.match(dedicated, /scripts\/cp26co32a-0026-production-migrate\.mjs/);
-  assert.doesNotMatch(dedicated, /\n\s+push:/);
   const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
-  assert.equal(pkg.scripts["db:migrate:0026"], "node scripts/cp26co32a-0026-production-migrate.mjs");
+  assert.equal(pkg.scripts["db:migrate:0026"], undefined);
   assert.doesNotMatch(pkg.scripts.build, /0026|cp26co3/);
   const controller = readFileSync(join(root, "scripts/cp26co2a-0025-production-migrate.mjs"), "utf8");
   assert.match(controller, /0025_cp26co2_platform_owners\.sql/);
   assert.doesNotMatch(controller, /0026_cp26co3_commercial_catalogue/);
   const generic = readFileSync(join(root, "scripts/production-db-migrate.mjs"), "utf8");
-  assert.match(generic, /Accepted Production history is 0001–0025/);
+  assert.match(generic, /Accepted Production history is 0001–0026/);
   assert.doesNotMatch(generic, /AUTHORISED_PENDING\s*=\s*\[[^\]]+\]/);
   const dedicatedController = readFileSync(join(root, "scripts/cp26co32a-0026-production-migrate.mjs"), "utf8");
   assert.match(dedicatedController, /0026_cp26co3_commercial_catalogue\.sql/);
   assert.doesNotMatch(dedicatedController, /production-db-migrate/);
+  assert.match(dedicatedController, /REQUIRED_LEDGER is the frozen pre-apply pin/);
 });
 
 test("0026 source seeds identities only and cannot raise live locks", () => {

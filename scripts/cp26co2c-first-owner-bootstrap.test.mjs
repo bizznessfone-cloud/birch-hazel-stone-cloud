@@ -548,7 +548,6 @@ test("first-Owner dispatch surface is retired", () => {
   assert.equal(yaml.includes("cp26co2c-first-owner-bootstrap.yml"), false);
   assert.deepEqual(yaml, [
     "cp26co2a-0025-production-migrate.yml",
-    "cp26co32a-0026-production-migrate.yml",
     "production-database.yml",
   ]);
 });
@@ -597,7 +596,7 @@ test("direct invocation without secret exits before connecting", async () => {
 test("Gate B accepts applied 0025 and does not authorise another bootstrap", () => {
   assert.deepEqual(AUTHORISED_PENDING, []);
   assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), true);
-  assert.equal(ACCEPTED_LEDGER.at(-1), TARGET_MIGRATION);
+  assert.equal(ACCEPTED_LEDGER.at(-1), "0026_cp26co3_commercial_catalogue.sql");
 });
 
 test("catalog identity still uses 0025 function contract", () => {

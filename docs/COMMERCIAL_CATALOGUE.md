@@ -15,13 +15,14 @@ Living execution: [`ROADMAP.md`](ROADMAP.md). Owner surface:
 
 | Field | Value |
 |---|---|
-| Status | **CP26C-O3.1 PASS** — contract accepted. **CP26C-O3.2 PASS** — source verified, **not applied**. **CP26C-O3.2A READY / NOT EXECUTED** |
-| Next | **CP26C-O3.2B** — explicit authorisation required before Production apply |
-| 0026 | `migrations/0026_cp26co3_commercial_catalogue.sql` — digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446` — **unapplied** |
+| Status | **CP26C-O3.1 PASS**. **CP26C-O3.2 PASS**. **CP26C-O3.2B PASS** — Production applied. **CP26C-O3.2C PASS** — controller retired |
+| Next | **CP26C-O3.3** — Owner Commercial Catalogue UI |
+| 0026 | `migrations/0026_cp26co3_commercial_catalogue.sql` — digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446` — **applied once** (GHA 36135836457) |
 | Commerce | **OFF** (`SBG_SAAS_COMMERCE` absent) |
-| CP26C.3 | **PAUSED** |
+| CP26C.3 | **PAUSED** until O3.4 |
 | CP31 | only checkpoint that may activate LIVE commerce |
-| Gate B | accepted ledger remains **0001–0025** |
+| Gate B | accepted ledger **0001–0026**; `AUTHORISED_PENDING=[]` |
+| Prices | versions **0**; Stripe mappings **0**; LIVE locks **false/false**; amounts **UNDEFINED** |
 
 ---
 
@@ -526,9 +527,9 @@ Public Production test commerce stays forbidden until CP26C.4 **and** an
 explicit allowlist checkpoint. Empty allowlist fail-closes every hotel. Live
 mode ignores the allowlist. Only CP31 may turn live on.
 
-0026 must not extend Gate B by itself. `AUTHORISED_PENDING` stays empty.
-Accepted ledger stays 0001–0025 until the apply controller’s own checkpoint
-moves the pin, after apply, the same way 0025 was pinned in O2C.3.
+0026 did not extend Gate B by itself. `AUTHORISED_PENDING` stays empty.
+O3.2C, after the accepted O3.2B apply, moved the pin to **0001–0026**.
+0027+ remains fail-closed until its own checkpoint.
 
 ---
 

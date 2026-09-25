@@ -23,15 +23,17 @@ Living status: **`BUILD_STATE.md`** (repo root).
 | CP26C-O2C.2 | **PASS** — first Owner bootstrapped (GHA 36116463589) |
 | CP26C-O2C.3 | **PASS** — bootstrap workflow retired |
 | CP26C-O3.1 | **PASS** — commercial catalogue contract |
-| CP26C-O3.2 | **PASS** — source verified, **not applied** |
-| CP26C-O3.2A | **READY / CONTROLLER BUILT / NOT EXECUTED** |
-| **Next product checkpoint** | **CP26C-O3.2B** — explicit authorisation required before 0026 Production apply |
+| CP26C-O3.2 | **PASS** — source verified, then Production-applied in O3.2B |
+| CP26C-O3.2A | **PASS** — controller built; dispatch **RETIRED** in O3.2C |
+| CP26C-O3.2B | **PASS** — Production 0026 applied (GHA 36135836457) |
+| CP26C-O3.2C | **PASS** — Gate B **0001–0026**; 0026 workflow retired |
+| **Next product checkpoint** | **CP26C-O3.3** — Owner Commercial Catalogue UI |
 | Forward roadmap | **[ROADMAP.md](ROADMAP.md)** (CP26–CP31) |
 | Commercial catalogue | **[COMMERCIAL_CATALOGUE.md](COMMERCIAL_CATALOGUE.md)** |
 | Owner architecture | **[OWNER_CONTROL_PLANE.md](OWNER_CONTROL_PLANE.md)** |
 | Fixture policy | **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)** |
 | Production | Vercel `scan-book-go` last observed `dpl_FmUosqz2wy7aCT51rNjdanJnuviZ` READY |
-| Migrations | source **0001–0026**; Production **0001–0025**; 0026 **unapplied**; Gate B accepted **0001–0025**; 0026 controller **built, not executed**; first-Owner workflow **RETIRED** |
+| Migrations | source and Production **0001–0026**; Gate B **0001–0026**; `AUTHORISED_PENDING=[]`; 0026 digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446`; apply run 36135836457; 0026 workflow **RETIRED**; first-Owner workflow **RETIRED**; amounts **UNDEFINED**; commerce **OFF** |
 
 This file’s remainder is a **historical Checkpoint 10** record only.
 

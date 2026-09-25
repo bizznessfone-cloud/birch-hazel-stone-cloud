@@ -669,7 +669,7 @@ test("unnamed equivalent bootstrap types are accepted", () => {
 test("Gate B accepts applied 0025 and still refuses generic pending", () => {
   assert.equal(isAuthorisedPending(TARGET_MIGRATION), false);
   assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), true);
-  assert.equal(ACCEPTED_LEDGER.at(-1), TARGET_MIGRATION);
+  assert.equal(ACCEPTED_LEDGER.at(-1), "0026_cp26co3_commercial_catalogue.sql");
   assert.deepEqual(AUTHORISED_PENDING, []);
   const currentFacts = {
     database: "neondb",

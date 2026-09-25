@@ -107,7 +107,7 @@ test("missing occupancy invariant fails", () => {
   assert.equal(result.verdict, "BLOCKED — OCCUPANCY INVARIANT NOT PROVEN");
 });
 
-test("accepted 0001-0025 ledger with empty pending passes", () => {
+test("accepted 0001-0026 ledger with empty pending passes", () => {
   const result = evaluatePreflight(baseFacts());
   assert.equal(result.ok, true);
   assert.equal(result.verdict, PASS_VERDICT);
@@ -115,7 +115,8 @@ test("accepted 0001-0025 ledger with empty pending passes", () => {
   assert.deepEqual(result.pending, []);
   assert.deepEqual(historicalSourceMigrations(SOURCE), LEDGER_0017);
   assert.equal(ACCEPTED_LEDGER.includes("0024_cp26b2_ordered_billing_events.sql"), true);
-  assert.equal(ACCEPTED_LEDGER.at(-1), "0025_cp26co2_platform_owners.sql");
+  assert.equal(ACCEPTED_LEDGER.includes("0026_cp26co3_commercial_catalogue.sql"), true);
+  assert.equal(ACCEPTED_LEDGER.at(-1), "0026_cp26co3_commercial_catalogue.sql");
 });
 
 test("pending 0024 is stale, not a newly authorised migration", () => {
@@ -165,15 +166,16 @@ test("pending 0025+ is rejected", () => {
   assert.equal(isAuthorisedPending("0025_later.sql"), false);
 });
 
-test("pending 0026+ is rejected", () => {
+test("pending 0027+ is rejected", () => {
   const result = evaluatePreflight(
     baseFacts({
-      sourceMigrations: [...SOURCE, "0026_later.sql"],
+      sourceMigrations: [...SOURCE, "0027_later.sql"],
     }),
   );
   assert.equal(result.ok, false);
-  assert.deepEqual(result.unexpectedPending, ["0026_later.sql"]);
-  assert.equal(isAuthorisedPending("0026_later.sql"), false);
+  assert.deepEqual(result.unexpectedPending, ["0027_later.sql"]);
+  assert.equal(isAuthorisedPending("0027_later.sql"), false);
+  assert.equal(isAuthorisedPending("0026_cp26co3_commercial_catalogue.sql"), false);
 });
 
 test("no pending migration is automatically authorised", () => {
@@ -184,7 +186,9 @@ test("no pending migration is automatically authorised", () => {
   assert.equal(isAuthorisedPending("0024_future.sql"), false);
   assert.equal(isAuthorisedPending("0025_cp26co2_platform_owners.sql"), false);
   assert.equal(isAuthorisedPending("0025_later.sql"), false);
+  assert.equal(isAuthorisedPending("0026_cp26co3_commercial_catalogue.sql"), false);
   assert.equal(isAuthorisedPending("0026_later.sql"), false);
+  assert.equal(isAuthorisedPending("0027_later.sql"), false);
 });
 
 test("auth classification A/B pass and C/D fail", () => {
@@ -263,7 +267,7 @@ test("workflow is dispatch-only, read-only, and does not migrate", () => {
   assert.doesNotMatch(pkg.scripts.build, /db:preflight/);
 });
 
-test("reviewed 0020-0025 source checksums remain intact", () => {
+test("reviewed 0020-0026 source checksums remain intact", () => {
   for (const [name, expected] of Object.entries(REVIEWED_DIGESTS)) {
     const bytes = readFileSync(join(here, "../migrations", name));
     assert.equal(createHash("sha256").update(bytes).digest("hex"), expected, name);
@@ -278,12 +282,11 @@ test("spent single-use and generic production migrate workflows stay retired", (
   assert.equal(existsSync(join(workflows, "production-database-migrate.yml")), false);
   assert.equal(existsSync(join(workflows, "production-database.yml")), true);
   assert.equal(existsSync(join(workflows, "cp26co2a-0025-production-migrate.yml")), true);
-  assert.equal(existsSync(join(workflows, "cp26co32a-0026-production-migrate.yml")), true);
+  assert.equal(existsSync(join(workflows, "cp26co32a-0026-production-migrate.yml")), false);
   assert.equal(existsSync(join(workflows, "cp26co2c-first-owner-bootstrap.yml")), false);
   const yaml = readdirSync(workflows).filter((name) => name.endsWith(".yml") || name.endsWith(".yaml")).sort();
   assert.deepEqual(yaml, [
     "cp26co2a-0025-production-migrate.yml",
-    "cp26co32a-0026-production-migrate.yml",
     "production-database.yml",
   ]);
 });

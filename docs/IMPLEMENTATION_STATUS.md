@@ -5,12 +5,12 @@ Living status: **`BUILD_STATE.md`**.
 - Product: **SCAN / BOOK / GO**
 - Last application SHA: `19512c295830fbc6fd9712d688ce364d940f87c3`
 - CP25G.3 / **CP26A** / **CP26B** / **CP26C-O2**: **CLOSED**
-- **Next execution checkpoint: CP26C-O3 — commercial catalogue**
-- CP26C.3 remains **paused** until O3. CP26C remains **open**. Only **CP31** activates live commerce.
+- **Next execution checkpoint: CP26C-O3.3 — Owner Commercial Catalogue UI**
+- CP26C.3 remains **paused** until O3.4. CP26C remains **open**. Only **CP31** activates live commerce.
 - Forward roadmap: **[ROADMAP.md](ROADMAP.md)**
 - Fixture policy: **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)**
 - Vercel Production `scan-book-go` / last observed `dpl_FmUosqz2wy7aCT51rNjdanJnuviZ` READY
-- Neon Production migrated through **0025**. Gate B accepted ledger **0001–0025**.
+- Neon Production migrated through **0026**. Gate B accepted ledger **0001–0026**. 0026 workflow **RETIRED**. Digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446`. Apply run 36135836457. Canonical amounts **UNDEFINED**.
 - Active platform Owners: **1** (OPERATOR CONTROLLED / REDACTED). Bootstrap workflow **RETIRED**.
 - `/app/*` exists (SaaS). `/owner/*` is Production-proven. `/ops/*` remains internal operations.
 - First Production hotel through `/app`: **configured, not live** (`sbg-verify-a5`)

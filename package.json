@@ -16,7 +16,6 @@
     "db:migrate:0023": "node scripts/cp26a2-0023-production-migrate.mjs",
     "db:migrate:0024": "node scripts/cp26b2-0024-production-migrate.mjs",
     "db:migrate:0025": "node scripts/cp26co2a-0025-production-migrate.mjs",
-    "db:migrate:0026": "node scripts/cp26co32a-0026-production-migrate.mjs",
     "db:provision": "node --experimental-strip-types scripts/provision-hotel.mjs",
     "build:dev": "node scripts/with-app-env.mjs vite build --mode development",
     "preview": "node scripts/with-app-env.mjs vite preview",

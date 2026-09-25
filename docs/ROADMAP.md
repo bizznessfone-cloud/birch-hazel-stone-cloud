@@ -24,9 +24,11 @@ Canonical living roadmap. Other living documents should **point here**, not rede
 | CP26C-O2C.2 | **PASS** — first Owner bootstrapped (GHA 36116463589) |
 | CP26C-O2C.3 | **PASS** — bootstrap workflow retired |
 | CP26C-O3.1 | **PASS** — commercial catalogue contract ([`COMMERCIAL_CATALOGUE.md`](COMMERCIAL_CATALOGUE.md)); amounts UNDEFINED |
-| CP26C-O3.2 | **PASS** — source `0026` verified, **not applied**; digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446` |
-| CP26C-O3.2A | **READY / CONTROLLER BUILT / NOT EXECUTED** |
-| **Next product checkpoint** | **CP26C-O3.2B** — explicit authorisation required before the single-use 0026 Production apply (Gate B stays 0001–0025) |
+| CP26C-O3.2 | **PASS** — source `0026` verified, then Production-applied in O3.2B |
+| CP26C-O3.2A | **PASS** — controller built; dispatch **RETIRED** in O3.2C |
+| CP26C-O3.2B | **PASS** — Production 0026 applied once (GHA [36135836457](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36135836457)) |
+| CP26C-O3.2C | **PASS** — Gate B **0001–0026**; single-use 0026 workflow retired |
+| **Next product checkpoint** | **CP26C-O3.3** — Owner Commercial Catalogue UI |
 
 ---
 
@@ -182,12 +184,16 @@ Exercise Domain A against Stripe **TEST MODE ONLY** (`sk_test`, test products/pr
 
 Non-blocking UI backlog: Owner header showed “SSBG Verification”. Deferred to UI polish. Not an authorization defect.
 
-**Next product: CP26C-O3.2B** — explicit authorisation required before dispatch. **CP26C-O3.2A READY / CONTROLLER BUILT / NOT EXECUTED.** Workflow `.github/workflows/cp26co32a-0026-production-migrate.yml`. Script `scripts/cp26co32a-0026-production-migrate.mjs`. Confirmation `APPLY-0026`. **CP26C-O3.2 PASS / SOURCE VERIFIED / NOT APPLIED.** File `migrations/0026_cp26co3_commercial_catalogue.sql`. Digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446`. Production ledger remains **0001–0025**. Gate B stays **0001–0025**. `AUTHORISED_PENDING=[]`. This checkpoint made no Production connection and no Production mutation. Amounts remain UNDEFINED. No canonical pricing. Commerce **OFF**. Stripe untouched. Do not mark O3.2B complete. Do not start O3.3. Do not resume CP26C.3. Checkout stays on transitional env Price IDs until **CP26C.4**.
+**CP26C-O3.2B PASS:** Production `0026_cp26co3_commercial_catalogue.sql` applied once. GHA [36135836457](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36135836457), job `108073574672`, SHA `67d751014b6b5cbb5bd3c9ac4867fbad3da01b52`. Digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446`. Verdict `GATE PASS — 0026 APPLIED AND VERIFIED`. Pre-ledger **0001–0025**. Post-ledger **0001–0026**. Plans basic/pro/premium. Price versions 0. Stripe mappings 0. Locks false/false. Active Owners 1. Hotels 4. demo-kos live. sbg-verify-a5 configured. Billing accounts 0. Stripe events 0. Three `catalogue.plan.created` migration audits.
+
+**CP26C-O3.2C PASS:** Gate B accepted ledger is **0001–0026**. `AUTHORISED_PENDING=[]`. Workflow `.github/workflows/cp26co32a-0026-production-migrate.yml` is **RETIRED**. npm alias `db:migrate:0026` is **RETIRED**. Historical script `scripts/cp26co32a-0026-production-migrate.mjs` remains. 0027+ stays fail-closed. Amounts remain **UNDEFINED**. Commerce **OFF**. Stripe untouched. CP26C.3 stays paused until O3.4. Checkout stays on transitional env Price IDs until **CP26C.4**.
+
+**Next product: CP26C-O3.3** — Owner Commercial Catalogue UI. Do not start it inside O3.2C. Do not resume CP26C.3. Only **CP31** activates LIVE commerce.
 
 Sequence:
 
 ```
-CP26C.2 PASS → CP26C-O1 → CP26C-O2 → CP26C-O2A → CP26C-O2B (0025 applied) → CP26C-O2C (first Owner bootstrapped; workflow retired) → CP26C-O3.1 (contract) → CP26C-O3.2 (source 0026 verified, unapplied) → CP26C-O3.2A (0026 controller built, not executed) → CP26C-O3.2B (explicit 0026 Production apply) → CP26C-O3.3 (Owner plans UI) → CP26C-O3.4 (human canonical prices) → resume CP26C.3 (TEST mappings only) → CP26C.4 (checkout cutover) → CP31 (LIVE)
+CP26C.2 PASS → CP26C-O1 → CP26C-O2 → CP26C-O2A → CP26C-O2B (0025 applied) → CP26C-O2C (first Owner bootstrapped; workflow retired) → CP26C-O3.1 (contract) → CP26C-O3.2 (source 0026 verified) → CP26C-O3.2A (0026 controller) → CP26C-O3.2B (0026 applied) → CP26C-O3.2C (Gate B 0001–0026; workflow retired) → CP26C-O3.3 (Owner plans UI) → CP26C-O3.4 (human canonical prices) → resume CP26C.3 (TEST mappings only) → CP26C.4 (checkout cutover) → CP31 (LIVE)
 ```
 
 **Do not enable test commerce on public Production until CP26C.4.** Empty allowlist = nobody authorised. Only **CP31** activates live commerce.

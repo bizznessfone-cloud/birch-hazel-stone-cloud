@@ -7,8 +7,11 @@
  * Does not invoke the generic production migrator.
  * Does not create prices, mappings, hotels, billing rows, or Owner grants.
  *
- * Dispatch of this workflow is a later authorised checkpoint.
- * This commit is BUILD ONLY — not authorization to execute.
+ * Historical evidence of the spent CP26C-O3.2A controller.
+ * Production apply completed once in CP26C-O3.2B (GHA 36135836457).
+ * The workflow_dispatch surface and npm alias were retired in CP26C-O3.2C.
+ * REQUIRED_LEDGER is the frozen pre-apply pin (0001–0025). It must not follow Gate B.
+ * Re-running against an already-applied 0001–0026 ledger must not mutate.
  */
 import { createHash } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";
@@ -56,7 +59,34 @@ export const TARGET_MIGRATION = "0026_cp26co3_commercial_catalogue.sql";
 export const TARGET_DIGEST =
   "4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446";
 export const REQUIRED_CONFIRMATION = "APPLY-0026";
-export const REQUIRED_LEDGER = [...ACCEPTED_LEDGER];
+/** Frozen pre-apply ledger. Do not replace this with ACCEPTED_LEDGER. */
+export const REQUIRED_LEDGER = [
+  "0001_auth.sql",
+  "0002_foundation.sql",
+  "0003_occupancy.sql",
+  "0004_ops_auth.sql",
+  "0005_time_domain.sql",
+  "0006_booking_engine.sql",
+  "0007_inventory.sql",
+  "0008_guest_ux.sql",
+  "0009_ops_desk.sql",
+  "0010_hotel_white_label.sql",
+  "0011_production_hardening.sql",
+  "0012_cp12_tenancy.sql",
+  "0013_cp12b_runtime_login.sql",
+  "0014_cp13a_production_app_role.sql",
+  "0015_cp14_hotel_configuration.sql",
+  "0016_cp14_hotel_timezone.sql",
+  "0017_cp16_runtime_privilege_hardening.sql",
+  "0018_cp22_saas_onboarding.sql",
+  "0019_cp23_public_hotel_slug.sql",
+  "0020_cp24_stripe_billing.sql",
+  "0021_cp25_hotel_guest_payments.sql",
+  "0022_cp25g3_better_auth_runtime_privileges.sql",
+  "0023_cp26a2_entitlement_publication_decoupling.sql",
+  "0024_cp26b2_ordered_billing_events.sql",
+  "0025_cp26co2_platform_owners.sql",
+];
 
 export const REVIEWED_DIGESTS = {
   ...PRIOR_REVIEWED_DIGESTS,

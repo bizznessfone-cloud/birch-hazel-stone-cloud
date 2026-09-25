@@ -12,12 +12,12 @@ GitHub is authoritative for application source. Living status: **`BUILD_STATE.md
 | CP25G.3 | **CLOSED** |
 | **CP26A** | **CLOSED** |
 | **CP26B** | **CLOSED** |
-| **Next execution checkpoint** | **CP26C-O3.2B** — explicit authorisation required (O3.2A controller built, not executed; 0026 unapplied) |
+| **Next execution checkpoint** | **CP26C-O3.3** — Owner Commercial Catalogue UI |
 | Forward roadmap | **`docs/ROADMAP.md`** |
 | Fixture policy | **`docs/FIXTURE_POLICY.md`** |
 | Production | Vercel `scan-book-go` / last observed `dpl_FmUosqz2wy7aCT51rNjdanJnuviZ` READY |
 | Alias | `https://scan-book-go.vercel.app` |
-| Migrations | source `0001`–`0026`. Production Neon applied `0001`–`0025` only. 0026 **unapplied**. Gate B **0001–0025**. One platform Owner. First-Owner bootstrap workflow **RETIRED**. |
+| Migrations | source and Production Neon **0001–0026**. Gate B **0001–0026**. 0026 digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446`. Apply run 36135836457. 0026 workflow **RETIRED**. One platform Owner. First-Owner bootstrap workflow **RETIRED**. Amounts **UNDEFINED**. Commerce **OFF**. |
 
 `cp17-known-good` (`45e171a23037b7c94005018cd2126033a449d6f0`) is an **immutable historical tag**. It is **not** current `main`. Checking it out would roll the product backwards.
 
