@@ -16,11 +16,11 @@
   "cp26b3": "CLOSED",
   "cp26b4": "PASS",
   "next_numbered_checkpoint": "CP26C",
-  "next_execution_checkpoint": "CP26C-O3.2A — dedicated single-use Production 0026 apply controller BUILD ONLY",
+  "next_execution_checkpoint": "CP26C-O3.2B — explicit authorisation required before single-use 0026 Production apply",
   "forward_roadmap": "docs/ROADMAP.md",
   "fixture_policy": "docs/FIXTURE_POLICY.md",
   "do_not_invent_cp26": false,
-  "phase": "CP26C-O3.2 PASS. Source migration 0026 verified and NOT applied. Digest 4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446. Amounts UNDEFINED. Next CP26C-O3.2A controller BUILD ONLY. Gate B 0001-0025. AUTHORISED_PENDING empty. One platform Owner (OPERATOR CONTROLLED / REDACTED). First-Owner bootstrap workflow RETIRED (GHA 36116463589). sbg-verify-a5 configured-not-live. Domain A commerce OFF. CP26C.3 paused until O3.4. Checkout cutover is CP26C.4. Only CP31 activates commerce.",
+  "phase": "CP26C-O3.2A READY / CONTROLLER BUILT / NOT EXECUTED. Source migration 0026 verified and NOT applied. Digest 4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446. No Production connection. No Production mutation. Amounts UNDEFINED. No canonical pricing. Commerce OFF. Stripe untouched. Next CP26C-O3.2B requires explicit authorisation. Gate B 0001-0025. AUTHORISED_PENDING empty. One platform Owner (OPERATOR CONTROLLED / REDACTED). First-Owner bootstrap workflow RETIRED (GHA 36116463589). sbg-verify-a5 configured-not-live. CP26C.3 paused until O3.4. Checkout cutover is CP26C.4. Only CP31 activates commerce.",
   "timestamp": "2026-09-22T10:28:00+03:00",
   "production": {
     "vercel_project": "scan-book-go",

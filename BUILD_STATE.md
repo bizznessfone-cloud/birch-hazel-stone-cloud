@@ -9,8 +9,9 @@ migration 0024 are accepted. Domain A commerce remains **OFF**. Only **CP31**
 may activate real commerce. CP26C.1/C.2 isolation is in source. CP26C.3 is
 **paused** (no Stripe objects; canonical amounts not invented). **CP26C-O3.1**
 catalogue contract is accepted. **CP26C-O3.2** source migration 0026 is
-**verified and not applied**.
-Next product checkpoint is **CP26C-O3.2A** (0026 Production controller, build only).
+**verified and not applied**. **CP26C-O3.2A** dedicated Production controller is
+**built and not executed**.
+Next product checkpoint is **CP26C-O3.2B** (explicit authorisation required to apply 0026).
 Production commerce remains **OFF**.
 Migration **0025** is **Production-applied**. First Production platform Owner is
 **bootstrapped** (1 active grant). The first-Owner bootstrap workflow is **RETIRED**.
@@ -40,6 +41,7 @@ Migration **0025** is **Production-applied**. First Production platform Owner is
 | CP26C-O2C.3 | **PASS** — bootstrap dispatch retired; O2 closed |
 | CP26C-O3.1 | **PASS** — commercial catalogue contract ([`docs/COMMERCIAL_CATALOGUE.md`](docs/COMMERCIAL_CATALOGUE.md)); amounts **UNDEFINED**; no migration |
 | CP26C-O3.2 | **PASS** — source verified, **not applied**; digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446` |
+| CP26C-O3.2A | **READY / CONTROLLER BUILT / NOT EXECUTED** — single-use 0026 Production controller |
 | Last application SHA | 19512c295830fbc6fd9712d688ce364d940f87c3 (CP26B.3R catalog identity; Production 0024 already applied) |
 | Fixture policy | [`docs/FIXTURE_POLICY.md`](docs/FIXTURE_POLICY.md) |
 | Local harness | `src/lib/aether/cp26a4-fixture.ts` (tests only; not a runtime import) |
@@ -54,7 +56,8 @@ Migration **0025** is **Production-applied**. First Production platform Owner is
 | Active platform Owners | **1** — OPERATOR CONTROLLED / REDACTED (owns `sbg-verify-a5`) |
 | Human `/owner` proof | **PASS** — Overview, Hotels, Plans & Pricing, Revenue, System |
 | **Next control-plane** | none pending; O2 closed |
-| **Next product** | **CP26C-O3.2A** — 0026 Production apply controller, **BUILD ONLY** |
+| 0026 controller | `.github/workflows/cp26co32a-0026-production-migrate.yml` + `scripts/cp26co32a-0026-production-migrate.mjs` — **NOT EXECUTED** |
+| **Next product** | **CP26C-O3.2B** — explicit authorisation required before any 0026 Production apply |
 
 Do not dispatch historical 0022/0023/0024 controllers. Owner secret remains GitHub Actions `AETHER_DATABASE_OWNER_URL` only — never Vercel. Future migrations need a dedicated single-use controller and an explicit checkpoint.
 
@@ -79,7 +82,7 @@ every hotel. Live mode ignores this allowlist. Do not put a Production hotel UUI
 | **CP26A** | **CLOSED** |
 | **CP26B** | **CLOSED** |
 | **Next control-plane** | none; CP26C-O2 **CLOSED** |
-| **Next product checkpoint** | **CP26C-O3.2A** — 0026 controller **BUILD ONLY** (O3.2 source verified, unapplied) |
+| **Next product checkpoint** | **CP26C-O3.2B** — 0026 Production apply requires explicit authorisation (controller built, not executed) |
 | Forward roadmap | **[docs/ROADMAP.md](docs/ROADMAP.md)** (CP26–CP31) |
 
 ### Production
@@ -198,7 +201,7 @@ account → hotel → service → preview → QR → plan → Stripe → LIVE
 - Do not start CP26C test commerce on public Production until CP26C.4. Empty `SBG_SAAS_TEST_HOTEL_IDS` fail-closes every hotel.
 - Do not invent CP26B.5.
 
-Canonical forward path: **`docs/ROADMAP.md`**. Commercial catalogue: **`docs/COMMERCIAL_CATALOGUE.md`**. Fixture policy: **`docs/FIXTURE_POLICY.md`**. Owner architecture: **`docs/OWNER_CONTROL_PLANE.md`**. Next product: **CP26C-O3.2A** (build only). CP26C-O3.2 is **PASS / SOURCE VERIFIED / NOT APPLIED**. CP26C.3 remains paused until O3.4 has canonical amounts. Active Production platform Owners: **1** (OPERATOR CONTROLLED / REDACTED). First-Owner bootstrap workflow **RETIRED** (historical run [36116463589](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36116463589)). Gate B accepted ledger remains **0001–0025**.
+Canonical forward path: **`docs/ROADMAP.md`**. Commercial catalogue: **`docs/COMMERCIAL_CATALOGUE.md`**. Fixture policy: **`docs/FIXTURE_POLICY.md`**. Owner architecture: **`docs/OWNER_CONTROL_PLANE.md`**. Next product: **CP26C-O3.2B** (explicit authorisation required; do not apply in this record). CP26C-O3.2A is **READY / NOT EXECUTED**. CP26C-O3.2 is **PASS / SOURCE VERIFIED / NOT APPLIED**. CP26C.3 remains paused until O3.4 has canonical amounts. Active Production platform Owners: **1** (OPERATOR CONTROLLED / REDACTED). First-Owner bootstrap workflow **RETIRED** (historical run [36116463589](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36116463589)). Gate B accepted ledger remains **0001–0025**. 0026 is unapplied. No canonical pricing. Commerce **OFF**. Stripe untouched.
 
 Non-blocking UI backlog: Owner header rendered “SSBG Verification” (presentation/spacing or avatar-initial concatenation). Deferred. Not an authorization defect.
 

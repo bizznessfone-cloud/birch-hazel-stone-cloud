@@ -29,7 +29,8 @@ not trail the repository.
 | CP26C-O2C.3 | **PASS** — bootstrap workflow retired |
 | CP26C-O3.1 | **PASS** — commercial catalogue contract (`docs/COMMERCIAL_CATALOGUE.md`) |
 | CP26C-O3.2 | **PASS** — source verified, **not applied** |
-| **Next product checkpoint** | **CP26C-O3.2A** — 0026 Production apply controller, **BUILD ONLY** |
+| CP26C-O3.2A | **READY / CONTROLLER BUILT / NOT EXECUTED** |
+| **Next product checkpoint** | **CP26C-O3.2B** — explicit authorisation required before 0026 Production apply |
 | Forward roadmap | `docs/ROADMAP.md` (CP26–CP31) |
 | Commercial catalogue | `docs/COMMERCIAL_CATALOGUE.md` |
 | Owner architecture | `docs/OWNER_CONTROL_PLANE.md` |
@@ -109,11 +110,11 @@ explicitly opens them.
 
 ## Next checkpoint
 
-**CP26C-O3.2 — source migration 0026 (not started).** CP26C-O3.1 contract is PASS.
+**CP26C-O3.2A — 0026 Production controller built, not executed.** CP26C-O3.2 source migration is verified and unapplied. Digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446`. No Production connection. No Production mutation. No canonical pricing. Commerce OFF. Stripe untouched.
 
 Canonical roadmap: `docs/ROADMAP.md`. Commercial catalogue: `docs/COMMERCIAL_CATALOGUE.md`. Owner architecture: `docs/OWNER_CONTROL_PLANE.md`. Fixture policy: `docs/FIXTURE_POLICY.md`.
 
 CP26 = build/test Domain A SaaS subscriptions. **Not go-live.**
 CP31 = activate commerce.
 CP26C.3 remains paused until CP26C-O3.4 records canonical amounts. Checkout cutover is CP26C.4, not C.3. Do not enable `SBG_SAAS_COMMERCE=test` on public Production until CP26C.4.
-Gate B accepted ledger remains **0001–0025**. Amounts are **UNDEFINED**.
+Gate B accepted ledger remains **0001–0025**. `AUTHORISED_PENDING=[]`. Next is **CP26C-O3.2B** and it is not authorised by this record. Amounts are **UNDEFINED**.

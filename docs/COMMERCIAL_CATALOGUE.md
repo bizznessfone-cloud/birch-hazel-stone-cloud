@@ -15,8 +15,8 @@ Living execution: [`ROADMAP.md`](ROADMAP.md). Owner surface:
 
 | Field | Value |
 |---|---|
-| Status | **CP26C-O3.1 PASS** — contract accepted. **CP26C-O3.2 PASS** — source verified, **not applied** |
-| Next | **CP26C-O3.2A** — dedicated single-use Production 0026 apply controller, **BUILD ONLY** |
+| Status | **CP26C-O3.1 PASS** — contract accepted. **CP26C-O3.2 PASS** — source verified, **not applied**. **CP26C-O3.2A READY / NOT EXECUTED** |
+| Next | **CP26C-O3.2B** — explicit authorisation required before Production apply |
 | 0026 | `migrations/0026_cp26co3_commercial_catalogue.sql` — digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446` — **unapplied** |
 | Commerce | **OFF** (`SBG_SAAS_COMMERCE` absent) |
 | CP26C.3 | **PAUSED** |
