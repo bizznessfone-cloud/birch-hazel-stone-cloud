@@ -315,7 +315,9 @@ test("CP26C-O2 source: protected /owner shell, no commerce mutation, no Domain B
   const pkg = JSON.parse(read("package.json")) as { scripts: Record<string, string> };
 
   assert.match(ownerRoute, /getOwnerAccess/);
-  assert.match(ownerRoute, /redirect\(\s*\{\s*to:\s*"\/login"/);
+  assert.match(ownerRoute, /unauthenticatedOwnerRedirect/);
+  assert.match(ownerRoute, /\/owner\/login/);
+  assert.doesNotMatch(ownerRoute, /to:\s*"\/login"/);
   assert.match(ownerRoute, /PlatformOwnerForbiddenError/);
   assert.doesNotMatch(ownerRoute, /to:\s*"\/app"/);
   assert.match(session, /getSessionUser/);

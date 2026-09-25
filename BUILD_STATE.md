@@ -13,8 +13,9 @@ verified, then **applied once** in Production (**CP26C-O3.2B PASS**).
 **CP26C-O3.2C** reconciled Gate B to **0001–0026** and **retired** the
 single-use 0026 dispatch surface. **CP26C-O3.3** implemented the Owner
 commercial catalogue UI over that schema. Canonical amounts were not invented.
-Next product checkpoint is **CP26C-O3.3V** (human Production verification of
-`/owner/plans`), then **CP26C-O3.4**. Do not mark O3.4 complete.
+**CP26C-O2D** isolated Owner sign-in at `/owner/login`. Next is human
+verification of that sign-in, then **CP26C-O3.3V** (`/owner/plans`), then
+**CP26C-O3.4**. Do not mark O3.4 complete.
 Production commerce remains **OFF**. Canonical amounts remain **UNDEFINED**.
 Migration **0025** is **Production-applied**. First Production platform Owner is
 **bootstrapped** (1 active grant). The first-Owner bootstrap workflow is **RETIRED**.
@@ -48,6 +49,7 @@ Migration **0025** is **Production-applied**. First Production platform Owner is
 | CP26C-O3.2B | **PASS** — Production 0026 applied once (GHA [36135836457](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36135836457), job 108073574672) |
 | CP26C-O3.2C | **PASS** — Gate B reconciled to **0001–0026**; 0026 dispatch retired |
 | CP26C-O3.3 | **PASS** — Owner commercial catalogue UI; canonical amounts still **UNDEFINED**; no Production prices |
+| CP26C-O2D | **PASS** — `/owner/login` sign-in only; hotel `/login` unchanged; no migration |
 | Last application SHA | 19512c295830fbc6fd9712d688ce364d940f87c3 (CP26B.3R catalog identity; Production 0024 already applied) |
 | Fixture policy | [`docs/FIXTURE_POLICY.md`](docs/FIXTURE_POLICY.md) |
 | Local harness | `src/lib/aether/cp26a4-fixture.ts` (tests only; not a runtime import) |
@@ -62,10 +64,10 @@ Migration **0025** is **Production-applied**. First Production platform Owner is
 | First-Owner controller | historical script `scripts/cp26co2c-first-owner-bootstrap.mjs`; workflow **RETIRED** |
 | Active platform Owners | **1** — OPERATOR CONTROLLED / REDACTED (owns `sbg-verify-a5`) |
 | Human `/owner` proof | **PASS** — Overview, Hotels, Plans & Pricing, Revenue, System |
-| **Next control-plane** | none pending; O2 closed |
+| **Next control-plane** | **CP26C-O2D PASS** — `/owner/login` isolated; human sign-in check is next |
 | 0026 controller | historical script `scripts/cp26co32a-0026-production-migrate.mjs`; workflow **RETIRED**; npm alias **RETIRED** |
 | Catalogue | schema installed; Owner UI reads `sbg_saas_*` and mutates only through 0026 functions; plans **basic / pro / premium**; Production price versions **0**; Stripe mappings **0**; LIVE locks **false/false**; amounts **UNDEFINED** |
-| **Next product** | **CP26C-O3.3V** — human Production verification of `/owner/plans`, then **CP26C-O3.4** (not started) |
+| **Next product** | Human Owner sign-in at `/owner/login`, then **CP26C-O3.3V**, then **CP26C-O3.4** (not started) |
 
 Do not dispatch historical 0022/0023/0024 controllers or the retired 0026 workflow. Owner secret remains GitHub Actions `AETHER_DATABASE_OWNER_URL` only — never Vercel. Future migrations need a dedicated single-use controller and an explicit checkpoint. 0027+ stays fail-closed.
 
@@ -90,7 +92,7 @@ every hotel. Live mode ignores this allowlist. Do not put a Production hotel UUI
 | **CP26A** | **CLOSED** |
 | **CP26B** | **CLOSED** |
 | **Next control-plane** | none; CP26C-O2 **CLOSED** |
-| **Next product checkpoint** | **CP26C-O3.3V** — human Production UI verification, then **CP26C-O3.4** (not started) |
+| **Next product checkpoint** | Human `/owner/login` verification, then **CP26C-O3.3V**, then **CP26C-O3.4** (not started) |
 | Forward roadmap | **[docs/ROADMAP.md](docs/ROADMAP.md)** (CP26–CP31) |
 
 ### Production
@@ -210,7 +212,7 @@ account → hotel → service → preview → QR → plan → Stripe → LIVE
 - Do not start CP26C test commerce on public Production until CP26C.4. Empty `SBG_SAAS_TEST_HOTEL_IDS` fail-closes every hotel.
 - Do not invent CP26B.5.
 
-Canonical forward path: **`docs/ROADMAP.md`**. Commercial catalogue: **`docs/COMMERCIAL_CATALOGUE.md`**. Fixture policy: **`docs/FIXTURE_POLICY.md`**. Owner architecture: **`docs/OWNER_CONTROL_PLANE.md`**. Next product: **CP26C-O3.3V** (human Production verification of `/owner/plans`), then **CP26C-O3.4**. O3.4 is not complete. CP26C-O3.3 implemented the Owner catalogue UI. Canonical amounts remain **UNDEFINED**. Production price versions remain **0**. CP26C-O3.2C is **PASS**. CP26C-O3.2B is **PASS** (GHA [36135836457](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36135836457)). The 0026 workflow is **RETIRED**. CP26C.3 remains paused until O3.4 has canonical amounts. Active Production platform Owners: **1** (OPERATOR CONTROLLED / REDACTED). First-Owner bootstrap workflow **RETIRED** (historical run [36116463589](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36116463589)). Gate B accepted ledger is **0001–0026**. Price versions **0**. Stripe mappings **0**. LIVE locks **false/false**. No canonical pricing. Commerce **OFF**. Stripe untouched.
+Canonical forward path: **`docs/ROADMAP.md`**. Commercial catalogue: **`docs/COMMERCIAL_CATALOGUE.md`**. Fixture policy: **`docs/FIXTURE_POLICY.md`**. Owner architecture: **`docs/OWNER_CONTROL_PLANE.md`**. **CP26C-O2D PASS** — `/owner/login` is sign-in only; `/login` stays the hotel/operator surface; unauthenticated Owner routes redirect to `/owner/login`; non-Owners stay fail-closed; Owner sign-out returns to `/owner/login`. No migration. No Production DML. Next is human Owner sign-in verification, then **CP26C-O3.3V**, then **CP26C-O3.4**. O3.4 is not complete. CP26C-O3.3 implemented the Owner catalogue UI. Canonical amounts remain **UNDEFINED**. Production price versions remain **0**. CP26C-O3.2C is **PASS**. CP26C-O3.2B is **PASS** (GHA [36135836457](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36135836457)). The 0026 workflow is **RETIRED**. CP26C.3 remains paused until O3.4 has canonical amounts. Active Production platform Owners: **1** (OPERATOR CONTROLLED / REDACTED). First-Owner bootstrap workflow **RETIRED** (historical run [36116463589](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36116463589)). Gate B accepted ledger is **0001–0026**. Price versions **0**. Stripe mappings **0**. LIVE locks **false/false**. No canonical pricing. Commerce **OFF**. Stripe untouched.
 
 Non-blocking UI backlog: Owner header rendered “SSBG Verification” (presentation/spacing or avatar-initial concatenation). Deferred. Not an authorization defect.
 

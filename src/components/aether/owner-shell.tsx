@@ -1,6 +1,8 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { UserButton } from "@/lib/auth/gates";
+import { authEnabled, signOut } from "@/lib/auth/client";
+import { OWNER_LOGIN_PATH } from "@/lib/auth/owner-login";
 import { ThemeToggle } from "./theme-toggle";
 
 const NAV = [
@@ -24,7 +26,7 @@ export function OwnerShell({ children }: { children: ReactNode }) {
           </div>
           <div className="flex items-center gap-3">
             <ThemeToggle />
-            <UserButton />
+            <UserButton redirectTo={OWNER_LOGIN_PATH} />
           </div>
         </div>
         <nav className="mx-auto mt-3 flex max-w-6xl gap-1 overflow-x-auto pb-1">
@@ -52,15 +54,28 @@ export function OwnerShell({ children }: { children: ReactNode }) {
 }
 
 export function OwnerForbiddenPage() {
+  const [signingOut, setSigningOut] = useState(false);
   return (
     <main className="grid min-h-dvh place-items-center bg-canvas px-6 text-ink">
       <div className="max-w-md text-center">
         <p className="text-xs tracking-[0.22em] text-muted uppercase">SCAN / BOOK / GO</p>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight">Owner access required</h1>
+        <h1 className="mt-3 text-3xl font-semibold tracking-tight">Owner access unavailable.</h1>
         <p className="mt-3 text-sm leading-relaxed text-muted">
-          This surface is the SCAN BOOK GO Owner Control Plane. Hotel ownership and
-          operations-desk membership do not grant access.
+          This account cannot open the Owner control plane.
         </p>
+        {authEnabled ? (
+          <button
+            type="button"
+            disabled={signingOut}
+            className="mt-6 min-h-11 px-4 text-sm underline underline-offset-4 disabled:opacity-50"
+            onClick={() => {
+              setSigningOut(true);
+              void signOut(OWNER_LOGIN_PATH).catch(() => setSigningOut(false));
+            }}
+          >
+            {signingOut ? "Signing out…" : "Sign out"}
+          </button>
+        ) : null}
       </div>
     </main>
   );

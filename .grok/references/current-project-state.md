@@ -33,7 +33,8 @@ not trail the repository.
 | CP26C-O3.2B | **PASS** — Production 0026 applied (GHA 36135836457) |
 | CP26C-O3.2C | **PASS** — Gate B **0001–0026**; 0026 workflow retired |
 | CP26C-O3.3 | **PASS** — Owner commercial catalogue UI; amounts still **UNDEFINED** |
-| **Next product checkpoint** | **CP26C-O3.3V** — human Production verification of `/owner/plans`, then **CP26C-O3.4** (not started) |
+| CP26C-O2D | **PASS** — `/owner/login` isolated from hotel `/login` |
+| **Next** | Human `/owner/login` verification, then **CP26C-O3.3V**, then **CP26C-O3.4** (not started) |
 | Forward roadmap | `docs/ROADMAP.md` (CP26–CP31) |
 | Commercial catalogue | `docs/COMMERCIAL_CATALOGUE.md` |
 | Owner architecture | `docs/OWNER_CONTROL_PLANE.md` |

@@ -1,6 +1,6 @@
 /**
- * /owner parent access probe. Unauthenticated → login redirect.
- * Session without a platform Owner grant → 403 (not an /app redirect).
+ * /owner parent access probe. Unauthenticated → /owner/login.
+ * Session without an active platform Owner grant → deny (not an /app redirect).
  */
 import { createMiddleware, createServerFn } from "@tanstack/react-start";
 import { decideOwnerGate } from "@/lib/aether/owner-auth";

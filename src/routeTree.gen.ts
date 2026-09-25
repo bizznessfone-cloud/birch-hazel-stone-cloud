@@ -26,6 +26,7 @@ import { Route as OpsHotelsRouteImport } from './routes/ops.hotels'
 import { Route as OpsLoginRouteImport } from './routes/ops.login'
 import { Route as OpsVehiclesRouteImport } from './routes/ops.vehicles'
 import { Route as OwnerIndexRouteImport } from './routes/owner.index'
+import { Route as OwnerLoginRouteImport } from './routes/owner.login'
 import { Route as OwnerPlansRouteImport } from './routes/owner.plans'
 import { Route as OwnerRevenueRouteImport } from './routes/owner.revenue'
 import { Route as OwnerSystemRouteImport } from './routes/owner.system'
@@ -126,6 +127,11 @@ const OwnerIndexRoute = OwnerIndexRouteImport.update({
   path: '/',
   getParentRoute: () => OwnerRoute,
 } as any)
+const OwnerLoginRoute = OwnerLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => OwnerRoute,
+} as any)
 const OwnerPlansRoute = OwnerPlansRouteImport.update({
   id: '/plans',
   path: '/plans',
@@ -214,6 +220,7 @@ export interface FileRoutesByFullPath {
   '/ops/hotels': typeof OpsHotelsRoute
   '/ops/login': typeof OpsLoginRoute
   '/ops/vehicles': typeof OpsVehiclesRoute
+  '/owner/login': typeof OwnerLoginRoute
   '/owner/plans': typeof OwnerPlansRoute
   '/owner/revenue': typeof OwnerRevenueRoute
   '/owner/system': typeof OwnerSystemRoute
@@ -244,6 +251,7 @@ export interface FileRoutesByTo {
   '/ops/hotels': typeof OpsHotelsRoute
   '/ops/login': typeof OpsLoginRoute
   '/ops/vehicles': typeof OpsVehiclesRoute
+  '/owner/login': typeof OwnerLoginRoute
   '/owner/plans': typeof OwnerPlansRoute
   '/owner/revenue': typeof OwnerRevenueRoute
   '/owner/system': typeof OwnerSystemRoute
@@ -278,6 +286,7 @@ export interface FileRoutesById {
   '/ops/hotels': typeof OpsHotelsRoute
   '/ops/login': typeof OpsLoginRoute
   '/ops/vehicles': typeof OpsVehiclesRoute
+  '/owner/login': typeof OwnerLoginRoute
   '/owner/plans': typeof OwnerPlansRoute
   '/owner/revenue': typeof OwnerRevenueRoute
   '/owner/system': typeof OwnerSystemRoute
@@ -313,6 +322,7 @@ export interface FileRouteTypes {
     | '/ops/hotels'
     | '/ops/login'
     | '/ops/vehicles'
+    | '/owner/login'
     | '/owner/plans'
     | '/owner/revenue'
     | '/owner/system'
@@ -343,6 +353,7 @@ export interface FileRouteTypes {
     | '/ops/hotels'
     | '/ops/login'
     | '/ops/vehicles'
+    | '/owner/login'
     | '/owner/plans'
     | '/owner/revenue'
     | '/owner/system'
@@ -376,6 +387,7 @@ export interface FileRouteTypes {
     | '/ops/hotels'
     | '/ops/login'
     | '/ops/vehicles'
+    | '/owner/login'
     | '/owner/plans'
     | '/owner/revenue'
     | '/owner/system'
@@ -528,6 +540,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/owner/'
       preLoaderRoute: typeof OwnerIndexRouteImport
+      parentRoute: typeof OwnerRoute
+    }
+    '/owner/login': {
+      id: '/owner/login'
+      path: '/login'
+      fullPath: '/owner/login'
+      preLoaderRoute: typeof OwnerLoginRouteImport
       parentRoute: typeof OwnerRoute
     }
     '/owner/plans': {
@@ -685,6 +704,7 @@ const OpsRouteChildren: OpsRouteChildren = {
 const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
 
 interface OwnerRouteChildren {
+  OwnerLoginRoute: typeof OwnerLoginRoute
   OwnerPlansRoute: typeof OwnerPlansRoute
   OwnerRevenueRoute: typeof OwnerRevenueRoute
   OwnerSystemRoute: typeof OwnerSystemRoute
@@ -694,6 +714,7 @@ interface OwnerRouteChildren {
 }
 
 const OwnerRouteChildren: OwnerRouteChildren = {
+  OwnerLoginRoute: OwnerLoginRoute,
   OwnerPlansRoute: OwnerPlansRoute,
   OwnerRevenueRoute: OwnerRevenueRoute,
   OwnerSystemRoute: OwnerSystemRoute,

@@ -16,7 +16,7 @@ Living execution: [`ROADMAP.md`](ROADMAP.md). Owner surface:
 | Field | Value |
 |---|---|
 | Status | **CP26C-O3.1 PASS**. **CP26C-O3.2 PASS**. **CP26C-O3.2B PASS** — Production applied. **CP26C-O3.2C PASS** — controller retired. **CP26C-O3.3 PASS** — Owner catalogue UI |
-| Next | **CP26C-O3.3V** — human Production verification of `/owner/plans`, then **CP26C-O3.4** (not started) |
+| Next | Human `/owner/login` verification, then **CP26C-O3.3V**, then **CP26C-O3.4** (not started) |
 | 0026 | `migrations/0026_cp26co3_commercial_catalogue.sql` — digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446` — **applied once** (GHA 36135836457) |
 | Commerce | **OFF** (`SBG_SAAS_COMMERCE` absent) |
 | CP26C.3 | **PAUSED** until O3.4 |
