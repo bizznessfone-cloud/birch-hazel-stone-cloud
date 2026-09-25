@@ -21,11 +21,12 @@ not trail the repository.
 | CP26C.2 | **PASS** — test hotel UUID allowlist in source |
 | CP26C.3 | **PAUSED AFTER SAFE PREFLIGHT** |
 | CP26C-O1 | **PASS** — Owner Control Plane architecture |
-| CP26C-O2 | **PASS** — Owner dashboard foundation; 0025 Production-applied |
+| CP26C-O2 | **CLOSED** — Owner dashboard Production-proven |
 | CP26C-O2A | **PASS** — single-use 0025 controller |
 | CP26C-O2B | **PASS** — Production 0025 applied |
-| CP26C-O2C.1 | **READY — NOT EXECUTED** — first Owner bootstrap controller |
-| **Next control-plane action** | authorised first-Owner bootstrap (`BOOTSTRAP-FIRST-OWNER`) |
+| CP26C-O2C.1 | **PASS** — first-Owner bootstrap controller built |
+| CP26C-O2C.2 | **PASS** — first Owner bootstrapped (GHA 36116463589) |
+| CP26C-O2C.3 | **PASS** — bootstrap workflow retired |
 | **Next product checkpoint** | **CP26C-O3 — commercial catalogue persistence** |
 | Forward roadmap | `docs/ROADMAP.md` (CP26–CP31) |
 | Owner architecture | `docs/OWNER_CONTROL_PLANE.md` |
@@ -51,9 +52,8 @@ not trail the repository.
 ## Database
 
 Migrations **0001–0025** exist in source. Production Neon is applied through **0025**.
-**0025 is Production-applied.** CP26C-O2C.1 first-Owner bootstrap controller is READY
-and **not executed**. Gate B accepted ledger pin remains **0001–0024** (generic
-migrator fail-closed). `AUTHORISED_PENDING=[]`.
+Gate B accepted ledger is **0001–0025**. `AUTHORISED_PENDING=[]`.
+Active platform Owners: **1** (OPERATOR CONTROLLED / REDACTED). First-Owner bootstrap workflow is **RETIRED**. Historical run [36116463589](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36116463589).
 0025 digest `575aabcb7322fc8ca63c8a3dd137d358f76375f1777ed59cf04c1d98d6c066fd`.
 Generic migrator remains fail-closed. Spent 0024 `workflow_dispatch` is retired.
 0024 digest `23cdc44037e0e886444477fdb693536a95c32b6080984de4076cc7a5f71d13c0`.

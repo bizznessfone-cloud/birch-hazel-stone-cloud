@@ -666,9 +666,10 @@ test("unnamed equivalent bootstrap types are accepted", () => {
   );
 });
 
-test("Gate B still refuses 0025 as unauthorised pending", () => {
+test("Gate B accepts applied 0025 and still refuses generic pending", () => {
   assert.equal(isAuthorisedPending(TARGET_MIGRATION), false);
-  assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), false);
+  assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), true);
+  assert.equal(ACCEPTED_LEDGER.at(-1), TARGET_MIGRATION);
   assert.deepEqual(AUTHORISED_PENDING, []);
   const currentFacts = {
     database: "neondb",
@@ -686,13 +687,21 @@ test("Gate B still refuses 0025 as unauthorised pending", () => {
   assert.equal(current.ok, true);
   assert.deepEqual(current.pending, []);
 
-  const pending0025 = evaluatePreflight({
+  const missing = evaluatePreflight({
     ...currentFacts,
-    sourceMigrations: [...ACCEPTED_LEDGER, TARGET_MIGRATION],
+    ledger: ACCEPTED_LEDGER.filter((name) => name !== TARGET_MIGRATION),
   });
-  assert.equal(pending0025.ok, false);
-  assert.deepEqual(pending0025.unexpectedPending, [TARGET_MIGRATION]);
-  const generic = evaluateMigrationBaseline(pending0025);
+  assert.equal(missing.ok, false);
+  assert.ok(missing.missingAccepted.includes(TARGET_MIGRATION));
+  assert.deepEqual(missing.unexpectedPending, [TARGET_MIGRATION]);
+
+  const pending0026 = evaluatePreflight({
+    ...currentFacts,
+    sourceMigrations: [...ACCEPTED_LEDGER, "0026_later.sql"],
+  });
+  assert.equal(pending0026.ok, false);
+  assert.deepEqual(pending0026.unexpectedPending, ["0026_later.sql"]);
+  const generic = evaluateMigrationBaseline(pending0026);
   assert.equal(generic.ok, false);
   assert.match(generic.verdict, /NO GENERIC PRODUCTION MIGRATION AUTHORISED|MIGRATION LEDGER INCONSISTENT/);
   assert.equal(GENERIC_MIGRATE_BLOCKED.includes("GENERIC"), true);

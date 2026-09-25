@@ -107,7 +107,7 @@ test("missing occupancy invariant fails", () => {
   assert.equal(result.verdict, "BLOCKED — OCCUPANCY INVARIANT NOT PROVEN");
 });
 
-test("accepted 0001-0024 ledger with empty pending passes", () => {
+test("accepted 0001-0025 ledger with empty pending passes", () => {
   const result = evaluatePreflight(baseFacts());
   assert.equal(result.ok, true);
   assert.equal(result.verdict, PASS_VERDICT);
@@ -115,6 +115,7 @@ test("accepted 0001-0024 ledger with empty pending passes", () => {
   assert.deepEqual(result.pending, []);
   assert.deepEqual(historicalSourceMigrations(SOURCE), LEDGER_0017);
   assert.equal(ACCEPTED_LEDGER.includes("0024_cp26b2_ordered_billing_events.sql"), true);
+  assert.equal(ACCEPTED_LEDGER.at(-1), "0025_cp26co2_platform_owners.sql");
 });
 
 test("pending 0024 is stale, not a newly authorised migration", () => {
@@ -181,7 +182,9 @@ test("no pending migration is automatically authorised", () => {
   assert.equal(isAuthorisedPending("0023_cp26a2_entitlement_publication_decoupling.sql"), false);
   assert.equal(isAuthorisedPending("0024_cp26b2_ordered_billing_events.sql"), false);
   assert.equal(isAuthorisedPending("0024_future.sql"), false);
+  assert.equal(isAuthorisedPending("0025_cp26co2_platform_owners.sql"), false);
   assert.equal(isAuthorisedPending("0025_later.sql"), false);
+  assert.equal(isAuthorisedPending("0026_later.sql"), false);
 });
 
 test("auth classification A/B pass and C/D fail", () => {
@@ -260,7 +263,7 @@ test("workflow is dispatch-only, read-only, and does not migrate", () => {
   assert.doesNotMatch(pkg.scripts.build, /db:preflight/);
 });
 
-test("reviewed 0020-0024 source checksums remain intact", () => {
+test("reviewed 0020-0025 source checksums remain intact", () => {
   for (const [name, expected] of Object.entries(REVIEWED_DIGESTS)) {
     const bytes = readFileSync(join(here, "../migrations", name));
     assert.equal(createHash("sha256").update(bytes).digest("hex"), expected, name);
@@ -275,11 +278,10 @@ test("spent single-use and generic production migrate workflows stay retired", (
   assert.equal(existsSync(join(workflows, "production-database-migrate.yml")), false);
   assert.equal(existsSync(join(workflows, "production-database.yml")), true);
   assert.equal(existsSync(join(workflows, "cp26co2a-0025-production-migrate.yml")), true);
-  assert.equal(existsSync(join(workflows, "cp26co2c-first-owner-bootstrap.yml")), true);
+  assert.equal(existsSync(join(workflows, "cp26co2c-first-owner-bootstrap.yml")), false);
   const yaml = readdirSync(workflows).filter((name) => name.endsWith(".yml") || name.endsWith(".yaml")).sort();
   assert.deepEqual(yaml, [
     "cp26co2a-0025-production-migrate.yml",
-    "cp26co2c-first-owner-bootstrap.yml",
     "production-database.yml",
   ]);
 });

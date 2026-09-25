@@ -349,16 +349,13 @@ test("CP26C-O2 source: protected /owner shell, no commerce mutation, no Domain B
     "node scripts/cp26co2a-0025-production-migrate.mjs",
   );
   assert.doesNotMatch(pkg.scripts["db:migrate:0025"] ?? "", /production-db-migrate/);
-  assert.equal(
-    pkg.scripts["db:bootstrap:first-owner"],
-    "node scripts/cp26co2c-first-owner-bootstrap.mjs",
-  );
+  assert.equal(pkg.scripts["db:bootstrap:first-owner"], undefined);
   assert.doesNotMatch(pkg.scripts.build, /bootstrap:first-owner/);
 
   const files = readdirSync(join(root, "migrations")).filter((name) => name.endsWith(".sql")).sort();
   assert.ok(files.includes("0025_cp26co2_platform_owners.sql"));
   const preflight = read("scripts/production-db-preflight.mjs");
   assert.match(preflight, /0024_cp26b2_ordered_billing_events\.sql/);
-  assert.doesNotMatch(preflight, /0025_cp26co2_platform_owners\.sql/);
+  assert.match(preflight, /0025_cp26co2_platform_owners\.sql/);
   assert.match(preflight, /AUTHORISED_PENDING = \[\]/);
 });

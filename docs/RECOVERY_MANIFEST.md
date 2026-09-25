@@ -15,13 +15,14 @@ GitHub is authoritative for application source. Living status: **`BUILD_STATE.md
 | CP25G.3 | **CLOSED** |
 | **CP26A** | **CLOSED** |
 | **CP26B** | **CLOSED** |
-| **Next execution checkpoint** | **CP26C — Stripe test-mode integration (design/preflight; not started)** |
+| **Next execution checkpoint** | **CP26C-O3 — commercial catalogue** |
 | Forward roadmap | **[ROADMAP.md](ROADMAP.md)** |
 | Fixture policy | **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)** |
 | Product | SCAN / BOOK / GO |
 | Production | Vercel `scan-book-go` / last observed `dpl_FmUosqz2wy7aCT51rNjdanJnuviZ` READY |
 | Alias | `https://scan-book-go.vercel.app` |
-| Database | Production Neon migrated through **0024** |
+| Database | Production Neon migrated through **0025**; Gate B **0001–0025** |
+| Owners | **1** active platform Owner (OPERATOR CONTROLLED / REDACTED); bootstrap workflow **RETIRED** |
 | Runtime | `DATABASE_URL` → `aether_app`; owner URL **ABSENT** from Vercel |
 | Auth | Better Auth Production configured; returning sign-in **proven CP26A.5** |
 | SaaS | `/app/*` exists; verification hotel `sbg-verify-a5` **configured not live** |
@@ -45,9 +46,9 @@ A workspace is never authoritative. Recovery ZIPs are secondary artifacts. The C
 
 ## Database migration state
 
-**Source files and Production Neon:** through `0024_cp26b2_ordered_billing_events.sql`.
+**Source files and Production Neon:** through `0025_cp26co2_platform_owners.sql`.
 
-Application build does not migrate. Generic production-migrate GitHub Action is retired/fail-closed. Permanent owner-plane control is read-only Gate B. Spent 0022/0023/0024 single-use mutation workflows are retired.
+Application build does not migrate or bootstrap an Owner. Generic production-migrate GitHub Action is retired/fail-closed. Permanent owner-plane control is read-only Gate B (accepted ledger **0001–0025**, `AUTHORISED_PENDING=[]`). Spent 0022/0023/0024 single-use mutation workflows are retired. The first-Owner bootstrap workflow is **RETIRED**. The 0025 apply workflow remains historical evidence and must not be re-dispatched.
 
 ## Auth (do not reopen CP25G.3)
 

@@ -8,8 +8,10 @@
  * Never uses DATABASE_URL. Never prints secrets, emails, or user ids.
  * Never deploys. Never migrates. Never grants/revokes. Never inserts.
  *
- * Dispatch of this workflow is a later authorised checkpoint (CP26C-O2C.2).
- * This commit is BUILD ONLY — not authorization to execute.
+ * Dispatch of this workflow was CP26C-O2C.2 (GHA 36116463589) and is retired.
+ * The workflow file was deleted in CP26C-O2C.3. Do not recreate it.
+ * This script remains historical audit evidence. It is not a package script.
+ * This commit is not authorization to execute again.
  */
 import { readdir, readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";

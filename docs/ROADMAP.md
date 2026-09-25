@@ -17,11 +17,12 @@ Canonical living roadmap. Other living documents should **point here**, not rede
 | CP26C.2 | **PASS** — fail-closed Domain A test-hotel isolation in source |
 | CP26C.3 | **PAUSED AFTER SAFE PREFLIGHT** — no Stripe objects; no Vercel Stripe env; amounts not invented |
 | CP26C-O1 | **PASS** — Owner Control Plane architecture |
-| CP26C-O2 | **PASS** — Owner dashboard foundation (`/owner`, grant auth; 0025 Production-applied) |
+| CP26C-O2 | **CLOSED** — Owner dashboard Production-proven |
 | CP26C-O2A | **PASS** — single-use 0025 Production controller |
 | CP26C-O2B | **PASS** — Production 0025 applied |
-| CP26C-O2C.1 | **READY — NOT EXECUTED** — first Owner bootstrap controller |
-| **Next control-plane action** | authorised first-Owner bootstrap (`BOOTSTRAP-FIRST-OWNER`) — not this child |
+| CP26C-O2C.1 | **PASS** — first-Owner bootstrap controller built |
+| CP26C-O2C.2 | **PASS** — first Owner bootstrapped (GHA 36116463589) |
+| CP26C-O2C.3 | **PASS** — bootstrap workflow retired |
 | **Next product checkpoint** | **CP26C-O3 — commercial catalogue persistence** (not started) |
 
 ---
@@ -170,18 +171,20 @@ Exercise Domain A against Stripe **TEST MODE ONLY** (`sk_test`, test products/pr
 
 **CP26C-O1 PASS:** Owner Control Plane architecture. Canonical document: [`OWNER_CONTROL_PLANE.md`](OWNER_CONTROL_PLANE.md). SBG database will own the commercial catalogue (plans + versioned prices + Stripe TEST/LIVE mappings). Vercel env Price IDs are transitional.
 
-**CP26C-O2 PASS:** Owner dashboard foundation in source — platform grant auth, `/owner` shell, Overview/Hotels/Revenue/System, Plans stub. Migration `0025_cp26co2_platform_owners.sql` is **Production-applied** via O2A/O2B. Do not resume CP26C.3 until O3.
+**CP26C-O2 CLOSED:** Owner dashboard foundation is Production-proven. Human `/owner` verification passed (Overview, Hotels, Plans & Pricing, Revenue, System). Active platform Owners = 1 (OPERATOR CONTROLLED / REDACTED). Migration `0025_cp26co2_platform_owners.sql` is Production-applied. Do not resume CP26C.3 until O3.
 
-**CP26C-O2A READY then CP26C-O2B PASS:** dedicated single-use controller for 0025 applied Production 0025 (GHA 35758982641). Digest `575aabcb7322fc8ca63c8a3dd137d358f76375f1777ed59cf04c1d98d6c066fd`.
+**CP26C-O2A then CP26C-O2B PASS:** dedicated single-use controller applied Production 0025 (GHA 35758982641). Digest `575aabcb7322fc8ca63c8a3dd137d358f76375f1777ed59cf04c1d98d6c066fd`.
 
-**CP26C-O2C.1 READY — NOT EXECUTED:** dedicated single-use first-Owner bootstrap controller. Target hotel code `sbg-verify-a5`. Workflow `.github/workflows/cp26co2c-first-owner-bootstrap.yml`. Script `scripts/cp26co2c-first-owner-bootstrap.mjs`. Confirmation `BOOTSTRAP-FIRST-OWNER`. Do **not** dispatch from this child.
+**CP26C-O2C PASS:** first Owner bootstrapped once (GHA [36116463589](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36116463589), verdict `GATE PASS — FIRST OWNER BOOTSTRAPPED AND VERIFIED`). Target hotel code `sbg-verify-a5`. Pre active Owners 0; post 1; one `owner.granted` audit with `bootstrap = true`. Workflow `.github/workflows/cp26co2c-first-owner-bootstrap.yml` is **RETIRED**. Historical script remains. Gate B accepted ledger is **0001–0025**. `AUTHORISED_PENDING=[]`.
+
+Non-blocking UI backlog: Owner header showed “SSBG Verification”. Deferred to UI polish. Not an authorization defect.
 
 **Next product: CP26C-O3** commercial catalogue persistence (plans + versioned prices). Do not invent amounts until the operator records them in O3. Do not resume CP26C.3 until O3.
 
 Sequence:
 
 ```
-CP26C.2 PASS → CP26C-O1 → CP26C-O2 → CP26C-O2A → CP26C-O2B (0025 applied) → CP26C-O2C.1 (controller ready) → authorised first-Owner bootstrap → CP26C-O3 → resume CP26C.3 → CP26C.4
+CP26C.2 PASS → CP26C-O1 → CP26C-O2 → CP26C-O2A → CP26C-O2B (0025 applied) → CP26C-O2C (first Owner bootstrapped; workflow retired) → CP26C-O3 → resume CP26C.3 → CP26C.4
 ```
 
 **Do not enable test commerce on public Production until CP26C.4.** Empty allowlist = nobody authorised. Only **CP31** activates live commerce.

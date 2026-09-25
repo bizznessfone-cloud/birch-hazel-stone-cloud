@@ -16,11 +16,11 @@ GitHub is authoritative for application source.
 | CP25G.3 | **CLOSED** |
 | **CP26A** | **CLOSED** |
 | **CP26B** | **CLOSED** |
-| **Next execution checkpoint** | **CP26C — Stripe test-mode integration (design/preflight; not started)** |
+| **Next execution checkpoint** | **CP26C-O3 — commercial catalogue** |
 | Forward roadmap | **[ROADMAP.md](ROADMAP.md)** |
 | Fixture policy | **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)** |
 | Production | `scan-book-go` / last observed `dpl_FmUosqz2wy7aCT51rNjdanJnuviZ` READY |
-| Migrations | `0001`–`0024` |
+| Migrations | `0001`–`0025`. CP26C-O2 **CLOSED**. Bootstrap workflow **RETIRED**. |
 
 `cp17-known-good` (`45e171a…`) is a historical CP16C/CP17 tag. It is **not** current `main`.
 

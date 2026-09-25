@@ -16,17 +16,18 @@ Living status: **`BUILD_STATE.md`** (repo root).
 | CP26C.2 | **PASS** |
 | CP26C.3 | **PAUSED AFTER SAFE PREFLIGHT** |
 | CP26C-O1 | **PASS** |
-| CP26C-O2 | **PASS** — 0025 Production-applied |
+| CP26C-O2 | **CLOSED** — Production-proven |
 | CP26C-O2A | **PASS** — single-use 0025 controller |
 | CP26C-O2B | **PASS** — Production 0025 applied |
-| CP26C-O2C.1 | **READY — NOT EXECUTED** |
-| **Next control-plane action** | authorised first-Owner bootstrap |
+| CP26C-O2C.1 | **PASS** — first-Owner bootstrap controller built |
+| CP26C-O2C.2 | **PASS** — first Owner bootstrapped (GHA 36116463589) |
+| CP26C-O2C.3 | **PASS** — bootstrap workflow retired |
 | **Next product checkpoint** | **CP26C-O3** |
 | Forward roadmap | **[ROADMAP.md](ROADMAP.md)** (CP26–CP31) |
 | Owner architecture | **[OWNER_CONTROL_PLANE.md](OWNER_CONTROL_PLANE.md)** |
 | Fixture policy | **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)** |
 | Production | Vercel `scan-book-go` last observed `dpl_FmUosqz2wy7aCT51rNjdanJnuviZ` READY |
-| Migrations | source **0001–0025**; Production **0001–0025** applied; first-Owner controller READY, **not executed** |
+| Migrations | source **0001–0025**; Production **0001–0025**; Gate B accepted **0001–0025**; first-Owner workflow **RETIRED** |
 
 This file’s remainder is a **historical Checkpoint 10** record only.
 

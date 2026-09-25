@@ -2,7 +2,7 @@
 
 Canonical fixture classes for CP26–CP30. Living status: `BUILD_STATE.md`.
 Roadmap: `docs/ROADMAP.md`. Owner architecture: `docs/OWNER_CONTROL_PLANE.md`.
-**CP26B is CLOSED.** CP26C.3 is **paused**. CP26C-O2 is **PASS**. CP26C-O2B applied Production 0025. CP26C-O2C.1 is **READY — NOT EXECUTED**. Next control-plane is authorised first-Owner bootstrap. Next product is **CP26C-O3**.
+**CP26B is CLOSED.** CP26C.3 is **paused**. CP26C-O2 is **CLOSED**. One Production platform Owner exists (OPERATOR CONTROLLED / REDACTED). First-Owner bootstrap workflow is **RETIRED**. Next product is **CP26C-O3**.
 Only **CP31** may activate real commerce.
 
 Verification policy (not a database constraint): **one verification user owns

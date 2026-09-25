@@ -58,7 +58,6 @@ const execFileAsync = promisify(execFile);
 const here = dirname(fileURLToPath(import.meta.url));
 const src = readFileSync(join(here, "cp26co2c-first-owner-bootstrap.mjs"), "utf8");
 const workflowPath = join(here, "../.github/workflows/cp26co2c-first-owner-bootstrap.yml");
-const workflow = readFileSync(workflowPath, "utf8");
 const pkgJson = JSON.parse(readFileSync(join(here, "../package.json"), "utf8"));
 
 const occupancy = [
@@ -218,7 +217,7 @@ test("target hotel is hard-coded as sbg-verify-a5", () => {
   assert.equal(TARGET_HOTEL_CODE, "sbg-verify-a5");
   assert.match(src, /sbg-verify-a5/);
   assert.doesNotMatch(src, /@scanbookgo|@gmail\.com/i);
-  assert.doesNotMatch(workflow, /user.id|user_id|email|hotel_id|uuid/i);
+  assert.equal(existsSync(workflowPath), false);
 });
 
 test("correct owner DB identity is required", () => {
@@ -537,34 +536,17 @@ test("apply failure rolls back decision as failed", async () => {
   assert.doesNotMatch(result.error, /secret/);
 });
 
-test("workflow is workflow_dispatch only with shared mutation lock", () => {
-  assert.equal(existsSync(workflowPath), true);
-  assert.match(workflow, /workflow_dispatch:/);
-  assert.match(workflow, /Type BOOTSTRAP-FIRST-OWNER/);
-  assert.match(workflow, /permissions:\n  contents: read/);
-  assert.match(workflow, /persist-credentials: false/);
-  assert.match(workflow, /group: production-database-mutation/);
-  assert.match(workflow, /cancel-in-progress: false/);
-  assert.match(workflow, /secrets\.AETHER_DATABASE_OWNER_URL/);
-  assert.match(workflow, /CP26CO2C_CONFIRMATION/);
-  assert.match(workflow, /scripts\/cp26co2c-first-owner-bootstrap\.mjs/);
-  assert.doesNotMatch(workflow, /\bpull_request\b/);
-  assert.doesNotMatch(workflow, /\bschedule\b/);
-  assert.doesNotMatch(workflow, /\brepository_dispatch\b/);
-  assert.doesNotMatch(workflow, /\bworkflow_run\b/);
-  assert.doesNotMatch(workflow, /\n\s+push:/);
-  assert.doesNotMatch(workflow, /DATABASE_URL/);
-  assert.doesNotMatch(workflow, /vercel/i);
-  assert.doesNotMatch(workflow, /migration filename|user_id|email|hotelId|SQL/i);
-});
-
-test("build and Vercel cannot invoke this controller", () => {
+test("first-Owner dispatch surface is retired", () => {
+  assert.equal(existsSync(workflowPath), false);
+  assert.equal(pkgJson.scripts["db:bootstrap:first-owner"], undefined);
   assert.doesNotMatch(pkgJson.scripts.build, /db:migrate/);
   assert.doesNotMatch(pkgJson.scripts.build, /cp26co2c-first-owner/);
-  assert.equal(
-    pkgJson.scripts["db:bootstrap:first-owner"],
-    "node scripts/cp26co2c-first-owner-bootstrap.mjs",
-  );
+  assert.doesNotMatch(pkgJson.scripts.build, /bootstrap:first-owner/);
+  const yaml = readdirSync(join(here, "../.github/workflows"))
+    .filter((name) => name.endsWith(".yml") || name.endsWith(".yaml"))
+    .sort();
+  assert.equal(yaml.includes("cp26co2c-first-owner-bootstrap.yml"), false);
+  assert.deepEqual(yaml, ["cp26co2a-0025-production-migrate.yml", "production-database.yml"]);
 });
 
 test("controller source never emits secrets, never uses DATABASE_URL, never grants", () => {
@@ -608,16 +590,13 @@ test("direct invocation without secret exits before connecting", async () => {
   assert.equal(output.includes(TARGET_USER), false);
 });
 
-test("Gate B still does not auto-authorise this controller", () => {
+test("Gate B accepts applied 0025 and does not authorise another bootstrap", () => {
   assert.deepEqual(AUTHORISED_PENDING, []);
-  assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), false);
+  assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), true);
+  assert.equal(ACCEPTED_LEDGER.at(-1), TARGET_MIGRATION);
 });
 
 test("catalog identity still uses 0025 function contract", () => {
   assert.doesNotMatch(src, /pg_get_function_identity_arguments/);
   assert.equal(EXPECTED_FUNCTIONS[0].executeAetherApp, false);
-  const yaml = readdirSync(join(here, "../.github/workflows"))
-    .filter((name) => name.endsWith(".yml") || name.endsWith(".yaml"))
-    .sort();
-  assert.ok(yaml.includes("cp26co2c-first-owner-bootstrap.yml"));
 });

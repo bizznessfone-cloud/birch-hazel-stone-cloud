@@ -15,11 +15,11 @@ GitHub is the authoritative source for application source code. Living status: *
 | CP25G.3 | **CLOSED** |
 | **CP26A** | **CLOSED** |
 | **CP26B** | **CLOSED** |
-| **Next execution checkpoint** | **CP26C** |
+| **Next execution checkpoint** | **CP26C-O3** |
 | Forward roadmap | **[ROADMAP.md](ROADMAP.md)** |
 | Fixture policy | **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)** |
 | Production | `scan-book-go` / last observed `dpl_FmUosqz2wy7aCT51rNjdanJnuviZ` READY |
-| Migrations | `0001`–`0024` |
+| Migrations | `0001`–`0025`. Active platform Owners: **1**. Bootstrap workflow **RETIRED**. |
 
 `cp17-known-good` (`45e171a23037b7c94005018cd2126033a449d6f0`) is an immutable **historical** tag. It is not current `main`.
 

@@ -7,10 +7,9 @@ This file describes **current reality**, not intended future state.
 Domain A subscription lifecycle, ordered billing persistence, and Production
 migration 0024 are accepted. Domain A commerce remains **OFF**. Only **CP31**
 may activate real commerce. CP26C.1/C.2 isolation is in source. CP26C.3 is
-**paused** (no Stripe objects; canonical amounts not invented). Next control-plane
-action is authorised first-Owner bootstrap. Next product is **CP26C-O3**. Production commerce remains **OFF**.
-Migration **0025** is **Production-applied**. CP26C-O2C.1 first-Owner bootstrap
-controller is **READY — NOT EXECUTED**.
+**paused** (no Stripe objects; canonical amounts not invented). Next product checkpoint is **CP26C-O3**. Production commerce remains **OFF**.
+Migration **0025** is **Production-applied**. First Production platform Owner is
+**bootstrapped** (1 active grant). The first-Owner bootstrap workflow is **RETIRED**.
 
 | Field | Value |
 |---|---|
@@ -29,20 +28,24 @@ controller is **READY — NOT EXECUTED**.
 | CP26C.2 | **PASS** — Domain A test commerce isolated by hotel UUID allowlist (source) |
 | CP26C.3 | **PAUSED AFTER SAFE PREFLIGHT** — no Stripe objects; no Vercel Stripe env |
 | CP26C-O1 | **PASS** — Owner Control Plane architecture ([`docs/OWNER_CONTROL_PLANE.md`](docs/OWNER_CONTROL_PLANE.md)) |
-| CP26C-O2 | **PASS** — Owner dashboard foundation in source; 0025 Production-applied |
+| CP26C-O2 | **CLOSED** — Owner dashboard Production-proven |
 | CP26C-O2A | **PASS** — single-use 0025 controller |
 | CP26C-O2B | **PASS** — Production 0025 applied (GHA [35758982641](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/35758982641)) |
-| CP26C-O2C.1 | **READY — NOT EXECUTED** — first Owner bootstrap controller |
+| CP26C-O2C.1 | **PASS** — first-Owner bootstrap controller built |
+| CP26C-O2C.2 | **PASS** — first Owner bootstrapped (GHA [36116463589](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36116463589)) |
+| CP26C-O2C.3 | **PASS** — bootstrap dispatch retired; O2 closed |
 | Last application SHA | 19512c295830fbc6fd9712d688ce364d940f87c3 (CP26B.3R catalog identity; Production 0024 already applied) |
 | Fixture policy | [`docs/FIXTURE_POLICY.md`](docs/FIXTURE_POLICY.md) |
 | Local harness | `src/lib/aether/cp26a4-fixture.ts` (tests only; not a runtime import) |
 | Domain A | remains dormant; only **CP31** may activate commerce |
-| Accepted Production ledger | **0001–0025** (Gate B source pin still 0001–0024; 0025 applied via dedicated controller) |
+| Accepted Production ledger | **0001–0025** (Gate B source pin **0001–0025**; `AUTHORISED_PENDING=[]`) |
 | 0024 digest | `23cdc44037e0e886444477fdb693536a95c32b6080984de4076cc7a5f71d13c0` |
 | 0025 digest | `575aabcb7322fc8ca63c8a3dd137d358f76375f1777ed59cf04c1d98d6c066fd` |
 | 0025 controller | `.github/workflows/cp26co2a-0025-production-migrate.yml` + `scripts/cp26co2a-0025-production-migrate.mjs` |
-| First-Owner controller | `.github/workflows/cp26co2c-first-owner-bootstrap.yml` + `scripts/cp26co2c-first-owner-bootstrap.mjs` |
-| **Next control-plane** | authorised first-Owner bootstrap (`BOOTSTRAP-FIRST-OWNER`) — do not execute from this child |
+| First-Owner controller | historical script `scripts/cp26co2c-first-owner-bootstrap.mjs`; workflow **RETIRED** |
+| Active platform Owners | **1** — OPERATOR CONTROLLED / REDACTED (owns `sbg-verify-a5`) |
+| Human `/owner` proof | **PASS** — Overview, Hotels, Plans & Pricing, Revenue, System |
+| **Next control-plane** | none pending; O2 closed |
 | **Next product** | **CP26C-O3 — commercial catalogue persistence** |
 
 Do not dispatch historical 0022/0023/0024 controllers. Owner secret remains GitHub Actions `AETHER_DATABASE_OWNER_URL` only — never Vercel. Future migrations need a dedicated single-use controller and an explicit checkpoint.
@@ -67,7 +70,7 @@ every hotel. Live mode ignores this allowlist. Do not put a Production hotel UUI
 | CP25G.3 | **CLOSED** |
 | **CP26A** | **CLOSED** |
 | **CP26B** | **CLOSED** |
-| **Next control-plane** | authorised first-Owner bootstrap (`BOOTSTRAP-FIRST-OWNER`) — not executed |
+| **Next control-plane** | none; CP26C-O2 **CLOSED** |
 | **Next product checkpoint** | **CP26C-O3 — commercial catalogue persistence** |
 | Forward roadmap | **[docs/ROADMAP.md](docs/ROADMAP.md)** (CP26–CP31) |
 
@@ -98,15 +101,15 @@ Environment (names/presence only):
 
 | Layer | State |
 |---|---|
-| Source migrations | `0001`–`0024` present (`0024_cp26b2_ordered_billing_events.sql`) |
-| Production Neon | migrated through **0024** — pending **NONE** |
+| Source migrations | `0001`–`0025` present |
+| Production Neon | migrated through **0025** — pending **NONE** |
 | 0024 | ordered Domain A billing events (`event.created` bigint, `cancel_at_period_end`, stale/ambiguous/duplicate); 10-argument `sbg_apply_billing_event`; 8-argument function **absent** |
 | 0023 | entitlement publication decoupling (`sbg_sync_hotel_entitlement` no longer writes `hotels.status`) |
 | Runtime | `DATABASE_URL` → `aether_app` |
 | Owner / migration plane | `AETHER_DATABASE_OWNER_URL` → `neondb_owner` (not on Vercel) |
 | Preview | PGLite; `aether_runtime` SET ROLE only |
 | Application build | `npm run build` does **not** migrate |
-| Permanent Gate B | `.github/workflows/production-database.yml` (read-only); accepted ledger **0001–0024**; `AUTHORISED_PENDING=[]` |
+| Permanent Gate B | `.github/workflows/production-database.yml` (read-only); accepted ledger **0001–0025**; `AUTHORISED_PENDING=[]` |
 
 Roles: `neondb_owner` = schema/migration owner; `aether_app` = production LOGIN; `aether_runtime` = PGLite/preview only. Production must not use SET ROLE or owner credentials as runtime.
 
@@ -187,7 +190,9 @@ account → hotel → service → preview → QR → plan → Stripe → LIVE
 - Do not start CP26C test commerce on public Production until CP26C.4. Empty `SBG_SAAS_TEST_HOTEL_IDS` fail-closes every hotel.
 - Do not invent CP26B.5.
 
-Canonical forward path: **`docs/ROADMAP.md`**. Fixture policy: **`docs/FIXTURE_POLICY.md`**. Owner architecture: **`docs/OWNER_CONTROL_PLANE.md`**. Next control-plane: authorised first-Owner bootstrap. Next product: **CP26C-O3**.
+Canonical forward path: **`docs/ROADMAP.md`**. Fixture policy: **`docs/FIXTURE_POLICY.md`**. Owner architecture: **`docs/OWNER_CONTROL_PLANE.md`**. Next product: **CP26C-O3**. CP26C.3 remains paused until O3. Active Production platform Owners: **1** (OPERATOR CONTROLLED / REDACTED). First-Owner bootstrap workflow **RETIRED** (historical run [36116463589](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36116463589)).
+
+Non-blocking UI backlog: Owner header rendered “SSBG Verification” (presentation/spacing or avatar-initial concatenation). Deferred. Not an authorization defect.
 
 GitHub `main` at the current SHA is authoritative application source. A workspace is never authoritative. Recovery ZIPs are secondary disaster-recovery artifacts. The CP10 ZIP must not be extracted over a newer Git tree without explicit human approval.
 

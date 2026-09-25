@@ -1,21 +1,20 @@
-## CURRENT STATE (POST-CP26B CLOSED)
+## CURRENT STATE (CP26C-O2 CLOSED)
 
 Living status: **`BUILD_STATE.md`**.
 
 - Product: **SCAN / BOOK / GO**
 - Last application SHA: `19512c295830fbc6fd9712d688ce364d940f87c3`
-- CP25G.3 / **CP26A** / **CP26B**: **CLOSED**
-- **Next execution checkpoint: CP26C — Stripe test-mode integration (design/preflight; not started)**
-- Forward roadmap: **[ROADMAP.md](ROADMAP.md)** (CP26 build/test commerce → CP31 activate)
+- CP25G.3 / **CP26A** / **CP26B** / **CP26C-O2**: **CLOSED**
+- **Next execution checkpoint: CP26C-O3 — commercial catalogue**
+- CP26C.3 remains **paused** until O3. CP26C remains **open**. Only **CP31** activates live commerce.
+- Forward roadmap: **[ROADMAP.md](ROADMAP.md)**
 - Fixture policy: **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)**
 - Vercel Production `scan-book-go` / last observed `dpl_FmUosqz2wy7aCT51rNjdanJnuviZ` READY
-- Neon Production migrated through **0024**
-- `/app/*` exists (SaaS). `/ops/*` remains internal operations.
-- V1 journey: `account → hotel → service → preview → QR → plan → Stripe → LIVE`
-- Stripe/Resend Production configuration: **absent**
+- Neon Production migrated through **0025**. Gate B accepted ledger **0001–0025**.
+- Active platform Owners: **1** (OPERATOR CONTROLLED / REDACTED). Bootstrap workflow **RETIRED**.
+- `/app/*` exists (SaaS). `/owner/*` is Production-proven. `/ops/*` remains internal operations.
 - First Production hotel through `/app`: **configured, not live** (`sbg-verify-a5`)
-- Returning Production sign-in: **proven CP26A.5**
-- Domain A commerce: **OFF**. `SBG_SAAS_COMMERCE=test` is process-global (CP26C blast-radius).
+- Domain A commerce: **OFF**.
 
 The historical status table below is preserved as evidence and must not override current source.
 
