@@ -15,14 +15,16 @@ Living execution: [`ROADMAP.md`](ROADMAP.md). Owner surface:
 
 | Field | Value |
 |---|---|
-| Status | **CP26C-O3.1 PASS**. **CP26C-O3.2 PASS**. **CP26C-O3.2B PASS** — Production applied. **CP26C-O3.2C PASS** — controller retired |
-| Next | **CP26C-O3.3** — Owner Commercial Catalogue UI |
+| Status | **CP26C-O3.1 PASS**. **CP26C-O3.2 PASS**. **CP26C-O3.2B PASS** — Production applied. **CP26C-O3.2C PASS** — controller retired. **CP26C-O3.3 PASS** — Owner catalogue UI |
+| Next | **CP26C-O3.3V** — human Production verification of `/owner/plans`, then **CP26C-O3.4** (not started) |
 | 0026 | `migrations/0026_cp26co3_commercial_catalogue.sql` — digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446` — **applied once** (GHA 36135836457) |
 | Commerce | **OFF** (`SBG_SAAS_COMMERCE` absent) |
 | CP26C.3 | **PAUSED** until O3.4 |
 | CP31 | only checkpoint that may activate LIVE commerce |
 | Gate B | accepted ledger **0001–0026**; `AUTHORISED_PENDING=[]` |
 | Prices | versions **0**; Stripe mappings **0**; LIVE locks **false/false**; amounts **UNDEFINED** |
+
+**CP26C-O3.3.** `/owner/plans` now reads `sbg_saas_plans`, `sbg_saas_price_versions`, `sbg_saas_stripe_mappings`, `sbg_saas_commerce_locks`, and catalogue rows in `sbg_owner_audit_events`. Mutations call only `sbg_catalogue_update_plan`, `sbg_catalogue_create_price_version`, `sbg_catalogue_activate_price_version`, and `sbg_catalogue_retire_price_version`. The UI does not call Stripe, does not call `sbg_catalogue_record_stripe_mapping`, and cannot set LIVE locks. With zero price versions the page shows “Price not configured”, not €0. The paragraph below that still says `getOwnerPlansFn` returns `pending_o3` is the **O3.1** baseline, not the current UI.
 
 ---
 

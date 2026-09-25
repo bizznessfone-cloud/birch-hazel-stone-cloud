@@ -15,7 +15,7 @@ GitHub is authoritative for application source. Living status: **`BUILD_STATE.md
 | CP25G.3 | **CLOSED** |
 | **CP26A** | **CLOSED** |
 | **CP26B** | **CLOSED** |
-| **Next execution checkpoint** | **CP26C-O3.3 — Owner Commercial Catalogue UI** |
+| **Next execution checkpoint** | **CP26C-O3.3V — human Production UI verification, then CP26C-O3.4 (not started)** |
 | Forward roadmap | **[ROADMAP.md](ROADMAP.md)** |
 | Fixture policy | **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)** |
 | Product | SCAN / BOOK / GO |
@@ -48,7 +48,7 @@ A workspace is never authoritative. Recovery ZIPs are secondary artifacts. The C
 
 **Source files and Production Neon:** through `0026_cp26co3_commercial_catalogue.sql` (digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446`, apply run 36135836457, job 108073574672).
 
-Application build does not migrate or bootstrap an Owner. Generic production-migrate GitHub Action is retired/fail-closed. Permanent owner-plane control is read-only Gate B (accepted ledger **0001–0026**, `AUTHORISED_PENDING=[]`). Spent 0022/0023/0024 single-use mutation workflows are retired. The first-Owner bootstrap workflow is **RETIRED**. The 0026 apply workflow is **RETIRED**. The 0025 apply workflow remains historical evidence and must not be re-dispatched. 0027+ stays fail-closed. Canonical amounts remain **UNDEFINED**.
+Application build does not migrate or bootstrap an Owner. Generic production-migrate GitHub Action is retired/fail-closed. Permanent owner-plane control is read-only Gate B (accepted ledger **0001–0026**, `AUTHORISED_PENDING=[]`). Spent 0022/0023/0024 single-use mutation workflows are retired. The first-Owner bootstrap workflow is **RETIRED**. The 0026 apply workflow is **RETIRED**. The 0025 apply workflow remains historical evidence and must not be re-dispatched. 0027+ stays fail-closed. **CP26C-O3.3** added the Owner catalogue UI. Canonical amounts remain **UNDEFINED**. Production price versions remain **0**. Next is **CP26C-O3.3V**, then **O3.4**. Do not mark O3.4 complete. CP26C.3 stays paused.
 
 ## Auth (do not reopen CP25G.3)
 

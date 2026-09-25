@@ -11,7 +11,7 @@ Living source-of-truth. Historical README text below is evidence only.
 | CP25G.3 | **CLOSED** |
 | **CP26A** | **CLOSED** |
 | **CP26B** | **CLOSED** |
-| **Next execution checkpoint** | **CP26C — Stripe test-mode integration (design/preflight; not started)** |
+| **Next execution checkpoint** | **CP26C-O3.3V** — human Production verification of `/owner/plans`, then **CP26C-O3.4** (not started). **CP26C-O3.3 PASS** — Owner catalogue UI; amounts **UNDEFINED** |
 | Forward roadmap | **[docs/ROADMAP.md](docs/ROADMAP.md)** |
 | Fixture policy | **[docs/FIXTURE_POLICY.md](docs/FIXTURE_POLICY.md)** |
 

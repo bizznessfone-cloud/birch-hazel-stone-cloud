@@ -20,7 +20,8 @@ Example minor-unit figures in §6 are **not** prices. Canonical amounts are
 | Foundation | **CP26C-O2 CLOSED** (Production-proven; 0025 applied) |
 | 0025 controller | **CP26C-O2A/O2B PASS** |
 | First Owner | **bootstrapped** — 1 active grant; workflow **RETIRED** (GHA 36116463589) |
-| Next implementation | **CP26C-O3.3** — Owner Commercial Catalogue UI |
+| Next implementation | **CP26C-O3.3V** — human Production verification of `/owner/plans`, then **CP26C-O3.4** (not started) |
+| Catalogue UI | **CP26C-O3.3 PASS** — Owner plans read/write through 0026; amounts **UNDEFINED** |
 | Catalogue source | **CP26C-O3.2 / O3.2B PASS** — `0026` Production-applied |
 | 0026 controller | **RETIRED** in O3.2C (historical script remains) |
 | Catalogue contract | **CP26C-O3.1 PASS** — [`COMMERCIAL_CATALOGUE.md`](COMMERCIAL_CATALOGUE.md) |
@@ -569,7 +570,7 @@ columns on the price version), no env dual-read, no Vercel Price ID copy in
 C.3, Checkout cutover only in **CP26C.4**, amounts still UNDEFINED, 0026 not
 created here.
 
-**O3.2 PASS.** Source migration `0026` matches this contract. **O3.2B PASS.** Production applied it once (GHA 36135836457, job 108073574672). Digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446`. Plans basic/pro/premium. Price versions 0. Stripe mappings 0. LIVE locks false/false. **O3.2C PASS.** Gate B is **0001–0026**. The 0026 workflow is **RETIRED**. Next is **CP26C-O3.3**. Amounts remain **UNDEFINED**.
+**O3.2 PASS.** Source migration `0026` matches this contract. **O3.2B PASS.** Production applied it once (GHA 36135836457, job 108073574672). Digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446`. Plans basic/pro/premium. Price versions 0. Stripe mappings 0. LIVE locks false/false. **O3.2C PASS.** Gate B is **0001–0026**. The 0026 workflow is **RETIRED**. **O3.3 PASS.** The Owner catalogue UI is implemented. Amounts remain **UNDEFINED**. Next is **CP26C-O3.3V**, then **O3.4**. Do not mark O3.4 complete.
 
 **Do not:** create Stripe TEST/LIVE Prices (that is CP26C.3 / CP31); set
 commerce mode; allowlist the verification hotel; charge anyone; invent amounts.
@@ -601,7 +602,9 @@ CP26C.2 PASS
   → CP26C-O3.2A (controller built)
   → CP26C-O3.2B (0026 Production-applied)
   → CP26C-O3.2C (Gate B 0001–0026; workflow retired)
-  → CP26C-O3.3 / O3.4
+  → CP26C-O3.3 (Owner catalogue UI)
+  → CP26C-O3.3V (human Production UI verification)
+  → CP26C-O3.4 (canonical amounts)
   → resume CP26C.3 (TEST mappings only)
   → CP26C.4 (checkout cutover; no env fallback)
 ```

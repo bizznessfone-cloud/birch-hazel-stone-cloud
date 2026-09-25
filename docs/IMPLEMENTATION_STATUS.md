@@ -5,7 +5,8 @@ Living status: **`BUILD_STATE.md`**.
 - Product: **SCAN / BOOK / GO**
 - Last application SHA: `19512c295830fbc6fd9712d688ce364d940f87c3`
 - CP25G.3 / **CP26A** / **CP26B** / **CP26C-O2**: **CLOSED**
-- **Next execution checkpoint: CP26C-O3.3 — Owner Commercial Catalogue UI**
+- **Next execution checkpoint: CP26C-O3.3V — human Production verification of `/owner/plans`, then CP26C-O3.4 (not started)**
+- **CP26C-O3.3 PASS** — Owner commercial catalogue UI. Canonical amounts still **UNDEFINED**. Production price versions **0**.
 - CP26C.3 remains **paused** until O3.4. CP26C remains **open**. Only **CP31** activates live commerce.
 - Forward roadmap: **[ROADMAP.md](ROADMAP.md)**
 - Fixture policy: **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)**

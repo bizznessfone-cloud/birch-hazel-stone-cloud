@@ -6,16 +6,22 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { authMiddleware } from "@/lib/auth/middleware";
 import { getSql } from "@/lib/db";
-import { requirePlatformOwner } from "./owner-auth.ts";
+import { PlatformOwnerForbiddenError, requirePlatformOwner } from "./owner-auth.ts";
 import {
   loadOwnerHotelDetail,
   loadOwnerHotels,
   loadOwnerOverview,
   loadOwnerRevenue,
   resolveAllowlistHotelNames,
-  SBG_SAAS_PLAN_CODES,
-  SBG_SAAS_PLAN_LABELS,
 } from "./owner-queries.ts";
+import {
+  CatalogueCommandError,
+  activateOwnerPriceVersion,
+  createOwnerPriceVersion,
+  loadOwnerCatalogue,
+  retireOwnerPriceVersion,
+  updateOwnerPlan,
+} from "./owner-catalogue.ts";
 import {
   OWNER_SYSTEM_CAPTION,
   ownerSystemHasSecretValues,
@@ -31,6 +37,28 @@ const hotelSearch = z.object({
 const hotelIdInput = z.object({
   hotelId: z.string().uuid(),
 });
+
+const planEdit = z.object({
+  code: z.enum(["basic", "pro", "premium"]),
+  name: z.string().max(80),
+  description: z.string().max(400),
+  active: z.boolean(),
+});
+
+const priceCreate = z.object({
+  code: z.enum(["basic", "pro", "premium"]),
+  amount: z.string().max(16),
+});
+
+const priceVersionId = z.object({
+  priceVersionId: z.string().uuid(),
+});
+
+function catalogueResult(err: unknown): { ok: false; message: string } {
+  if (err instanceof PlatformOwnerForbiddenError) throw err;
+  if (err instanceof CatalogueCommandError) return { ok: false, message: err.message };
+  return { ok: false, message: "Catalogue change could not be saved." };
+}
 
 export const getOwnerOverviewFn = createServerFn({ method: "GET" })
   .middleware([authMiddleware])
@@ -73,16 +101,63 @@ export const getOwnerPlansFn = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const db = await getSql();
     await requirePlatformOwner(db, context.userId);
-    return {
-      catalogue: "pending_o3" as const,
-      plans: SBG_SAAS_PLAN_CODES.map((code) => ({
-        code,
-        name: SBG_SAAS_PLAN_LABELS[code],
-        amount: "pending_catalogue" as const,
-        interval: "month" as const,
-        currency: "EUR" as const,
-      })),
-    };
+    return loadOwnerCatalogue(db);
+  });
+
+export const updateOwnerPlanFn = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator(planEdit)
+  .handler(async ({ context, data }) => {
+    const db = await getSql();
+    await requirePlatformOwner(db, context.userId);
+    try {
+      await updateOwnerPlan(db, context.userId, data);
+      return { ok: true as const, catalogue: await loadOwnerCatalogue(db) };
+    } catch (err) {
+      return catalogueResult(err);
+    }
+  });
+
+export const createOwnerPriceFn = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator(priceCreate)
+  .handler(async ({ context, data }) => {
+    const db = await getSql();
+    await requirePlatformOwner(db, context.userId);
+    try {
+      await createOwnerPriceVersion(db, context.userId, data);
+      return { ok: true as const, catalogue: await loadOwnerCatalogue(db) };
+    } catch (err) {
+      return catalogueResult(err);
+    }
+  });
+
+export const activateOwnerPriceFn = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator(priceVersionId)
+  .handler(async ({ context, data }) => {
+    const db = await getSql();
+    await requirePlatformOwner(db, context.userId);
+    try {
+      await activateOwnerPriceVersion(db, context.userId, data.priceVersionId);
+      return { ok: true as const, catalogue: await loadOwnerCatalogue(db) };
+    } catch (err) {
+      return catalogueResult(err);
+    }
+  });
+
+export const retireOwnerPriceFn = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator(priceVersionId)
+  .handler(async ({ context, data }) => {
+    const db = await getSql();
+    await requirePlatformOwner(db, context.userId);
+    try {
+      await retireOwnerPriceVersion(db, context.userId, data.priceVersionId);
+      return { ok: true as const, catalogue: await loadOwnerCatalogue(db) };
+    } catch (err) {
+      return catalogueResult(err);
+    }
   });
 
 export const getOwnerSystemFn = createServerFn({ method: "GET" })

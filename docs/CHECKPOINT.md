@@ -27,7 +27,8 @@ Living status: **`BUILD_STATE.md`** (repo root).
 | CP26C-O3.2A | **PASS** — controller built; dispatch **RETIRED** in O3.2C |
 | CP26C-O3.2B | **PASS** — Production 0026 applied (GHA 36135836457) |
 | CP26C-O3.2C | **PASS** — Gate B **0001–0026**; 0026 workflow retired |
-| **Next product checkpoint** | **CP26C-O3.3** — Owner Commercial Catalogue UI |
+| CP26C-O3.3 | **PASS** — Owner commercial catalogue UI; amounts still **UNDEFINED** |
+| **Next product checkpoint** | **CP26C-O3.3V** — human Production verification of `/owner/plans`, then **CP26C-O3.4** (not started) |
 | Forward roadmap | **[ROADMAP.md](ROADMAP.md)** (CP26–CP31) |
 | Commercial catalogue | **[COMMERCIAL_CATALOGUE.md](COMMERCIAL_CATALOGUE.md)** |
 | Owner architecture | **[OWNER_CONTROL_PLANE.md](OWNER_CONTROL_PLANE.md)** |
