@@ -12,12 +12,12 @@ GitHub is authoritative for application source. Living status: **`BUILD_STATE.md
 | CP25G.3 | **CLOSED** |
 | **CP26A** | **CLOSED** |
 | **CP26B** | **CLOSED** |
-| **Next execution checkpoint** | **CP26C-O3.2 — source migration 0026** (O3.1 contract PASS) |
+| **Next execution checkpoint** | **CP26C-O3.2A** — 0026 Production apply controller, **BUILD ONLY** (O3.2 source verified, not applied) |
 | Forward roadmap | **`docs/ROADMAP.md`** |
 | Fixture policy | **`docs/FIXTURE_POLICY.md`** |
 | Production | Vercel `scan-book-go` / last observed `dpl_FmUosqz2wy7aCT51rNjdanJnuviZ` READY |
 | Alias | `https://scan-book-go.vercel.app` |
-| Migrations | `0001`–`0025` (applied on Production Neon). One platform Owner. First-Owner bootstrap workflow **RETIRED**. |
+| Migrations | source `0001`–`0026`. Production Neon applied `0001`–`0025` only. 0026 **unapplied**. Gate B **0001–0025**. One platform Owner. First-Owner bootstrap workflow **RETIRED**. |
 
 `cp17-known-good` (`45e171a23037b7c94005018cd2126033a449d6f0`) is an **immutable historical tag**. It is **not** current `main`. Checking it out would roll the product backwards.
 

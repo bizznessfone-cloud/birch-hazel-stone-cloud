@@ -114,6 +114,19 @@ begin
 end;
 $catalogue$;
 
+create or replace function sbg_catalogue_plan_guard()
+returns trigger
+language plpgsql
+set search_path = public, pg_temp
+as $catalogue$
+begin
+  if new.code is distinct from old.code then
+    raise exception 'plan code is immutable' using errcode = '42501';
+  end if;
+  return new;
+end;
+$catalogue$;
+
 create or replace function sbg_catalogue_price_version_guard()
 returns trigger
 language plpgsql
@@ -156,18 +169,33 @@ $catalogue$;
 drop trigger if exists sbg_saas_plans_no_delete on sbg_saas_plans;
 create trigger sbg_saas_plans_no_delete before delete on sbg_saas_plans
 for each row execute function sbg_catalogue_reject_delete();
+drop trigger if exists sbg_saas_plans_no_truncate on sbg_saas_plans;
+create trigger sbg_saas_plans_no_truncate before truncate on sbg_saas_plans
+for each statement execute function sbg_catalogue_reject_delete();
+drop trigger if exists sbg_saas_plans_code_guard on sbg_saas_plans;
+create trigger sbg_saas_plans_code_guard before update on sbg_saas_plans
+for each row execute function sbg_catalogue_plan_guard();
 drop trigger if exists sbg_saas_price_versions_guard on sbg_saas_price_versions;
 create trigger sbg_saas_price_versions_guard before update on sbg_saas_price_versions
 for each row execute function sbg_catalogue_price_version_guard();
 drop trigger if exists sbg_saas_price_versions_no_delete on sbg_saas_price_versions;
 create trigger sbg_saas_price_versions_no_delete before delete on sbg_saas_price_versions
 for each row execute function sbg_catalogue_reject_delete();
+drop trigger if exists sbg_saas_price_versions_no_truncate on sbg_saas_price_versions;
+create trigger sbg_saas_price_versions_no_truncate before truncate on sbg_saas_price_versions
+for each statement execute function sbg_catalogue_reject_delete();
 drop trigger if exists sbg_saas_stripe_mappings_no_delete on sbg_saas_stripe_mappings;
 create trigger sbg_saas_stripe_mappings_no_delete before delete on sbg_saas_stripe_mappings
 for each row execute function sbg_catalogue_reject_delete();
+drop trigger if exists sbg_saas_stripe_mappings_no_truncate on sbg_saas_stripe_mappings;
+create trigger sbg_saas_stripe_mappings_no_truncate before truncate on sbg_saas_stripe_mappings
+for each statement execute function sbg_catalogue_reject_delete();
 drop trigger if exists sbg_owner_audit_immutable on sbg_owner_audit_events;
 create trigger sbg_owner_audit_immutable before update or delete on sbg_owner_audit_events
 for each row execute function sbg_owner_audit_immutable();
+drop trigger if exists sbg_owner_audit_no_truncate on sbg_owner_audit_events;
+create trigger sbg_owner_audit_no_truncate before truncate on sbg_owner_audit_events
+for each statement execute function sbg_owner_audit_immutable();
 
 create or replace function sbg_catalogue_update_plan(
   p_actor_user_id text,
@@ -390,6 +418,10 @@ end;
 $catalogue$;
 
 revoke all on function sbg_catalogue_require_owner(text) from public;
+revoke all on function sbg_catalogue_plan_guard() from public;
+revoke all on function sbg_catalogue_reject_delete() from public;
+revoke all on function sbg_catalogue_price_version_guard() from public;
+revoke all on function sbg_owner_audit_immutable() from public;
 revoke all on function sbg_catalogue_update_plan(text,text,text,text,integer,boolean) from public;
 revoke all on function sbg_catalogue_create_price_version(text,text,integer,text,text,smallint) from public;
 revoke all on function sbg_catalogue_activate_price_version(text,uuid) from public;
@@ -397,6 +429,10 @@ revoke all on function sbg_catalogue_retire_price_version(text,uuid) from public
 revoke all on function sbg_catalogue_record_stripe_mapping(text,uuid,text,text,text) from public;
 revoke all on function sbg_resolve_domain_a_checkout_price(text,text) from public;
 revoke all on function sbg_catalogue_require_owner(text) from aether_app;
+revoke all on function sbg_catalogue_plan_guard() from aether_app;
+revoke all on function sbg_catalogue_reject_delete() from aether_app;
+revoke all on function sbg_catalogue_price_version_guard() from aether_app;
+revoke all on function sbg_owner_audit_immutable() from aether_app;
 revoke all on function sbg_catalogue_record_stripe_mapping(text,uuid,text,text,text) from aether_app;
 grant execute on function sbg_catalogue_update_plan(text,text,text,text,integer,boolean) to aether_app;
 grant execute on function sbg_catalogue_create_price_version(text,text,integer,text,text,smallint) to aether_app;

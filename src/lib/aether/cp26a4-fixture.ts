@@ -125,6 +125,15 @@ export async function openCp26cO2Db(): Promise<PGlite> {
   return openFixtureDb(MIGRATIONS_THROUGH_0025);
 }
 
+export const MIGRATIONS_THROUGH_0026 = [
+  ...MIGRATIONS_THROUGH_0025,
+  "0026_cp26co3_commercial_catalogue.sql",
+] as const;
+
+export async function openCp26cO32Db(): Promise<PGlite> {
+  return openFixtureDb(MIGRATIONS_THROUGH_0026);
+}
+
 export function asBookingDb(pg: PGlite): BookingDb {
   return {
     query: async <T>(text: string, params?: unknown[]) => (await pg.query<T>(text, params)).rows,

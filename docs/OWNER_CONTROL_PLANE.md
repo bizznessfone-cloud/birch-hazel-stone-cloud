@@ -20,7 +20,8 @@ Example minor-unit figures in §6 are **not** prices. Canonical amounts are
 | Foundation | **CP26C-O2 CLOSED** (Production-proven; 0025 applied) |
 | 0025 controller | **CP26C-O2A/O2B PASS** |
 | First Owner | **bootstrapped** — 1 active grant; workflow **RETIRED** (GHA 36116463589) |
-| Next implementation | **CP26C-O3.2** — source migration 0026 |
+| Next implementation | **CP26C-O3.2A** — 0026 Production controller, **BUILD ONLY** |
+| Catalogue source | **CP26C-O3.2 PASS** — `0026` verified, **not applied** |
 | Catalogue contract | **CP26C-O3.1 PASS** — [`COMMERCIAL_CATALOGUE.md`](COMMERCIAL_CATALOGUE.md) |
 | Stripe TEST resources | **CP26C.3** (paused until O3.4 canonical amounts) |
 | LIVE commerce | **CP31 only** |
@@ -567,7 +568,7 @@ columns on the price version), no env dual-read, no Vercel Price ID copy in
 C.3, Checkout cutover only in **CP26C.4**, amounts still UNDEFINED, 0026 not
 created here.
 
-**O3.2 implements** the 0026 schema in that contract (source only).
+**O3.2 PASS.** Source migration `0026` matches this contract and is **not applied**. Digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446`. Gate B remains 0001–0025. Next is **CP26C-O3.2A** (controller build only, not apply).
 
 **Do not:** create Stripe TEST/LIVE Prices (that is CP26C.3 / CP31); set
 commerce mode; allowlist the verification hotel; charge anyone; invent amounts.
@@ -595,7 +596,8 @@ CP26C.2 PASS
   → CP26C-O1 (this document)
   → CP26C-O2
   → CP26C-O3.1 (catalogue contract)
-  → CP26C-O3.2 (source 0026)
+  → CP26C-O3.2 (source 0026 verified, unapplied)
+  → CP26C-O3.2A (controller build only)
   → dedicated 0026 Production controller
   → CP26C-O3.3 / O3.4
   → resume CP26C.3 (TEST mappings only)

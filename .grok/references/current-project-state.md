@@ -28,7 +28,8 @@ not trail the repository.
 | CP26C-O2C.2 | **PASS** — first Owner bootstrapped (GHA 36116463589) |
 | CP26C-O2C.3 | **PASS** — bootstrap workflow retired |
 | CP26C-O3.1 | **PASS** — commercial catalogue contract (`docs/COMMERCIAL_CATALOGUE.md`) |
-| **Next product checkpoint** | **CP26C-O3.2 — source migration 0026** |
+| CP26C-O3.2 | **PASS** — source verified, **not applied** |
+| **Next product checkpoint** | **CP26C-O3.2A** — 0026 Production apply controller, **BUILD ONLY** |
 | Forward roadmap | `docs/ROADMAP.md` (CP26–CP31) |
 | Commercial catalogue | `docs/COMMERCIAL_CATALOGUE.md` |
 | Owner architecture | `docs/OWNER_CONTROL_PLANE.md` |
@@ -53,8 +54,11 @@ not trail the repository.
 
 ## Database
 
-Migrations **0001–0025** exist in source. Production Neon is applied through **0025**.
+Migrations **0001–0026** exist in source. Production Neon is applied through **0025** only.
+`0026_cp26co3_commercial_catalogue.sql` is **SOURCE VERIFIED / NOT APPLIED**.
+Digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446`.
 Gate B accepted ledger is **0001–0025**. `AUTHORISED_PENDING=[]`.
+Canonical BASIC / PRO / PREMIUM amounts remain **UNDEFINED**. Commerce **OFF**. CP26C.3 **PAUSED**.
 Active platform Owners: **1** (OPERATOR CONTROLLED / REDACTED). First-Owner bootstrap workflow is **RETIRED**. Historical run [36116463589](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36116463589).
 0025 digest `575aabcb7322fc8ca63c8a3dd137d358f76375f1777ed59cf04c1d98d6c066fd`.
 Generic migrator remains fail-closed. Spent 0024 `workflow_dispatch` is retired.

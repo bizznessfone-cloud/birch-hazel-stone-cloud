@@ -24,7 +24,8 @@ Canonical living roadmap. Other living documents should **point here**, not rede
 | CP26C-O2C.2 | **PASS** — first Owner bootstrapped (GHA 36116463589) |
 | CP26C-O2C.3 | **PASS** — bootstrap workflow retired |
 | CP26C-O3.1 | **PASS** — commercial catalogue contract ([`COMMERCIAL_CATALOGUE.md`](COMMERCIAL_CATALOGUE.md)); amounts UNDEFINED |
-| **Next product checkpoint** | **CP26C-O3.2 — source migration 0026** (not applied; Gate B stays 0001–0025) |
+| CP26C-O3.2 | **PASS** — source `0026` verified, **not applied**; digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446` |
+| **Next product checkpoint** | **CP26C-O3.2A** — dedicated single-use Production 0026 apply controller, **BUILD ONLY** (Gate B stays 0001–0025) |
 
 ---
 
@@ -180,12 +181,12 @@ Exercise Domain A against Stripe **TEST MODE ONLY** (`sk_test`, test products/pr
 
 Non-blocking UI backlog: Owner header showed “SSBG Verification”. Deferred to UI polish. Not an authorization defect.
 
-**Next product: CP26C-O3.2** source migration `0026` for the catalogue in [`COMMERCIAL_CATALOGUE.md`](COMMERCIAL_CATALOGUE.md). **CP26C-O3.1 PASS.** Amounts remain UNDEFINED. Do not invent them. Do not resume CP26C.3 until O3.4 records canonical versions. Checkout stays on transitional env Price IDs until **CP26C.4** (no env fallback). C.3 may create Stripe TEST objects only and must not write Vercel Price IDs.
+**Next product: CP26C-O3.2A** — build only the dedicated single-use Production controller for `0026`. **CP26C-O3.2 PASS / SOURCE VERIFIED / NOT APPLIED.** File `migrations/0026_cp26co3_commercial_catalogue.sql`. Digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446`. Gate B stays **0001–0025**. `AUTHORISED_PENDING=[]`. Amounts remain UNDEFINED. Do not apply 0026 in O3.2A. Do not start O3.3. Do not resume CP26C.3. Checkout stays on transitional env Price IDs until **CP26C.4**.
 
 Sequence:
 
 ```
-CP26C.2 PASS → CP26C-O1 → CP26C-O2 → CP26C-O2A → CP26C-O2B (0025 applied) → CP26C-O2C (first Owner bootstrapped; workflow retired) → CP26C-O3.1 (contract) → CP26C-O3.2 (source 0026) → dedicated 0026 Production controller → CP26C-O3.3 (Owner plans UI) → CP26C-O3.4 (human canonical prices) → resume CP26C.3 (TEST mappings only) → CP26C.4 (checkout cutover) → CP31 (LIVE)
+CP26C.2 PASS → CP26C-O1 → CP26C-O2 → CP26C-O2A → CP26C-O2B (0025 applied) → CP26C-O2C (first Owner bootstrapped; workflow retired) → CP26C-O3.1 (contract) → CP26C-O3.2 (source 0026 verified, unapplied) → CP26C-O3.2A (0026 controller BUILD ONLY) → later 0026 Production apply → CP26C-O3.3 (Owner plans UI) → CP26C-O3.4 (human canonical prices) → resume CP26C.3 (TEST mappings only) → CP26C.4 (checkout cutover) → CP31 (LIVE)
 ```
 
 **Do not enable test commerce on public Production until CP26C.4.** Empty allowlist = nobody authorised. Only **CP31** activates live commerce.
