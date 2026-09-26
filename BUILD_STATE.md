@@ -16,8 +16,9 @@ commercial catalogue UI over that schema. Canonical amounts were not invented.
 **CP26C-O2D** isolated Owner sign-in at `/owner/login`. Human verification of
 that sign-in **passed**. **CP26C-O3.3V** passed: `/owner/plans` showed the
 three active plans and no prices. **CP26C-O3R** reconciled the commercial
-model to one organisation subscription and property-licence quantity. No
-implementation. Next is **CP26C-O4.1**. Former **O3.4** is superseded. Do not
+model to one organisation subscription and property-licence quantity.
+**CP26C-O4.1** added source migration `0027` only. It is not applied. Next is
+**CP26C-O4.2**. Former **O3.4** is superseded. Do not
 start it. Do not resume CP26C.3.
 Production commerce remains **OFF**. Canonical amounts remain **UNDEFINED**.
 Migration **0025** is **Production-applied**. First Production platform Owner is
@@ -72,7 +73,7 @@ Migration **0025** is **Production-applied**. First Production platform Owner is
 | **Next control-plane** | **CP26C-O3R PASS** — commercial model reconciled; implementation not started |
 | 0026 controller | historical script `scripts/cp26co32a-0026-production-migrate.mjs`; workflow **RETIRED**; npm alias **RETIRED** |
 | Catalogue | schema installed; Owner UI reads `sbg_saas_*`; plans **basic / pro / premium** remain historical tier seeds; Production price versions **0**; Stripe mappings **0**; LIVE locks **false/false**; amounts **UNDEFINED** |
-| **Next product** | **CP26C-O4.1** source-only organisation persistence (not started). Former **O3.4** superseded. **CP26C.3** not resumed |
+| **Next product** | **CP26C-O4.2** single-use 0027 controller (not started). **O4.1 SOURCE COMPLETE**, unapplied. **CP26C.3** not resumed |
 
 Do not dispatch historical 0022/0023/0024 controllers or the retired 0026 workflow. Owner secret remains GitHub Actions `AETHER_DATABASE_OWNER_URL` only — never Vercel. Future migrations need a dedicated single-use controller and an explicit checkpoint. 0027+ stays fail-closed.
 
@@ -98,7 +99,7 @@ every hotel. Live mode ignores this allowlist. Do not put a Production hotel UUI
 | **CP26A** | **CLOSED** |
 | **CP26B** | **CLOSED** |
 | **Next control-plane** | none; CP26C-O2 **CLOSED** |
-| **Next product checkpoint** | **CP26C-O4.1** source-only organisation persistence (not started). Former **O3.4** superseded. **CP26C.3** not resumed |
+| **Next product checkpoint** | **CP26C-O4.2** single-use 0027 controller (not started). **O4.1 SOURCE COMPLETE**, unapplied. **CP26C.3** not resumed |
 | Forward roadmap | **[docs/ROADMAP.md](docs/ROADMAP.md)** (CP26–CP31) |
 
 ### Production
@@ -218,7 +219,7 @@ account → hotel → service → preview → QR → plan → Stripe → LIVE
 - Do not start CP26C test commerce on public Production. Former CP26C.4 is superseded; **CP26C-O11** is not authorised. Empty `SBG_SAAS_TEST_HOTEL_IDS` fail-closes every hotel.
 - Do not invent CP26B.5.
 
-Canonical forward path: **`docs/ROADMAP.md`**. Commercial model: **`docs/COMMERCIAL_MODEL.md`**. Commercial catalogue: **`docs/COMMERCIAL_CATALOGUE.md`**. Fixture policy: **`docs/FIXTURE_POLICY.md`**. Owner architecture: **`docs/OWNER_CONTROL_PLANE.md`**. **CP26C-O3R PASS** — organisation property-licence model reconciled; no implementation. Human O2D and O3.3V **PASS**. Former **O3.4** is superseded. **CP26C.3** is not resumed. Next is **CP26C-O4.1**. Canonical amounts remain **UNDEFINED**. Production price versions remain **0**. CP26C-O3.3 implemented the Owner catalogue UI. CP26C-O3.2C is **PASS**. CP26C-O3.2B is **PASS** (GHA [36135836457](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36135836457)). The 0026 workflow is **RETIRED**. Active Production platform Owners: **1** (OPERATOR CONTROLLED / REDACTED). First-Owner bootstrap workflow **RETIRED** (historical run [36116463589](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36116463589)). Gate B accepted ledger is **0001–0026**. Price versions **0**. Stripe mappings **0**. LIVE locks **false/false**. No canonical pricing. Commerce **OFF**. Stripe untouched.
+Canonical forward path: **`docs/ROADMAP.md`**. Commercial model: **`docs/COMMERCIAL_MODEL.md`**. Commercial catalogue: **`docs/COMMERCIAL_CATALOGUE.md`**. Fixture policy: **`docs/FIXTURE_POLICY.md`**. Owner architecture: **`docs/OWNER_CONTROL_PLANE.md`**. **CP26C-O3R PASS** — organisation property-licence model reconciled; no implementation. Human O2D and O3.3V **PASS**. Former **O3.4** is superseded. **CP26C.3** is not resumed. **CP26C-O4.1 SOURCE COMPLETE** — `0027_cp26co41_organisation_property_licence.sql` is source only and unauthorised. Next is **CP26C-O4.2**. Canonical amounts remain **UNDEFINED**. Production price versions remain **0**. CP26C-O3.3 implemented the Owner catalogue UI. CP26C-O3.2C is **PASS**. CP26C-O3.2B is **PASS** (GHA [36135836457](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36135836457)). The 0026 workflow is **RETIRED**. Active Production platform Owners: **1** (OPERATOR CONTROLLED / REDACTED). First-Owner bootstrap workflow **RETIRED** (historical run [36116463589](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36116463589)). Gate B accepted ledger is **0001–0026**. Price versions **0**. Stripe mappings **0**. LIVE locks **false/false**. No canonical pricing. Commerce **OFF**. Stripe untouched.
 
 Non-blocking UI backlog: Owner header rendered “SSBG Verification” (presentation/spacing or avatar-initial concatenation). Deferred. Not an authorization defect.
 

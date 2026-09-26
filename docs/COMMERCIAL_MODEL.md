@@ -30,12 +30,14 @@ logic, analytics, seeds, and tests must not hard-code it.
 | Former O3.4 | **SUPERSEDED** — do not start; it would price the obsolete tiers |
 | CP26C.3 | **NOT RESUMED** — its three-tier TEST Price plan is superseded |
 | CP26C.4 | **SUPERSEDED as previously scoped** — do not cut Checkout over to three tier Prices |
-| Next | **CP26C-O4.1** source-only organisation and property-licence persistence (not started) |
+| Next | **CP26C-O4.2** single-use 0027 controller (not started). **O4.1 SOURCE COMPLETE**, unapplied |
 | Commerce | **OFF** |
 | Ledger | Gate B **0001–0026**; `AUTHORISED_PENDING=[]`; 0027+ fail-closed |
 | 0026 digest | `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446` unchanged |
 | Production prices | operator-attested **0** versions, **0** mappings, **0** real SaaS subscriptions; not re-queried |
 | LIVE locks | source default **false / false** |
+
+**CP26C-O4.1 source.** `migrations/0027_cp26co41_organisation_property_licence.sql` now exists. It is not in Gate B, not authorised, and not applied. The sentences below that say the tables were "not created here" are the O3R decision, which this migration follows. Membership does **not** use a closed `billing_owner` | `operator` check: `role` is an extensible token and `billing_authority` is the only billing capability. That avoids freezing a two-role taxonomy in this persistence step.
 
 ---
 
@@ -202,8 +204,7 @@ row. Its unique customer and subscription indexes cannot store one
 subscription against many hotels.
 
 - `sbg_organisations` — the customer. Not a hotel and not a user.
-- `sbg_organisation_members` — `(organisation_id, user_id)`, role limited to
-  `billing_owner` or `operator`. Users are access. No other role matrix.
+- `sbg_organisation_members` — active `(organisation_id, user_id)`. `role` is an extensible token. `billing_authority` is the only billing capability. Users are access. Removal sets `removed_at` and does not delete the user or a licence.
 - `hotels.organisation_id` — nullable foreign key. One property, one
   organisation. Null means not yet attached.
 - `sbg_organisation_billing` — primary key `organisation_id`. Unique Stripe
@@ -371,11 +372,8 @@ checkpoint. Each Production apply, when it exists, uses a new single-use
 controller, then reconciliation, then retirement. The generic migrator never
 applies SQL.
 
-1. **CP26C-O4.1** — source migration plus local tests only. Organisation,
-   membership, nullable `hotels.organisation_id`, allocation, organisation
-   billing, new ordered apply function. No plan-check change. No amount. No
-   backfill. No Stripe. Commerce stays OFF.
-2. **CP26C-O4.2** — single-use Production controller for that migration.
+1. **CP26C-O4.1 SOURCE COMPLETE** — `migrations/0027_cp26co41_organisation_property_licence.sql` and local tests. Not in the accepted ledger. Not applied. No amount. No backfill. No Stripe. Commerce stays OFF.
+2. **CP26C-O4.2** — next. Single-use Production controller for that migration. Not started.
 3. **CP26C-O4.3** — one Production apply.
 4. **CP26C-O4.4** — Gate B reconcile and retire that controller.
 5. **CP26C-O5.1** — source migration: `property_licence` identity, deactivate
@@ -399,7 +397,10 @@ Only **CP31** may enable LIVE commerce.
 
 ---
 
-## 12. This checkpoint did not
+## 12. What O3R did not
+
+These statements describe CP26C-O3R only. CP26C-O4.1 later added the unapplied
+source migration named above. O3R itself did none of the following.
 
 No Production database connection. No mutation. No migration file. No Stripe
 call. No Product or Price. No webhook. No Vercel change. No price version. No

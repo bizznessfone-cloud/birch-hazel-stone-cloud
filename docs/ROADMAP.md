@@ -32,7 +32,7 @@ Canonical living roadmap. Other living documents should **point here**, not rede
 | CP26C-O2D | **PASS** — `/owner/login` isolated from hotel `/login`; no migration |
 | CP26C-O3.3V | **PASS** — operator Production plans verification; no price created |
 | CP26C-O3R | **PASS** — organisation property-licence model reconciled; no implementation ([`COMMERCIAL_MODEL.md`](COMMERCIAL_MODEL.md)) |
-| **Next** | **CP26C-O4.1** source-only organisation persistence (not started). Former **O3.4** superseded. **CP26C.3** not resumed |
+| **Next** | **CP26C-O4.2** single-use 0027 controller (not started). **O4.1 SOURCE COMPLETE**, unapplied. Former **O3.4** superseded. **CP26C.3** not resumed |
 
 ---
 
@@ -200,7 +200,7 @@ Non-blocking UI backlog: Owner header showed “SSBG Verification”. Deferred t
 
 **CP26C-O3R PASS:** The locked commercial model is one organisation, one Stripe customer, one subscription, quantity = purchased property licences. There is no organisation table in source. Billing is hotel-scoped. Decision: [`COMMERCIAL_MODEL.md`](COMMERCIAL_MODEL.md). No migration. No runtime change. Amounts remain **UNDEFINED** in the catalogue. The operator-locked unit amount was not copied into source. Former **O3.4**, the previously scoped **CP26C.3** resume, and the previously scoped **CP26C.4** tier cutover are **superseded**. Do not start them. Only **CP31** activates LIVE commerce.
 
-**Next:** **CP26C-O4.1** — source-only organisation, membership, property attachment, licence allocation, and organisation billing persistence. Not started.
+**Next:** **CP26C-O4.2** — single-use Production controller for `0027_cp26co41_organisation_property_licence.sql`. Not started. **CP26C-O4.1 SOURCE COMPLETE.** The migration is source only. Gate B stays **0001–0026**. `AUTHORISED_PENDING=[]`. No price version. Commerce **OFF**.
 
 The sequence below is the **pre-O3R** plan. It is historical. Do not execute its tail.
 

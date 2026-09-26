@@ -31,7 +31,7 @@ Living status: **`BUILD_STATE.md`** (repo root).
 | CP26C-O2D | **PASS** — `/owner/login` isolated from hotel `/login`; no migration |
 | CP26C-O3.3V | **PASS** — operator Production `/owner/plans` verification; no price created |
 | CP26C-O3R | **PASS** — property-licence model reconciled; no implementation ([`COMMERCIAL_MODEL.md`](COMMERCIAL_MODEL.md)) |
-| **Next product checkpoint** | **CP26C-O4.1** source-only organisation persistence (not started). Former **O3.4** superseded. **CP26C.3** not resumed |
+| **Next product checkpoint** | **CP26C-O4.2** single-use 0027 controller (not started). **O4.1 SOURCE COMPLETE**, unapplied. Former **O3.4** superseded |
 | Forward roadmap | **[ROADMAP.md](ROADMAP.md)** (CP26–CP31) |
 | Commercial catalogue | **[COMMERCIAL_CATALOGUE.md](COMMERCIAL_CATALOGUE.md)** |
 | Owner architecture | **[OWNER_CONTROL_PLANE.md](OWNER_CONTROL_PLANE.md)** |

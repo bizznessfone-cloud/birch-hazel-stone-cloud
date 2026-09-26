@@ -67,7 +67,10 @@ test("0026 exists once and 0001-0025 are unchanged versus the source commit", ()
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
-  assert.deepEqual(changed, [`migrations/${migrationName}`]);
+  assert.deepEqual(changed, [
+    `migrations/${migrationName}`,
+    "migrations/0027_cp26co41_organisation_property_licence.sql",
+  ]);
   for (const [name, digest] of Object.entries(REVIEWED_DIGESTS)) {
     const bytes = readFileSync(join(root, "migrations", name));
     const hash = createHash("sha256").update(bytes).digest("hex");
@@ -75,23 +78,32 @@ test("0026 exists once and 0001-0025 are unchanged versus the source commit", ()
   }
 });
 
-test("Gate B accepts 0001-0026 and refuses 0027", async () => {
+test("Gate B accepts 0001-0026 and refuses the unapplied 0027 source file", async () => {
   assert.equal(ACCEPTED_LEDGER.at(-1), migrationName);
   assert.equal(ACCEPTED_LEDGER.includes(migrationName), true);
+  assert.equal(ACCEPTED_LEDGER.includes("0027_cp26co41_organisation_property_licence.sql"), false);
   assert.deepEqual(AUTHORISED_PENDING, []);
   assert.equal(isAuthorisedPending(migrationName), false);
+  assert.equal(isAuthorisedPending("0027_cp26co41_organisation_property_licence.sql"), false);
   assert.equal(isAuthorisedPending("0027_later.sql"), false);
 
-  const preflight = evaluatePreflight(acceptedFacts());
-  assert.equal(preflight.ok, true);
-  assert.deepEqual(preflight.pending, []);
-  const baseline = evaluateMigrationBaseline(preflight);
+  const acceptedOnly = evaluatePreflight({
+    ...acceptedFacts(),
+    sourceMigrations: [...ACCEPTED_LEDGER],
+  });
+  assert.equal(acceptedOnly.ok, true);
+  assert.deepEqual(acceptedOnly.pending, []);
+  const baseline = evaluateMigrationBaseline(acceptedOnly);
   assert.equal(baseline.ok, true);
   assert.equal(baseline.migrated, false);
 
+  const live = evaluatePreflight(acceptedFacts());
+  assert.equal(live.ok, false);
+  assert.deepEqual(live.unexpectedPending, ["0027_cp26co41_organisation_property_licence.sql"]);
+
   const future = evaluatePreflight({
     ...acceptedFacts(),
-    sourceMigrations: [...sourceMigrations(), "0027_later.sql"],
+    sourceMigrations: [...ACCEPTED_LEDGER, "0027_later.sql"],
   });
   assert.equal(future.ok, false);
   assert.deepEqual(future.unexpectedPending, ["0027_later.sql"]);
@@ -106,7 +118,7 @@ test("Gate B accepts 0001-0026 and refuses 0027", async () => {
   });
   assert.equal(applied, 0);
   assert.equal(guarded.migrated, false);
-  assert.equal(guarded.ok, true);
+  assert.equal(guarded.ok, false);
 });
 
 test("generic migrator cannot apply 0026 and the spent dispatch surface is gone", () => {

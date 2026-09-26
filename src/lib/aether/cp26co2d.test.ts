@@ -207,7 +207,8 @@ test("public and operator surfaces do not advertise the Owner control plane", ()
   }
   assert.deepEqual(hits, []);
   const migrations = readdirSync(join(root, "migrations")).filter((name) => name.endsWith(".sql"));
-  assert.equal(migrations.some((name) => name.startsWith("0027")), false);
+  const later = migrations.filter((name) => name >= "0027").sort();
+  assert.deepEqual(later, ["0027_cp26co41_organisation_property_licence.sql"]);
 });
 
 function asSql(pg: { query: (text: string, params?: unknown[]) => Promise<{ rows: unknown[] }> }): Sql {

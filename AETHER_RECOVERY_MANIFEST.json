@@ -16,11 +16,11 @@
   "cp26b3": "CLOSED",
   "cp26b4": "PASS",
   "next_numbered_checkpoint": "CP26C",
-  "next_execution_checkpoint": "CP26C-O4.1 source-only organisation persistence (not started). CP26C-O3R PASS. Former O3.4 superseded. CP26C.3 not resumed",
+  "next_execution_checkpoint": "CP26C-O4.2 single-use 0027 controller (not started). CP26C-O4.1 SOURCE COMPLETE, unapplied. Gate B remains 0001-0026",
   "forward_roadmap": "docs/ROADMAP.md",
   "fixture_policy": "docs/FIXTURE_POLICY.md",
   "do_not_invent_cp26": false,
-  "phase": "CP26C-O3R PASS. Organisation property-licence model reconciled in docs/COMMERCIAL_MODEL.md. No implementation. No migration. Human O2D PASS. Human O3.3V PASS. Former O3.4 superseded. CP26C.3 not resumed. Next CP26C-O4.1. Commerce OFF. Canonical amounts UNDEFINED. Production price versions 0. Stripe mappings 0. LIVE locks false/false. Gate B 0001-0026. AUTHORISED_PENDING empty. 0026 digest 4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446. 0026 workflow RETIRED. Only CP31 activates commerce.",
+  "phase": "CP26C-O4.1 SOURCE COMPLETE. migrations/0027_cp26co41_organisation_property_licence.sql is source only, not authorised, not applied. Next CP26C-O4.2 controller, not started. Commerce OFF. Canonical amounts UNDEFINED. No price version. Gate B 0001-0026. AUTHORISED_PENDING empty. 0026 digest 4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446. Only CP31 activates commerce.",
   "timestamp": "2026-09-26T13:30:00+03:00",
   "production": {
     "vercel_project": "scan-book-go",

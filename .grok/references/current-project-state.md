@@ -36,7 +36,7 @@ not trail the repository.
 | CP26C-O2D | **PASS** — `/owner/login` isolated from hotel `/login`; human verification **PASS** |
 | CP26C-O3.3V | **PASS** — operator plans verification; no price created |
 | CP26C-O3R | **PASS** — property-licence model reconciled; no implementation (`docs/COMMERCIAL_MODEL.md`) |
-| **Next** | **CP26C-O4.1** source-only organisation persistence (not started). Former **O3.4** superseded. **CP26C.3** not resumed |
+| **Next** | **CP26C-O4.2** single-use 0027 controller (not started). **O4.1 SOURCE COMPLETE**, unapplied |
 | Forward roadmap | `docs/ROADMAP.md` (CP26–CP31) |
 | Commercial model | `docs/COMMERCIAL_MODEL.md` |
 | Commercial catalogue | `docs/COMMERCIAL_CATALOGUE.md` |

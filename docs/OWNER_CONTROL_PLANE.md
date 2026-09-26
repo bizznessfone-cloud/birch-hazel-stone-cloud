@@ -22,7 +22,7 @@ Example minor-unit figures in §6 are **not** prices. Canonical amounts are
 | Foundation | **CP26C-O2 CLOSED** (Production-proven; 0025 applied) |
 | 0025 controller | **CP26C-O2A/O2B PASS** |
 | First Owner | **bootstrapped** — 1 active grant; workflow **RETIRED** (GHA 36116463589) |
-| Next implementation | **CP26C-O4.1** source-only organisation persistence (not started). Former **O3.4** superseded |
+| Next implementation | **CP26C-O4.2** single-use 0027 controller (not started). **O4.1 SOURCE COMPLETE**, unapplied |
 | Owner sign-in | **CP26C-O2D PASS** — `/owner/login` sign-in only; `/login` stays operator. Human verification **PASS** |
 | Catalogue UI | **CP26C-O3.3 PASS** — Owner plans read/write through 0026; amounts **UNDEFINED**. **O3.3V PASS** |
 | Catalogue source | **CP26C-O3.2 / O3.2B PASS** — `0026` Production-applied |

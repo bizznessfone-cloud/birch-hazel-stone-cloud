@@ -11,7 +11,7 @@ Living source-of-truth. Historical README text below is evidence only.
 | CP25G.3 | **CLOSED** |
 | **CP26A** | **CLOSED** |
 | **CP26B** | **CLOSED** |
-| **Next execution checkpoint** | **CP26C-O4.1** source-only organisation persistence (not started). **CP26C-O3R PASS**. Human O2D and O3.3V **PASS**. Former **O3.4** superseded. Amounts **UNDEFINED** |
+| **Next execution checkpoint** | **CP26C-O4.2** single-use 0027 controller (not started). **O4.1 SOURCE COMPLETE**, unapplied. Former **O3.4** superseded. Amounts **UNDEFINED** |
 | Forward roadmap | **[docs/ROADMAP.md](docs/ROADMAP.md)** |
 | Fixture policy | **[docs/FIXTURE_POLICY.md](docs/FIXTURE_POLICY.md)** |
 

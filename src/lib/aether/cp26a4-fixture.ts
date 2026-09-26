@@ -130,8 +130,17 @@ export const MIGRATIONS_THROUGH_0026 = [
   "0026_cp26co3_commercial_catalogue.sql",
 ] as const;
 
+export const MIGRATIONS_THROUGH_0027 = [
+  ...MIGRATIONS_THROUGH_0026,
+  "0027_cp26co41_organisation_property_licence.sql",
+] as const;
+
 export async function openCp26cO32Db(): Promise<PGlite> {
   return openFixtureDb(MIGRATIONS_THROUGH_0026);
+}
+
+export async function openCp26cO41Db(): Promise<PGlite> {
+  return openFixtureDb(MIGRATIONS_THROUGH_0027);
 }
 
 export function asBookingDb(pg: PGlite): BookingDb {
