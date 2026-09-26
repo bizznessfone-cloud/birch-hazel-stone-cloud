@@ -43,7 +43,9 @@ Repository: `bizznessfone-cloud/birch-hazel-stone-cloud`.
 | CP26C-O3.2B | **PASS** — Production 0026 applied (GHA 36135836457) |
 | CP26C-O3.2C | **PASS** — Gate B **0001–0026**; 0026 workflow retired |
 | CP26C-O3.3 | **PASS** — Owner commercial catalogue UI; amounts still **UNDEFINED** |
-| **Next product checkpoint** | Human `/owner/login` verification, then **CP26C-O3.3V**, then **CP26C-O3.4** (not started) |
+| CP26C-O3.3V | **PASS** — operator Production plans verification; no price created |
+| CP26C-O3R | **PASS** — property-licence model reconciled; no implementation (`docs/COMMERCIAL_MODEL.md`) |
+| **Next product checkpoint** | **CP26C-O4.1** source-only organisation persistence (not started). Former **O3.4** superseded. **CP26C.3** not resumed |
 | Forward roadmap | **`docs/ROADMAP.md`** |
 | Commercial catalogue | **`docs/COMMERCIAL_CATALOGUE.md`** |
 | Fixture policy | **`docs/FIXTURE_POLICY.md`** |
@@ -69,18 +71,18 @@ CP26A is **CLOSED** (dormancy, 0023 decoupling, local tenant proofs, Production 
 **CP26B is CLOSED**. CP26C.1/C.2 isolation is in source. CP26C.3 is **paused**.
 **CP26C-O2 is CLOSED**. Production commerce remains **OFF**.
 
-Next is human verification of `/owner/login`, then **CP26C-O3.3V**, then **CP26C-O3.4**. Do not mark O3.4 complete. **CP26C-O2D PASS** — Owner sign-in is `/owner/login` (sign-in only). `/login` stays the hotel/operator surface. No migration. No Production DML. **CP26C-O3.3 PASS** — Owner commercial catalogue UI is implemented. Canonical amounts remain **UNDEFINED**. Production price versions remain **0**. **CP26C-O3.2C PASS** — Gate B is **0001–0026**. **CP26C-O3.2B PASS** — `migrations/0026_cp26co3_commercial_catalogue.sql` applied once. Digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446`. Apply run [36135836457](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36135836457), job `108073574672`. The 0026 workflow and `db:migrate:0026` alias are **RETIRED**. `AUTHORISED_PENDING=[]`. 0027+ stays fail-closed. Do **not** start CP26C.3 until O3.4 records canonical amounts. Do **not** apply further migrations through the generic migrator.
+Next is **CP26C-O4.1** (source-only organisation persistence, not started). **CP26C-O3R PASS** — commercial model reconciled in `docs/COMMERCIAL_MODEL.md`; no implementation. Human O2D and **O3.3V** **PASS**. Former **O3.4** is superseded. Do not resume CP26C.3. **CP26C-O2D PASS** — Owner sign-in is `/owner/login` (sign-in only). `/login` stays the hotel/operator surface. No migration. No Production DML. **CP26C-O3.3 PASS** — Owner commercial catalogue UI is implemented. Canonical amounts remain **UNDEFINED**. Production price versions remain **0**. **CP26C-O3.2C PASS** — Gate B is **0001–0026**. **CP26C-O3.2B PASS** — `migrations/0026_cp26co3_commercial_catalogue.sql` applied once. Digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446`. Apply run [36135836457](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36135836457), job `108073574672`. The 0026 workflow and `db:migrate:0026` alias are **RETIRED**. `AUTHORISED_PENDING=[]`. 0027+ stays fail-closed. Do **not** apply further migrations through the generic migrator.
 Exactly one platform Owner exists (OPERATOR CONTROLLED / REDACTED, hotel
 `sbg-verify-a5`). The first-Owner bootstrap workflow is **RETIRED**. Do
-**not** set `SBG_SAAS_COMMERCE=test` on public Production until CP26C.4.
-Only **CP31** activates commerce. See `docs/ROADMAP.md`,
+**not** set `SBG_SAAS_COMMERCE=test` on public Production. Former CP26C.4 is
+superseded. Only **CP31** activates commerce. See `docs/ROADMAP.md`,
 `docs/OWNER_CONTROL_PLANE.md`, and `docs/FIXTURE_POLICY.md`.
 
 Source includes the hardened booking/occupancy/tenancy base plus CP20 email architecture, CP22 `/app` onboarding, CP23 public slug, CP24 Stripe Connect source, CP25 hotel-owned guest payment source, CP25G.3 auth configuration, CP26A.1 commerce gate, CP26A.2 decoupled entitlement publication, CP26A.4 local tenant/fixture proofs, CP26A.5 Production verification tenant, CP26B.1 Domain A application lifecycle, and CP26B.2/3 ordered billing persistence **applied on Production**.
 
 Last observed Production Vercel `scan-book-go` (`dpl_FmUosqz2wy7aCT51rNjdanJnuviZ`) is READY on SHA `19512c2`. A push to `main` auto-deploys Vercel Production (docs/control-plane deploys must not activate commerce). Neon is migrated through **0026**. `DATABASE_URL` is the runtime credential; `AETHER_DATABASE_OWNER_URL` must never be added to Vercel. `SBG_SAAS_COMMERCE` is unset (fail-closed).
 
-Do not reopen CP26A or CP26B. Do not mutate the Production verification tenant unless a later checkpoint explicitly authorises it. Do **not** set `SBG_SAAS_COMMERCE=test` on public Production until CP26C.4. Isolation (`SBG_SAAS_TEST_HOTEL_IDS`) is in source as of CP26C.2; empty allowlist fail-closes every hotel. Do not dispatch retired 0022/0023/0024 controllers. Future SQL needs a new dedicated single-use controller.
+Do not reopen CP26A or CP26B. Do not mutate the Production verification tenant unless a later checkpoint explicitly authorises it. Do **not** set `SBG_SAAS_COMMERCE=test` on public Production. Former CP26C.4 is superseded. Isolation (`SBG_SAAS_TEST_HOTEL_IDS`) is in source as of CP26C.2; empty allowlist fail-closes every hotel. Do not dispatch retired 0022/0023/0024 controllers. Future SQL needs a new dedicated single-use controller.
 
 ## V1 product layer
 
@@ -145,4 +147,4 @@ Do not contact Neon, modify Vercel, change secrets, or deploy unless the active 
 
 Every checkpoint must identify the exact Git commit audited.
 
-Next is human `/owner/login` verification, then **CP26C-O3.3V**, then **CP26C-O3.4**. Do not mark O3.4 complete. Do not resume CP26C.3. Canonical roadmap: `docs/ROADMAP.md`. Commercial catalogue: `docs/COMMERCIAL_CATALOGUE.md`. Owner architecture: `docs/OWNER_CONTROL_PLANE.md`. Fixture policy: `docs/FIXTURE_POLICY.md`. CP26C-O2D is **PASS** (`/owner/login` isolated). CP26C-O3.3 is **PASS** (Owner catalogue UI; amounts still **UNDEFINED**). CP26C-O3.2C is **PASS**. CP26C-O3.2B is **PASS**. CP26C-O2 is **CLOSED**. CP26C remains open. CP26 is not go-live. Do not mark CP26C closed.
+Next is **CP26C-O4.1**. Do not start former O3.4. Do not resume CP26C.3. Canonical roadmap: `docs/ROADMAP.md`. Commercial model: `docs/COMMERCIAL_MODEL.md`. Commercial catalogue: `docs/COMMERCIAL_CATALOGUE.md`. Owner architecture: `docs/OWNER_CONTROL_PLANE.md`. Fixture policy: `docs/FIXTURE_POLICY.md`. CP26C-O3R is **PASS** (decision only). CP26C-O2D is **PASS** (`/owner/login` isolated; human verification passed). CP26C-O3.3 is **PASS** (Owner catalogue UI; O3.3V passed; amounts still **UNDEFINED**). CP26C-O3.2C is **PASS**. CP26C-O3.2B is **PASS**. CP26C-O2 is **CLOSED**. CP26C remains open. CP26 is not go-live. Do not mark CP26C closed.

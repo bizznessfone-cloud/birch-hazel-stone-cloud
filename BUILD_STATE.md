@@ -13,9 +13,12 @@ verified, then **applied once** in Production (**CP26C-O3.2B PASS**).
 **CP26C-O3.2C** reconciled Gate B to **0001–0026** and **retired** the
 single-use 0026 dispatch surface. **CP26C-O3.3** implemented the Owner
 commercial catalogue UI over that schema. Canonical amounts were not invented.
-**CP26C-O2D** isolated Owner sign-in at `/owner/login`. Next is human
-verification of that sign-in, then **CP26C-O3.3V** (`/owner/plans`), then
-**CP26C-O3.4**. Do not mark O3.4 complete.
+**CP26C-O2D** isolated Owner sign-in at `/owner/login`. Human verification of
+that sign-in **passed**. **CP26C-O3.3V** passed: `/owner/plans` showed the
+three active plans and no prices. **CP26C-O3R** reconciled the commercial
+model to one organisation subscription and property-licence quantity. No
+implementation. Next is **CP26C-O4.1**. Former **O3.4** is superseded. Do not
+start it. Do not resume CP26C.3.
 Production commerce remains **OFF**. Canonical amounts remain **UNDEFINED**.
 Migration **0025** is **Production-applied**. First Production platform Owner is
 **bootstrapped** (1 active grant). The first-Owner bootstrap workflow is **RETIRED**.
@@ -50,6 +53,8 @@ Migration **0025** is **Production-applied**. First Production platform Owner is
 | CP26C-O3.2C | **PASS** — Gate B reconciled to **0001–0026**; 0026 dispatch retired |
 | CP26C-O3.3 | **PASS** — Owner commercial catalogue UI; canonical amounts still **UNDEFINED**; no Production prices |
 | CP26C-O2D | **PASS** — `/owner/login` sign-in only; hotel `/login` unchanged; no migration |
+| CP26C-O3.3V | **PASS** — operator `/owner/plans` verification; no price created |
+| CP26C-O3R | **PASS** — model reconciled in [`docs/COMMERCIAL_MODEL.md`](docs/COMMERCIAL_MODEL.md); no implementation |
 | Last application SHA | 19512c295830fbc6fd9712d688ce364d940f87c3 (CP26B.3R catalog identity; Production 0024 already applied) |
 | Fixture policy | [`docs/FIXTURE_POLICY.md`](docs/FIXTURE_POLICY.md) |
 | Local harness | `src/lib/aether/cp26a4-fixture.ts` (tests only; not a runtime import) |
@@ -64,10 +69,10 @@ Migration **0025** is **Production-applied**. First Production platform Owner is
 | First-Owner controller | historical script `scripts/cp26co2c-first-owner-bootstrap.mjs`; workflow **RETIRED** |
 | Active platform Owners | **1** — OPERATOR CONTROLLED / REDACTED (owns `sbg-verify-a5`) |
 | Human `/owner` proof | **PASS** — Overview, Hotels, Plans & Pricing, Revenue, System |
-| **Next control-plane** | **CP26C-O2D PASS** — `/owner/login` isolated; human sign-in check is next |
+| **Next control-plane** | **CP26C-O3R PASS** — commercial model reconciled; implementation not started |
 | 0026 controller | historical script `scripts/cp26co32a-0026-production-migrate.mjs`; workflow **RETIRED**; npm alias **RETIRED** |
-| Catalogue | schema installed; Owner UI reads `sbg_saas_*` and mutates only through 0026 functions; plans **basic / pro / premium**; Production price versions **0**; Stripe mappings **0**; LIVE locks **false/false**; amounts **UNDEFINED** |
-| **Next product** | Human Owner sign-in at `/owner/login`, then **CP26C-O3.3V**, then **CP26C-O3.4** (not started) |
+| Catalogue | schema installed; Owner UI reads `sbg_saas_*`; plans **basic / pro / premium** remain historical tier seeds; Production price versions **0**; Stripe mappings **0**; LIVE locks **false/false**; amounts **UNDEFINED** |
+| **Next product** | **CP26C-O4.1** source-only organisation persistence (not started). Former **O3.4** superseded. **CP26C.3** not resumed |
 
 Do not dispatch historical 0022/0023/0024 controllers or the retired 0026 workflow. Owner secret remains GitHub Actions `AETHER_DATABASE_OWNER_URL` only — never Vercel. Future migrations need a dedicated single-use controller and an explicit checkpoint. 0027+ stays fail-closed.
 
@@ -76,7 +81,8 @@ Push to `main` currently auto-deploys Vercel Production. That is a known control
 Password never enters git/chat/Grok/Vercel/`.env`. Do not delete the Production verification tenant.
 
 `SBG_SAAS_COMMERCE=test` remains process-global and must **not** be enabled on the
-public Production deployment until CP26C.4. CP26C.2 adds `SBG_SAAS_TEST_HOTEL_IDS`
+public Production deployment. Former CP26C.4 is superseded; TEST activation is
+**CP26C-O11** and is not authorised. CP26C.2 adds `SBG_SAAS_TEST_HOTEL_IDS`
 (comma-separated hotel UUIDs). In test mode an empty/malformed allowlist fail-closes
 every hotel. Live mode ignores this allowlist. Do not put a Production hotel UUID in git.
 
@@ -92,7 +98,7 @@ every hotel. Live mode ignores this allowlist. Do not put a Production hotel UUI
 | **CP26A** | **CLOSED** |
 | **CP26B** | **CLOSED** |
 | **Next control-plane** | none; CP26C-O2 **CLOSED** |
-| **Next product checkpoint** | Human `/owner/login` verification, then **CP26C-O3.3V**, then **CP26C-O3.4** (not started) |
+| **Next product checkpoint** | **CP26C-O4.1** source-only organisation persistence (not started). Former **O3.4** superseded. **CP26C.3** not resumed |
 | Forward roadmap | **[docs/ROADMAP.md](docs/ROADMAP.md)** (CP26–CP31) |
 
 ### Production
@@ -162,7 +168,7 @@ Classification: **PERSISTENT PRODUCTION VERIFICATION TENANT — RETAIN**.
 | Billing | authenticated GET `/app/billing` resolved this configured hotel; Connect/Checkout not invoked |
 | Customer | **never** |
 
-Do not delete casually. Do not publish. Do not attach Stripe test billing to this tenant until CP26C.4/C.5 explicitly authorise it (isolation is in source; Production commerce remains OFF). Do not reuse CP25G.3 spent users or `demo-kos`.
+Do not delete casually. Do not publish. Do not attach Stripe test billing to this tenant. Former CP26C.4/C.5 is superseded and is not an authorisation (isolation is in source; Production commerce remains OFF). Do not reuse CP25G.3 spent users or `demo-kos`.
 
 ### SaaS operator journey
 
@@ -181,7 +187,7 @@ account → hotel → service → preview → QR → plan → Stripe → LIVE
 - Domain A webhooks persist Stripe `event.created` (bigint Unix seconds) and `cancel_at_period_end`. Duplicate event IDs are idempotent; older events are stale no-ops; equal-timestamp different IDs are ambiguous fail-closed.
 - SaaS entitlement (`active`/`trialing`/`past_due`) is independent of `hotels.status`.
 - Production 0024 is **applied**. First Domain A event (none exist yet) becomes the ordering baseline for historical rows with null `last_stripe_event_created`.
-- `SBG_SAAS_COMMERCE=test` is process-global. CP26C.2 isolates test commerce to `SBG_SAAS_TEST_HOTEL_IDS`. Do not set test mode on public Production until CP26C.4.
+- `SBG_SAAS_COMMERCE=test` is process-global. CP26C.2 isolates test commerce to `SBG_SAAS_TEST_HOTEL_IDS`. Do not set test mode on public Production. Former CP26C.4 is superseded.
 
 ### Guest / Ops
 
@@ -209,10 +215,10 @@ account → hotel → service → preview → QR → plan → Stripe → LIVE
 - Do not claim returning Production sign-in is unproven.
 - Do not claim the Production verification tenant does not exist.
 - Do not treat CP26 as commercial go-live. Only CP31 activates commerce.
-- Do not start CP26C test commerce on public Production until CP26C.4. Empty `SBG_SAAS_TEST_HOTEL_IDS` fail-closes every hotel.
+- Do not start CP26C test commerce on public Production. Former CP26C.4 is superseded; **CP26C-O11** is not authorised. Empty `SBG_SAAS_TEST_HOTEL_IDS` fail-closes every hotel.
 - Do not invent CP26B.5.
 
-Canonical forward path: **`docs/ROADMAP.md`**. Commercial catalogue: **`docs/COMMERCIAL_CATALOGUE.md`**. Fixture policy: **`docs/FIXTURE_POLICY.md`**. Owner architecture: **`docs/OWNER_CONTROL_PLANE.md`**. **CP26C-O2D PASS** — `/owner/login` is sign-in only; `/login` stays the hotel/operator surface; unauthenticated Owner routes redirect to `/owner/login`; non-Owners stay fail-closed; Owner sign-out returns to `/owner/login`. No migration. No Production DML. Next is human Owner sign-in verification, then **CP26C-O3.3V**, then **CP26C-O3.4**. O3.4 is not complete. CP26C-O3.3 implemented the Owner catalogue UI. Canonical amounts remain **UNDEFINED**. Production price versions remain **0**. CP26C-O3.2C is **PASS**. CP26C-O3.2B is **PASS** (GHA [36135836457](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36135836457)). The 0026 workflow is **RETIRED**. CP26C.3 remains paused until O3.4 has canonical amounts. Active Production platform Owners: **1** (OPERATOR CONTROLLED / REDACTED). First-Owner bootstrap workflow **RETIRED** (historical run [36116463589](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36116463589)). Gate B accepted ledger is **0001–0026**. Price versions **0**. Stripe mappings **0**. LIVE locks **false/false**. No canonical pricing. Commerce **OFF**. Stripe untouched.
+Canonical forward path: **`docs/ROADMAP.md`**. Commercial model: **`docs/COMMERCIAL_MODEL.md`**. Commercial catalogue: **`docs/COMMERCIAL_CATALOGUE.md`**. Fixture policy: **`docs/FIXTURE_POLICY.md`**. Owner architecture: **`docs/OWNER_CONTROL_PLANE.md`**. **CP26C-O3R PASS** — organisation property-licence model reconciled; no implementation. Human O2D and O3.3V **PASS**. Former **O3.4** is superseded. **CP26C.3** is not resumed. Next is **CP26C-O4.1**. Canonical amounts remain **UNDEFINED**. Production price versions remain **0**. CP26C-O3.3 implemented the Owner catalogue UI. CP26C-O3.2C is **PASS**. CP26C-O3.2B is **PASS** (GHA [36135836457](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36135836457)). The 0026 workflow is **RETIRED**. Active Production platform Owners: **1** (OPERATOR CONTROLLED / REDACTED). First-Owner bootstrap workflow **RETIRED** (historical run [36116463589](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36116463589)). Gate B accepted ledger is **0001–0026**. Price versions **0**. Stripe mappings **0**. LIVE locks **false/false**. No canonical pricing. Commerce **OFF**. Stripe untouched.
 
 Non-blocking UI backlog: Owner header rendered “SSBG Verification” (presentation/spacing or avatar-initial concatenation). Deferred. Not an authorization defect.
 

@@ -57,17 +57,16 @@ CP26–CP30 work. Never a real customer. Do not delete casually.
 
 Allowed on this tenant without a new identity/hotel: returning sign-in / sign-out;
 ownership / IDOR; billing **GET**. CP26B source work with commerce **OFF** is
-complete. Do not attach Stripe test billing here until CP26C.4/C.5 explicitly
-authorise it. Isolation (`SBG_SAAS_TEST_HOTEL_IDS`) is in source; Production
+complete. Do not attach Stripe test billing here. Former CP26C.4/C.5 is
+superseded and is not an authorisation. Isolation (`SBG_SAAS_TEST_HOTEL_IDS`) is in source; Production
 commerce remains OFF. This tenant is not an automatic test-commerce allowlist.
 
 Prohibited unless a later checkpoint **explicitly** changes fixture policy:
 `goLive` / publication; Connect; Checkout; Stripe env; guest booking; second
 signup; second hotel; password reset; deletion.
 
-CP26C must **not** attach Stripe test billing state to this tenant until CP26C.4
-authorises Production test commerce **and** CP26C.5 names this hotel in the
-allowlist. This tenant is not an automatic test-commerce allowlist.
+CP26C must **not** attach Stripe test billing state to this tenant. Former
+CP26C.4 is superseded. This tenant is not an automatic test-commerce allowlist.
 
 ---
 
@@ -113,8 +112,8 @@ non-empty `SBG_SAAS_TEST_HOTEL_IDS` hotel-UUID allowlist before any Domain A
 Checkout, portal, or webhook persistence in test mode. Empty/malformed
 allowlist fail-closes every hotel. Live mode ignores this allowlist.
 
-Do **not** set `SBG_SAAS_COMMERCE=test` on public Production until CP26C.4.
-Do **not** put a Production hotel UUID in git.
+Do **not** set `SBG_SAAS_COMMERCE=test` on public Production. Former CP26C.4
+is superseded. Do **not** put a Production hotel UUID in git.
 
 `main` auto-deploys Vercel Production. Source/docs changes here do not activate
 commerce.

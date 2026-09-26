@@ -5,11 +5,13 @@ Canonical architecture for the **SBG Owner** business surface. Implemented in
 This document is design authority. It is **not** a migration and **not** a
 runtime module.
 
-Living execution: [`ROADMAP.md`](ROADMAP.md). Commercial catalogue contract
-(CP26C-O3.1, canonical where it differs from §5.3, §6, §7, §8, and §19):
-[`COMMERCIAL_CATALOGUE.md`](COMMERCIAL_CATALOGUE.md). Fixture policy:
-[`FIXTURE_POLICY.md`](FIXTURE_POLICY.md). Domain A commerce remains **OFF**
-until **CP31**.
+Living execution: [`ROADMAP.md`](ROADMAP.md). Commercial cardinality after
+CP26C-O3R: [`COMMERCIAL_MODEL.md`](COMMERCIAL_MODEL.md). Catalogue mechanism
+(CP26C-O3.1, canonical for versioning and locks where it differs from §5.3,
+§6, §7, §8, and §19): [`COMMERCIAL_CATALOGUE.md`](COMMERCIAL_CATALOGUE.md).
+Where this file still describes three paid tiers as the target,
+`COMMERCIAL_MODEL.md` wins. Fixture policy: [`FIXTURE_POLICY.md`](FIXTURE_POLICY.md).
+Domain A commerce remains **OFF** until **CP31**.
 
 Example minor-unit figures in §6 are **not** prices. Canonical amounts are
 **UNDEFINED**.
@@ -20,13 +22,14 @@ Example minor-unit figures in §6 are **not** prices. Canonical amounts are
 | Foundation | **CP26C-O2 CLOSED** (Production-proven; 0025 applied) |
 | 0025 controller | **CP26C-O2A/O2B PASS** |
 | First Owner | **bootstrapped** — 1 active grant; workflow **RETIRED** (GHA 36116463589) |
-| Next implementation | Human `/owner/login` verification, then **CP26C-O3.3V**, then **CP26C-O3.4** (not started) |
-| Owner sign-in | **CP26C-O2D PASS** — `/owner/login` sign-in only; `/login` stays operator |
-| Catalogue UI | **CP26C-O3.3 PASS** — Owner plans read/write through 0026; amounts **UNDEFINED** |
+| Next implementation | **CP26C-O4.1** source-only organisation persistence (not started). Former **O3.4** superseded |
+| Owner sign-in | **CP26C-O2D PASS** — `/owner/login` sign-in only; `/login` stays operator. Human verification **PASS** |
+| Catalogue UI | **CP26C-O3.3 PASS** — Owner plans read/write through 0026; amounts **UNDEFINED**. **O3.3V PASS** |
 | Catalogue source | **CP26C-O3.2 / O3.2B PASS** — `0026` Production-applied |
 | 0026 controller | **RETIRED** in O3.2C (historical script remains) |
 | Catalogue contract | **CP26C-O3.1 PASS** — [`COMMERCIAL_CATALOGUE.md`](COMMERCIAL_CATALOGUE.md) |
-| Stripe TEST resources | **CP26C.3** (paused until O3.4 canonical amounts) |
+| Commercial model | **CP26C-O3R PASS** — [`COMMERCIAL_MODEL.md`](COMMERCIAL_MODEL.md); not implemented |
+| Stripe TEST resources | **CP26C.3 not resumed** — superseded; later **CP26C-O9** |
 | LIVE commerce | **CP31 only** |
 
 ---
@@ -571,7 +574,7 @@ columns on the price version), no env dual-read, no Vercel Price ID copy in
 C.3, Checkout cutover only in **CP26C.4**, amounts still UNDEFINED, 0026 not
 created here.
 
-**O3.2 PASS.** Source migration `0026` matches this contract. **O3.2B PASS.** Production applied it once (GHA 36135836457, job 108073574672). Digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446`. Plans basic/pro/premium. Price versions 0. Stripe mappings 0. LIVE locks false/false. **O3.2C PASS.** Gate B is **0001–0026**. The 0026 workflow is **RETIRED**. **O3.3 PASS.** The Owner catalogue UI is implemented. Amounts remain **UNDEFINED**. **O2D PASS.** Owner sign-in is `/owner/login`. Hotel/operator sign-in stays `/login`. Unauthenticated Owner routes redirect to `/owner/login`. Non-Owners are denied. Owner sign-out returns to `/owner/login`. No migration. Next is human Owner sign-in verification, then **CP26C-O3.3V**, then **O3.4**. Do not mark O3.4 complete.
+**O3.2 PASS.** Source migration `0026` matches this contract. **O3.2B PASS.** Production applied it once (GHA 36135836457, job 108073574672). Digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446`. Plans basic/pro/premium. Price versions 0. Stripe mappings 0. LIVE locks false/false. **O3.2C PASS.** Gate B is **0001–0026**. The 0026 workflow is **RETIRED**. **O3.3 PASS.** The Owner catalogue UI is implemented. Amounts remain **UNDEFINED**. **O2D PASS.** Owner sign-in is `/owner/login`. Hotel/operator sign-in stays `/login`. Unauthenticated Owner routes redirect to `/owner/login`. Non-Owners are denied. Owner sign-out returns to `/owner/login`. No migration. Human O2D and **O3.3V** later **passed**. **O3R PASS.** The tier target is superseded by [`COMMERCIAL_MODEL.md`](COMMERCIAL_MODEL.md). Former **O3.4** must not start.
 
 **Do not:** create Stripe TEST/LIVE Prices (that is CP26C.3 / CP31); set
 commerce mode; allowlist the verification hotel; charge anyone; invent amounts.
@@ -592,7 +595,8 @@ because Vercel Price IDs must not remain the permanent catalogue.
 | Commerce | **OFF** / ABSENT |
 | Allowlist | **ABSENT** |
 
-Resume **after O3.4 canonical amounts exist**:
+Resume of this three-tier tail is **not authorised**. CP26C-O3R superseded it.
+See [`COMMERCIAL_MODEL.md`](COMMERCIAL_MODEL.md). The historical sequence was:
 
 ```
 CP26C.2 PASS

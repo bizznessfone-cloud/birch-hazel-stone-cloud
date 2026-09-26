@@ -30,7 +30,9 @@ Canonical living roadmap. Other living documents should **point here**, not rede
 | CP26C-O3.2C | **PASS** — Gate B **0001–0026**; single-use 0026 workflow retired |
 | CP26C-O3.3 | **PASS** — Owner commercial catalogue UI; amounts still UNDEFINED; Production prices **0** |
 | CP26C-O2D | **PASS** — `/owner/login` isolated from hotel `/login`; no migration |
-| **Next** | Human Owner sign-in verification, then **CP26C-O3.3V**, then **CP26C-O3.4** (not started) |
+| CP26C-O3.3V | **PASS** — operator Production plans verification; no price created |
+| CP26C-O3R | **PASS** — organisation property-licence model reconciled; no implementation ([`COMMERCIAL_MODEL.md`](COMMERCIAL_MODEL.md)) |
+| **Next** | **CP26C-O4.1** source-only organisation persistence (not started). Former **O3.4** superseded. **CP26C.3** not resumed |
 
 ---
 
@@ -118,9 +120,9 @@ Resolved in CP26B (application + Production schema; commerce still OFF):
 Still open (later CP26 work):
 
 - Owner Control Plane catalogue (**CP26C-O3**) — architecture: [`OWNER_CONTROL_PLANE.md`](OWNER_CONTROL_PLANE.md); O2 foundation is in source
-- Stripe TEST products/prices/webhook endpoint preparation (**CP26C.3**, paused until O3)
-- Production Stripe configuration remains **absent** (must stay absent until CP26C.4)
-- Do **not** set `SBG_SAAS_COMMERCE=test` on public Production until CP26C.4 explicitly authorises it **after** the CP26C.2 hotel allowlist is deployed. Empty `SBG_SAAS_TEST_HOTEL_IDS` fail-closes every hotel even if mode=test.
+- Stripe TEST products/prices/webhook endpoint preparation (**CP26C.3 superseded; not resumed**; later **CP26C-O9**)
+- Production Stripe configuration remains **absent** (must stay absent; former CP26C.4 is superseded)
+- Do **not** set `SBG_SAAS_COMMERCE=test` on public Production until **CP26C-O11** explicitly authorises it. Empty `SBG_SAAS_TEST_HOTEL_IDS` fail-closes every hotel even if mode=test.
 
 ---
 
@@ -188,13 +190,19 @@ Non-blocking UI backlog: Owner header showed “SSBG Verification”. Deferred t
 
 **CP26C-O3.2B PASS:** Production `0026_cp26co3_commercial_catalogue.sql` applied once. GHA [36135836457](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36135836457), job `108073574672`, SHA `67d751014b6b5cbb5bd3c9ac4867fbad3da01b52`. Digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446`. Verdict `GATE PASS — 0026 APPLIED AND VERIFIED`. Pre-ledger **0001–0025**. Post-ledger **0001–0026**. Plans basic/pro/premium. Price versions 0. Stripe mappings 0. Locks false/false. Active Owners 1. Hotels 4. demo-kos live. sbg-verify-a5 configured. Billing accounts 0. Stripe events 0. Three `catalogue.plan.created` migration audits.
 
-**CP26C-O3.2C PASS:** Gate B accepted ledger is **0001–0026**. `AUTHORISED_PENDING=[]`. Workflow `.github/workflows/cp26co32a-0026-production-migrate.yml` is **RETIRED**. npm alias `db:migrate:0026` is **RETIRED**. Historical script `scripts/cp26co32a-0026-production-migrate.mjs` remains. 0027+ stays fail-closed. Amounts remain **UNDEFINED**. Commerce **OFF**. Stripe untouched. CP26C.3 stays paused until O3.4. Checkout stays on transitional env Price IDs until **CP26C.4**.
+**CP26C-O3.2C PASS:** Gate B accepted ledger is **0001–0026**. `AUTHORISED_PENDING=[]`. Workflow `.github/workflows/cp26co32a-0026-production-migrate.yml` is **RETIRED**. npm alias `db:migrate:0026` is **RETIRED**. Historical script `scripts/cp26co32a-0026-production-migrate.mjs` remains. 0027+ stays fail-closed. Amounts remain **UNDEFINED**. Commerce **OFF**. Stripe untouched. At the time, CP26C.3 was paused until O3.4 and checkout was to stay on env Price IDs until CP26C.4. **CP26C-O3R superseded those two conditions.**
 
 **CP26C-O3.3 implemented.** `/owner/plans` reads the Production catalogue and mutates only through the 0026 functions `sbg_catalogue_update_plan`, `sbg_catalogue_create_price_version`, `sbg_catalogue_activate_price_version`, and `sbg_catalogue_retire_price_version`. It does not call Stripe, record mappings, change LIVE locks, publish hotels, or edit guest-transfer prices. Canonical amounts remain **UNDEFINED**. Production price versions remain **0**. Stripe mappings remain **0**. Commerce **OFF**.
 
 **CP26C-O2D PASS:** `/owner/login` is the Owner sign-in surface (sign-in only). `/login` remains hotel/operator signup and sign-in, with no Owner link. Unauthenticated `/owner/*` redirects to `/owner/login`. An authenticated non-Owner is denied with “Owner access unavailable.” and is not sent to `/app`. Owner sign-out returns to `/owner/login`. The same Better Auth session is used. The first Platform Owner grant is unchanged. No migration. No Production DML. Commerce **OFF**.
 
-**Next:** human verification of `/owner/login`, then **CP26C-O3.3V** (Production `/owner/plans` against the zero-price catalogue), then **CP26C-O3.4** (canonical pricing decision). Do not mark O3.4 complete. Do not resume CP26C.3. Only **CP31** activates LIVE commerce.
+**CP26C-O2D human verification PASS** (operator evidence). **CP26C-O3.3V PASS** (operator evidence): `/owner/plans` showed BASIC, PRO, and PREMIUM active, no canonical prices, “Price not configured”, TEST and LIVE not mapped, price controls present, and no price was created. The “SSBG Verification” header defect stays non-blocking backlog.
+
+**CP26C-O3R PASS:** The locked commercial model is one organisation, one Stripe customer, one subscription, quantity = purchased property licences. There is no organisation table in source. Billing is hotel-scoped. Decision: [`COMMERCIAL_MODEL.md`](COMMERCIAL_MODEL.md). No migration. No runtime change. Amounts remain **UNDEFINED** in the catalogue. The operator-locked unit amount was not copied into source. Former **O3.4**, the previously scoped **CP26C.3** resume, and the previously scoped **CP26C.4** tier cutover are **superseded**. Do not start them. Only **CP31** activates LIVE commerce.
+
+**Next:** **CP26C-O4.1** — source-only organisation, membership, property attachment, licence allocation, and organisation billing persistence. Not started.
+
+The sequence below is the **pre-O3R** plan. It is historical. Do not execute its tail.
 
 Sequence:
 
@@ -202,7 +210,13 @@ Sequence:
 CP26C.2 PASS → CP26C-O1 → CP26C-O2 → CP26C-O2A → CP26C-O2B (0025 applied) → CP26C-O2C (first Owner bootstrapped; workflow retired) → CP26C-O3.1 (contract) → CP26C-O3.2 (source 0026 verified) → CP26C-O3.2A (0026 controller) → CP26C-O3.2B (0026 applied) → CP26C-O3.2C (Gate B 0001–0026; workflow retired) → CP26C-O3.3 (Owner plans UI) → CP26C-O2D (Owner login surface) → human `/owner/login` verification → CP26C-O3.3V → CP26C-O3.4 (human canonical prices) → resume CP26C.3 (TEST mappings only) → CP26C.4 (checkout cutover) → CP31 (LIVE)
 ```
 
-**Do not enable test commerce on public Production until CP26C.4.** Empty allowlist = nobody authorised. Only **CP31** activates live commerce.
+Authorised continuation after O3R:
+
+```
+CP26C-O3R PASS → CP26C-O4.1 (organisation source) → O4.2 controller → O4.3 one apply → O4.4 retire → CP26C-O5 (property_licence catalogue identity, no amount) → CP26C-O6 (Owner UI) → CP26C-O7 (quantity application, commerce OFF) → CP26C-O8 (one human price version) → CP26C-O9 (Stripe TEST mapping) → CP26C-O10 (organisation TEST allowlist) → CP26C-O11 (TEST commerce) → CP31 (LIVE)
+```
+
+**Do not enable test commerce on public Production.** Former **CP26C.4** is superseded. The replacement TEST activation is **CP26C-O11**, and only after its own authorisation. Empty allowlist = nobody authorised. Only **CP31** activates live commerce.
 
 ### CP26D — HOTEL-OWNED GUEST PAYMENT REGRESSION
 

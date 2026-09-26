@@ -12,7 +12,7 @@ GitHub is authoritative for application source. Living status: **`BUILD_STATE.md
 | CP25G.3 | **CLOSED** |
 | **CP26A** | **CLOSED** |
 | **CP26B** | **CLOSED** |
-| **Next execution checkpoint** | Human `/owner/login` verification, then **CP26C-O3.3V**, then **CP26C-O3.4** (not started). **CP26C-O2D PASS** |
+| **Next execution checkpoint** | **CP26C-O4.1** source-only organisation persistence (not started). **CP26C-O3R PASS**. Human O2D and O3.3V **PASS**. Former **O3.4** superseded |
 | Forward roadmap | **`docs/ROADMAP.md`** |
 | Fixture policy | **`docs/FIXTURE_POLICY.md`** |
 | Production | Vercel `scan-book-go` / last observed `dpl_FmUosqz2wy7aCT51rNjdanJnuviZ` READY |

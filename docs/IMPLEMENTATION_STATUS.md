@@ -5,10 +5,11 @@ Living status: **`BUILD_STATE.md`**.
 - Product: **SCAN / BOOK / GO**
 - Last application SHA: `19512c295830fbc6fd9712d688ce364d940f87c3`
 - CP25G.3 / **CP26A** / **CP26B** / **CP26C-O2**: **CLOSED**
-- **Next: human `/owner/login` verification, then CP26C-O3.3V, then CP26C-O3.4 (not started)**
-- **CP26C-O2D PASS** — Owner sign-in isolated at `/owner/login`. No migration. Commerce OFF.
-- **CP26C-O3.3 PASS** — Owner commercial catalogue UI. Canonical amounts still **UNDEFINED**. Production price versions **0**.
-- CP26C.3 remains **paused** until O3.4. CP26C remains **open**. Only **CP31** activates live commerce.
+- **Next: CP26C-O4.1 source-only organisation persistence (not started). Former O3.4 superseded. CP26C.3 not resumed**
+- **CP26C-O3R PASS** — commercial model reconciled; no implementation (`docs/COMMERCIAL_MODEL.md`)
+- **CP26C-O2D PASS** — Owner sign-in isolated at `/owner/login`. Human verification **PASS**. No migration. Commerce OFF.
+- **CP26C-O3.3 PASS** — Owner commercial catalogue UI. **O3.3V PASS**. Canonical amounts still **UNDEFINED**. Production price versions **0**.
+- CP26C.3 remains **paused** and is not resumed. CP26C remains **open**. Only **CP31** activates live commerce.
 - Forward roadmap: **[ROADMAP.md](ROADMAP.md)**
 - Fixture policy: **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)**
 - Vercel Production `scan-book-go` / last observed `dpl_FmUosqz2wy7aCT51rNjdanJnuviZ` READY

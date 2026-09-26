@@ -1,13 +1,20 @@
 # SCAN BOOK GO — commercial catalogue contract
 
 **CP26C-O3.1.** Architecture and contract only. This document is the commercial
-authority for later persistence. It is not a migration, not a runtime change,
-and not permission to create Stripe objects or invent prices.
+authority for the catalogue mechanism that was implemented. It is not a
+migration, not a runtime change, and not permission to create Stripe objects
+or invent prices.
+
+**CP26C-O3R** supersedes the three-tier commercial target. Cardinality, the
+organisation subscription, and property-licence quantity are decided in
+[`COMMERCIAL_MODEL.md`](COMMERCIAL_MODEL.md). That document wins where this
+file still describes BASIC / PRO / PREMIUM feature tiers, or one subscription
+per hotel, as the future model. Historical sections below are not rewritten.
 
 Where this document disagrees with [`OWNER_CONTROL_PLANE.md`](OWNER_CONTROL_PLANE.md)
-§5.3, §6, §7, §8, or §19, **this document wins**. Figures previously used there
+§5.3, §6, §7, §8, or §19 on catalogue mechanism, **this document wins**. Figures previously used there
 only to illustrate a price change are **not** canonical amounts. Canonical
-BASIC / PRO / PREMIUM amounts are **UNDEFINED**.
+BASIC / PRO / PREMIUM amounts are **UNDEFINED**. Do not price those tiers.
 
 Living execution: [`ROADMAP.md`](ROADMAP.md). Owner surface:
 [`OWNER_CONTROL_PLANE.md`](OWNER_CONTROL_PLANE.md). Fixture identity:
@@ -15,11 +22,11 @@ Living execution: [`ROADMAP.md`](ROADMAP.md). Owner surface:
 
 | Field | Value |
 |---|---|
-| Status | **CP26C-O3.1 PASS**. **CP26C-O3.2 PASS**. **CP26C-O3.2B PASS** — Production applied. **CP26C-O3.2C PASS** — controller retired. **CP26C-O3.3 PASS** — Owner catalogue UI |
-| Next | Human `/owner/login` verification, then **CP26C-O3.3V**, then **CP26C-O3.4** (not started) |
+| Status | **CP26C-O3.1 PASS**. **CP26C-O3.2 PASS**. **CP26C-O3.2B PASS** — Production applied. **CP26C-O3.2C PASS** — controller retired. **CP26C-O3.3 PASS** — Owner catalogue UI. **CP26C-O3.3V PASS** (operator). **CP26C-O3R PASS** — model reconciled, not implemented |
+| Next | **CP26C-O4.1** source-only organisation persistence (not started). Former **O3.4** superseded. **CP26C.3** not resumed |
 | 0026 | `migrations/0026_cp26co3_commercial_catalogue.sql` — digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446` — **applied once** (GHA 36135836457) |
 | Commerce | **OFF** (`SBG_SAAS_COMMERCE` absent) |
-| CP26C.3 | **PAUSED** until O3.4 |
+| CP26C.3 | **PAUSED** — do not resume; three-tier TEST Prices are superseded by O3R |
 | CP31 | only checkpoint that may activate LIVE commerce |
 | Gate B | accepted ledger **0001–0026**; `AUTHORISED_PENDING=[]` |
 | Prices | versions **0**; Stripe mappings **0**; LIVE locks **false/false**; amounts **UNDEFINED** |
@@ -235,8 +242,9 @@ placeholder on `/owner/plans`. It is **not** an amount. Annual and other
 currencies wait for a later checkpoint that relaxes the checks and states the
 MRR normalisation in §8. 0026 functions reject anything else.
 
-No price rows are seeded. Amounts stay UNDEFINED until a human Owner records
-them (O3.4). Nobody, including a migration, may invent them.
+No price rows are seeded. Amounts stay UNDEFINED until the authorised
+price-version checkpoint (**CP26C-O8**). Former **O3.4** must not price the
+three tiers. Nobody, including a migration, may invent them.
 
 ### Rules
 
@@ -504,7 +512,7 @@ the 0024 function. Do not change event ordering or idempotency.
 
 ---
 
-## 11. Checkpoint boundary
+
 
 | Checkpoint | Does | Does not |
 |---|---|---|
@@ -525,9 +533,9 @@ fail-closed. After C.4, unknown and env-only prices fail closed.
 C.3 does **not** copy Price IDs into Vercel. That compatibility copy is
 rejected.
 
-Public Production test commerce stays forbidden until CP26C.4 **and** an
-explicit allowlist checkpoint. Empty allowlist fail-closes every hotel. Live
-mode ignores the allowlist. Only CP31 may turn live on.
+Public Production test commerce stays forbidden. Former CP26C.4 is superseded.
+Empty allowlist fail-closes every hotel. Live mode ignores the allowlist.
+Only CP31 may turn live on. Continuation is [`COMMERCIAL_MODEL.md`](COMMERCIAL_MODEL.md).
 
 0026 did not extend Gate B by itself. `AUTHORISED_PENDING` stays empty.
 O3.2C, after the accepted O3.2B apply, moved the pin to **0001–0026**.
