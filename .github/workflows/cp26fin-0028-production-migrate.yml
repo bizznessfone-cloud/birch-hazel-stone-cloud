@@ -1,10 +1,10 @@
-name: CP26C-O4.2 Single-Use 0027 Production Migrate
+name: CP26 FINALISATION Single-Use 0028 Production Migrate
 
 on:
   workflow_dispatch:
     inputs:
       confirmation:
-        description: Type APPLY-0027
+        description: Type APPLY-0028
         required: true
         type: string
 
@@ -16,8 +16,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  apply-0027:
-    name: apply-0027
+  apply-0028:
+    name: apply-0028
     runs-on: ubuntu-latest
     steps:
       - name: Checkout dispatched commit
@@ -35,8 +35,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Apply reviewed 0027 only
+      - name: Apply reviewed 0028 only
         env:
           AETHER_DATABASE_OWNER_URL: ${{ secrets.AETHER_DATABASE_OWNER_URL }}
-          CP26CO42_CONFIRMATION: ${{ inputs.confirmation }}
-        run: node scripts/cp26co42-0027-production-migrate.mjs
+          CP26FIN_CONFIRMATION: ${{ inputs.confirmation }}
+        run: node scripts/cp26fin-0028-production-migrate.mjs

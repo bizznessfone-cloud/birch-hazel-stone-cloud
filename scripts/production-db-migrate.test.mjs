@@ -108,7 +108,7 @@ test("spawned controller with owner URL still never migrates", async () => {
   assert.doesNotMatch(out, /GATE C PASS/);
 });
 
-test("current 0001-0026 ledger is a no-mutation current state", () => {
+test("current 0001-0027 ledger is a no-mutation current state", () => {
   const result = evaluateMigrationBaseline(evaluatePreflight(currentFacts()));
   assert.equal(result.ok, true);
   assert.equal(result.alreadyCurrent, true);

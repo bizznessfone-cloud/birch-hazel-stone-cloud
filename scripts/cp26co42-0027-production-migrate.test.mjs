@@ -74,7 +74,7 @@ const execFileAsync = promisify(execFile);
 const here = dirname(fileURLToPath(import.meta.url));
 const src = readFileSync(join(here, "cp26co42-0027-production-migrate.mjs"), "utf8");
 const workflowPath = join(here, "../.github/workflows/cp26co42-0027-production-migrate.yml");
-const workflow = readFileSync(workflowPath, "utf8");
+const workflow = existsSync(workflowPath) ? readFileSync(workflowPath, "utf8") : "";
 const pkg = JSON.parse(readFileSync(join(here, "../package.json"), "utf8"));
 const migrationBytes = readFileSync(join(here, "../migrations", TARGET_MIGRATION));
 const migrationDigest = createHash("sha256").update(migrationBytes).digest("hex");
@@ -418,9 +418,10 @@ test("canonical 0027 digest is pinned and the prerequisite digest chain matches"
   assert.equal(REQUIRED_LEDGER.at(-1), "0026_cp26co3_commercial_catalogue.sql");
   assert.equal(REQUIRED_LEDGER.includes(TARGET_MIGRATION), false);
   assert.equal(REQUIRED_LEDGER.length, 26);
-  assert.deepEqual(REQUIRED_LEDGER, [...ACCEPTED_LEDGER]);
+  assert.equal(ACCEPTED_LEDGER.at(-1), "0027_cp26co41_organisation_property_licence.sql");
+  assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), true);
+  assert.deepEqual(ACCEPTED_LEDGER, [...REQUIRED_LEDGER, TARGET_MIGRATION]);
   assert.doesNotMatch(src, /REQUIRED_LEDGER\s*=\s*\[\s*\.\.\.ACCEPTED_LEDGER/);
-  assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), false);
   assert.deepEqual(AUTHORISED_PENDING, []);
   assert.equal(isAuthorisedPending(TARGET_MIGRATION), false);
   for (const [name, expected] of Object.entries(REVIEWED_DIGESTS)) {
@@ -903,8 +904,8 @@ test("apply failure rolls back and redacts secrets", async () => {
   assert.match(result.error, /redacted/);
 });
 
-test("Gate B still refuses 0027 and build does not invoke this controller", () => {
-  assert.equal(ACCEPTED_LEDGER.at(-1), "0026_cp26co3_commercial_catalogue.sql");
+test("Gate B accepts applied 0027 and build does not invoke this controller", () => {
+  assert.equal(ACCEPTED_LEDGER.at(-1), TARGET_MIGRATION);
   assert.deepEqual(AUTHORISED_PENDING, []);
   assert.equal(isAuthorisedPending(TARGET_MIGRATION), false);
   const current = evaluatePreflight({
@@ -913,19 +914,19 @@ test("Gate B still refuses 0027 and build does not invoke this controller", () =
     sessionUser: "neondb_owner",
     ledger: [...ACCEPTED_LEDGER],
     ledgerReadable: true,
-    sourceMigrations: [...ACCEPTED_LEDGER, TARGET_MIGRATION],
+    sourceMigrations: [...ACCEPTED_LEDGER],
     authTables: { user: "PRESENT", session: "PRESENT", account: "PRESENT", verification: "PRESENT" },
     aetherAppExists: true,
     occupancy,
   });
-  assert.equal(current.ok, false);
-  assert.deepEqual(current.unexpectedPending, [TARGET_MIGRATION]);
+  assert.equal(current.ok, true);
+  assert.deepEqual(current.pending, []);
   const generic = evaluateMigrationBaseline(current);
-  assert.equal(generic.ok, false);
+  assert.equal(generic.ok, true);
   assert.equal(generic.migrated, false);
   const genericSrc = readFileSync(join(here, "production-db-migrate.mjs"), "utf8");
-  assert.doesNotMatch(genericSrc, new RegExp(TARGET_MIGRATION));
-  assert.match(genericSrc, /0001–0026/);
+  assert.doesNotMatch(genericSrc, /0028_cp26fin_property_licence_catalogue/);
+  assert.match(genericSrc, /0001–0027/);
   assert.doesNotMatch(pkg.scripts.build, /db:migrate/);
   assert.doesNotMatch(pkg.scripts.build, /cp26co42/);
   assert.equal(pkg.scripts["db:migrate:0027"], undefined);
@@ -936,37 +937,20 @@ test("Gate B still refuses 0027 and build does not invoke this controller", () =
   assert.match(pkg.scripts["test:aether"], /cp26co42-0027-production-migrate\.test\.mjs/);
 });
 
-test("workflow is dispatch-only, confirms APPLY-0027, and cannot target another migrator", () => {
-  assert.equal(existsSync(workflowPath), true);
-  assert.match(workflow, /workflow_dispatch/);
-  assert.match(workflow, /description: Type APPLY-0027/);
-  assert.match(workflow, /CP26CO42_CONFIRMATION: \$\{\{ inputs\.confirmation \}\}/);
-  assert.match(workflow, /permissions:\s*\n\s*contents:\s*read/);
-  assert.match(workflow, /group: production-database-mutation/);
-  assert.match(workflow, /cancel-in-progress: false/);
-  assert.match(workflow, /ref: \$\{\{ github\.sha \}\}/);
-  assert.match(workflow, /persist-credentials: false/);
-  assert.match(workflow, /node-version: "22"/);
-  assert.match(workflow, /npm ci/);
-  assert.match(workflow, /node scripts\/cp26co42-0027-production-migrate\.mjs/);
-  assert.match(workflow, /secrets\.AETHER_DATABASE_OWNER_URL/);
-  assert.doesNotMatch(workflow, /\bpush\s*:/);
-  assert.doesNotMatch(workflow, /\bpull_request\s*:/);
-  assert.doesNotMatch(workflow, /\bschedule\s*:/);
-  assert.doesNotMatch(workflow, /\bworkflow_run\s*:/);
-  assert.doesNotMatch(workflow, /DATABASE_URL/);
-  assert.doesNotMatch(workflow, /scripts\/migrate\.mjs/);
-  assert.doesNotMatch(workflow, /production-db-migrate/);
-  assert.doesNotMatch(workflow, /stripe/i);
-  assert.doesNotMatch(workflow, /vercel/i);
-  assert.doesNotMatch(workflow, /0026/);
-  assert.doesNotMatch(workflow, /gh workflow run/);
+test("0027 dispatch surface is retired", () => {
+  assert.equal(existsSync(workflowPath), false);
+  assert.equal(workflow, "");
   const workflows = readdirSync(join(here, "../.github/workflows")).sort();
   assert.deepEqual(workflows, [
     "cp26co2a-0025-production-migrate.yml",
-    "cp26co42-0027-production-migrate.yml",
+    "cp26fin-0028-production-migrate.yml",
     "production-database.yml",
   ]);
+  for (const name of workflows) {
+    const text = readFileSync(join(here, "../.github/workflows", name), "utf8");
+    assert.equal(text.includes("cp26co42-0027-production-migrate.mjs"), false, name);
+    assert.equal(text.includes("APPLY-0027"), false, name);
+  }
 });
 
 test("controller source never uses DATABASE_URL, Stripe, commerce, or the generic migrator", () => {
