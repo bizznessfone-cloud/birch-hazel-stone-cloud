@@ -2,8 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import {
+  allocatePropertyLicenceFn,
   createBillingPortalFn,
   createSubscriptionCheckoutFn,
+  ensureHotelOrganisationFn,
   getBillingState,
   startStripeConnectFn,
 } from "@/lib/aether/stripe-fns";
@@ -18,6 +20,7 @@ function Billing() {
   const { hotelId } = Route.useSearch();
   const [state, setState] = useState<Awaited<ReturnType<typeof getBillingState>> | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [quantity, setQuantity] = useState(1);
   const [busy, setBusy] = useState(false);
 
   async function refresh() {
@@ -38,10 +41,15 @@ function Billing() {
     }
   }
 
-  async function subscribe(plan: "basic" | "pro" | "premium") {
+  async function subscribe() {
     setBusy(true); setMessage(null);
     try {
-      const result = await createSubscriptionCheckoutFn({ data: { hotelId, plan } });
+      let organisationId = state?.organisationId ?? null;
+      if (!organisationId) {
+        const created = await ensureHotelOrganisationFn({ data: { hotelId } });
+        organisationId = created.organisationId;
+      }
+      const result = await createSubscriptionCheckoutFn({ data: { organisationId, quantity } });
       window.location.assign(result.url);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Checkout could not be started.");
@@ -50,12 +58,27 @@ function Billing() {
   }
 
   async function portal() {
+    if (!state?.organisationId) return;
     setBusy(true); setMessage(null);
     try {
-      const result = await createBillingPortalFn({ data: { hotelId } });
+      const result = await createBillingPortalFn({ data: { organisationId: state.organisationId } });
       window.location.assign(result.url);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Billing portal could not be opened.");
+      setBusy(false);
+    }
+  }
+
+  async function allocate() {
+    if (!state?.organisationId) return;
+    setBusy(true); setMessage(null);
+    try {
+      await allocatePropertyLicenceFn({ data: { organisationId: state.organisationId, hotelId } });
+      setMessage("This property now uses one purchased licence. No extra subscription was created.");
+      await refresh();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Licence could not be allocated.");
+    } finally {
       setBusy(false);
     }
   }
@@ -92,22 +115,36 @@ function Billing() {
       </section>
 
       {lifecycle.showPlanSelection ? (
-        <section className="grid gap-4 md:grid-cols-3">
-          {(["basic", "pro", "premium"] as const).map((plan) => (
-            <article key={plan} className="border border-line bg-surface p-5">
-              <p className="text-xs font-medium tracking-widest text-muted uppercase">{plan}</p>
-              <p className="mt-3 text-sm text-muted">Subscription plan</p>
-              <button disabled={busy} onClick={() => void subscribe(plan)} className="mt-5 min-h-11 w-full border border-line px-4 text-sm font-semibold tracking-wide uppercase disabled:opacity-50">
-                Choose plan
-              </button>
-            </article>
-          ))}
+        <section className="border border-line bg-surface p-5">
+          <p className="text-xs font-medium tracking-widest text-muted uppercase">Property licence</p>
+          <h2 className="mt-2 text-xl font-semibold">Purchase property licences</h2>
+          <p className="mt-2 text-sm text-muted">
+            One organisation. One subscription. Quantity is the number of property licences.
+            Adding another property later uses a spare licence and does not start a second subscription.
+          </p>
+          <label className="mt-4 block text-sm">
+            Licences
+            <input
+              type="number"
+              min={1}
+              max={49}
+              step={1}
+              value={quantity}
+              onChange={(event) => setQuantity(Number(event.target.value))}
+              className="mt-1 w-32 border border-line bg-canvas px-3 py-2"
+            />
+          </label>
+          <button disabled={busy} onClick={() => void subscribe()} className="mt-5 min-h-11 border border-line px-4 text-sm font-semibold tracking-wide uppercase disabled:opacity-50">
+            Continue to checkout
+          </button>
         </section>
       ) : (
         <section className="border border-line bg-surface p-5">
-          <p className="text-xs font-medium tracking-widest text-muted uppercase">Plan changes</p>
+          <p className="text-xs font-medium tracking-widest text-muted uppercase">Subscription</p>
           <p className="mt-2 text-sm text-muted">
-            This hotel already has a SCAN / BOOK / GO subscription. Use Manage billing to change plan, update payment details, or cancel.
+            {state?.organisationId
+              ? "This organisation already has a SCAN / BOOK / GO subscription. Use Manage billing to change licence quantity, payment details, or cancellation. A second subscription is not created."
+              : "Property licences are purchased by the organisation. This property is not ready to check out."}
           </p>
         </section>
       )}
@@ -115,17 +152,27 @@ function Billing() {
       <section className="border border-line bg-surface p-5">
         <p className="text-xs font-medium tracking-widest text-muted uppercase">Current subscription</p>
         <p className="mt-2 text-lg font-semibold uppercase">{lifecycle.displayStatus}</p>
-        {lifecycle.isEntitled ? (
-          <p className="mt-1 text-sm text-muted">SaaS access is currently entitled. This does not publish the hotel.</p>
+        {state?.propertyEntitled ? (
+          <p className="mt-1 text-sm text-muted">This property is using one allocated licence. That does not publish the hotel.</p>
         ) : (
-          <p className="mt-1 text-sm text-muted">No entitled SCAN / BOOK / GO subscription. Selecting a price is not commercial activation.</p>
+          <p className="mt-1 text-sm text-muted">This property has no allocated licence. A subscription alone does not entitle a property.</p>
         )}
+        {state?.organisationId ? (
+          <p className="mt-1 text-sm text-muted">
+            Licensed {state.licensedQuantity}. Allocated {state.activeAllocations}. Available {state.availableLicences}.
+          </p>
+        ) : null}
         {state?.billing?.current_period_end ? (
           <p className="mt-1 text-sm text-muted">Current period ends {new Date(state.billing.current_period_end).toLocaleDateString()}</p>
         ) : null}
         {lifecycle.shouldManageBilling ? (
           <button disabled={busy} onClick={() => void portal()} className="mt-4 min-h-11 border border-line px-4 text-sm font-semibold tracking-wide uppercase">
             Manage billing
+          </button>
+        ) : null}
+        {state?.organisationId && !state.allocationActive && state.availableLicences > 0 ? (
+          <button disabled={busy} onClick={() => void allocate()} className="mt-4 ml-3 min-h-11 border border-line px-4 text-sm font-semibold tracking-wide uppercase">
+            Use one licence for this property
           </button>
         ) : null}
       </section>

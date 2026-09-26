@@ -1,5 +1,6 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { getOwnerOverviewFn } from "@/lib/aether/owner-fns";
+import { formatEurMinor } from "@/lib/aether/owner-catalogue";
 import { Metric, Panel } from "@/components/aether/owner-shell";
 
 export const Route = createFileRoute("/owner/")({
@@ -69,9 +70,9 @@ function OwnerOverviewPage() {
             <Metric label="Past due" value={data.pastDueSubscriptions} />
             <Metric label="Cancelled" value={data.canceledSubscriptions} />
             <Metric label="Incomplete" value={data.incompleteSubscriptions} />
-            <Metric label="By plan" value="Pending catalogue" />
-            <Metric label="MRR" value="Pending catalogue" />
-            <Metric label="ARR" value="Pending catalogue" />
+            <Metric label="By plan" value={`property licence ${data.planDistribution.property_licence}`} />
+            <Metric label="MRR" value={formatEurMinor(data.mrr)} />
+            <Metric label="ARR" value={formatEurMinor(data.arr)} />
           </div>
         </Panel>
       </div>

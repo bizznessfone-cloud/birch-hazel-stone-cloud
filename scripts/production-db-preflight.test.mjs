@@ -107,7 +107,7 @@ test("missing occupancy invariant fails", () => {
   assert.equal(result.verdict, "BLOCKED — OCCUPANCY INVARIANT NOT PROVEN");
 });
 
-test("accepted 0001-0027 ledger with empty pending passes", () => {
+test("accepted 0001-0028 ledger with empty pending passes", () => {
   const result = evaluatePreflight(baseFacts());
   assert.equal(result.ok, true);
   assert.equal(result.verdict, PASS_VERDICT);
@@ -116,7 +116,7 @@ test("accepted 0001-0027 ledger with empty pending passes", () => {
   assert.deepEqual(historicalSourceMigrations(SOURCE), LEDGER_0017);
   assert.equal(ACCEPTED_LEDGER.includes("0024_cp26b2_ordered_billing_events.sql"), true);
   assert.equal(ACCEPTED_LEDGER.includes("0027_cp26co41_organisation_property_licence.sql"), true);
-  assert.equal(ACCEPTED_LEDGER.at(-1), "0027_cp26co41_organisation_property_licence.sql");
+  assert.equal(ACCEPTED_LEDGER.at(-1), "0028_cp26fin_property_licence_catalogue.sql");
 });
 
 test("pending 0024 is stale, not a newly authorised migration", () => {
@@ -267,7 +267,7 @@ test("workflow is dispatch-only, read-only, and does not migrate", () => {
   assert.doesNotMatch(pkg.scripts.build, /db:preflight/);
 });
 
-test("reviewed 0020-0027 source checksums remain intact", () => {
+test("reviewed 0020-0028 source checksums remain intact", () => {
   for (const [name, expected] of Object.entries(REVIEWED_DIGESTS)) {
     const bytes = readFileSync(join(here, "../migrations", name));
     assert.equal(createHash("sha256").update(bytes).digest("hex"), expected, name);
@@ -284,12 +284,11 @@ test("spent single-use and generic production migrate workflows stay retired", (
   assert.equal(existsSync(join(workflows, "cp26co2a-0025-production-migrate.yml")), true);
   assert.equal(existsSync(join(workflows, "cp26co32a-0026-production-migrate.yml")), false);
   assert.equal(existsSync(join(workflows, "cp26co42-0027-production-migrate.yml")), false);
-  assert.equal(existsSync(join(workflows, "cp26fin-0028-production-migrate.yml")), true);
+  assert.equal(existsSync(join(workflows, "cp26fin-0028-production-migrate.yml")), false);
   assert.equal(existsSync(join(workflows, "cp26co2c-first-owner-bootstrap.yml")), false);
   const yaml = readdirSync(workflows).filter((name) => name.endsWith(".yml") || name.endsWith(".yaml")).sort();
   assert.deepEqual(yaml, [
     "cp26co2a-0025-production-migrate.yml",
-    "cp26fin-0028-production-migrate.yml",
     "production-database.yml",
   ]);
 });

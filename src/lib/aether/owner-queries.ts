@@ -32,6 +32,25 @@ function rate(numerator: number, denominator: number): number | null {
   return Math.round((numerator / denominator) * 1000) / 10;
 }
 
+async function organisationSubscriptionMoney(db: Sql): Promise<{
+  mrr: number;
+  arr: number;
+  propertyLicence: number;
+}> {
+  const [row] = await db.query<{ mrr: unknown; property_licence: unknown }>(
+    `select
+       coalesce(sum(v.amount_minor::bigint * b.licensed_quantity::bigint) filter (
+         where b.status in ${ENTITLED_SQL}
+       ), 0)::bigint as mrr,
+       count(*) filter (where b.status in ${ENTITLED_SQL})::int as property_licence
+     from sbg_organisation_billing b
+     left join sbg_saas_price_versions v on v.id = b.price_version_id
+      and v.plan_code = 'property_licence'`,
+  );
+  const mrr = n(row?.mrr);
+  return { mrr, arr: mrr * 12, propertyLicence: n(row?.property_licence) };
+}
+
 export type OwnerOverview = {
   operatorAccounts: number;
   saasHotels: number;
@@ -46,9 +65,9 @@ export type OwnerOverview = {
   pastDueSubscriptions: number;
   canceledSubscriptions: number;
   incompleteSubscriptions: number;
-  mrr: "pending_catalogue";
-  arr: "pending_catalogue";
-  planDistribution: "pending_catalogue";
+  mrr: number;
+  arr: number;
+  planDistribution: { property_licence: number };
   funnel: {
     account: number;
     hotelCreated: number;
@@ -107,11 +126,6 @@ export async function loadOwnerOverview(db: Sql): Promise<OwnerOverview> {
        select user_id, min(created_at) as signed_up_at
          from app_hotel_accounts
         group by user_id
-     ),
-     billing as (
-       select b.hotel_id, b.status
-         from sbg_billing_accounts b
-         join owned o on o.id = b.hotel_id
      )
      select
        (select count(*)::int from first_own) as operator_accounts,
@@ -121,12 +135,17 @@ export async function loadOwnerOverview(db: Sql): Promise<OwnerOverview> {
        (select count(*)::int from owned where status = 'unconfigured') as unconfigured,
        (select count(*)::int from owned where status in ('configured', 'live')) as configured,
        (select count(*)::int from owned where status = 'live') as live,
-       (select count(*)::int from billing where status in ${ENTITLED_SQL}) as subscribed,
-       (select count(*)::int from billing where status = 'active') as active_subs,
-       (select count(*)::int from billing where status = 'trialing') as trialing_subs,
-       (select count(*)::int from billing where status = 'past_due') as past_due_subs,
-       (select count(*)::int from billing where status = 'canceled') as canceled_subs,
-       (select count(*)::int from billing where status in ('incomplete', 'incomplete_expired')) as incomplete_subs`,
+       (select count(*)::int
+          from sbg_property_licence_allocations a
+          join sbg_organisation_billing ob on ob.organisation_id = a.organisation_id
+          join owned o on o.id = a.hotel_id
+         where a.released_at is null
+           and ob.status in ${ENTITLED_SQL}) as subscribed,
+       (select count(*)::int from sbg_organisation_billing where status = 'active') as active_subs,
+       (select count(*)::int from sbg_organisation_billing where status = 'trialing') as trialing_subs,
+       (select count(*)::int from sbg_organisation_billing where status = 'past_due') as past_due_subs,
+       (select count(*)::int from sbg_organisation_billing where status = 'canceled') as canceled_subs,
+       (select count(*)::int from sbg_organisation_billing where status in ('incomplete', 'incomplete_expired')) as incomplete_subs`,
   );
 
   const operatorAccounts = n(counts?.operator_accounts);
@@ -134,6 +153,7 @@ export async function loadOwnerOverview(db: Sql): Promise<OwnerOverview> {
   const configured = n(counts?.configured);
   const subscribed = n(counts?.subscribed);
   const live = n(counts?.live);
+  const money = await organisationSubscriptionMoney(db);
 
   const recentSignups = await db.query<{
     user_id: string;
@@ -197,7 +217,8 @@ export async function loadOwnerOverview(db: Sql): Promise<OwnerOverview> {
               h.code as hotel_code,
               'Subscription past due'::text as detail
          from hotels h
-         join sbg_billing_accounts b on b.hotel_id = h.id
+         join sbg_property_licence_allocations a on a.hotel_id = h.id and a.released_at is null
+         join sbg_organisation_billing b on b.organisation_id = a.organisation_id
         where b.status = 'past_due'
           and exists (select 1 from app_hotel_accounts aha where aha.hotel_id = h.id)
        union
@@ -207,7 +228,8 @@ export async function loadOwnerOverview(db: Sql): Promise<OwnerOverview> {
               h.code,
               'Subscription incomplete'
          from hotels h
-         join sbg_billing_accounts b on b.hotel_id = h.id
+         join sbg_property_licence_allocations a on a.hotel_id = h.id and a.released_at is null
+         join sbg_organisation_billing b on b.organisation_id = a.organisation_id
         where b.status in ('incomplete', 'incomplete_expired')
           and exists (select 1 from app_hotel_accounts aha where aha.hotel_id = h.id)
        union
@@ -215,11 +237,17 @@ export async function loadOwnerOverview(db: Sql): Promise<OwnerOverview> {
               h.id::text,
               h.name,
               h.code,
-              'Configured, not subscribed'
+              'Configured, no property licence'
          from hotels h
-         left join sbg_billing_accounts b on b.hotel_id = h.id
         where h.status in ('configured', 'live')
-          and coalesce(b.status, 'inactive') not in ${ENTITLED_SQL}
+          and not exists (
+            select 1
+              from sbg_property_licence_allocations a
+              join sbg_organisation_billing b on b.organisation_id = a.organisation_id
+             where a.hotel_id = h.id
+               and a.released_at is null
+               and b.status in ${ENTITLED_SQL}
+          )
           and exists (select 1 from app_hotel_accounts aha where aha.hotel_id = h.id)
        union
        select 'unconfigured',
@@ -249,9 +277,9 @@ export async function loadOwnerOverview(db: Sql): Promise<OwnerOverview> {
     pastDueSubscriptions: n(counts?.past_due_subs),
     canceledSubscriptions: n(counts?.canceled_subs),
     incompleteSubscriptions: n(counts?.incomplete_subs),
-    mrr: "pending_catalogue",
-    arr: "pending_catalogue",
-    planDistribution: "pending_catalogue",
+    mrr: money.mrr,
+    arr: money.arr,
+    planDistribution: { property_licence: money.propertyLicence },
     funnel: {
       account: operatorAccounts,
       hotelCreated: saasHotels,
@@ -354,7 +382,10 @@ export async function loadOwnerHotels(
            join "user" u on u.id = aha.user_id
           where aha.hotel_id = h.id
        ) own on own.owner_count > 0
-       left join sbg_billing_accounts b on b.hotel_id = h.id
+       left join sbg_property_licence_allocations alloc
+         on alloc.hotel_id = h.id and alloc.released_at is null
+       left join sbg_organisation_billing b
+         on b.organisation_id = alloc.organisation_id
       where ($1 = '' or h.status = $1)
         and (
           $2 = ''
@@ -475,14 +506,16 @@ export async function loadOwnerHotelDetail(
       current_period_end: string | null;
       cancel_at_period_end: boolean | null;
     }>(
-      `select status,
-              stripe_customer_id,
-              stripe_subscription_id,
-              stripe_price_id,
-              current_period_end::text as current_period_end,
-              cancel_at_period_end
-         from sbg_billing_accounts
-        where hotel_id = $1::uuid`,
+      `select b.status,
+              b.stripe_customer_id,
+              b.stripe_subscription_id,
+              b.stripe_price_id,
+              b.current_period_end::text as current_period_end,
+              b.cancel_at_period_end
+         from sbg_property_licence_allocations a
+         join sbg_organisation_billing b on b.organisation_id = a.organisation_id
+        where a.hotel_id = $1::uuid
+          and a.released_at is null`,
       [id],
     ),
     db.query<{ livemode: boolean; disconnected_at: string | null }>(
@@ -557,13 +590,13 @@ export type OwnerRevenue = {
   entitled: number;
   newEntitled30d: number;
   canceled30d: number;
-  mrr: "pending_catalogue";
-  arr: "pending_catalogue";
+  mrr: number;
+  arr: number;
   recent: Array<{
-    hotelId: string;
-    hotelName: string;
-    hotelCode: string;
+    organisationId: string;
+    organisationName: string;
     status: string;
+    licensedQuantity: number;
     updatedAt: string;
   }>;
 };
@@ -583,8 +616,7 @@ export async function loadOwnerRevenue(db: Sql): Promise<OwnerRevenue> {
   }>(
     `with billing as (
        select b.*
-         from sbg_billing_accounts b
-        where exists (select 1 from app_hotel_accounts aha where aha.hotel_id = b.hotel_id)
+         from sbg_organisation_billing b
      )
      select
        (select count(*)::int from billing where status = 'active') as active,
@@ -602,23 +634,23 @@ export async function loadOwnerRevenue(db: Sql): Promise<OwnerRevenue> {
   );
 
   const recent = await db.query<{
-    hotel_id: string;
-    hotel_name: string;
-    hotel_code: string;
+    organisation_id: string;
+    organisation_name: string;
     status: string;
+    licensed_quantity: number;
     updated_at: string;
   }>(
-    `select h.id::text as hotel_id,
-            h.name as hotel_name,
-            h.code as hotel_code,
+    `select o.id::text as organisation_id,
+            o.name as organisation_name,
             b.status,
+            b.licensed_quantity,
             b.updated_at::text as updated_at
-       from sbg_billing_accounts b
-       join hotels h on h.id = b.hotel_id
-      where exists (select 1 from app_hotel_accounts aha where aha.hotel_id = b.hotel_id)
+       from sbg_organisation_billing b
+       join sbg_organisations o on o.id = b.organisation_id
       order by b.updated_at desc
       limit 12`,
   );
+  const money = await organisationSubscriptionMoney(db);
 
   return {
     domain: "A",
@@ -633,13 +665,13 @@ export async function loadOwnerRevenue(db: Sql): Promise<OwnerRevenue> {
     entitled: n(row?.entitled),
     newEntitled30d: n(row?.new_30d),
     canceled30d: n(row?.canceled_30d),
-    mrr: "pending_catalogue",
-    arr: "pending_catalogue",
+    mrr: money.mrr,
+    arr: money.arr,
     recent: recent.map((item) => ({
-      hotelId: text(item.hotel_id),
-      hotelName: text(item.hotel_name),
-      hotelCode: text(item.hotel_code),
+      organisationId: text(item.organisation_id),
+      organisationName: text(item.organisation_name),
       status: text(item.status),
+      licensedQuantity: n(item.licensed_quantity),
       updatedAt: text(item.updated_at),
     })),
   };

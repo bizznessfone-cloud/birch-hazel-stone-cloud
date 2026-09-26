@@ -39,7 +39,9 @@ function formatWhen(value: string | null): string {
 function OwnerPlansPage() {
   const data = Route.useLoaderData();
   const router = useRouter();
-  const [selected, setSelected] = useState(data.plans[0]?.code ?? "basic");
+  const [selected, setSelected] = useState(
+    data.plans.find((item) => item.code === "property_licence")?.code ?? data.plans[0]?.code ?? "property_licence",
+  );
   const plan = data.plans.find((item) => item.code === selected) ?? data.plans[0] ?? null;
   const [name, setName] = useState(plan?.name ?? "");
   const [description, setDescription] = useState(plan?.description ?? "");
@@ -86,6 +88,7 @@ function OwnerPlansPage() {
     setBusy(true);
     setMessage(null);
     try {
+      if (plan.code !== "property_licence") return;
       const result = await createOwnerPriceFn({ data: { code: plan.code, amount } });
       if (!result.ok) {
         setMessage(result.message);
@@ -130,8 +133,8 @@ function OwnerPlansPage() {
         <p className="text-xs font-medium tracking-[0.2em] text-muted uppercase">Catalogue</p>
         <h1 className="mt-1 text-3xl font-semibold tracking-tight">Plans & Pricing</h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
-          This is the SCAN BOOK GO SaaS catalogue. It is what a hotel operator pays SCAN BOOK GO.
-          It is separate from guest transfer prices, which stay on the hotel.
+          The sellable SCAN BOOK GO product is the property licence. Historical plans remain visible and
+          are not the current offer. Guest transfer prices stay on the hotel.
         </p>
         <p className="mt-3 text-sm font-medium">LIVE commerce locked until CP31</p>
       </header>
@@ -283,25 +286,33 @@ function PlanEditor({
         </button>
 
         <h2 className="pt-2 text-xs font-medium tracking-[0.18em] text-muted uppercase">New price version</h2>
-        <p className="text-sm text-muted">EUR, billed monthly. Creating a version does not activate it.</p>
-        <label className="block text-sm">
-          Amount
-          <input
-            inputMode="decimal"
-            value={amount}
-            onChange={(event) => onAmount(event.target.value)}
-            placeholder="EUR"
-            className="mt-1 w-full border border-line bg-canvas px-3 py-2"
-          />
-        </label>
-        <button
-          type="button"
-          disabled={busy}
-          onClick={onCreate}
-          className="min-h-11 border border-ink px-4 text-sm font-medium disabled:opacity-50"
-        >
-          Create price version
-        </button>
+        {plan.code === "property_licence" ? (
+          <>
+            <p className="text-sm text-muted">EUR, billed monthly. Creating a version does not activate it.</p>
+            <label className="block text-sm">
+              Amount
+              <input
+                inputMode="decimal"
+                value={amount}
+                onChange={(event) => onAmount(event.target.value)}
+                placeholder="EUR"
+                className="mt-1 w-full border border-line bg-canvas px-3 py-2"
+              />
+            </label>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={onCreate}
+              className="min-h-11 border border-ink px-4 text-sm font-medium disabled:opacity-50"
+            >
+              Create price version
+            </button>
+          </>
+        ) : (
+          <p className="text-sm text-muted">
+            Historical plan. Not the current offer. New price versions are not available.
+          </p>
+        )}
       </section>
 
       <section className="border border-line bg-surface p-5">

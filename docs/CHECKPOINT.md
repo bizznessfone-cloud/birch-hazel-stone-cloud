@@ -31,13 +31,14 @@ Living status: **`BUILD_STATE.md`** (repo root).
 | CP26C-O2D | **PASS** — `/owner/login` isolated from hotel `/login`; no migration |
 | CP26C-O3.3V | **PASS** — operator Production `/owner/plans` verification; no price created |
 | CP26C-O3R | **PASS** — property-licence model reconciled; no implementation ([`COMMERCIAL_MODEL.md`](COMMERCIAL_MODEL.md)) |
-| **Next product checkpoint** | **CP26C-O4.2 SINGLE-USE 0027 PRODUCTION CONTROLLER READY; NOT EXECUTED**. Next **CP26C-O4.3** requires explicit authorisation. **O4.1 SOURCE COMPLETE**, unapplied. Former **O3.4** superseded |
+| CP26 FINALISATION | **COMPLETE** — Production ledger **0001–0028**; dormant organisation property-licence cutover; commerce **OFF**. CP26 is **not** closed |
+| **Next product checkpoint** | **CP26 STRIPE TEST**. Then **CP26 EXIT GATE**. The O4–O11 chain is superseded and is not the route. Only **CP31** activates commerce |
 | Forward roadmap | **[ROADMAP.md](ROADMAP.md)** (CP26–CP31) |
 | Commercial catalogue | **[COMMERCIAL_CATALOGUE.md](COMMERCIAL_CATALOGUE.md)** |
 | Owner architecture | **[OWNER_CONTROL_PLANE.md](OWNER_CONTROL_PLANE.md)** |
 | Fixture policy | **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)** |
 | Production | Vercel `scan-book-go` last observed `dpl_FmUosqz2wy7aCT51rNjdanJnuviZ` READY |
-| Migrations | source **0001–0027**; Production **0001–0026**; Gate B **0001–0026**; `AUTHORISED_PENDING=[]`; 0026 digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446`; 0027 digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef` unapplied; O4.2 controller ready, not executed; 0026 workflow **RETIRED**; first-Owner workflow **RETIRED**; amounts **UNDEFINED**; commerce **OFF** |
+| Migrations | source and Production **0001–0028**; Gate B **0001–0028**; `AUTHORISED_PENDING=[]`; 0027 digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef` applied (GHA 36251190175); 0028 digest `35626cb2d3b21a076f4a2cb982b9d0983610620fb21dbf7f3e94eb4c0576a02d` applied (GHA 36254890554); 0027 and 0028 workflows **RETIRED**; 0025 workflow remains historical and must not be re-dispatched; amounts **UNDEFINED**; price versions **0**; Stripe mappings **0**; commerce **OFF** |
 
 This file’s remainder is a **historical Checkpoint 10** record only.
 

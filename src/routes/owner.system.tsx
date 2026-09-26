@@ -50,7 +50,7 @@ function OwnerSystemPage() {
 
       <section className="border border-line bg-surface p-5">
         <h2 className="text-xs font-medium tracking-[0.18em] text-muted uppercase">
-          Transitional Price env
+          Retired tier price env
         </h2>
         <dl className="mt-2">
           <Row label="BASIC" value={data.priceEnv.STRIPE_BASIC_PRICE_ID} />
@@ -58,7 +58,8 @@ function OwnerSystemPage() {
           <Row label="PREMIUM" value={data.priceEnv.STRIPE_PREMIUM_PRICE_ID} />
         </dl>
         <p className="mt-4 text-sm text-muted">
-          Canonical Price mapping is CP26C-O3. This dashboard does not write Vercel env or Stripe.
+          These environment prices are not the property-licence offer. Checkout uses the catalogue
+          mapping only. This dashboard does not write Vercel env or Stripe.
         </p>
       </section>
     </div>

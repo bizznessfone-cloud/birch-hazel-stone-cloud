@@ -78,13 +78,19 @@ function facts(overrides = {}) {
   };
 }
 
-test("0028 digest is pinned and 0027 is accepted history, not pending", () => {
+test("0028 digest is pinned, accepted, and the controller ledger stays frozen at 0001-0027", () => {
   assert.equal(sha256(Buffer.from(sql)), TARGET_DIGEST);
   assert.equal(assertMigrationFile(file).ok, true);
-  assert.equal(ACCEPTED_LEDGER.at(-1), "0027_cp26co41_organisation_property_licence.sql");
+  assert.equal(ACCEPTED_LEDGER.at(-1), TARGET_MIGRATION);
   assert.equal(ACCEPTED_LEDGER.includes("0027_cp26co41_organisation_property_licence.sql"), true);
-  assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), false);
-  assert.deepEqual(REQUIRED_LEDGER, [...ACCEPTED_LEDGER]);
+  assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), true);
+  assert.deepEqual(
+    REQUIRED_LEDGER,
+    ACCEPTED_LEDGER.filter((name) => name !== TARGET_MIGRATION),
+  );
+  assert.equal(REQUIRED_LEDGER.at(-1), "0027_cp26co41_organisation_property_licence.sql");
+  assert.equal(REQUIRED_LEDGER.includes(TARGET_MIGRATION), false);
+  assert.notDeepEqual(REQUIRED_LEDGER, [...ACCEPTED_LEDGER]);
   assert.doesNotMatch(src, /REQUIRED_LEDGER\s*=\s*\[\s*\.\.\.ACCEPTED_LEDGER/);
   assert.deepEqual(AUTHORISED_PENDING, []);
   assert.equal(isAuthorisedPending(TARGET_MIGRATION), false);
@@ -159,21 +165,21 @@ test("transaction rolls back when the ledger insert fails and never prints secre
   assert.doesNotMatch(guarded.error, /secret/);
 });
 
-test("0027 dispatch is gone and build does not apply 0028", () => {
+test("0028 dispatch is retired and build does not apply 0028", () => {
   const workflows = readdirSync(join(here, "../.github/workflows")).sort();
   assert.equal(existsSync(join(here, "../.github/workflows/cp26co42-0027-production-migrate.yml")), false);
+  assert.equal(existsSync(join(here, "../.github/workflows/cp26fin-0028-production-migrate.yml")), false);
+  assert.equal(existsSync(join(here, "cp26fin-0028-production-migrate.mjs")), true);
   assert.deepEqual(workflows, [
     "cp26co2a-0025-production-migrate.yml",
-    "cp26fin-0028-production-migrate.yml",
     "production-database.yml",
   ]);
-  const workflow = readFileSync(join(here, "../.github/workflows/cp26fin-0028-production-migrate.yml"), "utf8");
-  assert.match(workflow, /workflow_dispatch/);
-  assert.match(workflow, /CP26FIN_CONFIRMATION/);
-  assert.match(workflow, /node scripts\/cp26fin-0028-production-migrate\.mjs/);
-  assert.doesNotMatch(workflow, /cp26co42-0027-production-migrate\.mjs/);
-  assert.doesNotMatch(workflow, /\bpush\s*:/);
-  assert.doesNotMatch(workflow, /DATABASE_URL/);
+  for (const name of workflows) {
+    const text = readFileSync(join(here, "../.github/workflows", name), "utf8");
+    assert.equal(text.includes("cp26fin-0028-production-migrate.mjs"), false, name);
+    assert.equal(text.includes("APPLY-0028"), false, name);
+    assert.equal(text.includes("cp26co42-0027-production-migrate.mjs"), false, name);
+  }
   assert.doesNotMatch(src, /process\.env\.DATABASE_URL/);
   assert.doesNotMatch(src, /STRIPE_SECRET|sk_live|sk_test|api\.stripe\.com/);
   assert.doesNotMatch(src, /SBG_SAAS_COMMERCE\s*=/);

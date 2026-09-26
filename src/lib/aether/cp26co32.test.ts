@@ -73,11 +73,14 @@ async function snapshot(pg: PGlite) {
   };
 }
 
-test("runtime does not call the catalogue resolver and absent commerce is off", () => {
+test("runtime resolves property_licence checkout price and absent commerce is off", () => {
   const hits = walkSources(join(process.cwd(), "src")).filter((path) =>
     readFileSync(path, "utf8").includes("sbg_resolve_domain_a_checkout_price"),
   );
-  assert.deepEqual(hits, []);
+  assert.deepEqual(
+    hits.map((path) => path.slice(process.cwd().length + 1)).sort(),
+    ["src/lib/aether/saas-billing.server.ts"],
+  );
   assert.equal(saasCommerceMode({}), "off");
   assert.equal(saasCommerceMode({ SBG_SAAS_COMMERCE: "" }), "off");
 });

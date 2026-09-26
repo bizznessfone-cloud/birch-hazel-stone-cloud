@@ -134,7 +134,8 @@ test("Owner catalogue source cannot record Stripe, unlock LIVE, or edit commerci
   assert.doesNotMatch(plans, /window\.confirm/);
   assert.match(plans, /guest transfer prices/i);
   assert.doesNotMatch(plans, /hotel_destinations|hotels\.status/);
-  assert.match(queries, /pending_catalogue/);
+  assert.doesNotMatch(queries, /pending_catalogue/);
+  assert.match(queries, /sbg_organisation_billing/);
   assert.match(pkg.scripts["test:aether"] ?? "", /cp26co33\.test\.ts/);
   assert.doesNotMatch(pkg.scripts.build ?? "", /db:migrate/);
 });

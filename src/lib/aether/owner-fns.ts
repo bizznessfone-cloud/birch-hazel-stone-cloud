@@ -39,14 +39,14 @@ const hotelIdInput = z.object({
 });
 
 const planEdit = z.object({
-  code: z.enum(["basic", "pro", "premium"]),
+  code: z.enum(["property_licence", "basic", "pro", "premium"]),
   name: z.string().max(80),
   description: z.string().max(400),
   active: z.boolean(),
 });
 
 const priceCreate = z.object({
-  code: z.enum(["basic", "pro", "premium"]),
+  code: z.enum(["property_licence"]),
   amount: z.string().max(16),
 });
 

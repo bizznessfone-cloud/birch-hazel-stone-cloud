@@ -22,13 +22,13 @@ Living execution: [`ROADMAP.md`](ROADMAP.md). Owner surface:
 
 | Field | Value |
 |---|---|
-| Status | **CP26C-O3.1 PASS**. **CP26C-O3.2 PASS**. **CP26C-O3.2B PASS** — Production applied. **CP26C-O3.2C PASS** — controller retired. **CP26C-O3.3 PASS** — Owner catalogue UI. **CP26C-O3.3V PASS** (operator). **CP26C-O3R PASS** — model reconciled, not implemented |
-| Next | **CP26C-O4.2 SINGLE-USE 0027 PRODUCTION CONTROLLER READY; NOT EXECUTED**. Next **CP26C-O4.3** requires explicit authorisation. **O4.1 SOURCE COMPLETE**, unapplied. Former **O3.4** superseded. **CP26C.3** not resumed |
+| Status | **CP26C-O3.1 PASS**. **CP26C-O3.2 PASS**. **CP26C-O3.2B PASS** — Production applied. **CP26C-O3.2C PASS** — controller retired. **CP26C-O3.3 PASS** — Owner catalogue UI. **CP26C-O3.3V PASS** (operator). **CP26C-O3R PASS** — model reconciled. **CP26 FINALISATION COMPLETE** — dormant cutover; CP26 **not** closed |
+| Next | **CP26 STRIPE TEST**, then **CP26 EXIT GATE**. The O4–O11 chain is superseded. **CP26C.3** not resumed |
 | 0026 | `migrations/0026_cp26co3_commercial_catalogue.sql` — digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446` — **applied once** (GHA 36135836457) |
 | Commerce | **OFF** (`SBG_SAAS_COMMERCE` absent) |
 | CP26C.3 | **PAUSED** — do not resume; three-tier TEST Prices are superseded by O3R |
 | CP31 | only checkpoint that may activate LIVE commerce |
-| Gate B | accepted ledger **0001–0026**; `AUTHORISED_PENDING=[]` |
+| Gate B | accepted ledger **0001–0028**; `AUTHORISED_PENDING=[]` |
 | Prices | versions **0**; Stripe mappings **0**; LIVE locks **false/false**; amounts **UNDEFINED** |
 
 **CP26C-O3.3.** `/owner/plans` now reads `sbg_saas_plans`, `sbg_saas_price_versions`, `sbg_saas_stripe_mappings`, `sbg_saas_commerce_locks`, and catalogue rows in `sbg_owner_audit_events`. Mutations call only `sbg_catalogue_update_plan`, `sbg_catalogue_create_price_version`, `sbg_catalogue_activate_price_version`, and `sbg_catalogue_retire_price_version`. The UI does not call Stripe, does not call `sbg_catalogue_record_stripe_mapping`, and cannot set LIVE locks. With zero price versions the page shows “Price not configured”, not €0. The paragraph below that still says `getOwnerPlansFn` returns `pending_o3` is the **O3.1** baseline, not the current UI.
@@ -39,9 +39,10 @@ Living execution: [`ROADMAP.md`](ROADMAP.md). Owner surface:
 
 Proven from source at the O3.1 baseline. Not inferred policy.
 
-### Plan identity
+### Plan identity (O3.1 baseline — not the current sellable set)
 
-Machine plan keys are exactly `basic`, `pro`, `premium`.
+At O3.1 the machine plan keys were exactly `basic`, `pro`, `premium`.
+**CP26 FINALISATION** added `property_licence` as the only active sellable plan and made the three tier codes inactive. The bullets below describe that older baseline.
 
 - `StripePlan` in `src/lib/aether/stripe.server.ts`
 - `SBG_SAAS_PLAN_CODES` / `SBG_SAAS_PLAN_LABELS` in `src/lib/aether/owner-queries.ts` (labels Basic / Pro / Premium)

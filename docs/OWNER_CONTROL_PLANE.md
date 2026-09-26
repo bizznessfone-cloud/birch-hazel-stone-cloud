@@ -22,14 +22,14 @@ Example minor-unit figures in §6 are **not** prices. Canonical amounts are
 | Foundation | **CP26C-O2 CLOSED** (Production-proven; 0025 applied) |
 | 0025 controller | **CP26C-O2A/O2B PASS** |
 | First Owner | **bootstrapped** — 1 active grant; workflow **RETIRED** (GHA 36116463589) |
-| Next implementation | **CP26C-O4.2 SINGLE-USE 0027 PRODUCTION CONTROLLER READY; NOT EXECUTED**. Next **CP26C-O4.3** requires explicit authorisation. **O4.1 SOURCE COMPLETE**, unapplied |
+| Next implementation | **CP26 STRIPE TEST**, then **CP26 EXIT GATE**. **CP26 FINALISATION COMPLETE**. CP26 is **not** closed |
 | Owner sign-in | **CP26C-O2D PASS** — `/owner/login` sign-in only; `/login` stays operator. Human verification **PASS** |
 | Catalogue UI | **CP26C-O3.3 PASS** — Owner plans read/write through 0026; amounts **UNDEFINED**. **O3.3V PASS** |
 | Catalogue source | **CP26C-O3.2 / O3.2B PASS** — `0026` Production-applied |
 | 0026 controller | **RETIRED** in O3.2C (historical script remains) |
 | Catalogue contract | **CP26C-O3.1 PASS** — [`COMMERCIAL_CATALOGUE.md`](COMMERCIAL_CATALOGUE.md) |
-| Commercial model | **CP26C-O3R PASS** — [`COMMERCIAL_MODEL.md`](COMMERCIAL_MODEL.md); not implemented |
-| Stripe TEST resources | **CP26C.3 not resumed** — superseded; later **CP26C-O9** |
+| Commercial model | **CP26C-O3R PASS**, then **CP26 FINALISATION** implemented the dormant organisation property-licence path. No price. Commerce **OFF** |
+| Stripe TEST resources | **not created**. Next checkpoint is **CP26 STRIPE TEST**. CP26C.3 is not resumed |
 | LIVE commerce | **CP31 only** |
 
 ---
@@ -617,3 +617,5 @@ CP26C.2 PASS
 ```
 
 Only **CP31** activates LIVE commerce.
+
+The O4–O11 continuation that used to follow this historical list is **superseded**. Current route: CP26 FINALISATION **COMPLETE** → **CP26 STRIPE TEST** → **CP26 EXIT GATE**. Gate B is **0001–0028**. `property_licence` is the sellable plan. basic/pro/premium are inactive. No price version exists.

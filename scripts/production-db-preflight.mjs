@@ -24,7 +24,7 @@ const OCCUPANCY_CONSTRAINTS = [
   "bookings_driver_occupancy_excl",
 ];
 
-/** Accepted Production history after CP26 FINALISATION recognised applied 0027. Not a future-pending allowlist. */
+/** Accepted Production history after CP26 FINALISATION applied 0028. Not a future-pending allowlist. */
 export const ACCEPTED_LEDGER = [
   "0001_auth.sql",
   "0002_foundation.sql",
@@ -53,6 +53,7 @@ export const ACCEPTED_LEDGER = [
   "0025_cp26co2_platform_owners.sql",
   "0026_cp26co3_commercial_catalogue.sql",
   "0027_cp26co41_organisation_property_licence.sql",
+  "0028_cp26fin_property_licence_catalogue.sql",
 ];
 
 export const REVIEWED_DIGESTS = {
@@ -72,6 +73,8 @@ export const REVIEWED_DIGESTS = {
     "4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446",
   "0027_cp26co41_organisation_property_licence.sql":
     "1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef",
+  "0028_cp26fin_property_licence_catalogue.sql":
+    "35626cb2d3b21a076f4a2cb982b9d0983610620fb21dbf7f3e94eb4c0576a02d",
 };
 
 /** No pending migration is automatically authorised. Future files need their own checkpoint. */

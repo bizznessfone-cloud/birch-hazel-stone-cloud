@@ -34,6 +34,7 @@ import {
   insertAuthUser,
   onboardConfiguredFixture,
   openCp26cO2Db,
+  openCp26finDb,
 } from "./cp26a4-fixture.ts";
 
 const root = process.cwd();
@@ -185,7 +186,7 @@ test("CP26C-O2 bootstrap is owner-plane; aether_app cannot insert grants", async
 });
 
 test("CP26C-O2 overview funnel excludes demo-kos and does not invent money", async () => {
-  const pg = await openCp26cO2Db();
+  const pg = await openCp26finDb();
   try {
     const db = asSql(pg);
     await insertAuthUser(pg, OWNER_USER);
@@ -195,9 +196,9 @@ test("CP26C-O2 overview funnel excludes demo-kos and does not invent money", asy
     const empty = await loadOwnerOverview(db);
     assert.equal(empty.operatorAccounts, 0);
     assert.equal(empty.saasHotels, 0);
-    assert.equal(empty.mrr, "pending_catalogue");
-    assert.equal(empty.arr, "pending_catalogue");
-    assert.equal(empty.planDistribution, "pending_catalogue");
+    assert.equal(empty.mrr, 0);
+    assert.equal(empty.arr, 0);
+    assert.deepEqual(empty.planDistribution, { property_licence: 0 });
     assert.equal(empty.funnel.account, 0);
 
     const first = await onboardConfiguredFixture(pg, OWNER_USER.id);
@@ -212,14 +213,14 @@ test("CP26C-O2 overview funnel excludes demo-kos and does not invent money", asy
     assert.equal(overview.configured, 1);
     assert.equal(overview.unconfigured, 1);
     assert.equal(overview.live, 0);
-    assert.equal(overview.subscribed, 1);
-    assert.equal(overview.activeSubscriptions, 1);
+    assert.equal(overview.subscribed, 0);
+    assert.equal(overview.activeSubscriptions, 0);
     assert.equal(overview.funnel.account, 2);
     assert.equal(overview.funnel.hotelCreated, 2);
     assert.equal(overview.funnel.configured, 1);
-    assert.equal(overview.funnel.subscribed, 1);
+    assert.equal(overview.funnel.subscribed, 0);
     assert.equal(overview.funnel.live, 0);
-    assert.equal(overview.mrr, "pending_catalogue");
+    assert.equal(overview.mrr, 0);
     const json = JSON.stringify(overview);
     assert.doesNotMatch(json, /amount_minor/);
     assert.doesNotMatch(json, /777777/);
@@ -243,8 +244,8 @@ test("CP26C-O2 overview funnel excludes demo-kos and does not invent money", asy
     const detail = await loadOwnerHotelDetail(db, first.hotelId);
     assert.ok(detail);
     assert.equal(detail.status, "configured");
-    assert.equal(detail.billing.entitled, true);
-    assert.equal(detail.billing.status, "active");
+    assert.equal(detail.billing.entitled, false);
+    assert.equal(detail.billing.status, null);
     assert.equal(detail.owners[0]?.email, OWNER_USER.email);
 
     const missing = await loadOwnerHotelDetail(db, "00000000-0000-4000-8000-000000000000");
@@ -256,10 +257,10 @@ test("CP26C-O2 overview funnel excludes demo-kos and does not invent money", asy
     const revenue = await loadOwnerRevenue(db);
     assert.equal(revenue.domain, "A");
     assert.equal(revenue.caption, "SBG SaaS");
-    assert.equal(revenue.active, 1);
-    assert.equal(revenue.entitled, 1);
-    assert.equal(revenue.mrr, "pending_catalogue");
-    assert.equal(revenue.arr, "pending_catalogue");
+    assert.equal(revenue.active, 0);
+    assert.equal(revenue.entitled, 0);
+    assert.equal(revenue.mrr, 0);
+    assert.equal(revenue.arr, 0);
     assert.doesNotMatch(JSON.stringify(revenue), /amount_minor/);
   } finally {
     await pg.close();
@@ -331,7 +332,8 @@ test("CP26C-O2 source: protected /owner shell, no commerce mutation, no Domain B
   assert.doesNotMatch(fns, /sbg_booking_payments/);
   assert.doesNotMatch(overview, /sbg_booking_payments/);
   assert.doesNotMatch(revenue, /sbg_booking_payments/);
-  assert.match(queries, /pending_catalogue/);
+  assert.doesNotMatch(queries, /pending_catalogue/);
+  assert.match(queries, /sbg_organisation_billing/);
   assert.match(plans, /Price not configured/);
   assert.match(plans, /No price version has been created for this plan yet/);
   assert.match(plans, /LIVE commerce locked until CP31/);

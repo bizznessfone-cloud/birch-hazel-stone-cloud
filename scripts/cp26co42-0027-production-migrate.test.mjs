@@ -418,9 +418,13 @@ test("canonical 0027 digest is pinned and the prerequisite digest chain matches"
   assert.equal(REQUIRED_LEDGER.at(-1), "0026_cp26co3_commercial_catalogue.sql");
   assert.equal(REQUIRED_LEDGER.includes(TARGET_MIGRATION), false);
   assert.equal(REQUIRED_LEDGER.length, 26);
-  assert.equal(ACCEPTED_LEDGER.at(-1), "0027_cp26co41_organisation_property_licence.sql");
+  assert.equal(ACCEPTED_LEDGER.at(-1), "0028_cp26fin_property_licence_catalogue.sql");
   assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), true);
-  assert.deepEqual(ACCEPTED_LEDGER, [...REQUIRED_LEDGER, TARGET_MIGRATION]);
+  assert.deepEqual(ACCEPTED_LEDGER, [
+    ...REQUIRED_LEDGER,
+    TARGET_MIGRATION,
+    "0028_cp26fin_property_licence_catalogue.sql",
+  ]);
   assert.doesNotMatch(src, /REQUIRED_LEDGER\s*=\s*\[\s*\.\.\.ACCEPTED_LEDGER/);
   assert.deepEqual(AUTHORISED_PENDING, []);
   assert.equal(isAuthorisedPending(TARGET_MIGRATION), false);
@@ -904,8 +908,9 @@ test("apply failure rolls back and redacts secrets", async () => {
   assert.match(result.error, /redacted/);
 });
 
-test("Gate B accepts applied 0027 and build does not invoke this controller", () => {
-  assert.equal(ACCEPTED_LEDGER.at(-1), TARGET_MIGRATION);
+test("Gate B accepts applied 0027 inside 0001-0028 and build does not invoke this controller", () => {
+  assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), true);
+  assert.equal(ACCEPTED_LEDGER.at(-1), "0028_cp26fin_property_licence_catalogue.sql");
   assert.deepEqual(AUTHORISED_PENDING, []);
   assert.equal(isAuthorisedPending(TARGET_MIGRATION), false);
   const current = evaluatePreflight({
@@ -926,7 +931,7 @@ test("Gate B accepts applied 0027 and build does not invoke this controller", ()
   assert.equal(generic.migrated, false);
   const genericSrc = readFileSync(join(here, "production-db-migrate.mjs"), "utf8");
   assert.doesNotMatch(genericSrc, /0028_cp26fin_property_licence_catalogue/);
-  assert.match(genericSrc, /0001–0027/);
+  assert.match(genericSrc, /0001–0028/);
   assert.doesNotMatch(pkg.scripts.build, /db:migrate/);
   assert.doesNotMatch(pkg.scripts.build, /cp26co42/);
   assert.equal(pkg.scripts["db:migrate:0027"], undefined);
@@ -943,7 +948,6 @@ test("0027 dispatch surface is retired", () => {
   const workflows = readdirSync(join(here, "../.github/workflows")).sort();
   assert.deepEqual(workflows, [
     "cp26co2a-0025-production-migrate.yml",
-    "cp26fin-0028-production-migrate.yml",
     "production-database.yml",
   ]);
   for (const name of workflows) {

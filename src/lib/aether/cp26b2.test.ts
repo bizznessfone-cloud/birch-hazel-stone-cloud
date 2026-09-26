@@ -8,8 +8,8 @@ import { join } from "node:path";
 import { test } from "node:test";
 import type { Sql } from "@/lib/db";
 import {
-  applyDomainABillingEvent,
-  extractDomainASubscriptionEvent,
+  applyLegacyHotelBillingEvent as applyDomainABillingEvent,
+  extractLegacyHotelSubscriptionEvent as extractDomainASubscriptionEvent,
   hasOrderedBillingApply,
   OrderedBillingSchemaError,
 } from "./saas-billing-webhook.ts";

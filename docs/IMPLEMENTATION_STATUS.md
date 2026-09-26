@@ -5,7 +5,7 @@ Living status: **`BUILD_STATE.md`**.
 - Product: **SCAN / BOOK / GO**
 - Last application SHA: `19512c295830fbc6fd9712d688ce364d940f87c3`
 - CP25G.3 / **CP26A** / **CP26B** / **CP26C-O2**: **CLOSED**
-- **Next: CP26C-O4.3 one Production apply of 0027 (not started; explicit authorisation required). CP26C-O4.2 SINGLE-USE 0027 PRODUCTION CONTROLLER READY; NOT EXECUTED. O4.1 SOURCE COMPLETE, unapplied. Former O3.4 superseded. CP26C.3 not resumed**
+- **Next: CP26 STRIPE TEST, then CP26 EXIT GATE. CP26 FINALISATION COMPLETE. CP26 is not closed. CP26C is not closed. Former O3.4 superseded. CP26C.3 not resumed. The O4–O11 chain is superseded**
 - **CP26C-O3R PASS** — commercial model reconciled; no implementation (`docs/COMMERCIAL_MODEL.md`)
 - **CP26C-O2D PASS** — Owner sign-in isolated at `/owner/login`. Human verification **PASS**. No migration. Commerce OFF.
 - **CP26C-O3.3 PASS** — Owner commercial catalogue UI. **O3.3V PASS**. Canonical amounts still **UNDEFINED**. Production price versions **0**.
@@ -13,7 +13,7 @@ Living status: **`BUILD_STATE.md`**.
 - Forward roadmap: **[ROADMAP.md](ROADMAP.md)**
 - Fixture policy: **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)**
 - Vercel Production `scan-book-go` / last observed `dpl_FmUosqz2wy7aCT51rNjdanJnuviZ` READY
-- Neon Production migrated through **0026**. Gate B accepted ledger **0001–0026**. 0026 workflow **RETIRED**. Digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446`. Apply run 36135836457. Canonical amounts **UNDEFINED**.
+- Neon Production migrated through **0028**. Gate B accepted ledger **0001–0028**. `AUTHORISED_PENDING=[]`. 0028 digest `35626cb2d3b21a076f4a2cb982b9d0983610620fb21dbf7f3e94eb4c0576a02d` (run 36254890554). 0027 digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef` (run 36251190175). Both workflows **RETIRED**. `property_licence` active; basic/pro/premium inactive. Price versions **0**. Mappings **0**. Canonical amounts **UNDEFINED**. Commerce **OFF**.
 - Active platform Owners: **1** (OPERATOR CONTROLLED / REDACTED). Bootstrap workflow **RETIRED**.
 - `/app/*` exists (SaaS). `/owner/*` is Production-proven. `/ops/*` remains internal operations.
 - First Production hotel through `/app`: **configured, not live** (`sbg-verify-a5`)

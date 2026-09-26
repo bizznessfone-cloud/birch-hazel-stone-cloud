@@ -35,8 +35,9 @@ not trail the repository.
 | CP26C-O3.3 | **PASS** — Owner commercial catalogue UI; amounts still **UNDEFINED** |
 | CP26C-O2D | **PASS** — `/owner/login` isolated from hotel `/login`; human verification **PASS** |
 | CP26C-O3.3V | **PASS** — operator plans verification; no price created |
-| CP26C-O3R | **PASS** — property-licence model reconciled; no implementation (`docs/COMMERCIAL_MODEL.md`) |
-| **Next** | **CP26C-O4.2 SINGLE-USE 0027 PRODUCTION CONTROLLER READY; NOT EXECUTED**. Next **CP26C-O4.3** requires explicit authorisation. **O4.1 SOURCE COMPLETE**, unapplied |
+| CP26C-O3R | **PASS** — property-licence model reconciled (`docs/COMMERCIAL_MODEL.md`) |
+| CP26 FINALISATION | **COMPLETE** — Production **0001–0028**; dormant organisation property-licence cutover; commerce **OFF**; CP26 **not** closed |
+| **Next** | **CP26 STRIPE TEST**, then **CP26 EXIT GATE**. The O4–O11 chain is superseded |
 | Forward roadmap | `docs/ROADMAP.md` (CP26–CP31) |
 | Commercial model | `docs/COMMERCIAL_MODEL.md` |
 | Commercial catalogue | `docs/COMMERCIAL_CATALOGUE.md` |
@@ -62,12 +63,15 @@ not trail the repository.
 
 ## Database
 
-Migrations **0001–0026** exist in source and are applied on Production Neon.
-`0026_cp26co3_commercial_catalogue.sql` was applied once (GHA [36135836457](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36135836457), job 108073574672).
+Migrations **0001–0028** exist in source and are applied on Production Neon.
+Gate B accepted ledger is **0001–0028**. `AUTHORISED_PENDING=[]`.
+0028 digest `35626cb2d3b21a076f4a2cb982b9d0983610620fb21dbf7f3e94eb4c0576a02d` (GHA [36254890554](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36254890554)); workflow **RETIRED**.
+0027 digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef` (GHA [36251190175](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36251190175)); workflow **RETIRED**.
+`property_licence` is active. basic/pro/premium are inactive. Price versions **0**. Stripe mappings **0**. LIVE locks **false/false**.
+Canonical amount remains **UNDEFINED**. Commerce **OFF**. CP26 is **not** closed. Next is **CP26 STRIPE TEST**.
+The 0025 workflow remains historical and must not be re-dispatched.
+0026 remains accepted history (GHA [36135836457](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36135836457)).
 Digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446`.
-Gate B accepted ledger is **0001–0026**. `AUTHORISED_PENDING=[]`. The 0026 workflow is **RETIRED**.
-Plans basic/pro/premium. Price versions **0**. Stripe mappings **0**. LIVE locks **false/false**.
-Canonical BASIC / PRO / PREMIUM amounts remain **UNDEFINED**. Commerce **OFF**. CP26C.3 **PAUSED** until O3.4.
 Active platform Owners: **1** (OPERATOR CONTROLLED / REDACTED). First-Owner bootstrap workflow is **RETIRED**. Historical run [36116463589](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36116463589).
 0025 digest `575aabcb7322fc8ca63c8a3dd137d358f76375f1777ed59cf04c1d98d6c066fd`.
 Generic migrator remains fail-closed. Spent 0024 `workflow_dispatch` is retired.

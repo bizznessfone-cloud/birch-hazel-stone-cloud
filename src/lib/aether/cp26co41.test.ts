@@ -61,7 +61,7 @@ async function one<T>(pg: PGlite, text: string, params?: unknown[]): Promise<T> 
   return result[0]!;
 }
 
-test("0027 is source-only, unauthorised, and does not cut over runtime", () => {
+test("0027 is accepted history and its SQL does not seed commerce or Domain B", () => {
   const sql = read(`migrations/${MIGRATION}`);
   const files = readdirSync(join(root, "migrations")).filter((name) => name.endsWith(".sql")).sort();
   assert.equal(files.filter((name) => name.startsWith("0027")).join(","), MIGRATION);
@@ -71,7 +71,8 @@ test("0027 is source-only, unauthorised, and does not cut over runtime", () => {
   );
   const preflight = read("scripts/production-db-preflight.mjs");
   assert.match(preflight, /AUTHORISED_PENDING = \[\]/);
-  assert.equal(preflight.includes(MIGRATION), false);
+  assert.equal(preflight.includes(MIGRATION), true);
+  assert.equal(preflight.includes("0028_cp26fin_property_licence_catalogue.sql"), true);
   assert.doesNotMatch(sql, /create\s+or\s+replace\s+function\s+sbg_apply_billing_event/i);
   assert.doesNotMatch(sql, /drop\s+function\s+if\s+exists\s+sbg_apply_billing_event/i);
   assert.doesNotMatch(sql, /sbg_booking_payments|sbg_stripe_connections|sbg_prepare_booking/);
@@ -94,7 +95,8 @@ test("0027 is source-only, unauthorised, and does not cut over runtime", () => {
     const text = readFileSync(path, "utf8");
     return needles.some((needle) => text.includes(needle));
   });
-  assert.deepEqual(hits, []);
+  assert.ok(hits.some((path) => path.endsWith("saas-billing.server.ts")));
+  assert.ok(hits.some((path) => path.endsWith("saas-billing-webhook.ts")));
 });
 
 test("organisation persistence keeps hotels, licences, publication and Domain B apart", async () => {

@@ -1,6 +1,8 @@
 /**
  * CP26C-O3.2 source verification, reconciled in O3.2C.
- * 0026 is on the accepted ledger. 0027+ stays fail-closed. No Production connection.
+ * 0026 is on the accepted ledger. Gate B accepts 0001–0028.
+ * Future files stay fail-closed. The generic migrator never applies SQL.
+ * No Production connection.
  */
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
@@ -81,14 +83,15 @@ test("0026 exists once and 0001-0025 are unchanged versus the source commit", ()
   }
 });
 
-test("Gate B accepts 0001-0027 and does not authorise 0028 on the generic migrator", async () => {
-  assert.equal(ACCEPTED_LEDGER.at(-1), "0027_cp26co41_organisation_property_licence.sql");
+test("Gate B accepts 0001-0028 and the generic migrator still never applies SQL", async () => {
+  assert.equal(ACCEPTED_LEDGER.at(-1), "0028_cp26fin_property_licence_catalogue.sql");
   assert.equal(ACCEPTED_LEDGER.includes(migrationName), true);
   assert.equal(ACCEPTED_LEDGER.includes("0027_cp26co41_organisation_property_licence.sql"), true);
-  assert.equal(ACCEPTED_LEDGER.includes("0028_cp26fin_property_licence_catalogue.sql"), false);
+  assert.equal(ACCEPTED_LEDGER.includes("0028_cp26fin_property_licence_catalogue.sql"), true);
   assert.deepEqual(AUTHORISED_PENDING, []);
   assert.equal(isAuthorisedPending(migrationName), false);
   assert.equal(isAuthorisedPending("0027_cp26co41_organisation_property_licence.sql"), false);
+  assert.equal(isAuthorisedPending("0028_cp26fin_property_licence_catalogue.sql"), false);
   assert.equal(isAuthorisedPending("0027_later.sql"), false);
 
   const acceptedOnly = evaluatePreflight({
@@ -102,8 +105,9 @@ test("Gate B accepts 0001-0027 and does not authorise 0028 on the generic migrat
   assert.equal(baseline.migrated, false);
 
   const live = evaluatePreflight(acceptedFacts());
-  assert.equal(live.ok, false);
-  assert.deepEqual(live.unexpectedPending, ["0028_cp26fin_property_licence_catalogue.sql"]);
+  assert.equal(live.ok, true);
+  assert.deepEqual(live.pending, []);
+  assert.equal(live.unexpectedPending, undefined);
 
   const future = evaluatePreflight({
     ...acceptedFacts(),
@@ -122,14 +126,13 @@ test("Gate B accepts 0001-0027 and does not authorise 0028 on the generic migrat
   });
   assert.equal(applied, 0);
   assert.equal(guarded.migrated, false);
-  assert.equal(guarded.ok, false);
+  assert.equal(guarded.ok, true);
 });
 
 test("generic migrator cannot apply 0026 and the spent dispatch surface is gone", () => {
   const workflows = readdirSync(join(root, ".github/workflows"));
   assert.deepEqual(workflows.sort(), [
     "cp26co2a-0025-production-migrate.yml",
-    "cp26fin-0028-production-migrate.yml",
     "production-database.yml",
   ]);
   for (const name of workflows) {
@@ -145,7 +148,7 @@ test("generic migrator cannot apply 0026 and the spent dispatch surface is gone"
   assert.match(controller, /0025_cp26co2_platform_owners\.sql/);
   assert.doesNotMatch(controller, /0026_cp26co3_commercial_catalogue/);
   const generic = readFileSync(join(root, "scripts/production-db-migrate.mjs"), "utf8");
-  assert.match(generic, /Accepted Production history is 0001–0027/);
+  assert.match(generic, /Accepted Production history is 0001–0028/);
   assert.doesNotMatch(generic, /AUTHORISED_PENDING\s*=\s*\[[^\]]+\]/);
   const dedicatedController = readFileSync(join(root, "scripts/cp26co32a-0026-production-migrate.mjs"), "utf8");
   assert.match(dedicatedController, /0026_cp26co3_commercial_catalogue\.sql/);

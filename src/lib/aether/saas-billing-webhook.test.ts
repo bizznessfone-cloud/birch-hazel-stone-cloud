@@ -18,6 +18,8 @@ const PRICE_ENV = {
   STRIPE_PREMIUM_PRICE_ID: "price_sbg_test_premium",
 };
 
+const ORG = "11111111-1111-4111-8111-111111111111";
+
 function subscriptionEvent(overrides: Record<string, unknown> = {}) {
   return {
     id: "evt_1",
@@ -31,8 +33,8 @@ function subscriptionEvent(overrides: Record<string, unknown> = {}) {
         status: "active",
         current_period_end: 1_800_000_000,
         cancel_at_period_end: false,
-        metadata: { hotel_id: "11111111-1111-1111-1111-111111111111" },
-        items: { data: [{ price: { id: "price_sbg_test_basic" } }] },
+        metadata: { organisation_id: ORG },
+        items: { data: [{ quantity: 3, price: { id: "price_sbg_test_basic", recurring: { interval: "month" } } }] },
       },
     },
     ...overrides,
@@ -45,7 +47,8 @@ test("CP26B.2 extracts event.created and cancel_at_period_end", () => {
   assert.equal(extracted.cancelAtPeriodEnd, false);
   assert.equal(extracted.status, "active");
   assert.equal(extracted.priceId, "price_sbg_test_basic");
-  assert.equal(extracted.hotelId, "11111111-1111-1111-1111-111111111111");
+  assert.equal(extracted.organisationId, ORG);
+  assert.equal(extracted.quantity, 3);
   const scheduled = extractDomainASubscriptionEvent(
     subscriptionEvent({
       data: {
@@ -55,8 +58,8 @@ test("CP26B.2 extracts event.created and cancel_at_period_end", () => {
           status: "active",
           current_period_end: 1_800_000_000,
           cancel_at_period_end: true,
-          metadata: { hotel_id: "11111111-1111-1111-1111-111111111111" },
-          items: { data: [{ price: { id: "price_sbg_test_pro" } }] },
+          metadata: { organisation_id: ORG },
+          items: { data: [{ quantity: 3, price: { id: "price_sbg_test_pro", recurring: { interval: "month" } } }] },
         },
       },
     }),
@@ -85,8 +88,8 @@ test("CP26B.2 missing cancel_at_period_end fails closed", () => {
             object: {
               id: "sub_1",
               status: "active",
-              metadata: { hotel_id: "11111111-1111-1111-1111-111111111111" },
-              items: { data: [{ price: { id: "price_sbg_test_basic" } }] },
+              metadata: { organisation_id: ORG },
+              items: { data: [{ quantity: 1, price: { id: "price_sbg_test_basic" } }] },
             },
           },
         }),
@@ -96,7 +99,61 @@ test("CP26B.2 missing cancel_at_period_end fails closed", () => {
   );
 });
 
-test("CP26B.2 unknown Domain A price fails closed", () => {
+test("CP26B.2 missing organisation, quantity, or ambiguous items fail closed", () => {
+  assert.throws(
+    () =>
+      extractDomainASubscriptionEvent(
+        subscriptionEvent({
+          data: {
+            object: {
+              id: "sub_1",
+              status: "active",
+              cancel_at_period_end: false,
+              metadata: { hotel_id: ORG },
+              items: { data: [{ quantity: 1, price: { id: "price_sbg_test_basic" } }] },
+            },
+          },
+        }),
+      ),
+    (err: unknown) => err instanceof DomainAWebhookExtractError && err.code === "missing_identity",
+  );
+  assert.throws(
+    () =>
+      extractDomainASubscriptionEvent(
+        subscriptionEvent({
+          data: {
+            object: {
+              id: "sub_1",
+              status: "active",
+              cancel_at_period_end: false,
+              metadata: { organisation_id: ORG },
+              items: { data: [{ price: { id: "price_sbg_test_basic" } }] },
+            },
+          },
+        }),
+      ),
+    (err: unknown) => err instanceof DomainAWebhookExtractError && err.code === "missing_quantity",
+  );
+  assert.throws(
+    () =>
+      extractDomainASubscriptionEvent(
+        subscriptionEvent({
+          data: {
+            object: {
+              id: "sub_1",
+              status: "active",
+              cancel_at_period_end: false,
+              metadata: { organisation_id: ORG },
+              items: { data: [{ quantity: 1 }, { quantity: 1 }] },
+            },
+          },
+        }),
+      ),
+    (err: unknown) => err instanceof DomainAWebhookExtractError && err.code === "ambiguous_items",
+  );
+});
+
+test("CP26B.2 legacy env price allowlist is not the active property-licence gate", () => {
   assert.equal(assertDomainAWebhookPriceId("price_sbg_test_basic", PRICE_ENV), "price_sbg_test_basic");
   assert.throws(
     () => assertDomainAWebhookPriceId("price_someone_else", PRICE_ENV),

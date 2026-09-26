@@ -30,23 +30,23 @@ logic, analytics, seeds, and tests must not hard-code it.
 | Former O3.4 | **SUPERSEDED** — do not start; it would price the obsolete tiers |
 | CP26C.3 | **NOT RESUMED** — its three-tier TEST Price plan is superseded |
 | CP26C.4 | **SUPERSEDED as previously scoped** — do not cut Checkout over to three tier Prices |
-| Next | **CP26C-O4.2 SINGLE-USE 0027 PRODUCTION CONTROLLER READY; NOT EXECUTED**. Next **CP26C-O4.3** requires explicit authorisation. **O4.1 SOURCE COMPLETE**, unapplied |
+| Next | **CP26 STRIPE TEST**, then **CP26 EXIT GATE**. CP26 FINALISATION is **COMPLETE**. CP26 is **not** closed |
 | Commerce | **OFF** |
-| Ledger | Gate B **0001–0026**; `AUTHORISED_PENDING=[]`; 0027+ fail-closed |
+| Ledger | Gate B **0001–0028**; `AUTHORISED_PENDING=[]`; 0029+ fail-closed |
 | 0026 digest | `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446` unchanged |
 | Production prices | operator-attested **0** versions, **0** mappings, **0** real SaaS subscriptions; not re-queried |
 | LIVE locks | source default **false / false** |
 
-**CP26C-O4.1 source.** `migrations/0027_cp26co41_organisation_property_licence.sql` now exists. It is not in Gate B, not authorised, and not applied. The sentences below that say the tables were "not created here" are the O3R decision, which this migration follows. Membership does **not** use a closed `billing_owner` | `operator` check: `role` is an extensible token and `billing_authority` is the only billing capability. That avoids freezing a two-role taxonomy in this persistence step.
-
-**CP26C-O4.2 SINGLE-USE 0027 PRODUCTION CONTROLLER READY; NOT EXECUTED.** Controller `scripts/cp26co42-0027-production-migrate.mjs`. Workflow `.github/workflows/cp26co42-0027-production-migrate.yml`. Confirmation `APPLY-0027`. 0027 digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef`. Production accepted ledger remains **0001–0026**. `AUTHORISED_PENDING=[]`. 0027 is unapplied. No organisations created. No price created. Commerce **OFF**. Stripe untouched. Next is **CP26C-O4.3**, which requires explicit authorisation. Do not dispatch the workflow from this checkpoint.
+**CP26 FINALISATION (current).** 0027 is applied and accepted. Digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef`. Apply GHA 36251190175. Workflow **RETIRED**. Membership does **not** use a closed `billing_owner` | `operator` check: `role` is an extensible token and `billing_authority` is the only billing capability. 0028 is applied and accepted. Digest `35626cb2d3b21a076f4a2cb982b9d0983610620fb21dbf7f3e94eb4c0576a02d`. Apply GHA 36254890554. Workflow **RETIRED**. `property_licence` is active. `basic`, `pro`, and `premium` are inactive and cannot receive a new price version. Price versions **0**. Stripe mappings **0**. No amount. No organisations. Commerce **OFF**. Domain A application code is organisation-scoped and dormant. Section 1 below is the **O3R snapshot**, not the current runtime.
 
 ---
 
-## 1. Classification
+## 1. Classification (O3R snapshot — not current)
 
-The implemented architecture is **hotel-scoped billing**. It is not an
-organisation aggregate, and it is not yet a property-licence quantity model.
+At CP26C-O3R the implemented architecture was **hotel-scoped billing**. It was not an
+organisation aggregate, and it was not yet a property-licence quantity model.
+**CP26 FINALISATION changed that runtime.** Domain A is now organisation + property licence.
+This section remains the O3R inspection record.
 
 Proven from source:
 
@@ -326,7 +326,11 @@ written as a destination price. No application fee or commission is added.
 
 ---
 
-## 9. Owner and operator surfaces (not built here)
+## 9. Owner and operator surfaces
+
+O3R did not build these surfaces. **CP26 FINALISATION** did, still with no price and commerce **OFF**. The Owner catalogue no longer presents Basic/Pro/Premium as the sellable offer. The price form is `property_licence` only and does not hard-code an amount. Operator billing is organisation-scoped, quantity 1–49, portal instead of a second Checkout, and allocation of a spare licence without a second subscription. MRR/ARR is **0** until an entitled organisation subscription has a contracted price version. It is not `pending_catalogue`.
+
+The O3R target text follows.
 
 `/owner/plans` eventually shows one product, **SCAN BOOK GO Property Licence**:
 canonical price version, TEST mapping, LIVE mapping, history, LIVE locks, and
@@ -361,39 +365,32 @@ organisations. They must not multiply hotel rows by a constant.
 | `isSaasEntitled(status)` | **REFACTOR** to organisation status plus allocation, still with no tier matrix |
 | `sbg_sync_hotel_entitlement` (0023 no-write) | **KEEP** |
 | `SBG_SAAS_TEST_HOTEL_IDS` | **KEEP** until hotel-keyed Checkout is gone; do not weaken |
-| Owner MRR `pending_catalogue` | **KEEP** until contracted quantity math exists |
+| Owner MRR `pending_catalogue` | **REMOVED** in CP26 FINALISATION. MRR is contracted quantity math, currently **0** |
 | Domain B Connect and guest Checkout | **KEEP** |
 | CP26C-O3.1 / O3.2 / O3.3 tier contract text | **HISTORICAL — DO NOT REWRITE** |
 
 ---
 
-## 11. Implementation sequence
+## 11. Implementation sequence (historical O3R plan — superseded)
 
-No step below is authorised by O3R. 0027+ stays fail-closed until its own
-checkpoint. Each Production apply, when it exists, uses a new single-use
-controller, then reconciliation, then retirement. The generic migrator never
-applies SQL.
+No step below was authorised by O3R. The chain is **not** the current route.
+CP26 FINALISATION completed the dormant architecture through catalogue identity,
+Owner product surface, and quantity application, without a price, a Stripe object,
+or commerce. Remaining CP26 work is only **CP26 STRIPE TEST** and **CP26 EXIT GATE**.
+The generic migrator never applies SQL. The numbered list is retained as history.
 
-1. **CP26C-O4.1 SOURCE COMPLETE** — `migrations/0027_cp26co41_organisation_property_licence.sql` and local tests. Not in the accepted ledger. Not applied. No amount. No backfill. No Stripe. Commerce stays OFF.
-2. **CP26C-O4.2 READY, NOT EXECUTED** — single-use Production controller `scripts/cp26co42-0027-production-migrate.mjs` and workflow `.github/workflows/cp26co42-0027-production-migrate.yml`. Confirmation `APPLY-0027`. Digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef`. Not dispatched. Not applied.
-3. **CP26C-O4.3** — next. One Production apply. Requires explicit authorisation. Not started.
-4. **CP26C-O4.4** — Gate B reconcile and retire that controller.
-5. **CP26C-O5.1** — source migration: `property_licence` identity, deactivate
-   the three tier rows, block price creation on inactive plans. No amount.
-6. **CP26C-O5.2 / O5.3 / O5.4** — controller, one apply, reconcile, retire.
-7. **CP26C-O6** — Owner catalogue UI shows the one product. Still no price row.
-8. **CP26C-O7** — application refactor: webhook quantity, organisation
-   checkout and portal rules, operator licence UX, MRR from persisted
-   versions. Commerce remains OFF. Hotel env Price IDs stay until this path
-   is proven and then removed. Not CP26C.4.
-9. **CP26C-O8** — human Owner creates the one canonical price version through
-   the UI. This replaces former O3.4. The amount comes from the authorisation
-   brief, not from source.
-10. **CP26C-O9** — Stripe TEST product and one TEST price, then a verified
-    test mapping. Not a resume of CP26C.3.
-11. **CP26C-O10** — organisation TEST allowlist, commerce still OFF.
-12. **CP26C-O11** — TEST commerce for allowlisted organisations only, including
-    quantity greater than 1. Not LIVE.
+1. **CP26C-O4.1** — historical. Later applied as 0027 (GHA 36251190175) and accepted. Not a remaining step.
+2. **CP26C-O4.2** — historical controller. Workflow **RETIRED**. 0027 digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef`.
+3. **CP26C-O4.3** — absorbed. 0027 is applied. Not next. Not unapplied.
+4. **CP26C-O4.4** — absorbed. Gate B includes 0027. The 0027 workflow is retired.
+5. **CP26C-O5** — absorbed by 0028. `property_licence` active. basic/pro/premium inactive. No amount.
+6. **CP26C-O5.2 / O5.3 / O5.4** — absorbed. 0028 applied (GHA 36254890554) and the workflow is retired.
+7. **CP26C-O6** — absorbed. Owner catalogue shows the one product and no price row.
+8. **CP26C-O7** — absorbed. Domain A is organisation quantity, commerce **OFF**. Env tier Price IDs are not the active price source.
+9. **CP26C-O8** — not done. A human price version is **CP26 STRIPE TEST**, not this checkpoint.
+10. **CP26C-O9** — not done. No Stripe TEST Product, Price, or mapping.
+11. **CP26C-O10** — not done as activation. `SBG_SAAS_TEST_ORGANISATION_IDS` exists and an empty value fail-closes. Commerce stays **OFF**.
+12. **CP26C-O11** — not done. Test commerce is not enabled.
 
 Only **CP31** may enable LIVE commerce.
 
@@ -401,8 +398,8 @@ Only **CP31** may enable LIVE commerce.
 
 ## 12. What O3R did not
 
-These statements describe CP26C-O3R only. CP26C-O4.1 later added the unapplied
-source migration named above. O3R itself did none of the following.
+These statements describe CP26C-O3R only. Later checkpoints applied 0027 and 0028
+and cut Domain A over. O3R itself did none of the following.
 
 No Production database connection. No mutation. No migration file. No Stripe
 call. No Product or Price. No webhook. No Vercel change. No price version. No

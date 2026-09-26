@@ -225,9 +225,9 @@ test("CP26A.2 callers remain compatible; Stripe paths no longer own publication"
   const commerce = read("src/lib/aether/saas-commerce.server.ts");
 
   assert.match(stripe, /sbg_sync_hotel_entitlement/);
-  assert.match(webhook, /sbg_sync_hotel_entitlement/);
+  assert.doesNotMatch(webhook, /sbg_sync_hotel_entitlement/);
   assert.match(stripe, /completeStripeConnect/);
-  assert.match(billingWebhook, /sbg_apply_billing_event/);
+  assert.match(billingWebhook, /sbg_apply_organisation_billing_event/);
   assert.doesNotMatch(commerce, /sbg_sync_hotel_entitlement/);
   assert.doesNotMatch(commerce, /update hotels set status/i);
 

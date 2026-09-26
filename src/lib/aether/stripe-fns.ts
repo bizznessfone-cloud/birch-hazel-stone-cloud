@@ -4,13 +4,27 @@ import { z } from "zod";
 import { authMiddleware } from "@/lib/auth/middleware";
 import { getSql } from "@/lib/db";
 import {
+  allocatePropertyLicence,
+  ensureHotelOrganisation,
   loadDomainABillingState,
   startDomainACheckout,
   startDomainAPortal,
 } from "./saas-billing.server.ts";
 
 const hotelInput = z.object({ hotelId: z.string().uuid() });
-const planInput = z.object({ hotelId: z.string().uuid(), plan: z.enum(["basic", "pro", "premium"]) });
+const checkoutInput = z
+  .object({
+    organisationId: z.string().uuid(),
+    quantity: z.number().int().min(1).max(49),
+  })
+  .strict();
+const portalInput = z.object({ organisationId: z.string().uuid() }).strict();
+const allocateInput = z
+  .object({
+    organisationId: z.string().uuid(),
+    hotelId: z.string().uuid(),
+  })
+  .strict();
 
 function origin() {
   const request = getRequest();
@@ -28,28 +42,49 @@ export const getBillingState = createServerFn({ method: "GET" })
 
 export const createSubscriptionCheckoutFn = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
-  .validator(planInput)
+  .validator(checkoutInput)
   .handler(async ({ data, context }) => {
     const db = await getSql();
     return startDomainACheckout({
       db,
       userId: context.userId,
-      hotelId: data.hotelId,
-      plan: data.plan,
+      organisationId: data.organisationId,
+      quantity: data.quantity,
       origin: origin(),
     });
   });
 
 export const createBillingPortalFn = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
-  .validator(hotelInput)
+  .validator(portalInput)
   .handler(async ({ data, context }) => {
     const db = await getSql();
     return startDomainAPortal({
       db,
       userId: context.userId,
-      hotelId: data.hotelId,
+      organisationId: data.organisationId,
       origin: origin(),
+    });
+  });
+
+export const ensureHotelOrganisationFn = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator(hotelInput)
+  .handler(async ({ data, context }) => {
+    const db = await getSql();
+    return ensureHotelOrganisation({ db, userId: context.userId, hotelId: data.hotelId });
+  });
+
+export const allocatePropertyLicenceFn = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator(allocateInput)
+  .handler(async ({ data, context }) => {
+    const db = await getSql();
+    return allocatePropertyLicence({
+      db,
+      userId: context.userId,
+      organisationId: data.organisationId,
+      hotelId: data.hotelId,
     });
   });
 

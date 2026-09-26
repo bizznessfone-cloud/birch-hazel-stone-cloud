@@ -361,8 +361,9 @@ test("CP26A.4 Domain A Checkout remains fail-closed before any Stripe network", 
       () =>
         createSubscriptionCheckout({
           priceId: "price_test",
-          hotelId: FOREIGN_HOTEL_ID,
+          organisationId: "11111111-1111-4111-8111-111111111111",
           userId: OWNER_USER.id,
+          quantity: 1,
           successUrl: "https://scan-book-go.vercel.app/app/billing?checkout=success",
           cancelUrl: "https://scan-book-go.vercel.app/app/billing?checkout=cancel",
         }),

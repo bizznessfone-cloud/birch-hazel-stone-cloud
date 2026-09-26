@@ -9,6 +9,7 @@ export type SaasCommerceMode = "off" | "test" | "live";
 export type StripeKeyMode = "test" | "live";
 
 export const SBG_SAAS_TEST_HOTEL_IDS = "SBG_SAAS_TEST_HOTEL_IDS";
+export const SBG_SAAS_TEST_ORGANISATION_IDS = "SBG_SAAS_TEST_ORGANISATION_IDS";
 
 const HOTEL_UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -142,6 +143,46 @@ export function domainAWebhookHotelAllowed(
   const id = normalizeHotelUuid(hotelId);
   if (!id) return false;
   const parsed = parseSaasTestHotelIds(readEnv(env, SBG_SAAS_TEST_HOTEL_IDS));
+  if (!parsed.ok || parsed.ids.length === 0) return false;
+  return parsed.ids.includes(id);
+}
+
+function assertTestOrganisationAllowlisted(organisationId: string, env: NodeJS.Dict<string>): void {
+  const id = normalizeHotelUuid(organisationId);
+  if (!id) {
+    throw new SaasCommerceError("SBG SaaS test commerce is not authorised for this organisation.");
+  }
+  const parsed = parseSaasTestHotelIds(readEnv(env, SBG_SAAS_TEST_ORGANISATION_IDS));
+  if (!parsed.ok || parsed.ids.length === 0 || !parsed.ids.includes(id)) {
+    throw new SaasCommerceError("SBG SaaS test commerce is not authorised for this organisation.");
+  }
+}
+
+/**
+ * Organisation-aware Domain A gate. off → reject. test → mode/key + non-empty
+ * organisation allowlist. live → live-key pairing; the allowlist is ignored.
+ * An empty allowlist fail-closes. This does not enable commerce.
+ */
+export function assertDomainACommerceAllowedForOrganisation(
+  organisationId: string,
+  env: NodeJS.Dict<string> = process.env,
+): { mode: Exclude<SaasCommerceMode, "off">; expectedLivemode: boolean } {
+  const allowed = assertDomainACommerceAllowed(env);
+  if (allowed.mode === "test") assertTestOrganisationAllowlisted(organisationId, env);
+  return allowed;
+}
+
+/** Test-mode webhook organisation isolation. Live ignores the allowlist. Off is false. */
+export function domainAWebhookOrganisationAllowed(
+  organisationId: string,
+  env: NodeJS.Dict<string> = process.env,
+): boolean {
+  const mode = saasCommerceMode(env);
+  if (mode === "off") return false;
+  if (mode === "live") return true;
+  const id = normalizeHotelUuid(organisationId);
+  if (!id) return false;
+  const parsed = parseSaasTestHotelIds(readEnv(env, SBG_SAAS_TEST_ORGANISATION_IDS));
   if (!parsed.ok || parsed.ids.length === 0) return false;
   return parsed.ids.includes(id);
 }

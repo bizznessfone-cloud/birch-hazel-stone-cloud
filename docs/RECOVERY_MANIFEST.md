@@ -15,13 +15,13 @@ GitHub is authoritative for application source. Living status: **`BUILD_STATE.md
 | CP25G.3 | **CLOSED** |
 | **CP26A** | **CLOSED** |
 | **CP26B** | **CLOSED** |
-| **Next execution checkpoint** | **CP26C-O4.2 SINGLE-USE 0027 PRODUCTION CONTROLLER READY; NOT EXECUTED**. Next **CP26C-O4.3** requires explicit authorisation. **O4.1 SOURCE COMPLETE**, unapplied. **CP26C-O3R PASS**. Former **O3.4** superseded |
+| **Next execution checkpoint** | **CP26 STRIPE TEST**, then **CP26 EXIT GATE**. **CP26 FINALISATION COMPLETE**. CP26 is **not** closed |
 | Forward roadmap | **[ROADMAP.md](ROADMAP.md)** |
 | Fixture policy | **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)** |
 | Product | SCAN / BOOK / GO |
 | Production | Vercel `scan-book-go` / last observed `dpl_FmUosqz2wy7aCT51rNjdanJnuviZ` READY |
 | Alias | `https://scan-book-go.vercel.app` |
-| Database | Production Neon migrated through **0026**; Gate B **0001–0026**; 0026 workflow **RETIRED** |
+| Database | Production Neon migrated through **0028**; Gate B **0001–0028**; 0027 and 0028 workflows **RETIRED**; 0025 workflow must not be re-dispatched |
 | Owners | **1** active platform Owner (OPERATOR CONTROLLED / REDACTED); bootstrap workflow **RETIRED** |
 | Runtime | `DATABASE_URL` → `aether_app`; owner URL **ABSENT** from Vercel |
 | Auth | Better Auth Production configured; returning sign-in **proven CP26A.5** |
@@ -46,9 +46,9 @@ A workspace is never authoritative. Recovery ZIPs are secondary artifacts. The C
 
 ## Database migration state
 
-**Source files and Production Neon:** through `0026_cp26co3_commercial_catalogue.sql` (digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446`, apply run 36135836457, job 108073574672).
+**Source files and Production Neon:** through `0028_cp26fin_property_licence_catalogue.sql` (digest `35626cb2d3b21a076f4a2cb982b9d0983610620fb21dbf7f3e94eb4c0576a02d`, apply run 36254890554). 0027 digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef`, apply run 36251190175. 0026 digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446`, apply run 36135836457, remains accepted history.
 
-Application build does not migrate or bootstrap an Owner. Generic production-migrate GitHub Action is retired/fail-closed. Permanent owner-plane control is read-only Gate B (accepted ledger **0001–0026**, `AUTHORISED_PENDING=[]`). Spent 0022/0023/0024 single-use mutation workflows are retired. The first-Owner bootstrap workflow is **RETIRED**. The 0026 apply workflow is **RETIRED**. The 0025 apply workflow remains historical evidence and must not be re-dispatched. **CP26C-O4.2** added `.github/workflows/cp26co42-0027-production-migrate.yml`. It is **READY, NOT EXECUTED**. Do not dispatch it. 0027 stays fail-closed for the generic migrator. **CP26C-O2D** isolated Owner sign-in at `/owner/login`. Human O2D and **O3.3V** **passed**. **CP26C-O3.3** added the Owner catalogue UI. **CP26C-O3R** reconciled the property-licence model without implementation (`COMMERCIAL_MODEL.md`). Canonical amounts remain **UNDEFINED**. Production price versions remain **0**. Next is **CP26C-O4.3** and requires explicit authorisation. **CP26C-O4.1** source migration `0027` is unapplied. Digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef`. No organisations created. No price created. Commerce **OFF**. Stripe untouched. Former **O3.4** is superseded. Do not resume CP26C.3.
+Application build does not migrate or bootstrap an Owner. Generic production-migrate GitHub Action is retired/fail-closed and never applies SQL. Permanent owner-plane control is read-only Gate B (accepted ledger **0001–0028**, `AUTHORISED_PENDING=[]`). Spent 0022/0023/0024/0026/0027/0028 single-use mutation workflows are retired. The first-Owner bootstrap workflow is **RETIRED**. The 0025 apply workflow remains historical evidence and must not be re-dispatched. Catalogue: `property_licence` active; basic/pro/premium inactive. Price versions **0**. Stripe mappings **0**. Organisations, members, organisation billing, and allocations **0**. Canonical amounts remain **UNDEFINED**. Commerce **OFF**. Stripe untouched. Domain A is organisation-scoped and dormant. Domain B is unchanged. **CP26 FINALISATION COMPLETE.** CP26 is **not** closed. Next is **CP26 STRIPE TEST**, then **CP26 EXIT GATE**. Former **O3.4** is superseded. Do not resume CP26C.3.
 
 ## Auth (do not reopen CP25G.3)
 

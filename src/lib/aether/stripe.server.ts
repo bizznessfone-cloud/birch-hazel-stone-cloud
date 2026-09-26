@@ -5,6 +5,7 @@ import {
   assertDomainALivemode,
 } from "./saas-commerce.server.ts";
 import { assertStripePriceId } from "./saas-lifecycle.ts";
+import { authorisePropertyLicenceQuantity, PROPERTY_LICENCE_PLAN } from "./property-licence.ts";
 
 const API = "https://api.stripe.com/v1";
 
@@ -18,13 +19,6 @@ function hmacSecret() {
   const value = process.env.BETTER_AUTH_SECRET;
   if (!value) throw new Error("Auth secret is not configured.");
   return new TextEncoder().encode(value);
-}
-
-export type StripePlan = "basic" | "pro" | "premium";
-
-export function stripePriceId(plan: StripePlan, env: NodeJS.Dict<string> = process.env): string {
-  const key = `STRIPE_${plan.toUpperCase()}_PRICE_ID`;
-  return assertStripePriceId(String(env[key] ?? ""), key);
 }
 
 async function stripePost<T>(path: string, params: Record<string, string>, accountId?: string): Promise<T> {
@@ -46,24 +40,29 @@ async function stripePost<T>(path: string, params: Record<string, string>, accou
 
 export async function createSubscriptionCheckout(input: {
   priceId: string;
-  hotelId: string;
+  organisationId: string;
   userId: string;
+  quantity: number;
   successUrl: string;
   cancelUrl: string;
   customerId?: string | null;
 }) {
+  const quantity = authorisePropertyLicenceQuantity(input.quantity);
+  const priceId = assertStripePriceId(input.priceId);
   const { expectedLivemode } = assertDomainACommerceAllowed();
   const session = await stripePost<{ id: string; url?: string; livemode?: boolean }>("/checkout/sessions", {
     mode: "subscription",
-    "line_items[0][price]": input.priceId,
-    "line_items[0][quantity]": "1",
+    "line_items[0][price]": priceId,
+    "line_items[0][quantity]": String(quantity),
     success_url: input.successUrl,
     cancel_url: input.cancelUrl,
     ...(input.customerId ? { customer: input.customerId } : {}),
-    "metadata[hotel_id]": input.hotelId,
+    "metadata[organisation_id]": input.organisationId,
     "metadata[user_id]": input.userId,
-    "subscription_data[metadata][hotel_id]": input.hotelId,
+    "metadata[plan_code]": PROPERTY_LICENCE_PLAN,
+    "subscription_data[metadata][organisation_id]": input.organisationId,
     "subscription_data[metadata][user_id]": input.userId,
+    "subscription_data[metadata][plan_code]": PROPERTY_LICENCE_PLAN,
   });
   assertDomainALivemode(session.livemode, expectedLivemode);
   if (!session.url) throw new Error("Stripe Checkout URL was not returned.");

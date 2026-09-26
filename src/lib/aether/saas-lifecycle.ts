@@ -142,12 +142,12 @@ export function assertCheckoutAllowed(account: BillingAccountSnapshot): void {
   if (view.canStartCheckout) return;
   if (isExistingSubscriptionLifecycle(view.status) || account != null) {
     throw new SaasLifecycleError(
-      "This hotel already has a SCAN BOOK GO subscription. Use Manage billing.",
+      "This organisation already has a SCAN BOOK GO subscription. Use Manage billing.",
       "subscription_exists",
     );
   }
   throw new SaasLifecycleError(
-    "This hotel cannot start a SCAN BOOK GO subscription Checkout.",
+    "This organisation cannot start a SCAN BOOK GO subscription Checkout.",
     "subscription_exists",
   );
 }
@@ -164,7 +164,7 @@ export function assertPortalAllowed(account: BillingAccountSnapshot): void {
     return;
   }
   throw new SaasLifecycleError(
-    "Billing portal is not available for this hotel.",
+    "Billing portal is not available for this organisation.",
     "portal_not_applicable",
   );
 }

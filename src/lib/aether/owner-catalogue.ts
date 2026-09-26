@@ -6,7 +6,9 @@
 import type { Sql } from "@/lib/db";
 import { requirePlatformOwner } from "./owner-auth.ts";
 
-export const CATALOGUE_PLAN_CODES = ["basic", "pro", "premium"] as const;
+import { HISTORICAL_PLAN_CODES, PROPERTY_LICENCE_PLAN } from "./property-licence.ts";
+
+export const CATALOGUE_PLAN_CODES = [PROPERTY_LICENCE_PLAN, ...HISTORICAL_PLAN_CODES] as const;
 export type CataloguePlanCode = (typeof CATALOGUE_PLAN_CODES)[number];
 
 export type MappingStatus = "not_mapped" | "verified" | "replaced";
@@ -144,6 +146,9 @@ export function translateCatalogueError(err: unknown): CatalogueCommandError {
   }
   if (/price version not found/i.test(message)) {
     return new CatalogueCommandError("not_found", "That price version was not found.");
+  }
+  if (/historical plan cannot receive a price version/i.test(message)) {
+    return new CatalogueCommandError("inactive", "Historical plans cannot receive a price version.");
   }
   if (/plan inactive/i.test(message)) {
     return new CatalogueCommandError("inactive", "An inactive plan cannot offer a purchasable price.");

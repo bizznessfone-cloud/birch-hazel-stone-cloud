@@ -14,6 +14,7 @@ import {
   classifyStripeSecretKey,
   domainAWebhookEligible,
   domainAWebhookHotelAllowed,
+  domainAWebhookOrganisationAllowed,
   parseSaasTestHotelIds,
 } from "./saas-commerce.server.ts";
 import {
@@ -29,11 +30,13 @@ import { createGuestTransferCheckout } from "./stripe.server.ts";
 import {
   OWNER_USER,
   OTHER_USER,
-  applyBillingEvent,
+  PLATFORM_OWNER_USER,
+  bootstrapPlatformOwner,
   hotelStatus,
   insertAuthUser,
   onboardConfiguredFixture,
   openCp26a4Db,
+  openCp26finDb,
 } from "./cp26a4-fixture.ts";
 
 const root = process.cwd();
@@ -260,83 +263,51 @@ test("CP26C.2 hotel-aware gate LIVE ignores test allowlist", () => {
   assert.doesNotThrow(() => assertDomainACommerceAllowed(env({ SBG_SAAS_COMMERCE: "live", STRIPE_SECRET_KEY: LIVE_KEY })));
 });
 
-test("CP26C.2 Checkout allowlisted hotel mutates price and reaches mocked Stripe", async () => {
-  const pg = await openCp26a4Db();
+test("CP26C.2 organisation allowlist reaches mocked Stripe without a hotel price write", async () => {
+  const pg = await openCp26finDb();
   const stripe = mockStripe();
   try {
     await insertAuthUser(pg, OWNER_USER);
+    await insertAuthUser(pg, PLATFORM_OWNER_USER);
+    await bootstrapPlatformOwner(pg, PLATFORM_OWNER_USER.id, "c2 probe");
     const fixture = await onboardConfiguredFixture(pg, OWNER_USER.id);
-    await withEnv(commerceTest(fixture.hotelId), async () => {
-      const result = await startDomainACheckout({
-        db: asSql(pg),
-        userId: OWNER_USER.id,
-        hotelId: fixture.hotelId,
-        plan: "basic",
-        origin: ORIGIN,
-      });
-      assert.equal(result.url, "https://stripe.example/checkout");
-    });
-    assert.equal(stripe.calls.length, 1);
-    assert.match(stripe.calls[0]!.path, /checkout\/sessions/);
-    const row = await billingPrice(pg, fixture.hotelId);
-    assert.equal(row?.stripe_price_id, PRICE_BASIC);
-    assert.equal(await hotelStatus(pg, fixture.hotelId), "configured");
-  } finally {
-    stripe.restore();
-    await pg.close();
-  }
-});
-
-test("CP26C.2 Checkout non-allowlisted / OFF / foreign hotel do not mutate or fetch", async () => {
-  const pg = await openCp26a4Db();
-  const stripe = mockStripe();
-  try {
-    await insertAuthUser(pg, OWNER_USER);
-    await insertAuthUser(pg, OTHER_USER);
-    const fixture = await onboardConfiguredFixture(pg, OWNER_USER.id);
-    await withEnv(commerceTest(HOTEL_B), async () => {
-      await assert.rejects(
-        () =>
-          startDomainACheckout({
-            db: asSql(pg),
-            userId: OWNER_USER.id,
-            hotelId: fixture.hotelId,
-            plan: "basic",
-            origin: ORIGIN,
-          }),
-        SaasCommerceError,
-      );
-    });
+    const org = await pg.query<{ id: string }>(
+      "select sbg_create_organisation_for_user($1, 'C2')::text as id",
+      [OWNER_USER.id],
+    );
+    const organisationId = org.rows[0]!.id;
+    const version = await pg.query<{ id: string }>(
+      "select sbg_catalogue_create_price_version($1, 'property_licence', 1111)::text as id",
+      [PLATFORM_OWNER_USER.id],
+    );
+    await pg.query("select sbg_catalogue_activate_price_version($1, $2::uuid)", [
+      PLATFORM_OWNER_USER.id,
+      version.rows[0]!.id,
+    ]);
+    await pg.query(
+      "select sbg_catalogue_record_stripe_mapping($1, $2::uuid, 'test', 'prod_probe_c2', 'price_probe_c2')",
+      [PLATFORM_OWNER_USER.id, version.rows[0]!.id],
+    );
     await withEnv(
-      { SBG_SAAS_COMMERCE: "off", STRIPE_SECRET_KEY: TEST_KEY, SBG_SAAS_TEST_HOTEL_IDS: fixture.hotelId, ...PRICE_ENV },
+      {
+        SBG_SAAS_COMMERCE: "test",
+        STRIPE_SECRET_KEY: TEST_KEY,
+        SBG_SAAS_TEST_ORGANISATION_IDS: organisationId,
+      },
       async () => {
-        await assert.rejects(
-          () =>
-            startDomainACheckout({
-              db: asSql(pg),
-              userId: OWNER_USER.id,
-              hotelId: fixture.hotelId,
-              plan: "basic",
-              origin: ORIGIN,
-            }),
-          SaasCommerceError,
-        );
+        const result = await startDomainACheckout({
+          db: asSql(pg),
+          userId: OWNER_USER.id,
+          organisationId,
+          quantity: 2,
+          origin: ORIGIN,
+        });
+        assert.equal(result.url, "https://stripe.example/checkout");
       },
     );
-    await withEnv(commerceTest(fixture.hotelId), async () => {
-      await assert.rejects(
-        () =>
-          startDomainACheckout({
-            db: asSql(pg),
-            userId: OTHER_USER.id,
-            hotelId: fixture.hotelId,
-            plan: "basic",
-            origin: ORIGIN,
-          }),
-        /Hotel not found/,
-      );
-    });
-    assert.equal(stripe.calls.length, 0);
+    assert.equal(stripe.calls.length, 1);
+    assert.equal(stripe.calls[0]!.body.get("line_items[0][quantity]"), "2");
+    assert.equal(stripe.calls[0]!.body.get("metadata[organisation_id]"), organisationId);
     assert.equal(await billingPrice(pg, fixture.hotelId), null);
     assert.equal(await hotelStatus(pg, fixture.hotelId), "configured");
   } finally {
@@ -345,46 +316,148 @@ test("CP26C.2 Checkout non-allowlisted / OFF / foreign hotel do not mutate or fe
   }
 });
 
-test("CP26C.2 Portal isolation", async () => {
-  const pg = await openCp26a4Db();
+test("CP26C.2 Checkout non-allowlisted organisation and OFF do not fetch", async () => {
+  const pg = await openCp26finDb();
+  const stripe = mockStripe();
+  try {
+    await insertAuthUser(pg, OWNER_USER);
+    await insertAuthUser(pg, OTHER_USER);
+    await insertAuthUser(pg, PLATFORM_OWNER_USER);
+    await bootstrapPlatformOwner(pg, PLATFORM_OWNER_USER.id, "c2 probe");
+    const org = await pg.query<{ id: string }>(
+      "select sbg_create_organisation_for_user($1, 'C2')::text as id",
+      [OWNER_USER.id],
+    );
+    const organisationId = org.rows[0]!.id;
+    const version = await pg.query<{ id: string }>(
+      "select sbg_catalogue_create_price_version($1, 'property_licence', 1111)::text as id",
+      [PLATFORM_OWNER_USER.id],
+    );
+    await pg.query("select sbg_catalogue_activate_price_version($1, $2::uuid)", [
+      PLATFORM_OWNER_USER.id,
+      version.rows[0]!.id,
+    ]);
+    await pg.query(
+      "select sbg_catalogue_record_stripe_mapping($1, $2::uuid, 'test', 'prod_probe_c2b', 'price_probe_c2b')",
+      [PLATFORM_OWNER_USER.id, version.rows[0]!.id],
+    );
+    await withEnv(
+      {
+        SBG_SAAS_COMMERCE: "test",
+        STRIPE_SECRET_KEY: TEST_KEY,
+        SBG_SAAS_TEST_ORGANISATION_IDS: HOTEL_B,
+      },
+      async () => {
+        await assert.rejects(
+          () =>
+            startDomainACheckout({
+              db: asSql(pg),
+              userId: OWNER_USER.id,
+              organisationId,
+              quantity: 1,
+              origin: ORIGIN,
+            }),
+          SaasCommerceError,
+        );
+      },
+    );
+    await withEnv(
+      { SBG_SAAS_COMMERCE: "off", STRIPE_SECRET_KEY: TEST_KEY, SBG_SAAS_TEST_ORGANISATION_IDS: organisationId },
+      async () => {
+        await assert.rejects(
+          () =>
+            startDomainACheckout({
+              db: asSql(pg),
+              userId: OWNER_USER.id,
+              organisationId,
+              quantity: 1,
+              origin: ORIGIN,
+            }),
+          SaasCommerceError,
+        );
+      },
+    );
+    await withEnv(
+      {
+        SBG_SAAS_COMMERCE: "test",
+        STRIPE_SECRET_KEY: TEST_KEY,
+        SBG_SAAS_TEST_ORGANISATION_IDS: organisationId,
+      },
+      async () => {
+        await assert.rejects(
+          () =>
+            startDomainACheckout({
+              db: asSql(pg),
+              userId: OTHER_USER.id,
+              organisationId,
+              quantity: 1,
+              origin: ORIGIN,
+            }),
+          /Organisation billing authority required/,
+        );
+      },
+    );
+    assert.equal(stripe.calls.length, 0);
+  } finally {
+    stripe.restore();
+    await pg.close();
+  }
+});
+
+test("CP26C.2 portal is organisation-scoped and isolated", async () => {
+  const pg = await openCp26finDb();
   const stripe = mockStripe();
   try {
     await insertAuthUser(pg, OWNER_USER);
     const fixture = await onboardConfiguredFixture(pg, OWNER_USER.id);
-    await applyBillingEvent(pg, fixture.hotelId, "active");
-    await withEnv(commerceTest(fixture.hotelId), async () => {
-      const portal = await startDomainAPortal({
-        db: asSql(pg),
-        userId: OWNER_USER.id,
-        hotelId: fixture.hotelId,
-        origin: ORIGIN,
-      });
-      assert.equal(portal.url, "https://stripe.example/portal");
-    });
-    assert.equal(stripe.calls.length, 1);
-    assert.match(stripe.calls[0]!.path, /billing_portal/);
-    stripe.calls.length = 0;
-    await withEnv(commerceTest(HOTEL_B), async () => {
-      await assert.rejects(
-        () =>
-          startDomainAPortal({
-            db: asSql(pg),
-            userId: OWNER_USER.id,
-            hotelId: fixture.hotelId,
-            origin: ORIGIN,
-          }),
-        SaasCommerceError,
-      );
-    });
+    const org = await pg.query<{ id: string }>(
+      "select sbg_create_organisation_for_user($1, 'C2 portal')::text as id",
+      [OWNER_USER.id],
+    );
+    const organisationId = org.rows[0]!.id;
+    await pg.query("select sbg_attach_hotel_to_organisation($1, $2::uuid, $3::uuid)", [
+      OWNER_USER.id,
+      organisationId,
+      fixture.hotelId,
+    ]);
+    await pg.query(
+      `select sbg_apply_organisation_billing_event(
+         'evt_c2p', 'customer.subscription.updated', 20, $1::uuid, 'cus_c2p', 'sub_c2p', 'price_probe_c2p',
+         'active', null, false, 1, 'month', null
+       )`,
+      [organisationId],
+    );
     await withEnv(
-      { SBG_SAAS_COMMERCE: "off", STRIPE_SECRET_KEY: TEST_KEY, SBG_SAAS_TEST_HOTEL_IDS: fixture.hotelId, ...PRICE_ENV },
+      {
+        SBG_SAAS_COMMERCE: "test",
+        STRIPE_SECRET_KEY: TEST_KEY,
+        SBG_SAAS_TEST_ORGANISATION_IDS: organisationId,
+      },
+      async () => {
+        const portal = await startDomainAPortal({
+          db: asSql(pg),
+          userId: OWNER_USER.id,
+          organisationId,
+          origin: ORIGIN,
+        });
+        assert.equal(portal.url, "https://stripe.example/portal");
+      },
+    );
+    assert.equal(stripe.calls.length, 1);
+    stripe.calls.length = 0;
+    await withEnv(
+      {
+        SBG_SAAS_COMMERCE: "test",
+        STRIPE_SECRET_KEY: TEST_KEY,
+        SBG_SAAS_TEST_ORGANISATION_IDS: HOTEL_B,
+      },
       async () => {
         await assert.rejects(
           () =>
             startDomainAPortal({
               db: asSql(pg),
               userId: OWNER_USER.id,
-              hotelId: fixture.hotelId,
+              organisationId,
               origin: ORIGIN,
             }),
           SaasCommerceError,
@@ -394,6 +467,7 @@ test("CP26C.2 Portal isolation", async () => {
     assert.equal(stripe.calls.length, 0);
     const owned = await loadDomainABillingState(asSql(pg), OWNER_USER.id, fixture.hotelId);
     assert.equal(owned.lifecycle.shouldManageBilling, true);
+    assert.equal(owned.propertyEntitled, false);
     assert.equal(await hotelStatus(pg, fixture.hotelId), "configured");
   } finally {
     stripe.restore();
@@ -401,67 +475,71 @@ test("CP26C.2 Portal isolation", async () => {
   }
 });
 
-test("CP26C.2 Domain A webhook hotel isolation with ordered persistence", async () => {
-  const pg = await openCp26a4Db();
+test("CP26C.2 Domain A webhook organisation isolation does not sync hotel entitlement", async () => {
+  const pg = await openCp26finDb();
   try {
     await insertAuthUser(pg, OWNER_USER);
-    const fixture = await onboardConfiguredFixture(pg, OWNER_USER.id);
-    const extracted = extractDomainASubscriptionEvent(subscriptionEvent(fixture.hotelId, false));
+    await insertAuthUser(pg, PLATFORM_OWNER_USER);
+    await bootstrapPlatformOwner(pg, PLATFORM_OWNER_USER.id, "c2 webhook");
+    const org = await pg.query<{ id: string }>(
+      "select sbg_create_organisation_for_user($1, 'C2 hook')::text as id",
+      [OWNER_USER.id],
+    );
+    const organisationId = org.rows[0]!.id;
+    const version = await pg.query<{ id: string }>(
+      "select sbg_catalogue_create_price_version($1, 'property_licence', 1111)::text as id",
+      [PLATFORM_OWNER_USER.id],
+    );
+    await pg.query("select sbg_catalogue_activate_price_version($1, $2::uuid)", [
+      PLATFORM_OWNER_USER.id,
+      version.rows[0]!.id,
+    ]);
+    await pg.query(
+      "select sbg_catalogue_record_stripe_mapping($1, $2::uuid, 'test', 'prod_probe_c2w', 'price_probe_c2w')",
+      [PLATFORM_OWNER_USER.id, version.rows[0]!.id],
+    );
+    const extracted = extractDomainASubscriptionEvent({
+      id: "evt_c2w",
+      type: "customer.subscription.updated",
+      created: 30,
+      livemode: false,
+      data: {
+        object: {
+          id: "sub_c2w",
+          customer: "cus_c2w",
+          status: "active",
+          current_period_end: 1_800_000_000,
+          cancel_at_period_end: false,
+          metadata: { organisation_id: organisationId },
+          items: { data: [{ quantity: 4, price: { id: "price_probe_c2w", recurring: { interval: "month" } } }] },
+        },
+      },
+    });
+    assert.equal(extracted.quantity, 4);
     const isolatedEnv = {
       SBG_SAAS_COMMERCE: "test",
       STRIPE_SECRET_KEY: TEST_KEY,
-      SBG_SAAS_TEST_HOTEL_IDS: HOTEL_B,
-      ...PRICE_ENV,
+      SBG_SAAS_TEST_ORGANISATION_IDS: HOTEL_B,
     };
-    assert.equal(domainAWebhookEligible({ livemode: false }, isolatedEnv), true);
-    assert.equal(domainAWebhookHotelAllowed(extracted.hotelId, isolatedEnv), false);
-    assert.equal(domainAWebhookHotelAllowed(extracted.hotelId, { ...isolatedEnv, SBG_SAAS_TEST_HOTEL_IDS: "" }), false);
+    assert.equal(domainAWebhookOrganisationAllowed(extracted.organisationId, isolatedEnv), false);
     assert.equal(
-      domainAWebhookHotelAllowed(extracted.hotelId, { ...isolatedEnv, SBG_SAAS_TEST_HOTEL_IDS: "not-a-uuid" }),
+      domainAWebhookOrganisationAllowed(extracted.organisationId, { ...isolatedEnv, SBG_SAAS_TEST_ORGANISATION_IDS: "" }),
       false,
     );
-
-    let applyCalls = 0;
-    let syncCalls = 0;
-    const db = asSql(pg);
-    const originalQuery = db.query.bind(db);
-    db.query = (async (text: string, params?: unknown[]) => {
-      if (/sbg_apply_billing_event/.test(text)) applyCalls += 1;
-      if (/sbg_sync_hotel_entitlement/.test(text)) syncCalls += 1;
-      return originalQuery(text, params);
-    }) as typeof db.query;
-
-    if (!domainAWebhookHotelAllowed(extracted.hotelId, isolatedEnv)) {
-      /* acknowledge; do not persist */
-    } else {
-      await applyDomainABillingEvent(db, extracted, isolatedEnv);
-      await db.query("select sbg_sync_hotel_entitlement($1::uuid)", [extracted.hotelId]);
-    }
-    assert.equal(applyCalls, 0);
-    assert.equal(syncCalls, 0);
-    assert.equal(await billingPrice(pg, fixture.hotelId), null);
-
-    const allowedEnv = { ...isolatedEnv, SBG_SAAS_TEST_HOTEL_IDS: fixture.hotelId };
-    assert.equal(domainAWebhookHotelAllowed(extracted.hotelId, allowedEnv), true);
-    const outcome = await applyDomainABillingEvent(db, extracted, allowedEnv);
-    await db.query("select sbg_sync_hotel_entitlement($1::uuid)", [extracted.hotelId]);
+    const allowedEnv = { ...isolatedEnv, SBG_SAAS_TEST_ORGANISATION_IDS: organisationId };
+    assert.equal(domainAWebhookOrganisationAllowed(extracted.organisationId, allowedEnv), true);
+    const outcome = await applyDomainABillingEvent(asSql(pg), extracted, allowedEnv);
     assert.equal(outcome, "applied");
-    assert.equal(applyCalls, 1);
-    assert.equal(syncCalls, 1);
-    assert.equal((await billingPrice(pg, fixture.hotelId))?.status, "active");
-    assert.equal(await hotelStatus(pg, fixture.hotelId), "configured");
-
-    assert.equal(
-      domainAWebhookEligible({ livemode: true }, { SBG_SAAS_COMMERCE: "test", STRIPE_SECRET_KEY: TEST_KEY }),
-      false,
+    const row = await pg.query<{ licensed_quantity: number }>(
+      "select licensed_quantity from sbg_organisation_billing where organisation_id = $1::uuid",
+      [organisationId],
     );
+    assert.equal(row.rows[0]!.licensed_quantity, 4);
+    const again = await applyDomainABillingEvent(asSql(pg), extracted, allowedEnv);
+    assert.equal(again, "duplicate");
     assert.equal(
-      domainAWebhookHotelAllowed(HOTEL_A, {
-        SBG_SAAS_COMMERCE: "live",
-        STRIPE_SECRET_KEY: LIVE_KEY,
-        SBG_SAAS_TEST_HOTEL_IDS: "not-a-uuid",
-      }),
-      true,
+      domainAWebhookEligible({ livemode: true }, { SBG_SAAS_COMMERCE: "off", STRIPE_SECRET_KEY: TEST_KEY }),
+      false,
     );
   } finally {
     await pg.close();
@@ -483,26 +561,26 @@ test("CP26C.2 Domain B and Connect source freeze; no publication coupling", () =
     webhook.indexOf('event.type === "account.application.deauthorized"'),
   );
   assert.match(domainB, /sbg_apply_payment_event/);
-  assert.doesNotMatch(domainB, /domainAWebhookHotelAllowed|SBG_SAAS_TEST_HOTEL_IDS/);
+  assert.doesNotMatch(domainB, /domainAWebhookOrganisationAllowed|SBG_SAAS_TEST_ORGANISATION_IDS/);
   const deauth = webhook.slice(
     webhook.indexOf('event.type === "account.application.deauthorized"'),
     webhook.indexOf("if (!domainAWebhookEligible"),
   );
   assert.match(deauth, /sbg_disconnect_stripe_by_account/);
-  assert.doesNotMatch(deauth, /domainAWebhookHotelAllowed|SBG_SAAS_TEST_HOTEL_IDS/);
+  assert.doesNotMatch(deauth, /domainAWebhookOrganisationAllowed|SBG_SAAS_TEST_ORGANISATION_IDS/);
   assert.ok(
     webhook.indexOf('event.type.startsWith("checkout.session.")') <
-      webhook.lastIndexOf("domainAWebhookHotelAllowed"),
+      webhook.lastIndexOf("domainAWebhookOrganisationAllowed"),
   );
   assert.ok(
     webhook.indexOf('event.type === "account.application.deauthorized"') <
-      webhook.lastIndexOf("domainAWebhookHotelAllowed"),
+      webhook.lastIndexOf("domainAWebhookOrganisationAllowed"),
   );
   const extractAt = webhook.lastIndexOf("extractDomainASubscriptionEvent");
-  const isolateAt = webhook.lastIndexOf("domainAWebhookHotelAllowed");
+  const isolateAt = webhook.lastIndexOf("domainAWebhookOrganisationAllowed");
   const applyAt = webhook.lastIndexOf("applyDomainABillingEvent");
-  const syncAt = webhook.lastIndexOf("sbg_sync_hotel_entitlement");
-  assert.ok(extractAt >= 0 && isolateAt > extractAt && applyAt > isolateAt && syncAt > applyAt);
+  assert.ok(extractAt >= 0 && isolateAt > extractAt && applyAt > isolateAt);
+  assert.equal(webhook.includes("sbg_sync_hotel_entitlement"), false);
 
   assert.doesNotMatch(guest, /SBG_SAAS_TEST_HOTEL_IDS|assertDomainACommerceAllowedForHotel/);
   const guestFn = stripe.slice(stripe.indexOf("export async function createGuestTransferCheckout"));
@@ -515,14 +593,15 @@ test("CP26C.2 Domain B and Connect source freeze; no publication coupling", () =
   const checkoutFn = billing.slice(billing.indexOf("export async function startDomainACheckout"));
   const portalFn = billing.slice(billing.indexOf("export async function startDomainAPortal"));
   assert.ok(
-    checkoutFn.indexOf("assertDomainACommerceAllowedForHotel") <
-      checkoutFn.indexOf("sbg_set_billing_price_for_user"),
+    checkoutFn.indexOf("assertDomainACommerceAllowedForOrganisation") <
+      checkoutFn.indexOf("resolvePropertyLicenceCheckoutPrice"),
+  );
+  assert.equal(checkoutFn.includes("sbg_set_billing_price_for_user"), false);
+  assert.ok(
+    portalFn.indexOf("assertPortalAllowed") < portalFn.indexOf("assertDomainACommerceAllowedForOrganisation"),
   );
   assert.ok(
-    portalFn.indexOf("assertPortalAllowed") < portalFn.indexOf("assertDomainACommerceAllowedForHotel"),
-  );
-  assert.ok(
-    portalFn.indexOf("assertDomainACommerceAllowedForHotel") < portalFn.indexOf("createBillingPortal"),
+    portalFn.indexOf("assertDomainACommerceAllowedForOrganisation") < portalFn.indexOf("createBillingPortal"),
   );
 
   assert.doesNotMatch(commerce, /update\s+hotels\s+set\s+status/i);

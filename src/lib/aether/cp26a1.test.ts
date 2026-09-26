@@ -25,8 +25,9 @@ const GARBAGE_KEY = "not-a-stripe-key";
 
 const checkoutInput = {
   priceId: "price_test",
-  hotelId: "11111111-1111-1111-1111-111111111111",
+  organisationId: "11111111-1111-4111-8111-111111111111",
   userId: "user_test",
+  quantity: 1,
   successUrl: "https://scan-book-go.vercel.app/app/billing?checkout=success",
   cancelUrl: "https://scan-book-go.vercel.app/app/billing?checkout=cancel",
 };

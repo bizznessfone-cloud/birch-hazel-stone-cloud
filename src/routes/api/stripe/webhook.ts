@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { getSql } from "@/lib/db";
-import { domainAWebhookEligible, domainAWebhookHotelAllowed } from "@/lib/aether/saas-commerce.server";
+import { domainAWebhookEligible, domainAWebhookOrganisationAllowed } from "@/lib/aether/saas-commerce.server";
 import {
   DomainAWebhookExtractError,
   OrderedBillingSchemaError,
@@ -87,13 +87,12 @@ export const Route = createFileRoute("/api/stripe/webhook")({
           throw error;
         }
 
-        if (!domainAWebhookHotelAllowed(extracted.hotelId)) {
+        if (!domainAWebhookOrganisationAllowed(extracted.organisationId)) {
           return Response.json({ received: true, outcome: "isolated" });
         }
 
         try {
           const outcome = await applyDomainABillingEvent(db, extracted);
-          await db.query("select sbg_sync_hotel_entitlement($1::uuid)", [extracted.hotelId]);
           return Response.json({ received: true, outcome });
         } catch (error) {
           if (error instanceof OrderedBillingSchemaError) {

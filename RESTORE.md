@@ -12,12 +12,12 @@ GitHub is authoritative for application source. Living status: **`BUILD_STATE.md
 | CP25G.3 | **CLOSED** |
 | **CP26A** | **CLOSED** |
 | **CP26B** | **CLOSED** |
-| **Next execution checkpoint** | **CP26C-O4.2 SINGLE-USE 0027 PRODUCTION CONTROLLER READY; NOT EXECUTED**. Next **CP26C-O4.3** requires explicit authorisation. **O4.1 SOURCE COMPLETE**, unapplied. **CP26C-O3R PASS**. Former **O3.4** superseded |
+| **Next execution checkpoint** | **CP26 STRIPE TEST**, then **CP26 EXIT GATE**. **CP26 FINALISATION COMPLETE**. CP26 and CP26C are **not** closed. Former **O3.4** superseded |
 | Forward roadmap | **`docs/ROADMAP.md`** |
 | Fixture policy | **`docs/FIXTURE_POLICY.md`** |
 | Production | Vercel `scan-book-go` / last observed `dpl_FmUosqz2wy7aCT51rNjdanJnuviZ` READY |
 | Alias | `https://scan-book-go.vercel.app` |
-| Migrations | source and Production Neon **0001–0026**. Gate B **0001–0026**. 0026 digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446`. Apply run 36135836457. 0026 workflow **RETIRED**. One platform Owner. First-Owner bootstrap workflow **RETIRED**. Amounts **UNDEFINED**. Commerce **OFF**. |
+| Migrations | source and Production Neon **0001–0028**. Gate B **0001–0028**. `AUTHORISED_PENDING=[]`. 0027 digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef` (run 36251190175). 0028 digest `35626cb2d3b21a076f4a2cb982b9d0983610620fb21dbf7f3e94eb4c0576a02d` (run 36254890554). 0027 and 0028 workflows **RETIRED**. 0025 workflow remains and must not be re-dispatched. `property_licence` active. basic/pro/premium inactive. Price versions **0**. Mappings **0**. Organisations **0**. One platform Owner. Amounts **UNDEFINED**. Commerce **OFF**. |
 
 `cp17-known-good` (`45e171a23037b7c94005018cd2126033a449d6f0`) is an **immutable historical tag**. It is **not** current `main`. Checking it out would roll the product backwards.
 
