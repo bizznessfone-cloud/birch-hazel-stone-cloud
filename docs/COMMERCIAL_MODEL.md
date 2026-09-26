@@ -30,7 +30,7 @@ logic, analytics, seeds, and tests must not hard-code it.
 | Former O3.4 | **SUPERSEDED** — do not start; it would price the obsolete tiers |
 | CP26C.3 | **NOT RESUMED** — its three-tier TEST Price plan is superseded |
 | CP26C.4 | **SUPERSEDED as previously scoped** — do not cut Checkout over to three tier Prices |
-| Next | **CP26C-O4.2** single-use 0027 controller (not started). **O4.1 SOURCE COMPLETE**, unapplied |
+| Next | **CP26C-O4.2 SINGLE-USE 0027 PRODUCTION CONTROLLER READY; NOT EXECUTED**. Next **CP26C-O4.3** requires explicit authorisation. **O4.1 SOURCE COMPLETE**, unapplied |
 | Commerce | **OFF** |
 | Ledger | Gate B **0001–0026**; `AUTHORISED_PENDING=[]`; 0027+ fail-closed |
 | 0026 digest | `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446` unchanged |
@@ -38,6 +38,8 @@ logic, analytics, seeds, and tests must not hard-code it.
 | LIVE locks | source default **false / false** |
 
 **CP26C-O4.1 source.** `migrations/0027_cp26co41_organisation_property_licence.sql` now exists. It is not in Gate B, not authorised, and not applied. The sentences below that say the tables were "not created here" are the O3R decision, which this migration follows. Membership does **not** use a closed `billing_owner` | `operator` check: `role` is an extensible token and `billing_authority` is the only billing capability. That avoids freezing a two-role taxonomy in this persistence step.
+
+**CP26C-O4.2 SINGLE-USE 0027 PRODUCTION CONTROLLER READY; NOT EXECUTED.** Controller `scripts/cp26co42-0027-production-migrate.mjs`. Workflow `.github/workflows/cp26co42-0027-production-migrate.yml`. Confirmation `APPLY-0027`. 0027 digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef`. Production accepted ledger remains **0001–0026**. `AUTHORISED_PENDING=[]`. 0027 is unapplied. No organisations created. No price created. Commerce **OFF**. Stripe untouched. Next is **CP26C-O4.3**, which requires explicit authorisation. Do not dispatch the workflow from this checkpoint.
 
 ---
 
@@ -373,8 +375,8 @@ controller, then reconciliation, then retirement. The generic migrator never
 applies SQL.
 
 1. **CP26C-O4.1 SOURCE COMPLETE** — `migrations/0027_cp26co41_organisation_property_licence.sql` and local tests. Not in the accepted ledger. Not applied. No amount. No backfill. No Stripe. Commerce stays OFF.
-2. **CP26C-O4.2** — next. Single-use Production controller for that migration. Not started.
-3. **CP26C-O4.3** — one Production apply.
+2. **CP26C-O4.2 READY, NOT EXECUTED** — single-use Production controller `scripts/cp26co42-0027-production-migrate.mjs` and workflow `.github/workflows/cp26co42-0027-production-migrate.yml`. Confirmation `APPLY-0027`. Digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef`. Not dispatched. Not applied.
+3. **CP26C-O4.3** — next. One Production apply. Requires explicit authorisation. Not started.
 4. **CP26C-O4.4** — Gate B reconcile and retire that controller.
 5. **CP26C-O5.1** — source migration: `property_licence` identity, deactivate
    the three tier rows, block price creation on inactive plans. No amount.

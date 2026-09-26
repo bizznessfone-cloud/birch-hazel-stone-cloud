@@ -548,6 +548,7 @@ test("first-Owner dispatch surface is retired", () => {
   assert.equal(yaml.includes("cp26co2c-first-owner-bootstrap.yml"), false);
   assert.deepEqual(yaml, [
     "cp26co2a-0025-production-migrate.yml",
+    "cp26co42-0027-production-migrate.yml",
     "production-database.yml",
   ]);
 });

@@ -5,7 +5,7 @@ Living status: **`BUILD_STATE.md`**.
 - Product: **SCAN / BOOK / GO**
 - Last application SHA: `19512c295830fbc6fd9712d688ce364d940f87c3`
 - CP25G.3 / **CP26A** / **CP26B** / **CP26C-O2**: **CLOSED**
-- **Next: CP26C-O4.2 single-use 0027 controller (not started). O4.1 SOURCE COMPLETE, unapplied. Former O3.4 superseded. CP26C.3 not resumed**
+- **Next: CP26C-O4.3 one Production apply of 0027 (not started; explicit authorisation required). CP26C-O4.2 SINGLE-USE 0027 PRODUCTION CONTROLLER READY; NOT EXECUTED. O4.1 SOURCE COMPLETE, unapplied. Former O3.4 superseded. CP26C.3 not resumed**
 - **CP26C-O3R PASS** — commercial model reconciled; no implementation (`docs/COMMERCIAL_MODEL.md`)
 - **CP26C-O2D PASS** — Owner sign-in isolated at `/owner/login`. Human verification **PASS**. No migration. Commerce OFF.
 - **CP26C-O3.3 PASS** — Owner commercial catalogue UI. **O3.3V PASS**. Canonical amounts still **UNDEFINED**. Production price versions **0**.

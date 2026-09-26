@@ -125,6 +125,7 @@ test("generic migrator cannot apply 0026 and the spent dispatch surface is gone"
   const workflows = readdirSync(join(root, ".github/workflows"));
   assert.deepEqual(workflows.sort(), [
     "cp26co2a-0025-production-migrate.yml",
+    "cp26co42-0027-production-migrate.yml",
     "production-database.yml",
   ]);
   for (const name of workflows) {

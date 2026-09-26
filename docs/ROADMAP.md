@@ -32,7 +32,7 @@ Canonical living roadmap. Other living documents should **point here**, not rede
 | CP26C-O2D | **PASS** — `/owner/login` isolated from hotel `/login`; no migration |
 | CP26C-O3.3V | **PASS** — operator Production plans verification; no price created |
 | CP26C-O3R | **PASS** — organisation property-licence model reconciled; no implementation ([`COMMERCIAL_MODEL.md`](COMMERCIAL_MODEL.md)) |
-| **Next** | **CP26C-O4.2** single-use 0027 controller (not started). **O4.1 SOURCE COMPLETE**, unapplied. Former **O3.4** superseded. **CP26C.3** not resumed |
+| **Next** | **CP26C-O4.2 SINGLE-USE 0027 PRODUCTION CONTROLLER READY; NOT EXECUTED**. Next **CP26C-O4.3** requires explicit authorisation. **O4.1 SOURCE COMPLETE**, unapplied. Former **O3.4** superseded. **CP26C.3** not resumed |
 
 ---
 
@@ -200,7 +200,9 @@ Non-blocking UI backlog: Owner header showed “SSBG Verification”. Deferred t
 
 **CP26C-O3R PASS:** The locked commercial model is one organisation, one Stripe customer, one subscription, quantity = purchased property licences. There is no organisation table in source. Billing is hotel-scoped. Decision: [`COMMERCIAL_MODEL.md`](COMMERCIAL_MODEL.md). No migration. No runtime change. Amounts remain **UNDEFINED** in the catalogue. The operator-locked unit amount was not copied into source. Former **O3.4**, the previously scoped **CP26C.3** resume, and the previously scoped **CP26C.4** tier cutover are **superseded**. Do not start them. Only **CP31** activates LIVE commerce.
 
-**Next:** **CP26C-O4.2** — single-use Production controller for `0027_cp26co41_organisation_property_licence.sql`. Not started. **CP26C-O4.1 SOURCE COMPLETE.** The migration is source only. Gate B stays **0001–0026**. `AUTHORISED_PENDING=[]`. No price version. Commerce **OFF**.
+**Next:** **CP26C-O4.3** — one Production apply of `0027_cp26co41_organisation_property_licence.sql`. Not started. Requires explicit authorisation. Do not dispatch yet.
+
+**CP26C-O4.2 SINGLE-USE 0027 PRODUCTION CONTROLLER READY; NOT EXECUTED.** Controller `scripts/cp26co42-0027-production-migrate.mjs`. Workflow `.github/workflows/cp26co42-0027-production-migrate.yml`. Confirmation `APPLY-0027`. Digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef`. **CP26C-O4.1 SOURCE COMPLETE.** The migration is source only and unapplied. Gate B stays **0001–0026**. `AUTHORISED_PENDING=[]`. No organisations created. No price version. Commerce **OFF**. Stripe untouched.
 
 The sequence below is the **pre-O3R** plan. It is historical. Do not execute its tail.
 

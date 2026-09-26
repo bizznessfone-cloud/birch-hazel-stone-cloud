@@ -749,6 +749,7 @@ test("spent 0026 workflow is absent and no workflow dispatches the controller", 
   const workflows = readdirSync(join(here, "../.github/workflows"));
   assert.deepEqual(workflows.sort(), [
     "cp26co2a-0025-production-migrate.yml",
+    "cp26co42-0027-production-migrate.yml",
     "production-database.yml",
   ]);
   for (const name of workflows) {

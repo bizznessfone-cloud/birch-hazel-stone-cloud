@@ -23,7 +23,7 @@ Living execution: [`ROADMAP.md`](ROADMAP.md). Owner surface:
 | Field | Value |
 |---|---|
 | Status | **CP26C-O3.1 PASS**. **CP26C-O3.2 PASS**. **CP26C-O3.2B PASS** — Production applied. **CP26C-O3.2C PASS** — controller retired. **CP26C-O3.3 PASS** — Owner catalogue UI. **CP26C-O3.3V PASS** (operator). **CP26C-O3R PASS** — model reconciled, not implemented |
-| Next | **CP26C-O4.2** single-use 0027 controller (not started). **O4.1 SOURCE COMPLETE**, unapplied. Former **O3.4** superseded. **CP26C.3** not resumed |
+| Next | **CP26C-O4.2 SINGLE-USE 0027 PRODUCTION CONTROLLER READY; NOT EXECUTED**. Next **CP26C-O4.3** requires explicit authorisation. **O4.1 SOURCE COMPLETE**, unapplied. Former **O3.4** superseded. **CP26C.3** not resumed |
 | 0026 | `migrations/0026_cp26co3_commercial_catalogue.sql` — digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446` — **applied once** (GHA 36135836457) |
 | Commerce | **OFF** (`SBG_SAAS_COMMERCE` absent) |
 | CP26C.3 | **PAUSED** — do not resume; three-tier TEST Prices are superseded by O3R |
