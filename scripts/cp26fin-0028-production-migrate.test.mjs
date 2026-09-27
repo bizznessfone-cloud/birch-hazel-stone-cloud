@@ -170,10 +170,7 @@ test("0028 dispatch is retired and build does not apply 0028", () => {
   assert.equal(existsSync(join(here, "../.github/workflows/cp26co42-0027-production-migrate.yml")), false);
   assert.equal(existsSync(join(here, "../.github/workflows/cp26fin-0028-production-migrate.yml")), false);
   assert.equal(existsSync(join(here, "cp26fin-0028-production-migrate.mjs")), true);
-  assert.deepEqual(workflows, [
-    "cp26co2a-0025-production-migrate.yml",
-    "production-database.yml",
-  ]);
+  assert.deepEqual(workflows, ["production-database.yml"]);
   for (const name of workflows) {
     const text = readFileSync(join(here, "../.github/workflows", name), "utf8");
     assert.equal(text.includes("cp26fin-0028-production-migrate.mjs"), false, name);

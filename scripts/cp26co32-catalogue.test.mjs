@@ -131,10 +131,7 @@ test("Gate B accepts 0001-0028 and the generic migrator still never applies SQL"
 
 test("generic migrator cannot apply 0026 and the spent dispatch surface is gone", () => {
   const workflows = readdirSync(join(root, ".github/workflows"));
-  assert.deepEqual(workflows.sort(), [
-    "cp26co2a-0025-production-migrate.yml",
-    "production-database.yml",
-  ]);
+  assert.deepEqual(workflows.sort(), ["production-database.yml"]);
   for (const name of workflows) {
     const text = readFileSync(join(root, ".github/workflows", name), "utf8");
     assert.equal(text.includes("0026"), false, name);

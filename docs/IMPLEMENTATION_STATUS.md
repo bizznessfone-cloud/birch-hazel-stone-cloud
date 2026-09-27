@@ -1,23 +1,24 @@
-## CURRENT STATE (CP26C-O2 CLOSED)
+## CURRENT STATE (CP26 CLOSED)
 
 Living status: **`BUILD_STATE.md`**.
 
 - Product: **SCAN / BOOK / GO**
-- Last application SHA: `19512c295830fbc6fd9712d688ce364d940f87c3`
+- CP26B.3R SHA `19512c295830fbc6fd9712d688ce364d940f87c3` is historical, not current `main`
 - CP25G.3 / **CP26A** / **CP26B** / **CP26C-O2**: **CLOSED**
-- **Next: CP26 STRIPE TEST, then CP26 EXIT GATE. CP26 FINALISATION COMPLETE. CP26 is not closed. CP26C is not closed. Former O3.4 superseded. CP26C.3 not resumed. The O4–O11 chain is superseded**
-- **CP26C-O3R PASS** — commercial model reconciled; no implementation (`docs/COMMERCIAL_MODEL.md`)
-- **CP26C-O2D PASS** — Owner sign-in isolated at `/owner/login`. Human verification **PASS**. No migration. Commerce OFF.
-- **CP26C-O3.3 PASS** — Owner commercial catalogue UI. **O3.3V PASS**. Canonical amounts still **UNDEFINED**. Production price versions **0**.
-- CP26C.3 remains **paused** and is not resumed. CP26C remains **open**. Only **CP31** activates live commerce.
+- **CP26 FINALISATION — PASS. CP26 STRIPE TEST — PASS. CP26 EXIT GATE — PASS. CP26 — COMPLETE**
+- **Next: CP27 — SECURITY HARDENING. Not started.** Former O3.4 superseded. CP26C.3 not resumed. The O4–O11 chain is superseded
+- **CP26C-O3R PASS** — commercial model reconciled (`docs/COMMERCIAL_MODEL.md`). Later checkpoints implemented it
+- **CP26C-O2D PASS** — Owner sign-in isolated at `/owner/login`. Human verification **PASS**. No migration
+- **CP26C-O3.3 PASS** — Owner commercial catalogue UI. **O3.3V PASS**. Later a price version was created in CP26 STRIPE TEST
+- CP26C.3 remains **not resumed**. Only **CP31** activates LIVE commerce
 - Forward roadmap: **[ROADMAP.md](ROADMAP.md)**
 - Fixture policy: **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)**
-- Vercel Production `scan-book-go` / last observed `dpl_FmUosqz2wy7aCT51rNjdanJnuviZ` READY
-- Neon Production migrated through **0028**. Gate B accepted ledger **0001–0028**. `AUTHORISED_PENDING=[]`. 0028 digest `35626cb2d3b21a076f4a2cb982b9d0983610620fb21dbf7f3e94eb4c0576a02d` (run 36254890554). 0027 digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef` (run 36251190175). Both workflows **RETIRED**. `property_licence` active; basic/pro/premium inactive. Price versions **0**. Mappings **0**. Canonical amounts **UNDEFINED**. Commerce **OFF**.
-- Active platform Owners: **1** (OPERATOR CONTROLLED / REDACTED). Bootstrap workflow **RETIRED**.
-- `/app/*` exists (SaaS). `/owner/*` is Production-proven. `/ops/*` remains internal operations.
+- Vercel Production `scan-book-go` / alias `https://scan-book-go.vercel.app`
+- Neon Production migrated through **0028**. Gate B accepted ledger **0001–0028**. `AUTHORISED_PENDING=[]`. 0028 digest `35626cb2d3b21a076f4a2cb982b9d0983610620fb21dbf7f3e94eb4c0576a02d` (run 36254890554). 0027 digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef` (run 36251190175). 0025, 0027, and 0028 workflows **RETIRED**. `property_licence` active; basic/pro/premium inactive. One price version EUR 17900 month. One verified TEST mapping. Commerce **test**, not live
+- Active platform Owners: **1** (OPERATOR CONTROLLED / REDACTED). Bootstrap workflow **RETIRED**
+- `/app/*` exists (SaaS). `/owner/*` is Production-proven. `/ops/*` remains internal operations
 - First Production hotel through `/app`: **configured, not live** (`sbg-verify-a5`)
-- Domain A commerce: **OFF**.
+- Domain A commerce: **test**, allowlisted, not LIVE
 
 The historical status table below is preserved as evidence and must not override current source.
 

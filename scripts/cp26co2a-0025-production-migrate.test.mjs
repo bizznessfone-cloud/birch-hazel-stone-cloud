@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { execFile } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
@@ -57,7 +57,7 @@ const execFileAsync = promisify(execFile);
 const here = dirname(fileURLToPath(import.meta.url));
 const src = readFileSync(join(here, "cp26co2a-0025-production-migrate.mjs"), "utf8");
 const workflowPath = join(here, "../.github/workflows/cp26co2a-0025-production-migrate.yml");
-const workflow = readFileSync(workflowPath, "utf8");
+const workflow = existsSync(workflowPath) ? readFileSync(workflowPath, "utf8") : "";
 const pkg = JSON.parse(readFileSync(join(here, "../package.json"), "utf8"));
 const migrationBytes = readFileSync(join(here, "../migrations", TARGET_MIGRATION));
 const migrationDigest = createHash("sha256").update(migrationBytes).digest("hex");
@@ -707,26 +707,17 @@ test("Gate B accepts applied 0025 and still refuses generic pending", () => {
   assert.equal(GENERIC_MIGRATE_BLOCKED.includes("GENERIC"), true);
 });
 
-test("workflow is workflow_dispatch only with shared mutation lock", () => {
-  assert.equal(existsSync(workflowPath), true);
-  assert.match(workflow, /workflow_dispatch:/);
-  assert.match(workflow, /Type APPLY-0025/);
-  assert.match(workflow, /permissions:\n  contents: read/);
-  assert.match(workflow, /persist-credentials: false/);
-  assert.match(workflow, /group: production-database-mutation/);
-  assert.match(workflow, /cancel-in-progress: false/);
-  assert.match(workflow, /secrets\.AETHER_DATABASE_OWNER_URL/);
-  assert.match(workflow, /CP26CO2A_CONFIRMATION/);
-  assert.match(workflow, /scripts\/cp26co2a-0025-production-migrate\.mjs/);
-  assert.doesNotMatch(workflow, /\bpull_request\b/);
-  assert.doesNotMatch(workflow, /\bschedule\b/);
-  assert.doesNotMatch(workflow, /\brepository_dispatch\b/);
-  assert.doesNotMatch(workflow, /\bworkflow_run\b/);
-  assert.doesNotMatch(workflow, /\brelease:/);
-  assert.doesNotMatch(workflow, /\n\s+push:/);
-  assert.doesNotMatch(workflow, /DATABASE_URL/);
-  assert.doesNotMatch(workflow, /vercel/i);
-  assert.doesNotMatch(workflow, /migration filename|migration_number|MIGRATION_NAME/i);
+test("0025 dispatch is retired; controller script remains; build does not invoke it", () => {
+  assert.equal(existsSync(workflowPath), false);
+  assert.equal(workflow, "");
+  assert.equal(existsSync(join(here, "cp26co2a-0025-production-migrate.mjs")), true);
+  const yaml = readdirSync(join(here, "../.github/workflows"))
+    .filter((name) => name.endsWith(".yml") || name.endsWith(".yaml"))
+    .sort();
+  assert.deepEqual(yaml, ["production-database.yml"]);
+  assert.doesNotMatch(pkg.scripts.build, /db:migrate/);
+  assert.doesNotMatch(pkg.scripts.build, /cp26co2a-0025/);
+  assert.equal(pkg.scripts["db:migrate:0025"], "node scripts/cp26co2a-0025-production-migrate.mjs");
 });
 
 test("build and Vercel cannot invoke this controller", () => {

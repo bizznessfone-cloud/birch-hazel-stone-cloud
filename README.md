@@ -1,4 +1,4 @@
-## CURRENT ACCEPTED BASELINE (POST-CP26B CLOSED)
+## CURRENT ACCEPTED BASELINE (CP26 CLOSED)
 
 Living source-of-truth. Historical README text below is evidence only.
 
@@ -7,11 +7,12 @@ Living source-of-truth. Historical README text below is evidence only.
 | Product | **SCAN / BOOK / GO** (internal history name: Aether Transfer) |
 | Repository | [`bizznessfone-cloud/birch-hazel-stone-cloud`](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud) |
 | Branch | `main` |
-| Last application SHA | `19512c295830fbc6fd9712d688ce364d940f87c3` |
+| Last application SHA | CP26B.3R `19512c295830fbc6fd9712d688ce364d940f87c3` is historical, not current `main` |
 | CP25G.3 | **CLOSED** |
 | **CP26A** | **CLOSED** |
 | **CP26B** | **CLOSED** |
-| **Next execution checkpoint** | **CP26 STRIPE TEST**, then **CP26 EXIT GATE**. **CP26 FINALISATION COMPLETE**. CP26 is **not** closed. Amounts **UNDEFINED**. Commerce **OFF** |
+| **CP26** | **COMPLETE** — finalisation, Stripe TEST, and exit gate **PASS** |
+| **Next execution checkpoint** | **CP27 — SECURITY HARDENING**. Not started. Commerce remains **test**, not live. Only **CP31** activates LIVE commerce |
 | Forward roadmap | **[docs/ROADMAP.md](docs/ROADMAP.md)** |
 | Fixture policy | **[docs/FIXTURE_POLICY.md](docs/FIXTURE_POLICY.md)** |
 
@@ -31,23 +32,26 @@ Environment (names/presence only; never secret values):
 
 - `DATABASE_URL` — PRESENT (production runtime `aether_app`)
 - `AETHER_DATABASE_OWNER_URL` — ABSENT from Vercel
-- `SBG_SAAS_COMMERCE` — ABSENT (fail-closed Domain A)
+- `SBG_SAAS_COMMERCE` — PRESENT, plain `test` (not live)
 - `BETTER_AUTH_SECRET` — PRESENT
 - `BETTER_AUTH_URL` — PRESENT
-- Stripe / Resend / Ops credentials — not present on the application plane unless separately proven
+- `STRIPE_SECRET_KEY` — PRESENT sensitive (value not recorded)
+- `STRIPE_WEBHOOK_SECRET` — PRESENT sensitive (value not recorded)
+- `SBG_SAAS_TEST_ORGANISATION_IDS` — PRESENT sensitive (value not recorded)
+- Resend / Ops credentials — not recorded as present
 
 ### Database
 
 - Source and Production Neon migrations: **0001–0028**. Gate B **0001–0028**. `AUTHORISED_PENDING=[]`
-- 0028 property-licence catalogue (`property_licence` active; basic/pro/premium inactive; zero price versions; zero Stripe mappings; locks false/false; digest `35626cb2d3b21a076f4a2cb982b9d0983610620fb21dbf7f3e94eb4c0576a02d`; apply run 36254890554; workflow retired)
-- 0027 organisation property-licence persistence (digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef`; apply run 36251190175; workflow retired; Production organisation counts 0)
+- 0028 property-licence catalogue (`property_licence` active; basic/pro/premium inactive; one price version EUR 17900 month `b13f9445-d27a-4e7d-8128-a2238906ce7c`; one verified TEST mapping `price_1UKGWjFHnHXHuPOwO50TJS93`; no LIVE mapping; locks false/false; digest `35626cb2d3b21a076f4a2cb982b9d0983610620fb21dbf7f3e94eb4c0576a02d`; apply run 36254890554; workflow retired)
+- 0027 organisation property-licence persistence (digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef`; apply run 36251190175; workflow retired; one TEST organisation; licensed 3; active allocations 0)
 - 0026 commercial catalogue (digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446`; apply run 36135836457; workflow retired)
-- 0025 platform owners (`sbg_platform_owners`; digest `575aabcb7322fc8ca63c8a3dd137d358f76375f1777ed59cf04c1d98d6c066fd`); one Production Owner bootstrapped; bootstrap workflow retired
+- 0025 platform owners (`sbg_platform_owners`; digest `575aabcb7322fc8ca63c8a3dd137d358f76375f1777ed59cf04c1d98d6c066fd`); one Production Owner bootstrapped; 0025 dispatch workflow **RETIRED**; bootstrap workflow retired
 - 0024 ordered Domain A billing events (`sbg_apply_billing_event` 10-argument; digest `23cdc44037e0e886444477fdb693536a95c32b6080984de4076cc7a5f71d13c0`)
 - 0023 decoupled `sbg_sync_hotel_entitlement` from hotel publication
 - `neondb_owner` = migration/schema owner; `aether_app` = production LOGIN; `aether_runtime` = PGLite/preview SET ROLE only
 - `npm run build` does **not** run migrations. Production migration is a separate owner-plane control.
-- Generic Production migrator is retired/fail-closed and never applies SQL. Spent 0022/0023/0024/0026/0027/0028 dispatch workflows are retired. The 0025 workflow remains historical and must not be re-dispatched.
+- Generic Production migrator is retired/fail-closed and never applies SQL. Spent 0022/0023/0024/0025/0026/0027/0028 dispatch workflows are retired. Permanent read-only Gate B remains.
 
 ### Auth (do not reopen CP25G.3)
 

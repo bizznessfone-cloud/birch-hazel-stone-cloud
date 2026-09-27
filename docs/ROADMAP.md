@@ -32,8 +32,10 @@ Canonical living roadmap. Other living documents should **point here**, not rede
 | CP26C-O2D | **PASS** — `/owner/login` isolated from hotel `/login`; no migration |
 | CP26C-O3.3V | **PASS** — operator Production plans verification; no price created |
 | CP26C-O3R | **PASS** — organisation property-licence model reconciled; no implementation ([`COMMERCIAL_MODEL.md`](COMMERCIAL_MODEL.md)) |
-| CP26 FINALISATION | **COMPLETE** — Production **0001–0028**; `property_licence` active; basic/pro/premium inactive; Domain A cut over to organisation quantity; commerce **OFF**. **CP26 is not complete** |
-| **Next** | **CP26 STRIPE TEST**, then **CP26 EXIT GATE**. The twelve-step O4–O11 chain is superseded and must not be executed. **CP26C.3** is not resumed. Only **CP31** activates commerce |
+| CP26 FINALISATION | **PASS** — Production **0001–0028**; `property_licence` active; basic/pro/premium inactive; Domain A cut over to organisation quantity. Finalisation snapshot: commerce OFF. **CP26 was not yet complete** |
+| CP26 STRIPE TEST | **PASS** — one TEST subscription, quantity 3, EUR 17900/month; allocation and duplicate webhook proven |
+| CP26 EXIT GATE | **PASS** — **CP26 COMPLETE**. Commerce remains **test**. LIVE locks false |
+| **Next** | **CP27 — SECURITY HARDENING**. Not started. The twelve-step O4–O11 chain is superseded and must not be executed. **CP26C.3** is not resumed. Only **CP31** activates LIVE commerce |
 
 ---
 
@@ -201,9 +203,9 @@ Non-blocking UI backlog: Owner header showed “SSBG Verification”. Deferred t
 
 **CP26C-O3R PASS (snapshot at that checkpoint):** The locked commercial model is one organisation, one Stripe customer, one subscription, quantity = purchased property licences. At O3R there was no organisation table in source and billing was hotel-scoped. That sentence is not current. 0027 later created the tables and CP26 FINALISATION cut Domain A over to them. Decision: [`COMMERCIAL_MODEL.md`](COMMERCIAL_MODEL.md). O3R itself made no migration and no runtime change. Amounts remain **UNDEFINED**. Former **O3.4**, the previously scoped **CP26C.3** resume, and the previously scoped **CP26C.4** tier cutover are **superseded**. Do not start them. Only **CP31** activates LIVE commerce.
 
-**Next:** **CP26 STRIPE TEST**. Not started. It is the only authorised next CP26 checkpoint. It must create the Stripe TEST proof. This finalisation checkpoint did not.
+**CP26 FINALISATION COMPLETE (snapshot).** This paragraph records the state at the end of finalisation, before Stripe TEST. Production ledger is **0001–0028** exactly once each. Gate B accepted ledger is **0001–0028**. `AUTHORISED_PENDING=[]`. 0027 digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef` (apply GHA [36251190175](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36251190175)) is ordinary accepted history. Its workflow is **RETIRED**. 0028 `migrations/0028_cp26fin_property_licence_catalogue.sql` digest `35626cb2d3b21a076f4a2cb982b9d0983610620fb21dbf7f3e94eb4c0576a02d` applied once (GHA [36254890554](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36254890554)). Its workflow is **RETIRED**. The historical controller script remains; its `REQUIRED_LEDGER` stays frozen at **0001–0027** and must not follow Gate B. At that snapshot: price versions 0, mappings 0, organisations 0, commerce OFF.
 
-**CP26 FINALISATION COMPLETE.** Production ledger is **0001–0028** exactly once each. Gate B accepted ledger is **0001–0028**. `AUTHORISED_PENDING=[]`. 0027 digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef` (apply GHA [36251190175](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36251190175)) is ordinary accepted history. Its workflow is **RETIRED**. 0028 `migrations/0028_cp26fin_property_licence_catalogue.sql` digest `35626cb2d3b21a076f4a2cb982b9d0983610620fb21dbf7f3e94eb4c0576a02d` applied once (GHA [36254890554](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36254890554)). Its workflow is **RETIRED**. The historical controller script remains; its `REQUIRED_LEDGER` stays frozen at **0001–0027** and must not follow Gate B. Catalogue: `property_licence` active; `basic`, `pro`, and `premium` inactive and unpriceable. Price versions **0**. Stripe mappings **0**. No amount is in source or Production. Organisations, members, organisation billing, and allocations remain **0**. Domain A checkout is organisation-scoped and dormant. Domain B is unchanged. Commerce **OFF**. Stripe untouched. CP26 is **not** closed. CP26C is **not** closed.
+**CP26 STRIPE TEST — PASS. CP26 EXIT GATE — PASS. CP26 — COMPLETE.** One TEST organisation `4208626a-ef20-4f5a-b28e-0d8b9c778205`, customer `cus_VKwWNaJ4nwUTfM`, subscription `sub_1UKGdCFHnHXHuPOwgswtqBhL`, one item, quantity 3, price `price_1UKGWjFHnHXHuPOwO50TJS93`, catalogue version `b13f9445-d27a-4e7d-8128-a2238906ce7c` EUR 17900 month. Event `evt_1UKKPiFHnHXHuPOwM7L3ZmoM` applied once; same-id replay did not move `processed_at`. Allocation proof passed, then all four fixtures were released. Licensed 3, active 0, available 3. Domain B unchanged. LIVE locks false. Commerce **test**, not live. The 0025 dispatch workflow is **RETIRED**. **Next is CP27 — SECURITY HARDENING. Not started.**
 
 The O4.2 paragraph below is the historical controller-ready record. It is not the current state. 0027 was later applied and accepted. Do not dispatch a 0027 workflow; the file is gone.
 
@@ -226,10 +228,10 @@ CP26C-O3R PASS → CP26C-O4.1 (organisation source) → O4.2 controller → O4.3
 Remaining CP26 work, in order:
 
 ```
-CP26 FINALISATION COMPLETE → CP26 STRIPE TEST → CP26 EXIT GATE
+CP26 FINALISATION PASS → CP26 STRIPE TEST PASS → CP26 EXIT GATE PASS → CP26 COMPLETE → CP27 SECURITY HARDENING (not started)
 ```
 
-**Do not enable test commerce on public Production.** Empty organisation and hotel allowlists fail-close. Only **CP31** activates live commerce.
+**Do not switch public Production commerce from test to live.** Empty organisation and hotel allowlists fail-close. Only **CP31** activates LIVE commerce.
 
 ### CP26D — HOTEL-OWNED GUEST PAYMENT REGRESSION
 

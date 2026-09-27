@@ -2,10 +2,28 @@
 
 This file describes **current reality**, not intended future state.
 
+## CP26 — CLOSED
+
+**CP26 FINALISATION — PASS. CP26 STRIPE TEST — PASS. CP26 EXIT GATE — PASS. CP26 — COMPLETE.**
+
+Production ledger is **0001–0028** exactly once. Gate B accepts **0001–0028**. `AUTHORISED_PENDING=[]`. The generic Production migrator stays fail-closed and never applies SQL. `npm run build` does not migrate. Spent single-use mutation workflows, including **0025** and the one-shot CP26 exit-gate read, are **RETIRED**. Their controller scripts remain as audit history. Permanent read-only Gate B (`.github/workflows/production-database.yml`) remains.
+
+Commercial model: one product, `property_licence` (SCAN BOOK GO Property Licence). The published Production price version is `b13f9445-d27a-4e7d-8128-a2238906ce7c`, **EUR 17900**, month, interval_count 1. Self-service quantity is **1–49**. **50+** is Enterprise / contact sales, not a second product or an automatic discount. `basic` / `pro` / `premium` are inactive historical plans. Application source does not hard-code 17900.
+
+Stripe TEST proof, sandbox only, livemode false: organisation `4208626a-ef20-4f5a-b28e-0d8b9c778205` → customer `cus_VKwWNaJ4nwUTfM` → subscription `sub_1UKGdCFHnHXHuPOwgswtqBhL` → one item `si_VKwWH8Gngk0GkW` on price `price_1UKGWjFHnHXHuPOwO50TJS93` (product `prod_VKwPfVeu1Q3S21`) → quantity **3**. One verified TEST mapping. No LIVE mapping. LIVE locks **false / false**. Commerce is **`SBG_SAAS_COMMERCE=test`**, not live. An empty `SBG_SAAS_TEST_ORGANISATION_IDS` fail-closes. Only **CP31** may activate LIVE commerce.
+
+Organisation billing is active, licensed_quantity **3**, price version as above, last event `evt_1UKKPiFHnHXHuPOwM7L3ZmoM`. That event is one `sbg_stripe_events` row, outcome `applied`, `processed_at` and billing `updated_at` both `2026-09-27T15:54:55.965Z`. Same-id replay did not rewrite the row. Hotel billing accounts **0**. Booking payments **0**.
+
+Licence balance: licensed **3**, active allocations **0**, available **3**. Released historical rows for `cp26-licence-a`, `cp26-licence-b`, `cp26-licence-c`, and `cp26-licence-d` remain. Those hotels stay **unconfigured**. Protected hotels were not repurposed.
+
+**Next: CP27 — SECURITY HARDENING. Not started.** Do not resume CP26C.3. The O4–O11 chain stays superseded. Former **O3.4** stays superseded.
+
+The section below is the historical path through CP26B and finalisation. Present-tense claims there that commerce is OFF, that prices are undefined, or that CP26 STRIPE TEST is next are the state **at that earlier checkpoint**.
+
 ## CP26B — CLOSED
 
 Domain A subscription lifecycle, ordered billing persistence, and Production
-migration 0024 are accepted. Domain A commerce remains **OFF**. Only **CP31**
+migration 0024 are accepted. At CP26B, Domain A commerce was **OFF**. Only **CP31**
 may activate real commerce. CP26C.1/C.2 isolation is in source. CP26C.3 is
 **paused** (no Stripe objects; canonical amounts not invented). **CP26C-O3.1**
 catalogue contract is accepted. **CP26C-O3.2** source migration 0026 was
@@ -17,9 +35,8 @@ commercial catalogue UI over that schema. Canonical amounts were not invented.
 that sign-in **passed**. **CP26C-O3.3V** passed: `/owner/plans` showed the
 three active plans and no prices. **CP26C-O3R** reconciled the commercial
 model to one organisation subscription and property-licence quantity.
-**CP26 FINALISATION** applied 0027 and 0028 in Production, accepted them on Gate B, retired both dispatch workflows, and cut dormant Domain A from hotel tiers to organisation property-licence quantity. Commerce stays **OFF**. No price version. No Stripe mapping. **CP26 is not closed.** Next is **CP26 STRIPE TEST**, then **CP26 EXIT GATE**. The O4–O11 chain is superseded. Former **O3.4** is superseded. Do not resume CP26C.3.
-Production commerce remains **OFF**. Canonical amounts remain **UNDEFINED**.
-Migration **0025** is **Production-applied**. First Production platform Owner is
+**CP26 FINALISATION — PASS** applied 0027 and 0028 in Production, accepted them on Gate B, retired both dispatch workflows, and cut dormant Domain A from hotel tiers to organisation property-licence quantity. At the close of finalisation, commerce was still **OFF**, there was no price version, and there was no Stripe mapping. That snapshot is not the exit-gate state. **CP26 STRIPE TEST — PASS. CP26 EXIT GATE — PASS. CP26 — COMPLETE.** See the current section at the top of this file. The O4–O11 chain is superseded. Former **O3.4** is superseded. Do not resume CP26C.3.
+Migration **0025** is **Production-applied**. Its dispatch workflow is **RETIRED** (controller script remains). First Production platform Owner is
 **bootstrapped** (1 active grant). The first-Owner bootstrap workflow is **RETIRED**.
 
 | Field | Value |
@@ -54,51 +71,51 @@ Migration **0025** is **Production-applied**. First Production platform Owner is
 | CP26C-O2D | **PASS** — `/owner/login` sign-in only; hotel `/login` unchanged; no migration |
 | CP26C-O3.3V | **PASS** — operator `/owner/plans` verification; no price created |
 | CP26C-O3R | **PASS** — model reconciled in [`docs/COMMERCIAL_MODEL.md`](docs/COMMERCIAL_MODEL.md); no implementation at that checkpoint |
-| CP26 FINALISATION | **COMPLETE** — ledger **0001–0028**; dormant property-licence cutover; commerce **OFF**; CP26 **not** closed |
+| CP26 FINALISATION | **PASS** — ledger **0001–0028**; dormant property-licence cutover. Finalisation snapshot: commerce still OFF and no price. Superseded by the Stripe TEST and exit gate |
+| CP26 STRIPE TEST | **PASS** — one TEST organisation, customer, subscription, item, quantity 3, EUR 17900/month; webhook applied once; allocation proof then released |
+| CP26 EXIT GATE | **PASS** — CP26 **COMPLETE**. Commerce remains **test**. LIVE locks false. Next is **CP27**, not started |
 | Last application SHA | see current `main` after CP26 FINALISATION (19512c2 is the older CP26B.3R catalog identity, not current) |
 | Fixture policy | [`docs/FIXTURE_POLICY.md`](docs/FIXTURE_POLICY.md) |
 | Local harness | `src/lib/aether/cp26a4-fixture.ts` (tests only; not a runtime import) |
-| Domain A | remains dormant; only **CP31** may activate commerce |
+| Domain A | TEST commerce proven for one allowlisted organisation; not LIVE. Only **CP31** may activate LIVE commerce |
 | Accepted Production ledger | **0001–0028** (Gate B source pin **0001–0028**; `AUTHORISED_PENDING=[]`) |
 | 0024 digest | `23cdc44037e0e886444477fdb693536a95c32b6080984de4076cc7a5f71d13c0` |
 | 0025 digest | `575aabcb7322fc8ca63c8a3dd137d358f76375f1777ed59cf04c1d98d6c066fd` |
 | 0026 file | `migrations/0026_cp26co3_commercial_catalogue.sql` |
 | 0026 digest | `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446` (Production-applied once) |
 | 0026 apply | GHA [36135836457](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36135836457) job `108073574672` at `67d751014b6b5cbb5bd3c9ac4867fbad3da01b52` |
-| 0025 controller | `.github/workflows/cp26co2a-0025-production-migrate.yml` + `scripts/cp26co2a-0025-production-migrate.mjs` |
+| 0025 controller | historical script `scripts/cp26co2a-0025-production-migrate.mjs`; workflow **RETIRED**; npm `db:migrate:0025` remains and is not invoked by build |
 | First-Owner controller | historical script `scripts/cp26co2c-first-owner-bootstrap.mjs`; workflow **RETIRED** |
 | Active platform Owners | **1** — OPERATOR CONTROLLED / REDACTED (owns `sbg-verify-a5`) |
 | Human `/owner` proof | **PASS** — Overview, Hotels, Plans & Pricing, Revenue, System |
-| **Next control-plane** | **CP26C-O3R PASS** — commercial model reconciled; implementation not started |
+| **Next control-plane** | none inside CP26. **CP26 COMPLETE**. Next is **CP27** |
 | 0026 controller | historical script `scripts/cp26co32a-0026-production-migrate.mjs`; workflow **RETIRED**; npm alias **RETIRED** |
-| Catalogue | `property_licence` **active**; `basic` / `pro` / `premium` **inactive** historical; Production price versions **0**; Stripe mappings **0**; LIVE locks **false/false**; amounts **UNDEFINED** |
+| Catalogue | `property_licence` **active**; `basic` / `pro` / `premium` **inactive** historical; one price version `b13f9445-d27a-4e7d-8128-a2238906ce7c` EUR **17900** month; one verified TEST mapping `price_1UKGWjFHnHXHuPOwO50TJS93`; no LIVE mapping; LIVE locks **false/false** |
 | 0027 | applied once (GHA [36251190175](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36251190175)); digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef`; workflow **RETIRED**; script remains |
 | 0028 | `migrations/0028_cp26fin_property_licence_catalogue.sql` applied once (GHA [36254890554](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36254890554)); digest `35626cb2d3b21a076f4a2cb982b9d0983610620fb21dbf7f3e94eb4c0576a02d`; workflow **RETIRED**; controller `REQUIRED_LEDGER` frozen at **0001–0027** |
-| **Next product** | **CP26 STRIPE TEST**, then **CP26 EXIT GATE**. Do not resume CP26C.3. Do not start the superseded O4–O11 chain |
+| **Next product** | **CP27 — SECURITY HARDENING**. Not started. Do not resume CP26C.3. Do not start the superseded O4–O11 chain. Do not start CP31 |
 
-Do not dispatch historical 0022/0023/0024 controllers or the retired 0026, 0027, or 0028 workflows. The 0025 workflow remains historical evidence and must not be re-dispatched. Owner secret remains GitHub Actions `AETHER_DATABASE_OWNER_URL` only — never Vercel. The generic migrator never applies SQL. 0029+ stays fail-closed.
+Do not dispatch historical 0022/0023/0024 controllers or the retired 0025, 0026, 0027, or 0028 workflows. Do not recreate the retired one-shot CP26 read workflows. Owner secret remains GitHub Actions `AETHER_DATABASE_OWNER_URL` only — never Vercel. The generic migrator never applies SQL. 0029+ stays fail-closed.
 
-Push to `main` currently auto-deploys Vercel Production. That is a known control-plane characteristic, not a commercial activation. Ordered-webhook source is schema-capable on Production 0024. Domain A webhooks remain fail-closed while commerce is OFF (acknowledged without apply).
+Push to `main` currently auto-deploys Vercel Production. That is a known control-plane characteristic, not a commercial activation and not a LIVE switch. Ordered-webhook source is schema-capable. Domain A TEST webhooks are signature-verified. Commerce is **test**, allowlisted, and fail-closed when `SBG_SAAS_TEST_ORGANISATION_IDS` is empty. Do not set commerce to **live**.
 
-Password never enters git/chat/Grok/Vercel/`.env`. Do not delete the Production verification tenant.
+`SBG_SAAS_COMMERCE=test` is set on Production for the completed CP26 Stripe TEST. It is not LIVE commerce. Domain A checkout uses `SBG_SAAS_TEST_ORGANISATION_IDS`. Historical hotel-keyed tests still use `SBG_SAAS_TEST_HOTEL_IDS`. Empty allowlists fail-close. Do not put a Production UUID or a secret value in git.
 
-`SBG_SAAS_COMMERCE=test` remains process-global and must **not** be enabled on the
-public Production deployment. CP26 STRIPE TEST is next and is not authorised to run from this file. Domain A checkout uses `SBG_SAAS_TEST_ORGANISATION_IDS`. Historical hotel-keyed tests still use `SBG_SAAS_TEST_HOTEL_IDS`. Empty allowlists fail-close. Do not put a Production UUID in git.
-
-## Current accepted baseline (POST-CP26B CLOSED)
+## Current accepted baseline (CP26 CLOSED)
 
 | Field | Value |
 |---|---|
 | Product | **SCAN / BOOK / GO** (internal history name: Aether Transfer) |
 | Repository | `bizznessfone-cloud/birch-hazel-stone-cloud` |
 | Branch | `main` |
-| Last application SHA | 19512c295830fbc6fd9712d688ce364d940f87c3 (CP26B.3R; Production 0024 applied) |
+| Last application SHA | CP26B.3R historical `19512c295830fbc6fd9712d688ce364d940f87c3` is not current `main`. Current source is the CP26 exit-gate commit |
 | CP25G.3 | **CLOSED** |
 | **CP26A** | **CLOSED** |
 | **CP26B** | **CLOSED** |
-| **Next control-plane** | none; CP26C-O2 **CLOSED** |
-| **Next product checkpoint** | **CP26 STRIPE TEST**, then **CP26 EXIT GATE**. CP26 FINALISATION is complete. CP26 is **not** closed |
-| Forward roadmap | **[docs/ROADMAP.md](docs/ROADMAP.md)** (CP26–CP31) |
+| **CP26** | **COMPLETE** — finalisation, Stripe TEST, and exit gate **PASS** |
+| **Next control-plane** | none; CP26C-O2 **CLOSED**; CP26C.3 not resumed |
+| **Next product checkpoint** | **CP27 — SECURITY HARDENING**. Not started. Only **CP31** activates LIVE commerce |
+| Forward roadmap | **[docs/ROADMAP.md](docs/ROADMAP.md)** (CP27–CP31) |
 
 ### Production
 
@@ -110,7 +127,7 @@ public Production deployment. CP26 STRIPE TEST is next and is not authorised to 
 | Alias | `https://scan-book-go.vercel.app` |
 | Deployed SHA (last observed) | `19512c295830fbc6fd9712d688ce364d940f87c3` |
 
-A later push of this documentation/control-plane child may auto-deploy a new SHA. That must not activate commerce.
+A later push of this documentation/control-plane child may auto-deploy a new SHA. That must not switch commerce to **live**.
 
 Environment (names/presence only):
 
@@ -118,10 +135,13 @@ Environment (names/presence only):
 |---|---|
 | `DATABASE_URL` | PRESENT (`aether_app` runtime LOGIN) |
 | `AETHER_DATABASE_OWNER_URL` | ABSENT |
-| `SBG_SAAS_COMMERCE` | ABSENT (fail-closed Domain A) |
+| `SBG_SAAS_COMMERCE` | PRESENT plain `test` (not live) |
 | `BETTER_AUTH_SECRET` | PRESENT |
 | `BETTER_AUTH_URL` | PRESENT |
-| Stripe / Resend / Ops credentials | ABSENT |
+| `STRIPE_SECRET_KEY` | PRESENT sensitive (value not recorded) |
+| `STRIPE_WEBHOOK_SECRET` | PRESENT sensitive (value not recorded) |
+| `SBG_SAAS_TEST_ORGANISATION_IDS` | PRESENT sensitive (value not recorded) |
+| Resend / Ops credentials | not recorded as present |
 
 ### Database
 
@@ -129,8 +149,8 @@ Environment (names/presence only):
 |---|---|
 | Source migrations | `0001`–`0028` present |
 | Production Neon | migrated through **0028** — pending **NONE** |
-| 0028 | `property_licence` active; basic/pro/premium inactive; zero price versions; zero Stripe mappings; locks false/false |
-| 0027 | organisation, member, organisation billing, allocation, and derived licence balance installed; Production row counts remain 0 |
+| 0028 | `property_licence` active; basic/pro/premium inactive; one price version EUR 17900 month; one verified TEST mapping; LIVE locks false/false |
+| 0027 | organisation, member, organisation billing, allocation, and derived licence balance installed; one organisation billing row; four released allocation rows; active allocations 0 |
 | 0026 | commercial catalogue schema installed; historical tier rows retained and now inactive |
 | 0024 | ordered Domain A billing events (`event.created` bigint, `cancel_at_period_end`, stale/ambiguous/duplicate); 10-argument `sbg_apply_billing_event`; 8-argument function **absent** |
 | 0023 | entitlement publication decoupling (`sbg_sync_hotel_entitlement` no longer writes `hotels.status`) |
@@ -142,7 +162,7 @@ Environment (names/presence only):
 
 Roles: `neondb_owner` = schema/migration owner; `aether_app` = production LOGIN; `aether_runtime` = PGLite/preview only. Production must not use SET ROLE or owner credentials as runtime.
 
-CP26B.3V invariants (do not re-query merely to reproduce): hotels 4; billing accounts 0; Stripe events 0; demo-kos live; sbg-verify-a5 configured/non-bookable.
+CP26B.3V was a historical snapshot (hotels 4; billing accounts 0; Stripe events 0). It is not the current Production count. Exit-gate read [36336527434](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36336527434): ledger 28; one organisation; one applied Stripe event; hotel billing accounts 0; booking payments 0; active allocations 0; fixtures unconfigured.
 
 ### Auth (CP25G.3 CLOSED — do not reopen)
 
@@ -169,7 +189,7 @@ Classification: **PERSISTENT PRODUCTION VERIFICATION TENANT — RETAIN**.
 | Billing | authenticated GET `/app/billing` resolved this configured hotel; Connect/Checkout not invoked |
 | Customer | **never** |
 
-Do not delete casually. Do not publish. Do not attach Stripe test billing to this tenant. Former CP26C.4/C.5 is superseded and is not an authorisation (isolation is in source; Production commerce remains OFF). Do not reuse CP25G.3 spent users or `demo-kos`.
+Do not delete casually. Do not publish. Do not attach the CP26 Stripe TEST subscription to `sbg-verify-a5`. Do not reuse CP25G.3 spent users or `demo-kos`.
 
 ### SaaS operator journey
 
@@ -181,13 +201,13 @@ account → hotel → service → preview → QR → plan → Stripe → LIVE
 - Onboarding through `/app` is **Production-proven** (CP26A.5) to **configured, not live**.
 - Tenancy exists structurally (`app_hotel_accounts`). Schema remains many-to-many. Verification **policy** is one user / one hotel (not a new DB constraint).
 - Billing ownership resolves by UUID then `ownedHotel`. Configured-not-live is valid for billing state. Live and Connect are not required.
-- Stripe Connect and hotel-owned guest Checkout source exist. Production Stripe configuration is absent. Domain B stays `mode=payment` on the hotel connected account, with no application fee.
-- Domain A is organisation-scoped property-licence checkout. The browser does not choose Basic, Pro, or Premium. Quantity is server-authorised (self-service 1–49). A missing `property_licence` price mapping fails closed. Commerce **OFF** means Checkout does not call Stripe.
+- Stripe Connect and hotel-owned guest Checkout source exist. Domain B stays `mode=payment` on the hotel connected account, with no application fee. Production booking payments remain **0**.
+- Domain A is organisation-scoped property-licence checkout. The browser does not choose Basic, Pro, or Premium, and does not choose a Stripe Price ID. Quantity is server-authorised (self-service 1–49). A missing `property_licence` price mapping fails closed. Commerce **test** may call Stripe only for an allowlisted organisation. Commerce **live** is not enabled.
 - One organisation has at most one SBG subscription. A second Checkout is refused; management uses the portal.
 - Domain A webhooks call `sbg_apply_organisation_billing_event`, retain quantity, and keep duplicate, stale, ambiguous, and conflicting-subscription protection. The 10-argument hotel function remains historical and is not the active path.
 - Entitlement is an active/trialing/past_due organisation subscription plus an unreleased property allocation. Users are not licences. `hotels.status` is not SaaS publication.
-- MRR/ARR is licensed quantity times the contracted price version, or **0**. It is not `pending_catalogue`.
-- `SBG_SAAS_COMMERCE=test` is process-global and must not be set on public Production. Domain A test mode uses `SBG_SAAS_TEST_ORGANISATION_IDS` and fail-closes when empty.
+- MRR/ARR is licensed quantity times the contracted price version. It is not `pending_catalogue`.
+- `SBG_SAAS_COMMERCE=test` is set on Production. Do not change it to `live`. Domain A test mode uses `SBG_SAAS_TEST_ORGANISATION_IDS` and fail-closes when empty.
 
 ### Guest / Ops
 
@@ -214,11 +234,12 @@ account → hotel → service → preview → QR → plan → Stripe → LIVE
 - Do not claim 0023 or 0024 is unapplied, or that a 0022/0023/0024 dispatch workflow remains.
 - Do not claim returning Production sign-in is unproven.
 - Do not claim the Production verification tenant does not exist.
-- Do not treat CP26 as commercial go-live. Only CP31 activates commerce.
-- Do not start CP26C test commerce on public Production. Former CP26C.4 is superseded; **CP26C-O11** is not authorised. Empty `SBG_SAAS_TEST_HOTEL_IDS` fail-closes every hotel.
+- Do not treat CP26 as commercial go-live. Only CP31 activates LIVE commerce.
+- Do not switch `SBG_SAAS_COMMERCE` to `live`. Do not resume CP26C.3. Former CP26C.4 and the O4–O11 chain stay superseded. Empty allowlists fail-close.
 - Do not invent CP26B.5.
+- Do not claim CP26 STRIPE TEST is still pending, or that CP26 is incomplete.
 
-Canonical forward path: **`docs/ROADMAP.md`**. Commercial model: **`docs/COMMERCIAL_MODEL.md`**. Commercial catalogue: **`docs/COMMERCIAL_CATALOGUE.md`**. Fixture policy: **`docs/FIXTURE_POLICY.md`**. Owner architecture: **`docs/OWNER_CONTROL_PLANE.md`**. **CP26 FINALISATION COMPLETE.** Gate B accepted ledger is **0001–0028**. 0027 digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef` applied (GHA [36251190175](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36251190175)). 0028 digest `35626cb2d3b21a076f4a2cb982b9d0983610620fb21dbf7f3e94eb4c0576a02d` applied (GHA [36254890554](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36254890554)). Both workflows are **RETIRED**. The 0025 workflow remains and must not be re-dispatched. `property_licence` is the only active plan. basic/pro/premium are inactive. Price versions **0**. Stripe mappings **0**. No amount. Organisations **0**. Commerce **OFF**. Stripe untouched. **CP26 is not closed.** Next is **CP26 STRIPE TEST**, then **CP26 EXIT GATE**. Only **CP31** activates commerce. Historical O3.2B remains PASS (GHA [36135836457](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36135836457)). Active Production platform Owners: **1**. First-Owner bootstrap workflow **RETIRED** (historical run [36116463589](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36116463589)).
+Canonical forward path: **`docs/ROADMAP.md`**. Commercial model: **`docs/COMMERCIAL_MODEL.md`**. Commercial catalogue: **`docs/COMMERCIAL_CATALOGUE.md`**. Fixture policy: **`docs/FIXTURE_POLICY.md`**. Owner architecture: **`docs/OWNER_CONTROL_PLANE.md`**. **CP26 COMPLETE.** Gate B accepted ledger is **0001–0028**. 0027 digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef` applied (GHA [36251190175](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36251190175)). 0028 digest `35626cb2d3b21a076f4a2cb982b9d0983610620fb21dbf7f3e94eb4c0576a02d` applied (GHA [36254890554](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36254890554)). 0025, 0026, 0027, and 0028 dispatch workflows are **RETIRED**. `property_licence` is the only active plan. basic/pro/premium are inactive. One price version EUR 17900 month. One verified TEST mapping. No LIVE mapping. One TEST organisation, one subscription, quantity 3. Licensed 3, active allocations 0, available 3. Commerce **test**, not live. **Next is CP27 — SECURITY HARDENING. Not started.** Only **CP31** activates LIVE commerce. Historical O3.2B remains PASS (GHA [36135836457](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36135836457)). Active Production platform Owners: **1**. First-Owner bootstrap workflow **RETIRED** (historical run [36116463589](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36116463589)). Password never enters git.
 
 Non-blocking UI backlog: Owner header rendered “SSBG Verification” (presentation/spacing or avatar-initial concatenation). Deferred. Not an authorization defect.
 

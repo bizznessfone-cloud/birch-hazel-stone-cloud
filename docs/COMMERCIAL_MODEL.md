@@ -15,11 +15,7 @@ Their older sections are not rewritten to pretend this model was always
 explicit. Where an older sentence still describes three paid tiers, or one
 subscription per hotel, as the target, **this document wins**.
 
-Catalogue amounts remain **UNDEFINED** in the database. The operator-locked
-standard unit amount is **not copied into this repository**. A later authorised
-price-version checkpoint must take that amount from the human authorisation
-brief and persist it only as an immutable catalogue price version. Application
-logic, analytics, seeds, and tests must not hard-code it.
+Catalogue amounts are no longer undefined. The published Production price version is EUR 17900 / month. Application logic still must not hard-code that amount. The catalogue row is the canonical amount.
 
 | Field | Value |
 |---|---|
@@ -30,14 +26,14 @@ logic, analytics, seeds, and tests must not hard-code it.
 | Former O3.4 | **SUPERSEDED** — do not start; it would price the obsolete tiers |
 | CP26C.3 | **NOT RESUMED** — its three-tier TEST Price plan is superseded |
 | CP26C.4 | **SUPERSEDED as previously scoped** — do not cut Checkout over to three tier Prices |
-| Next | **CP26 STRIPE TEST**, then **CP26 EXIT GATE**. CP26 FINALISATION is **COMPLETE**. CP26 is **not** closed |
-| Commerce | **OFF** |
+| Next | **CP27 — SECURITY HARDENING**. Not started. CP26 FINALISATION, STRIPE TEST, and EXIT GATE are **PASS**. CP26 is **COMPLETE** |
+| Commerce | **test** (`SBG_SAAS_COMMERCE=test`). Not live. Only **CP31** activates LIVE |
 | Ledger | Gate B **0001–0028**; `AUTHORISED_PENDING=[]`; 0029+ fail-closed |
 | 0026 digest | `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446` unchanged |
-| Production prices | operator-attested **0** versions, **0** mappings, **0** real SaaS subscriptions; not re-queried |
-| LIVE locks | source default **false / false** |
+| Production prices | one version `b13f9445-d27a-4e7d-8128-a2238906ce7c` EUR 17900 month; one verified TEST mapping `price_1UKGWjFHnHXHuPOwO50TJS93`; no LIVE mapping |
+| LIVE locks | **false / false** |
 
-**CP26 FINALISATION (current).** 0027 is applied and accepted. Digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef`. Apply GHA 36251190175. Workflow **RETIRED**. Membership does **not** use a closed `billing_owner` | `operator` check: `role` is an extensible token and `billing_authority` is the only billing capability. 0028 is applied and accepted. Digest `35626cb2d3b21a076f4a2cb982b9d0983610620fb21dbf7f3e94eb4c0576a02d`. Apply GHA 36254890554. Workflow **RETIRED**. `property_licence` is active. `basic`, `pro`, and `premium` are inactive and cannot receive a new price version. Price versions **0**. Stripe mappings **0**. No amount. No organisations. Commerce **OFF**. Domain A application code is organisation-scoped and dormant. Section 1 below is the **O3R snapshot**, not the current runtime.
+**CP26 FINALISATION (snapshot, then superseded by Stripe TEST).** 0027 is applied and accepted. Digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef`. Apply GHA 36251190175. Workflow **RETIRED**. Membership does **not** use a closed `billing_owner` | `operator` check: `role` is an extensible token and `billing_authority` is the only billing capability. 0028 is applied and accepted. Digest `35626cb2d3b21a076f4a2cb982b9d0983610620fb21dbf7f3e94eb4c0576a02d`. Apply GHA 36254890554. Workflow **RETIRED**. `property_licence` is active. `basic`, `pro`, and `premium` are inactive and cannot receive a new price version. At the close of finalisation there was no price version and commerce was OFF. **CP26 STRIPE TEST** then recorded the EUR 17900 month version, the verified TEST mapping, and one organisation subscription at quantity 3. **CP26 EXIT GATE — PASS. CP26 COMPLETE.** Commerce is **test**, not live. Section 1 below is the **O3R snapshot**, not the current runtime.
 
 ---
 
@@ -328,7 +324,7 @@ written as a destination price. No application fee or commission is added.
 
 ## 9. Owner and operator surfaces
 
-O3R did not build these surfaces. **CP26 FINALISATION** did, still with no price and commerce **OFF**. The Owner catalogue no longer presents Basic/Pro/Premium as the sellable offer. The price form is `property_licence` only and does not hard-code an amount. Operator billing is organisation-scoped, quantity 1–49, portal instead of a second Checkout, and allocation of a spare licence without a second subscription. MRR/ARR is **0** until an entitled organisation subscription has a contracted price version. It is not `pending_catalogue`.
+O3R did not build these surfaces. **CP26 FINALISATION** built them while commerce was still OFF. **CP26 STRIPE TEST** then proved one contracted price version and one organisation subscription. The Owner catalogue no longer presents Basic/Pro/Premium as the sellable offer. The price form is `property_licence` only and does not hard-code an amount. Operator billing is organisation-scoped, quantity 1–49, portal instead of a second Checkout, and allocation of a spare licence without a second subscription. MRR/ARR is licensed quantity times the contracted price version.
 
 The O3R target text follows.
 
@@ -375,8 +371,9 @@ organisations. They must not multiply hotel rows by a constant.
 
 No step below was authorised by O3R. The chain is **not** the current route.
 CP26 FINALISATION completed the dormant architecture through catalogue identity,
-Owner product surface, and quantity application, without a price, a Stripe object,
-or commerce. Remaining CP26 work is only **CP26 STRIPE TEST** and **CP26 EXIT GATE**.
+Owner product surface, and quantity application. **CP26 STRIPE TEST** and the
+**EXIT GATE** then proved the price, the TEST mapping, quantity 3, allocation,
+and duplicate webhook idempotency. No CP26 work remains. Next is **CP27**.
 The generic migrator never applies SQL. The numbered list is retained as history.
 
 1. **CP26C-O4.1** — historical. Later applied as 0027 (GHA 36251190175) and accepted. Not a remaining step.
@@ -387,12 +384,12 @@ The generic migrator never applies SQL. The numbered list is retained as history
 6. **CP26C-O5.2 / O5.3 / O5.4** — absorbed. 0028 applied (GHA 36254890554) and the workflow is retired.
 7. **CP26C-O6** — absorbed. Owner catalogue shows the one product and no price row.
 8. **CP26C-O7** — absorbed. Domain A is organisation quantity, commerce **OFF**. Env tier Price IDs are not the active price source.
-9. **CP26C-O8** — not done. A human price version is **CP26 STRIPE TEST**, not this checkpoint.
-10. **CP26C-O9** — not done. No Stripe TEST Product, Price, or mapping.
-11. **CP26C-O10** — not done as activation. `SBG_SAAS_TEST_ORGANISATION_IDS` exists and an empty value fail-closes. Commerce stays **OFF**.
-12. **CP26C-O11** — not done. Test commerce is not enabled.
+9. **CP26C-O8** — absorbed by CP26 STRIPE TEST. One human price version exists: `b13f9445-d27a-4e7d-8128-a2238906ce7c`, EUR 17900, month.
+10. **CP26C-O9** — absorbed by CP26 STRIPE TEST. One verified TEST Product/Price mapping. No LIVE mapping.
+11. **CP26C-O10** — absorbed. `SBG_SAAS_TEST_ORGANISATION_IDS` is present. Empty value fail-closes. The CP26 organisation was accepted by the TEST webhook. Commerce is **test**, not live.
+12. **CP26C-O11** — absorbed by CP26 STRIPE TEST. Test commerce is enabled and is not LIVE. The exit gate did not turn it off.
 
-Only **CP31** may enable LIVE commerce.
+Only **CP31** may enable LIVE commerce. **CP26 is COMPLETE.** Next is **CP27 — SECURITY HARDENING**, not started.
 
 ---
 
