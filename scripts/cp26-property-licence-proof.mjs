@@ -7,6 +7,7 @@
  *
  * CP26_MODE=reconcile  read-only baseline check
  * CP26_MODE=allocate   create four disposable fixtures, prove allocation, release them
+ * CP26_MODE=aftermath  read-only duplicate-replay aftermath; no writes
  */
 import pg from "pg";
 
@@ -79,8 +80,13 @@ function same(actual, expected, label) {
 }
 
 const mode = String(process.env.CP26_MODE ?? "").trim();
-if (!["reconcile", "allocate"].includes(mode)) fail("CP26_MODE must be reconcile or allocate");
-if (String(process.env.CP26_CONFIRMATION ?? "") !== CONFIRM) fail("confirmation mismatch");
+const confirmation = String(process.env.CP26_CONFIRMATION ?? "");
+if (!["reconcile", "allocate", "aftermath"].includes(mode)) fail("CP26_MODE must be reconcile, allocate, or aftermath");
+if (mode === "aftermath") {
+  if (confirmation !== "READ-CP26-DUPLICATE-AFTERMATH") fail("confirmation mismatch");
+} else if (confirmation !== CONFIRM) {
+  fail("confirmation mismatch");
+}
 
 const url = String(process.env.AETHER_DATABASE_OWNER_URL ?? "").trim();
 if (!url) fail("AETHER_DATABASE_OWNER_URL is not configured");
@@ -205,6 +211,89 @@ function assertBaseline(proof) {
   same(proof.balance, [{ licensed_quantity: 3, active_allocations: 0, available_licences: 3 }], "balance");
 }
 
+async function readAftermath(client) {
+  const proof = await snapshot(client);
+  const billingTimes = rows(
+    await client.query(
+      `select organisation_id::text, licensed_quantity, status, stripe_customer_id, stripe_subscription_id,
+              stripe_price_id, price_version_id::text, billing_interval, cancel_at_period_end,
+              last_stripe_event_id, updated_at
+         from sbg_organisation_billing
+        order by organisation_id`,
+    ),
+  );
+  const events = rows(
+    await client.query(
+      `select event_id, event_type, outcome, organisation_id::text, hotel_id::text,
+              stripe_created, processed_at
+         from sbg_stripe_events
+        order by processed_at, event_id`,
+    ),
+  );
+  const allocations = rows(
+    await client.query(
+      `select h.code, h.status, a.released_at is not null as released, a.allocated_at, a.released_at
+         from sbg_property_licence_allocations a
+         join hotels h on h.id = a.hotel_id
+        where a.organisation_id = $1::uuid
+        order by h.code`,
+      [ORG_ID],
+    ),
+  );
+  return { ...proof, billing_times: billingTimes, event_rows: events, allocations };
+}
+
+function assertAftermath(proof) {
+  same(proof.ledger, LEDGER, "ledger");
+  same(proof.locks, { live_mapping_enabled: false, live_checkout_enabled: false }, "locks");
+  same(proof.orgs, [{ id: ORG_ID, name: ORG_NAME }], "organisations");
+  same(proof.counts.stripe_events, 1, "stripe_events");
+  same(proof.counts.hotel_billing_accounts, 0, "hotel_billing_accounts");
+  same(proof.counts.booking_payments, 0, "booking_payments");
+  same(proof.counts.property_allocations, 4, "property_allocations");
+  same(proof.counts.active_allocations, 0, "active_allocations");
+  same(proof.balance, [{ licensed_quantity: 3, active_allocations: 0, available_licences: 3 }], "balance");
+  same(
+    proof.billing,
+    [
+      {
+        organisation_id: ORG_ID,
+        stripe_customer_id: CUSTOMER,
+        stripe_subscription_id: SUBSCRIPTION,
+        stripe_price_id: PRICE,
+        status: "active",
+        billing_interval: "month",
+        licensed_quantity: 3,
+        price_version_id: PRICE_VERSION,
+        cancel_at_period_end: false,
+        last_stripe_event_id: EVENT_ID,
+      },
+    ],
+    "billing",
+  );
+  if (proof.event_rows.length !== 1) fail("stripe event row count is not 1");
+  const event = proof.event_rows[0];
+  if (event.event_id !== EVENT_ID || event.outcome !== "applied" || event.hotel_id !== null) {
+    fail("stripe event row is not the original applied organisation event");
+  }
+  if (event.event_type !== "customer.subscription.updated") fail("stripe event type changed");
+  const hotels = proof.hotels.map((row) => [row.code, row.status]);
+  same(
+    hotels,
+    [
+      ["cp26-licence-a", "unconfigured"],
+      ["cp26-licence-b", "unconfigured"],
+      ["cp26-licence-c", "unconfigured"],
+      ["cp26-licence-d", "unconfigured"],
+      ...PROTECTED,
+    ],
+    "hotels",
+  );
+  if (proof.allocations.length !== 4 || proof.allocations.some((row) => row.released !== true || row.status !== "unconfigured")) {
+    fail("allocation aftermath is not four released unconfigured fixtures");
+  }
+}
+
 async function hotelRow(client, hotelId) {
   const row = rows(
     await client.query(
@@ -247,7 +336,17 @@ try {
     fail("unexpected database identity");
   }
 
-  if (mode === "reconcile") {
+  if (mode === "aftermath") {
+    await client.query("BEGIN READ ONLY");
+    began = true;
+    const proof = await readAftermath(client);
+    say("CP26 DUPLICATE AFTERMATH");
+    say(JSON.stringify(proof, null, 2));
+    assertAftermath(proof);
+    say("CP26 DUPLICATE AFTERMATH OK");
+    await client.query("ROLLBACK");
+    began = false;
+  } else if (mode === "reconcile") {
     await client.query("BEGIN READ ONLY");
     began = true;
     const proof = await snapshot(client);
