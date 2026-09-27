@@ -240,7 +240,16 @@ async function readAftermath(client) {
       [ORG_ID],
     ),
   );
-  return { ...proof, billing_times: billingTimes, event_rows: events, allocations };
+  const plans = rows(await client.query("select code, active from sbg_saas_plans order by code"));
+  const versions = rows(
+    await client.query(
+      `select id::text, plan_code, currency, amount_minor, billing_interval, interval_count,
+              purchasable, retired_at is not null as retired
+         from sbg_saas_price_versions
+        order by created_at`,
+    ),
+  );
+  return { ...proof, billing_times: billingTimes, event_rows: events, allocations, plans, versions };
 }
 
 function assertAftermath(proof) {
@@ -292,6 +301,32 @@ function assertAftermath(proof) {
   if (proof.allocations.length !== 4 || proof.allocations.some((row) => row.released !== true || row.status !== "unconfigured")) {
     fail("allocation aftermath is not four released unconfigured fixtures");
   }
+  same(
+    proof.plans,
+    [
+      { code: "basic", active: false },
+      { code: "premium", active: false },
+      { code: "pro", active: false },
+      { code: "property_licence", active: true },
+    ],
+    "plans",
+  );
+  same(
+    proof.versions,
+    [
+      {
+        id: PRICE_VERSION,
+        plan_code: "property_licence",
+        currency: "EUR",
+        amount_minor: 17900,
+        billing_interval: "month",
+        interval_count: 1,
+        purchasable: true,
+        retired: false,
+      },
+    ],
+    "versions",
+  );
 }
 
 async function hotelRow(client, hotelId) {
