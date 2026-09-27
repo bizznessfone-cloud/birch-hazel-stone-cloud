@@ -197,7 +197,13 @@ try {
     globalThis.fetch = async (input, init) => {
       const href = String(input);
       if (href.startsWith("https://api.stripe.com/")) {
-        const params = new URLSearchParams(typeof init?.body === "string" ? init.body : "");
+        const rawBody =
+          typeof init?.body === "string"
+            ? init.body
+            : init?.body instanceof URLSearchParams
+              ? init.body.toString()
+              : "";
+        const params = new URLSearchParams(rawBody);
         captured.push({
           path: href.slice("https://api.stripe.com".length),
           params: Object.fromEntries(params.entries()),
