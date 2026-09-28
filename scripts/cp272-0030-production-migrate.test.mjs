@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { test } from "node:test";
 import { ACCEPTED_LEDGER, AUTHORISED_PENDING, isAuthorisedPending, evaluatePreflight } from "./production-db-preflight.mjs";
-import { evaluateMigrationBaseline } from "./production-db-migrate.mjs";
+import { evaluateMigrationBaseline, LEDGER_CURRENT } from "./production-db-migrate.mjs";
 import {
   ALREADY_APPLIED,
   APPLIED_VERIFIED,
@@ -103,16 +103,19 @@ function facts(overrides = {}) {
   };
 }
 
-test("0030 digest is pinned and 0001-0029 stay accepted, not this migration", () => {
+test("0030 digest is pinned, accepted, and the controller ledger stays frozen at 0001-0029", () => {
   const hash = createHash("sha256").update(sql).digest("hex");
   assert.equal(hash, TARGET_DIGEST);
   assert.equal(REVIEWED_DIGESTS[TARGET_MIGRATION], TARGET_DIGEST);
-  assert.deepEqual(REQUIRED_LEDGER, ACCEPTED_LEDGER);
-  assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), false);
-  assert.equal(ACCEPTED_LEDGER.at(-1), "0029_cp272_domain_a_checkout_claims.sql");
+  assert.deepEqual(REQUIRED_LEDGER, ACCEPTED_LEDGER.filter((name) => name !== TARGET_MIGRATION));
+  assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), true);
+  assert.equal(ACCEPTED_LEDGER.at(-1), TARGET_MIGRATION);
+  assert.notDeepEqual(REQUIRED_LEDGER, [...ACCEPTED_LEDGER]);
+  assert.equal(REQUIRED_LEDGER.at(-1), "0029_cp272_domain_a_checkout_claims.sql");
+  assert.equal(REQUIRED_LEDGER.includes(TARGET_MIGRATION), false);
   assert.doesNotMatch(src, /REQUIRED_LEDGER\s*=\s*\[\s*\.\.\.ACCEPTED_LEDGER/);
-  assert.deepEqual(AUTHORISED_PENDING, [TARGET_MIGRATION]);
-  assert.equal(isAuthorisedPending(TARGET_MIGRATION), true);
+  assert.deepEqual(AUTHORISED_PENDING, []);
+  assert.equal(isAuthorisedPending(TARGET_MIGRATION), false);
   assert.equal(isAuthorisedPending("0030_later.sql"), false);
   assert.equal(isAuthorisedPending("0031_later.sql"), false);
   assert.match(prior, /returning id, booking_id, amount_minor, currency, status, stripe_checkout_session_id, stripe_checkout_url/);
@@ -281,14 +284,14 @@ test("runSingleUse0030 already-applied path does not call mutate", async () => {
   assert.equal(mutations, 0);
 });
 
-test("Gate B keeps 0030 pending and the generic migrator still applies nothing", () => {
+test("Gate B accepts applied 0030 and the generic migrator still applies nothing", () => {
   const gate = evaluatePreflight({
     database: "neondb",
     currentUser: "neondb_owner",
     sessionUser: "neondb_owner",
     ledger: [...ACCEPTED_LEDGER],
     ledgerReadable: true,
-    sourceMigrations: [...ACCEPTED_LEDGER, TARGET_MIGRATION],
+    sourceMigrations: [...ACCEPTED_LEDGER],
     authTables: { user: "PRESENT", session: "PRESENT", account: "PRESENT", verification: "PRESENT" },
     aetherAppExists: true,
     occupancy,
@@ -296,12 +299,12 @@ test("Gate B keeps 0030 pending and the generic migrator still applies nothing",
     hotel: { code: "demo-kos", status: "live" },
   });
   assert.equal(gate.ok, true);
-  assert.deepEqual(gate.pending, [TARGET_MIGRATION]);
-  assert.equal(gate.ledger.includes(TARGET_MIGRATION), false);
+  assert.deepEqual(gate.pending, []);
+  assert.equal(gate.ledger.includes(TARGET_MIGRATION), true);
   const generic = evaluateMigrationBaseline(gate);
-  assert.equal(generic.ok, false);
+  assert.equal(generic.ok, true);
   assert.equal(generic.migrated, false);
-  assert.match(generic.verdict, /NO GENERIC PRODUCTION MIGRATION AUTHORISED/);
+  assert.equal(generic.verdict, LEDGER_CURRENT);
 
   const extra = evaluatePreflight({
     database: "neondb",
@@ -309,7 +312,7 @@ test("Gate B keeps 0030 pending and the generic migrator still applies nothing",
     sessionUser: "neondb_owner",
     ledger: [...ACCEPTED_LEDGER],
     ledgerReadable: true,
-    sourceMigrations: [...ACCEPTED_LEDGER, TARGET_MIGRATION, "0031_later.sql"],
+    sourceMigrations: [...ACCEPTED_LEDGER, "0031_later.sql"],
     authTables: { user: "PRESENT", session: "PRESENT", account: "PRESENT", verification: "PRESENT" },
     aetherAppExists: true,
     occupancy,

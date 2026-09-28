@@ -18,7 +18,7 @@ GitHub is authoritative for application source. Living status: **`BUILD_STATE.md
 | Fixture policy | **`docs/FIXTURE_POLICY.md`** |
 | Production | Vercel `scan-book-go` / last observed `dpl_FmUosqz2wy7aCT51rNjdanJnuviZ` READY |
 | Alias | `https://scan-book-go.vercel.app` |
-| Migrations | Production Neon **0001–0029**. Gate B accepted ledger **0001–0029**. `AUTHORISED_PENDING=["0030_cp272_fix_prepare_booking_payment.sql"]` source review only, not applied. 0029 digest `e5897eda1a4f3c8c4025e16235b9d11a677b3cc7994934058142934d4dea7adc` applied (GHA 36404482927). Temporary apply workflow **RETIRED**. Claim table empty. Checkout not integrated. Commerce **test**, not live. |
+| Migrations | Production Neon **0001–0030**. Gate B accepted ledger **0001–0030**. `AUTHORISED_PENDING=[]`. 0030 digest `9dec121ac28b8bcca5554576816eb8c764d50f56b6b97c9f0199e0b926e8643f` applied (GHA 36448160139). Temporary 0030 apply workflow **RETIRED**. 0029 digest `e5897eda1a4f3c8c4025e16235b9d11a677b3cc7994934058142934d4dea7adc` applied (GHA 36404482927). Claim table empty. Checkout not integrated. Booking payments 0. Commerce **test**, not live. |
 
 `cp17-known-good` (`45e171a23037b7c94005018cd2126033a449d6f0`) is an **immutable historical tag**. It is **not** current `main`. Checking it out would roll the product backwards.
 

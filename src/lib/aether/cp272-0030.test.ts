@@ -68,14 +68,14 @@ async function insertBooking(
   return id;
 }
 
-test("0030 is reviewed pending and does not edit 0021 or Domain A", () => {
+test("0030 is accepted history and does not edit 0021 or Domain A", () => {
   const preflight = readFileSync(join(root, "scripts/production-db-preflight.mjs"), "utf8");
   assert.equal(
     createHash("sha256").update(SQL).digest("hex"),
     "9dec121ac28b8bcca5554576816eb8c764d50f56b6b97c9f0199e0b926e8643f",
   );
-  assert.match(preflight, /AUTHORISED_PENDING = \[\s*"0030_cp272_fix_prepare_booking_payment\.sql",\s*\]/);
-  assert.match(preflight, /"0029_cp272_domain_a_checkout_claims.sql",\n\];/);
+  assert.match(preflight, /AUTHORISED_PENDING = \[\s*\];/);
+  assert.match(preflight, /"0030_cp272_fix_prepare_booking_payment.sql",\n\];/);
   assert.match(PRIOR, /returning id, booking_id, amount_minor, currency, status, stripe_checkout_session_id, stripe_checkout_url/);
   assert.match(SQL, /public\.sbg_booking_payments\.booking_id/);
   assert.match(SQL, /#variable_conflict use_column/);

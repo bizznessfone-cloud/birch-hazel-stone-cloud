@@ -2,8 +2,8 @@
 /**
  * CP25E generic production migrator — RETIRED as an apply path (CP26A.2C).
  *
- * Accepted Production history is 0001–0029.
- * 0030 may be Gate B authorised pending. This script still never applies SQL
+ * Accepted Production history is 0001–0030.
+ * Nothing is Gate B authorised pending. This script still never applies SQL
  * and never connects to Production. Future migrations need a dedicated
  * single-use controller plus explicit checkpoint authorisation.
  *

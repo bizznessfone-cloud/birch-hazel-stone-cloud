@@ -86,13 +86,14 @@ async function counts(pg: PGlite) {
   };
 }
 
-test("0029 is the only reviewed pending migration and does not touch commerce rows", () => {
+test("0029 is accepted history and does not touch commerce rows", () => {
   const files = readdirSync(join(root, "migrations")).filter((name) => name.endsWith(".sql")).sort();
   assert.equal(files.filter((name) => name.startsWith("0029")).join(","), MIGRATION);
   assert.equal(files.includes("0030_later.sql"), false);
   const preflight = readFileSync(join(root, "scripts/production-db-preflight.mjs"), "utf8");
-  assert.match(preflight, /"0030_cp272_fix_prepare_booking_payment\.sql"/);
-  assert.match(preflight, /"0029_cp272_domain_a_checkout_claims.sql",\n\];/);
+  assert.match(preflight, /"0029_cp272_domain_a_checkout_claims.sql",/);
+  assert.match(preflight, /"0030_cp272_fix_prepare_booking_payment.sql",\n\];/);
+  assert.match(preflight, /AUTHORISED_PENDING = \[\s*\];/);
   assert.equal(
     createHash("sha256").update(SQL).digest("hex"),
     "e5897eda1a4f3c8c4025e16235b9d11a677b3cc7994934058142934d4dea7adc",

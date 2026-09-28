@@ -103,10 +103,16 @@ test("0029 digest is pinned and 0001-0028 are not edited by this controller", ()
   const hash = createHash("sha256").update(sql).digest("hex");
   assert.equal(hash, TARGET_DIGEST);
   assert.equal(REVIEWED_DIGESTS[TARGET_MIGRATION], TARGET_DIGEST);
-  assert.deepEqual(REQUIRED_LEDGER, ACCEPTED_LEDGER.filter((name) => name !== TARGET_MIGRATION));
-  assert.equal(ACCEPTED_LEDGER.at(-1), TARGET_MIGRATION);
+  assert.deepEqual(
+    REQUIRED_LEDGER,
+    ACCEPTED_LEDGER.filter(
+      (name) => name !== TARGET_MIGRATION && name !== "0030_cp272_fix_prepare_booking_payment.sql",
+    ),
+  );
+  assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), true);
+  assert.equal(ACCEPTED_LEDGER.at(-1), "0030_cp272_fix_prepare_booking_payment.sql");
   assert.equal(REQUIRED_LEDGER.includes(TARGET_MIGRATION), false);
-  assert.deepEqual(AUTHORISED_PENDING, ["0030_cp272_fix_prepare_booking_payment.sql"]);
+  assert.deepEqual(AUTHORISED_PENDING, []);
   assert.equal(isAuthorisedPending(TARGET_MIGRATION), false);
   assert.equal(isAuthorisedPending("0030_later.sql"), false);
   assert.doesNotMatch(src, /from "\.\/migrate\.mjs"/);

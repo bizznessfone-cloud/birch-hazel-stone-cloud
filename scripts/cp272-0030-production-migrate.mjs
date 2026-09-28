@@ -2,15 +2,15 @@
 /**
  * CP27.2 — single-use production controller for 0030 only.
  *
- * SOURCE REVIEW. Do not run this file in the source-review checkpoint.
+ * Applied once in Production (GHA 36448160139). Do not run this file again.
  * Applies migrations/0030_cp272_fix_prepare_booking_payment.sql and nothing else.
  * Never uses DATABASE_URL. Never prints secrets. Never calls Stripe.
  * Does not invoke the generic production migrator or any historical migration controller.
  *
  * REQUIRED_LEDGER is the frozen pre-apply pin (0001–0029). It must not follow
- * Gate B after 0030 is later accepted. Re-running a valid installed contract
+ * Gate B after 0030 is accepted. Re-running a valid installed contract
  * must return "0030 ALREADY APPLIED — NO MUTATION" and must not rewrite SQL.
- * There is no dispatch workflow. Do not create one.
+ * The temporary dispatch workflow is retired. Do not recreate it.
  */
 import { createHash } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";

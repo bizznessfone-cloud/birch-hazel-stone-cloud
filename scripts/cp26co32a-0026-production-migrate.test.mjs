@@ -321,8 +321,8 @@ test("canonical 0026 digest is pinned and 0001-0025 digests match", () => {
   assert.equal(assertMigrationFile(canonicalFile()).ok, true);
   assert.equal(REQUIRED_CONFIRMATION, "APPLY-0026");
   assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), true);
-  assert.equal(ACCEPTED_LEDGER.at(-1), "0029_cp272_domain_a_checkout_claims.sql");
-  assert.deepEqual(AUTHORISED_PENDING, ["0030_cp272_fix_prepare_booking_payment.sql"]);
+  assert.equal(ACCEPTED_LEDGER.at(-1), "0030_cp272_fix_prepare_booking_payment.sql");
+  assert.deepEqual(AUTHORISED_PENDING, []);
   assert.equal(isAuthorisedPending(TARGET_MIGRATION), false);
   assert.equal(REQUIRED_LEDGER.at(-1), "0025_cp26co2_platform_owners.sql");
   assert.equal(REQUIRED_LEDGER.includes(TARGET_MIGRATION), false);
@@ -702,8 +702,8 @@ test("apply failure rolls back the transaction and redacts secrets", async () =>
 
 test("Gate B accepts applied 0026 inside 0001-0028; build and the npm alias do not apply 0026", () => {
   assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), true);
-  assert.equal(ACCEPTED_LEDGER.at(-1), "0029_cp272_domain_a_checkout_claims.sql");
-  assert.deepEqual(AUTHORISED_PENDING, ["0030_cp272_fix_prepare_booking_payment.sql"]);
+  assert.equal(ACCEPTED_LEDGER.at(-1), "0030_cp272_fix_prepare_booking_payment.sql");
+  assert.deepEqual(AUTHORISED_PENDING, []);
   assert.equal(isAuthorisedPending(TARGET_MIGRATION), false);
   assert.equal(isAuthorisedPending("0027_later.sql"), false);
   const current = evaluatePreflight({
@@ -741,7 +741,7 @@ test("Gate B accepts applied 0026 inside 0001-0028; build and the npm alias do n
   assert.doesNotMatch(pkg.scripts.build, /cp26co32a-0026/);
   assert.equal(pkg.scripts["db:migrate:0026"], undefined);
   const genericSrc = readFileSync(join(here, "production-db-migrate.mjs"), "utf8");
-  assert.match(genericSrc, /0001–0029/);
+  assert.match(genericSrc, /0001–0030/);
   assert.doesNotMatch(genericSrc, new RegExp(TARGET_MIGRATION));
 });
 

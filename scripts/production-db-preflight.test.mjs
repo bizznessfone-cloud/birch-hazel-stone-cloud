@@ -116,7 +116,7 @@ test("accepted 0001-0028 ledger with empty pending passes", () => {
   assert.deepEqual(historicalSourceMigrations(SOURCE), LEDGER_0017);
   assert.equal(ACCEPTED_LEDGER.includes("0024_cp26b2_ordered_billing_events.sql"), true);
   assert.equal(ACCEPTED_LEDGER.includes("0027_cp26co41_organisation_property_licence.sql"), true);
-  assert.equal(ACCEPTED_LEDGER.at(-1), "0029_cp272_domain_a_checkout_claims.sql");
+  assert.equal(ACCEPTED_LEDGER.at(-1), "0030_cp272_fix_prepare_booking_payment.sql");
 });
 
 test("pending 0024 is stale, not a newly authorised migration", () => {
@@ -190,21 +190,22 @@ test("no pending migration is automatically authorised", () => {
   assert.equal(isAuthorisedPending("0026_later.sql"), false);
   assert.equal(isAuthorisedPending("0027_later.sql"), false);
   assert.equal(isAuthorisedPending("0029_cp272_domain_a_checkout_claims.sql"), false);
-  assert.equal(isAuthorisedPending("0030_cp272_fix_prepare_booking_payment.sql"), true);
+  assert.equal(isAuthorisedPending("0030_cp272_fix_prepare_booking_payment.sql"), false);
   assert.equal(isAuthorisedPending("0030_later.sql"), false);
   assert.equal(isAuthorisedPending("0031_later.sql"), false);
 });
 
-test("0029 is accepted history and 0030 stays fail-closed", () => {
+test("0029 and 0030 are accepted history and 0031 stays fail-closed", () => {
   const current = evaluatePreflight(baseFacts());
   assert.equal(current.ok, true);
   assert.equal(current.verdict, PASS_VERDICT);
   assert.deepEqual(current.pending, []);
   assert.equal(current.ledger.includes("0029_cp272_domain_a_checkout_claims.sql"), true);
+  assert.equal(current.ledger.includes("0030_cp272_fix_prepare_booking_payment.sql"), true);
 
   const missing = evaluatePreflight(
     baseFacts({
-      ledger: ACCEPTED_LEDGER.filter((name) => name !== "0029_cp272_domain_a_checkout_claims.sql"),
+      ledger: ACCEPTED_LEDGER.filter((name) => name !== "0030_cp272_fix_prepare_booking_payment.sql"),
     }),
   );
   assert.equal(missing.ok, false);
@@ -212,11 +213,11 @@ test("0029 is accepted history and 0030 stays fail-closed", () => {
 
   const extra = evaluatePreflight(
     baseFacts({
-      sourceMigrations: [...SOURCE, "0030_later.sql"],
+      sourceMigrations: [...SOURCE, "0030_later.sql", "0031_later.sql"],
     }),
   );
   assert.equal(extra.ok, false);
-  assert.deepEqual(extra.unexpectedPending, ["0030_later.sql"]);
+  assert.deepEqual(extra.unexpectedPending, ["0030_later.sql", "0031_later.sql"]);
 });
 
 test("auth classification A/B pass and C/D fail", () => {
