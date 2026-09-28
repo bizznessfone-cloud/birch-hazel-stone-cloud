@@ -1,6 +1,6 @@
-# TEMPORARY single-use CP27.2 Production apply for migration 0030.
-# Delete this file immediately after one successful verified apply.
-# Not a permanent mutation surface. Does not call Stripe or Vercel.
+# TEMPORARY read-only verification after the single 0030 apply.
+# The mutation step has been removed. Delete this file after the read.
+# Does not call Stripe or Vercel. Does not migrate.
 name: CP27.2 0030 single-use Production apply
 
 on:
@@ -19,8 +19,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  apply:
-    name: apply-0030
+  verify:
+    name: verify-0030-readonly
     runs-on: ubuntu-latest
     steps:
       - name: Require confirmation APPLY-0030
@@ -48,8 +48,143 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Apply migration 0030 only
+      - name: Read-only 0030 verification
         env:
           AETHER_DATABASE_OWNER_URL: ${{ secrets.AETHER_DATABASE_OWNER_URL }}
-          CP272_CONFIRMATION: ${{ inputs.confirmation }}
-        run: node scripts/cp272-0030-production-migrate.mjs
+        run: |
+          node --input-type=module <<'NODE'
+          import pg from "pg";
+          const url = String(process.env.AETHER_DATABASE_OWNER_URL ?? "").trim();
+          const redact = (text) => String(text ?? "")
+            .replace(/(?:postgres(?:ql)?:\/\/)\S+/gi, "postgres://redacted")
+            .replace(/AETHER_DATABASE_OWNER_URL\S*/gi, "AETHER_DATABASE_OWNER_URL=redacted");
+          const say = (line) => console.log(line);
+          if (!url) {
+            say("BLOCKED — AETHER_DATABASE_OWNER_URL is not configured");
+            process.exit(1);
+          }
+          say("AETHER_DATABASE_OWNER_URL: PRESENT");
+          say("mode: READ ONLY");
+          const pool = new pg.Pool({ connectionString: url, max: 1 });
+          const client = await pool.connect();
+          try {
+            await client.query("BEGIN READ ONLY");
+            const mode = await client.query("select current_setting('transaction_read_only') as mode");
+            if (mode.rows[0]?.mode !== "on") throw new Error("snapshot transaction is not read only");
+            const id = (await client.query("select current_database() as database, current_user, session_user")).rows[0];
+            say(`database: ${id.database}`);
+            say(`current_user: ${id.current_user}`);
+            say(`session_user: ${id.session_user}`);
+            const ledger = (await client.query("select name from _migrations order by name")).rows.map((row) => row.name);
+            say("ledger:");
+            for (const name of ledger) say(`  ${name}`);
+            const counts = ledger.reduce((acc, name) => ((acc[name] = (acc[name] ?? 0) + 1), acc), {});
+            say(`0030_count: ${counts["0030_cp272_fix_prepare_booking_payment.sql"] ?? 0}`);
+            say(`0031_count: ${ledger.filter((name) => name >= "0031").length}`);
+            const fn = (await client.query(
+              `select r.rolname as owner, p.prosecdef, p.proconfig::text as proconfig,
+                      pg_get_function_identity_arguments(p.oid) as ident,
+                      pg_get_function_result(p.oid) as result,
+                      pg_get_functiondef(p.oid) as def
+                 from pg_proc p
+                 join pg_namespace n on n.oid = p.pronamespace
+                 join pg_roles r on r.oid = p.proowner
+                where p.oid = to_regprocedure('public.sbg_prepare_booking_payment(text)')`,
+            )).rows[0];
+            say(`function_present: ${fn ? "YES" : "NO"}`);
+            if (fn) {
+              const def = String(fn.def ?? "");
+              say(`function_owner: ${fn.owner}`);
+              say(`security_definer: ${fn.prosecdef === true ? "YES" : "NO"}`);
+              say(`proconfig: ${fn.proconfig}`);
+              say(`identity_arguments: ${fn.ident}`);
+              say(`result: ${fn.result}`);
+              say(`qualified_returning: ${def.includes("public.sbg_booking_payments.booking_id") ? "YES" : "NO"}`);
+              say(`variable_conflict: ${def.includes("#variable_conflict use_column") ? "YES" : "NO"}`);
+              say(`schema_qualified_bookings: ${def.includes("public.bookings") ? "YES" : "NO"}`);
+              say(`other_domain_b_function: ${/sbg_set_booking_checkout_session|sbg_apply_payment_event/.test(def) ? "YES" : "NO"}`);
+            }
+            const priv = (await client.query(
+              `select
+                 has_table_privilege('aether_app', 'public.sbg_booking_payments', 'SELECT') as app_select,
+                 has_table_privilege('aether_app', 'public.sbg_booking_payments', 'INSERT') as app_insert,
+                 has_table_privilege('aether_app', 'public.sbg_booking_payments', 'UPDATE') as app_update,
+                 has_table_privilege('aether_app', 'public.sbg_booking_payments', 'DELETE') as app_delete,
+                 has_function_privilege('public', 'public.sbg_prepare_booking_payment(text)', 'EXECUTE') as public_execute,
+                 has_function_privilege('aether_app', 'public.sbg_prepare_booking_payment(text)', 'EXECUTE') as app_execute,
+                 has_function_privilege('aether_runtime', 'public.sbg_prepare_booking_payment(text)', 'EXECUTE') as runtime_execute`,
+            )).rows[0];
+            say(`privileges: ${JSON.stringify(priv)}`);
+            const hotels = (await client.query("select code, status from hotels order by code")).rows;
+            say("hotels:");
+            for (const row of hotels) say(`  ${row.code}=${row.status}`);
+            const billing = (await client.query(
+              `select o.name, b.status, b.billing_interval, b.licensed_quantity,
+                      b.stripe_price_id
+                 from sbg_organisation_billing b
+                 join sbg_organisations o on o.id = b.organisation_id
+                order by o.name`,
+            )).rows;
+            say("organisation_billing:");
+            for (const row of billing) say(`  ${JSON.stringify(row)}`);
+            const alloc = (await client.query(
+              `select count(*)::int as total,
+                      count(*) filter (where released_at is null)::int as active
+                 from sbg_property_licence_allocations`,
+            )).rows[0];
+            say(`allocations: ${JSON.stringify(alloc)}`);
+            const payments = (await client.query("select count(*)::int as n from sbg_booking_payments")).rows[0];
+            say(`booking_payments: ${payments.n}`);
+            const claims = (await client.query("select count(*)::int as n from sbg_domain_a_checkout_claims")).rows[0];
+            say(`claim_rows: ${claims.n}`);
+            const prices = (await client.query(
+              `select plan_code, currency, amount_minor, billing_interval, interval_count,
+                      purchasable, retired_at is not null as retired
+                 from sbg_saas_price_versions
+                order by plan_code, amount_minor`,
+            )).rows;
+            say("price_versions:");
+            for (const row of prices) say(`  ${JSON.stringify(row)}`);
+            const maps = (await client.query(
+              `select environment, status, stripe_price_id
+                 from sbg_saas_stripe_mappings
+                order by environment, stripe_price_id`,
+            )).rows;
+            say("stripe_mappings:");
+            for (const row of maps) say(`  ${JSON.stringify(row)}`);
+            const locks = (await client.query(
+              "select live_mapping_enabled, live_checkout_enabled from sbg_saas_commerce_locks where id = 1",
+            )).rows[0];
+            say(`commerce_locks: ${JSON.stringify(locks ?? null)}`);
+            const roles = (await client.query(
+              `select rolname, rolsuper, rolbypassrls
+                 from pg_roles
+                where rolname in ('aether_app', 'aether_runtime', 'neondb_owner', 'neon_superuser')
+                order by rolname`,
+            )).rows;
+            say("roles:");
+            for (const row of roles) say(`  ${JSON.stringify(row)}`);
+            const members = (await client.query(
+              `select member.rolname as member, role.rolname as role
+                 from pg_auth_members m
+                 join pg_roles member on member.oid = m.member
+                 join pg_roles role on role.oid = m.roleid
+                where role.rolname = 'neon_superuser'
+                   or member.rolname in ('aether_app', 'aether_runtime', 'neondb_owner')
+                order by member.rolname, role.rolname`,
+            )).rows;
+            say("role_memberships:");
+            for (const row of members) say(`  ${row.member} -> ${row.role}`);
+            await client.query("ROLLBACK");
+            say("snapshot_complete: read-only");
+            say("stripe: UNTOUCHED");
+            say("functional_invocation: NOT PERFORMED");
+          } catch (err) {
+            try { await client.query("ROLLBACK"); } catch { /* keep original */ }
+            say(redact(err?.message || err));
+            process.exit(1);
+          } finally {
+            client.release();
+            await pool.end();
+          }
+          NODE
