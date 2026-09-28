@@ -34,13 +34,13 @@ Living status: **`BUILD_STATE.md`** (repo root).
 | CP26 FINALISATION | **PASS** — Production ledger **0001–0028**; dormant organisation property-licence cutover. Finalisation snapshot had commerce OFF. That is not the exit-gate state |
 | CP26 STRIPE TEST | **PASS** |
 | CP26 EXIT GATE | **PASS** — **CP26 COMPLETE** |
-| **Next product checkpoint** | **CP27 — SECURITY HARDENING**. Not started. The O4–O11 chain is superseded and is not the route. Only **CP31** activates LIVE commerce |
+| **Next product checkpoint** | **CP27.2 — 0029 source review.** Pending, not applied. Do not integrate checkout yet. Only **CP31** activates LIVE commerce |
 | Forward roadmap | **[ROADMAP.md](ROADMAP.md)** (CP26–CP31) |
 | Commercial catalogue | **[COMMERCIAL_CATALOGUE.md](COMMERCIAL_CATALOGUE.md)** |
 | Owner architecture | **[OWNER_CONTROL_PLANE.md](OWNER_CONTROL_PLANE.md)** |
 | Fixture policy | **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)** |
 | Production | Vercel `scan-book-go` last observed `dpl_FmUosqz2wy7aCT51rNjdanJnuviZ` READY |
-| Migrations | source and Production **0001–0028**; Gate B **0001–0028**; `AUTHORISED_PENDING=[]`; 0027 digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef` applied (GHA 36251190175); 0028 digest `35626cb2d3b21a076f4a2cb982b9d0983610620fb21dbf7f3e94eb4c0576a02d` applied (GHA 36254890554); 0025, 0027, and 0028 workflows **RETIRED**; one price version EUR 17900 month; one verified TEST mapping; no LIVE mapping; commerce **test** |
+| Migrations | Production **0001–0028**; source includes reviewed pending **0029** (not applied); Gate B accepted ledger **0001–0028**; `AUTHORISED_PENDING=["0029_cp272_domain_a_checkout_claims.sql"]`; 0029 digest `e5897eda1a4f3c8c4025e16235b9d11a677b3cc7994934058142934d4dea7adc`; no 0029 apply workflow; 0027 digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef` applied (GHA 36251190175); 0028 digest `35626cb2d3b21a076f4a2cb982b9d0983610620fb21dbf7f3e94eb4c0576a02d` applied (GHA 36254890554); 0025, 0027, and 0028 workflows **RETIRED**; one price version EUR 17900 month; one verified TEST mapping; no LIVE mapping; commerce **test** |
 
 This file’s remainder is a **historical Checkpoint 10** record only.
 

@@ -42,7 +42,7 @@ Environment (names/presence only; never secret values):
 
 ### Database
 
-- Source and Production Neon migrations: **0001–0028**. Gate B **0001–0028**. `AUTHORISED_PENDING=[]`
+- Source migrations: **0001–0029**. Production Neon applied **0001–0028**. Gate B accepted ledger **0001–0028**. `AUTHORISED_PENDING=["0029_cp272_domain_a_checkout_claims.sql"]` (reviewed, not applied)
 - 0028 property-licence catalogue (`property_licence` active; basic/pro/premium inactive; one price version EUR 17900 month `b13f9445-d27a-4e7d-8128-a2238906ce7c`; one verified TEST mapping `price_1UKGWjFHnHXHuPOwO50TJS93`; no LIVE mapping; locks false/false; digest `35626cb2d3b21a076f4a2cb982b9d0983610620fb21dbf7f3e94eb4c0576a02d`; apply run 36254890554; workflow retired)
 - 0027 organisation property-licence persistence (digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef`; apply run 36251190175; workflow retired; one TEST organisation; licensed 3; active allocations 0)
 - 0026 commercial catalogue (digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446`; apply run 36135836457; workflow retired)

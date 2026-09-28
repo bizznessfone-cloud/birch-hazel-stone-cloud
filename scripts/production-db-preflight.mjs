@@ -75,10 +75,14 @@ export const REVIEWED_DIGESTS = {
     "1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef",
   "0028_cp26fin_property_licence_catalogue.sql":
     "35626cb2d3b21a076f4a2cb982b9d0983610620fb21dbf7f3e94eb4c0576a02d",
+  "0029_cp272_domain_a_checkout_claims.sql":
+    "e5897eda1a4f3c8c4025e16235b9d11a677b3cc7994934058142934d4dea7adc",
 };
 
-/** No pending migration is automatically authorised. Future files need their own checkpoint. */
-export const AUTHORISED_PENDING = [];
+/** Reviewed source that Production has not applied. Nothing else is authorised. */
+export const AUTHORISED_PENDING = [
+  "0029_cp272_domain_a_checkout_claims.sql",
+];
 
 export function isAuthorisedPending(name) {
   return AUTHORISED_PENDING.includes(String(name));

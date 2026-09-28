@@ -189,6 +189,28 @@ test("no pending migration is automatically authorised", () => {
   assert.equal(isAuthorisedPending("0026_cp26co3_commercial_catalogue.sql"), false);
   assert.equal(isAuthorisedPending("0026_later.sql"), false);
   assert.equal(isAuthorisedPending("0027_later.sql"), false);
+  assert.equal(isAuthorisedPending("0029_cp272_domain_a_checkout_claims.sql"), true);
+  assert.equal(isAuthorisedPending("0030_later.sql"), false);
+});
+
+test("reviewed pending 0029 does not count as applied and 0030 stays fail-closed", () => {
+  const pending = evaluatePreflight(
+    baseFacts({
+      sourceMigrations: [...SOURCE, "0029_cp272_domain_a_checkout_claims.sql"],
+    }),
+  );
+  assert.equal(pending.ok, true);
+  assert.equal(pending.verdict, PASS_VERDICT);
+  assert.deepEqual(pending.pending, ["0029_cp272_domain_a_checkout_claims.sql"]);
+  assert.equal(pending.ledger.includes("0029_cp272_domain_a_checkout_claims.sql"), false);
+
+  const extra = evaluatePreflight(
+    baseFacts({
+      sourceMigrations: [...SOURCE, "0029_cp272_domain_a_checkout_claims.sql", "0030_later.sql"],
+    }),
+  );
+  assert.equal(extra.ok, false);
+  assert.deepEqual(extra.unexpectedPending, ["0030_later.sql"]);
 });
 
 test("auth classification A/B pass and C/D fail", () => {

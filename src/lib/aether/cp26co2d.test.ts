@@ -211,6 +211,7 @@ test("public and operator surfaces do not advertise the Owner control plane", ()
   assert.deepEqual(later, [
     "0027_cp26co41_organisation_property_licence.sql",
     "0028_cp26fin_property_licence_catalogue.sql",
+    "0029_cp272_domain_a_checkout_claims.sql",
   ]);
 });
 

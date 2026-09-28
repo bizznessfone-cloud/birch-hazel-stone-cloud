@@ -364,5 +364,6 @@ test("CP26C-O2 source: protected /owner shell, no commerce mutation, no Domain B
   const preflight = read("scripts/production-db-preflight.mjs");
   assert.match(preflight, /0024_cp26b2_ordered_billing_events\.sql/);
   assert.match(preflight, /0025_cp26co2_platform_owners\.sql/);
-  assert.match(preflight, /AUTHORISED_PENDING = \[\]/);
+  assert.match(preflight, /AUTHORISED_PENDING = \[/);
+  assert.match(preflight, /0029_cp272_domain_a_checkout_claims\.sql/);
 });

@@ -74,6 +74,7 @@ test("0026 exists once and 0001-0025 are unchanged versus the source commit", ()
     migrationName,
     "0027_cp26co41_organisation_property_licence.sql",
     "0028_cp26fin_property_licence_catalogue.sql",
+    "0029_cp272_domain_a_checkout_claims.sql",
   ]);
   for (const name of changed) assert.ok(present.includes(name.slice("migrations/".length)), name);
   for (const [name, digest] of Object.entries(REVIEWED_DIGESTS)) {
@@ -88,11 +89,12 @@ test("Gate B accepts 0001-0028 and the generic migrator still never applies SQL"
   assert.equal(ACCEPTED_LEDGER.includes(migrationName), true);
   assert.equal(ACCEPTED_LEDGER.includes("0027_cp26co41_organisation_property_licence.sql"), true);
   assert.equal(ACCEPTED_LEDGER.includes("0028_cp26fin_property_licence_catalogue.sql"), true);
-  assert.deepEqual(AUTHORISED_PENDING, []);
+  assert.deepEqual(AUTHORISED_PENDING, ["0029_cp272_domain_a_checkout_claims.sql"]);
   assert.equal(isAuthorisedPending(migrationName), false);
   assert.equal(isAuthorisedPending("0027_cp26co41_organisation_property_licence.sql"), false);
   assert.equal(isAuthorisedPending("0028_cp26fin_property_licence_catalogue.sql"), false);
-  assert.equal(isAuthorisedPending("0027_later.sql"), false);
+  assert.equal(isAuthorisedPending("0029_cp272_domain_a_checkout_claims.sql"), true);
+  assert.equal(isAuthorisedPending("0030_later.sql"), false);
 
   const acceptedOnly = evaluatePreflight({
     ...acceptedFacts(),
@@ -106,8 +108,12 @@ test("Gate B accepts 0001-0028 and the generic migrator still never applies SQL"
 
   const live = evaluatePreflight(acceptedFacts());
   assert.equal(live.ok, true);
-  assert.deepEqual(live.pending, []);
+  assert.deepEqual(live.pending, ["0029_cp272_domain_a_checkout_claims.sql"]);
   assert.equal(live.unexpectedPending, undefined);
+  const liveBaseline = evaluateMigrationBaseline(live);
+  assert.equal(liveBaseline.ok, false);
+  assert.equal(liveBaseline.migrated, false);
+  assert.match(liveBaseline.verdict, /NO GENERIC PRODUCTION MIGRATION AUTHORISED/);
 
   const future = evaluatePreflight({
     ...acceptedFacts(),
@@ -126,7 +132,8 @@ test("Gate B accepts 0001-0028 and the generic migrator still never applies SQL"
   });
   assert.equal(applied, 0);
   assert.equal(guarded.migrated, false);
-  assert.equal(guarded.ok, true);
+  assert.equal(guarded.ok, false);
+  assert.match(guarded.verdict, /NO GENERIC PRODUCTION MIGRATION AUTHORISED/);
 });
 
 test("generic migrator cannot apply 0026 and the spent dispatch surface is gone", () => {

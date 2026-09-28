@@ -6,7 +6,7 @@ This file describes **current reality**, not intended future state.
 
 **CP26 FINALISATION — PASS. CP26 STRIPE TEST — PASS. CP26 EXIT GATE — PASS. CP26 — COMPLETE.**
 
-Production ledger is **0001–0028** exactly once. Gate B accepts **0001–0028**. `AUTHORISED_PENDING=[]`. The generic Production migrator stays fail-closed and never applies SQL. `npm run build` does not migrate. Spent single-use mutation workflows, including **0025** and the one-shot CP26 exit-gate read, are **RETIRED**. Their controller scripts remain as audit history. Permanent read-only Gate B (`.github/workflows/production-database.yml`) remains.
+Production ledger is **0001–0028** exactly once. Gate B accepts **0001–0028** and treats source **0029** as the only reviewed pending migration. `AUTHORISED_PENDING=["0029_cp272_domain_a_checkout_claims.sql"]`. 0029 is **not applied**. The generic Production migrator stays fail-closed and never applies SQL. `npm run build` does not migrate. Spent single-use mutation workflows, including **0025** and the one-shot CP26 exit-gate read, are **RETIRED**. Their controller scripts remain as audit history. Permanent read-only Gate B (`.github/workflows/production-database.yml`) remains. There is no 0029 apply workflow.
 
 Commercial model: one product, `property_licence` (SCAN BOOK GO Property Licence). The published Production price version is `b13f9445-d27a-4e7d-8128-a2238906ce7c`, **EUR 17900**, month, interval_count 1. Self-service quantity is **1–49**. **50+** is Enterprise / contact sales, not a second product or an automatic discount. `basic` / `pro` / `premium` are inactive historical plans. Application source does not hard-code 17900.
 
@@ -16,7 +16,7 @@ Organisation billing is active, licensed_quantity **3**, price version as above,
 
 Licence balance: licensed **3**, active allocations **0**, available **3**. Released historical rows for `cp26-licence-a`, `cp26-licence-b`, `cp26-licence-c`, and `cp26-licence-d` remain. Those hotels stay **unconfigured**. Protected hotels were not repurposed.
 
-**Next: CP27 — SECURITY HARDENING. Not started.** Do not resume CP26C.3. The O4–O11 chain stays superseded. Former **O3.4** stays superseded.
+**Next: CP27.2 — 0029 SOURCE REVIEW.** Migration `0029_cp272_domain_a_checkout_claims.sql` is reviewed and pending. It is not applied. M5, M6 application integration, M7, and M8 are not started. Do not resume CP26C.3. The O4–O11 chain stays superseded. Former **O3.4** stays superseded.
 
 The section below is the historical path through CP26B and finalisation. Present-tense claims there that commerce is OFF, that prices are undefined, or that CP26 STRIPE TEST is next are the state **at that earlier checkpoint**.
 
@@ -78,7 +78,7 @@ Migration **0025** is **Production-applied**. Its dispatch workflow is **RETIRED
 | Fixture policy | [`docs/FIXTURE_POLICY.md`](docs/FIXTURE_POLICY.md) |
 | Local harness | `src/lib/aether/cp26a4-fixture.ts` (tests only; not a runtime import) |
 | Domain A | TEST commerce proven for one allowlisted organisation; not LIVE. Only **CP31** may activate LIVE commerce |
-| Accepted Production ledger | **0001–0028** (Gate B source pin **0001–0028**; `AUTHORISED_PENDING=[]`) |
+| Accepted Production ledger | **0001–0028** applied. Source **0029** is reviewed pending and not applied. `AUTHORISED_PENDING=["0029_cp272_domain_a_checkout_claims.sql"]` |
 | 0024 digest | `23cdc44037e0e886444477fdb693536a95c32b6080984de4076cc7a5f71d13c0` |
 | 0025 digest | `575aabcb7322fc8ca63c8a3dd137d358f76375f1777ed59cf04c1d98d6c066fd` |
 | 0026 file | `migrations/0026_cp26co3_commercial_catalogue.sql` |
@@ -147,8 +147,8 @@ Environment (names/presence only):
 
 | Layer | State |
 |---|---|
-| Source migrations | `0001`–`0028` present |
-| Production Neon | migrated through **0028** — pending **NONE** |
+| Source migrations | `0001`–`0029` present. Production applied through **0028** only |
+| Production Neon | migrated through **0028** — pending **0029** (reviewed, not applied) |
 | 0028 | `property_licence` active; basic/pro/premium inactive; one price version EUR 17900 month; one verified TEST mapping; LIVE locks false/false |
 | 0027 | organisation, member, organisation billing, allocation, and derived licence balance installed; one organisation billing row; four released allocation rows; active allocations 0 |
 | 0026 | commercial catalogue schema installed; historical tier rows retained and now inactive |
@@ -158,7 +158,7 @@ Environment (names/presence only):
 | Owner / migration plane | `AETHER_DATABASE_OWNER_URL` → `neondb_owner` (not on Vercel) |
 | Preview | PGLite; `aether_runtime` SET ROLE only |
 | Application build | `npm run build` does **not** migrate |
-| Permanent Gate B | `.github/workflows/production-database.yml` (read-only); accepted ledger **0001–0028**; `AUTHORISED_PENDING=[]` |
+| Permanent Gate B | `.github/workflows/production-database.yml` (read-only); accepted ledger **0001–0028**; `AUTHORISED_PENDING` is **0029 only**; Gate B must not treat 0029 as applied |
 
 Roles: `neondb_owner` = schema/migration owner; `aether_app` = production LOGIN; `aether_runtime` = PGLite/preview only. Production must not use SET ROLE or owner credentials as runtime.
 

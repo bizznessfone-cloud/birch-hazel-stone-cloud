@@ -70,7 +70,8 @@ test("0027 is accepted history and its SQL does not seed commerce or Domain B", 
     DIGEST_0026,
   );
   const preflight = read("scripts/production-db-preflight.mjs");
-  assert.match(preflight, /AUTHORISED_PENDING = \[\]/);
+  assert.match(preflight, /0029_cp272_domain_a_checkout_claims\.sql/);
+  assert.match(preflight, /AUTHORISED_PENDING = \[/);
   assert.equal(preflight.includes(MIGRATION), true);
   assert.equal(preflight.includes("0028_cp26fin_property_licence_catalogue.sql"), true);
   assert.doesNotMatch(sql, /create\s+or\s+replace\s+function\s+sbg_apply_billing_event/i);
