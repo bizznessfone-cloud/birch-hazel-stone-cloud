@@ -118,7 +118,8 @@ test("0030 digest is pinned and 0001-0029 stay accepted, not this migration", ()
   assert.match(prior, /returning id, booking_id, amount_minor, currency, status, stripe_checkout_session_id, stripe_checkout_url/);
   assert.match(sql, /public\.sbg_booking_payments\.booking_id/);
   assert.match(sql, /#variable_conflict use_column/);
-  assert.match(sql, /set search_path = pg_catalog, public/);
+  assert.match(src, /to_regprocedure\(\$1::text\)/);
+  assert.doesNotMatch(src, /identity_arguments\(p\.oid\) = 'text'/);
   assert.doesNotMatch(sql, /create or replace function[\s\S]*sbg_set_booking_checkout_session|create or replace function[\s\S]*sbg_apply_payment_event/);
   assert.doesNotMatch(sql, /grant\s+(insert|update|delete)/i);
   assert.doesNotMatch(sql.replace(/--.*$/gm, ""), /aether_runtime/);

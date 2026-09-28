@@ -84,7 +84,7 @@ export const IDENTITY_BLOCKED = "BLOCKED — DATABASE IDENTITY MISMATCH";
 export const OWNER_BLOCKED = "BLOCKED — OWNER IDENTITY MISMATCH";
 
 const ALLOWED_LEDGER = new Set([...REQUIRED_LEDGER, TARGET_MIGRATION]);
-const PREPARE_FN = "sbg_prepare_booking_payment(text)";
+const PREPARE_FN = "public.sbg_prepare_booking_payment(text)";
 
 export function sha256(bytes) {
   return createHash("sha256").update(bytes).digest("hex");
@@ -382,15 +382,13 @@ export async function inspect0030State(client, sourceMigrations) {
 
   const installed = (
     await client.query(
-      `select to_regprocedure($1) is not null as present,
+      `select p.oid is not null as present,
               p.prosecdef,
               p.proconfig,
               pg_get_functiondef(p.oid) as definition
          from pg_proc p
          join pg_namespace n on n.oid = p.pronamespace
-        where n.nspname = 'public'
-          and p.proname = 'sbg_prepare_booking_payment'
-          and pg_get_function_identity_arguments(p.oid) = 'text'`,
+        where p.oid = to_regprocedure($1::text)`,
       [PREPARE_FN],
     )
   ).rows[0];

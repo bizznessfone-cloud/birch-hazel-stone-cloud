@@ -33,10 +33,10 @@ jobs:
           fi
           echo "confirmation: ACCEPTED"
 
-      - name: Checkout authorised commit
+      - name: Checkout dispatched commit
         uses: actions/checkout@v4
         with:
-          ref: 0877978d5b26c2438de81097093fac7054481ddd
+          ref: ${{ github.sha }}
           persist-credentials: false
 
       - name: Setup Node
