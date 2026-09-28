@@ -106,7 +106,7 @@ test("0029 digest is pinned and 0001-0028 are not edited by this controller", ()
   assert.deepEqual(REQUIRED_LEDGER, ACCEPTED_LEDGER.filter((name) => name !== TARGET_MIGRATION));
   assert.equal(ACCEPTED_LEDGER.at(-1), TARGET_MIGRATION);
   assert.equal(REQUIRED_LEDGER.includes(TARGET_MIGRATION), false);
-  assert.deepEqual(AUTHORISED_PENDING, []);
+  assert.deepEqual(AUTHORISED_PENDING, ["0030_cp272_fix_prepare_booking_payment.sql"]);
   assert.equal(isAuthorisedPending(TARGET_MIGRATION), false);
   assert.equal(isAuthorisedPending("0030_later.sql"), false);
   assert.doesNotMatch(src, /from "\.\/migrate\.mjs"/);

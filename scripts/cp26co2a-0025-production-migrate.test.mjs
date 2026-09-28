@@ -670,7 +670,7 @@ test("Gate B accepts applied 0025 and still refuses generic pending", () => {
   assert.equal(isAuthorisedPending(TARGET_MIGRATION), false);
   assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), true);
   assert.equal(ACCEPTED_LEDGER.at(-1), "0029_cp272_domain_a_checkout_claims.sql");
-  assert.deepEqual(AUTHORISED_PENDING, []);
+  assert.deepEqual(AUTHORISED_PENDING, ["0030_cp272_fix_prepare_booking_payment.sql"]);
   const currentFacts = {
     database: "neondb",
     currentUser: "neondb_owner",

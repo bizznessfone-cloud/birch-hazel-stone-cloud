@@ -6,7 +6,7 @@ This file describes **current reality**, not intended future state.
 
 **CP26 FINALISATION — PASS. CP26 STRIPE TEST — PASS. CP26 EXIT GATE — PASS. CP26 — COMPLETE.**
 
-Production ledger is **0001–0029** exactly once. Gate B accepts **0001–0029**. `AUTHORISED_PENDING=[]`. 0029 (`sbg_domain_a_checkout_claims`) is **applied** (GHA [36404482927](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36404482927)). The claim table is empty. Checkout does not call it yet. M5, M7, and M8 are not implemented. The generic Production migrator stays fail-closed and never applies SQL. `npm run build` does not migrate. The temporary 0029 apply workflow is **RETIRED**. Permanent read-only Gate B (`.github/workflows/production-database.yml`) remains.
+Production ledger is **0001–0029** exactly once. Gate B accepts **0001–0029**. `AUTHORISED_PENDING` is exactly `0030_cp272_fix_prepare_booking_payment.sql` (source review only; not applied). 0029 (`sbg_domain_a_checkout_claims`) is **applied** (GHA [36404482927](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36404482927)). The claim table is empty. Checkout does not call it yet. M5, M6, M7, and M8 are not implemented. 0030 replaces only `sbg_prepare_booking_payment(text)` to remove 42702. The generic Production migrator stays fail-closed and never applies SQL. `npm run build` does not migrate. The temporary 0029 apply workflow is **RETIRED**. There is no 0030 dispatch workflow. Permanent read-only Gate B (`.github/workflows/production-database.yml`) remains.
 
 Commercial model: one product, `property_licence` (SCAN BOOK GO Property Licence). The published Production price version is `b13f9445-d27a-4e7d-8128-a2238906ce7c`, **EUR 17900**, month, interval_count 1. Self-service quantity is **1–49**. **50+** is Enterprise / contact sales, not a second product or an automatic discount. `basic` / `pro` / `premium` are inactive historical plans. Application source does not hard-code 17900.
 
@@ -16,7 +16,7 @@ Organisation billing is active, licensed_quantity **3**, price version as above,
 
 Licence balance: licensed **3**, active allocations **0**, available **3**. Released historical rows for `cp26-licence-a`, `cp26-licence-b`, `cp26-licence-c`, and `cp26-licence-d` remain. Those hotels stay **unconfigured**. Protected hotels were not repurposed.
 
-**Next: CP27.2 — application remediation.** 0029 is installed and empty. Do not start CP27.3. Do not activate LIVE commerce. Do not resume CP26C.3.
+**Next: explicit Production apply authorisation for 0030.** Do not apply it from this source review. Do not start CP27.3. Do not activate LIVE commerce. Do not resume CP26C.3. M5, M6, M7, and M8 remain unimplemented.
 
 The section below is the historical path through CP26B and finalisation. Present-tense claims there that commerce is OFF, that prices are undefined, or that CP26 STRIPE TEST is next are the state **at that earlier checkpoint**.
 
@@ -78,7 +78,7 @@ Migration **0025** is **Production-applied**. Its dispatch workflow is **RETIRED
 | Fixture policy | [`docs/FIXTURE_POLICY.md`](docs/FIXTURE_POLICY.md) |
 | Local harness | `src/lib/aether/cp26a4-fixture.ts` (tests only; not a runtime import) |
 | Domain A | TEST commerce proven for one allowlisted organisation; not LIVE. Only **CP31** may activate LIVE commerce |
-| Accepted Production ledger | **0001–0029** applied. `AUTHORISED_PENDING=[]`. Claim table installed and empty. Checkout is not integrated |
+| Accepted Production ledger | **0001–0029** applied. `AUTHORISED_PENDING=["0030_cp272_fix_prepare_booking_payment.sql"]` source review only. Claim table installed and empty. Checkout is not integrated |
 | 0024 digest | `23cdc44037e0e886444477fdb693536a95c32b6080984de4076cc7a5f71d13c0` |
 | 0025 digest | `575aabcb7322fc8ca63c8a3dd137d358f76375f1777ed59cf04c1d98d6c066fd` |
 | 0026 file | `migrations/0026_cp26co3_commercial_catalogue.sql` |
@@ -93,9 +93,9 @@ Migration **0025** is **Production-applied**. Its dispatch workflow is **RETIRED
 | Catalogue | `property_licence` **active**; `basic` / `pro` / `premium` **inactive** historical; one price version `b13f9445-d27a-4e7d-8128-a2238906ce7c` EUR **17900** month; one verified TEST mapping `price_1UKGWjFHnHXHuPOwO50TJS93`; no LIVE mapping; LIVE locks **false/false** |
 | 0027 | applied once (GHA [36251190175](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36251190175)); digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef`; workflow **RETIRED**; script remains |
 | 0028 | `migrations/0028_cp26fin_property_licence_catalogue.sql` applied once (GHA [36254890554](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36254890554)); digest `35626cb2d3b21a076f4a2cb982b9d0983610620fb21dbf7f3e94eb4c0576a02d`; workflow **RETIRED**; controller `REQUIRED_LEDGER` frozen at **0001–0027** |
-| **Next product** | **CP27 — SECURITY HARDENING**. Not started. Do not resume CP26C.3. Do not start the superseded O4–O11 chain. Do not start CP31 |
+| **Next product** | **CP27.2 0030 source review**. Not applied. Do not start CP27.3. Do not activate LIVE commerce |
 
-Do not dispatch historical 0022/0023/0024 controllers or the retired 0025, 0026, 0027, or 0028 workflows. Do not recreate the retired one-shot CP26 read workflows. Owner secret remains GitHub Actions `AETHER_DATABASE_OWNER_URL` only — never Vercel. The generic migrator never applies SQL. 0029+ stays fail-closed.
+Do not dispatch historical 0022/0023/0024 controllers or the retired 0025, 0026, 0027, 0028, or 0029 workflows. Do not run `scripts/cp272-0030-production-migrate.mjs` during this source review. Do not recreate the retired one-shot CP26 read workflows. Owner secret remains GitHub Actions `AETHER_DATABASE_OWNER_URL` only — never Vercel. The generic migrator never applies SQL. 0030 is authorised pending and not accepted. 0031+ stays fail-closed.
 
 Push to `main` currently auto-deploys Vercel Production. That is a known control-plane characteristic, not a commercial activation and not a LIVE switch. Ordered-webhook source is schema-capable. Domain A TEST webhooks are signature-verified. Commerce is **test**, allowlisted, and fail-closed when `SBG_SAAS_TEST_ORGANISATION_IDS` is empty. Do not set commerce to **live**.
 
@@ -158,7 +158,7 @@ Environment (names/presence only):
 | Owner / migration plane | `AETHER_DATABASE_OWNER_URL` → `neondb_owner` (not on Vercel) |
 | Preview | PGLite; `aether_runtime` SET ROLE only |
 | Application build | `npm run build` does **not** migrate |
-| Permanent Gate B | `.github/workflows/production-database.yml` (read-only); accepted ledger **0001–0029**; `AUTHORISED_PENDING=[]` |
+| Permanent Gate B | `.github/workflows/production-database.yml` (read-only); accepted ledger **0001–0029**; `AUTHORISED_PENDING=["0030_cp272_fix_prepare_booking_payment.sql"]` |
 
 Roles: `neondb_owner` = schema/migration owner; `aether_app` = production LOGIN; `aether_runtime` = PGLite/preview only. Production must not use SET ROLE or owner credentials as runtime.
 

@@ -212,6 +212,7 @@ test("public and operator surfaces do not advertise the Owner control plane", ()
     "0027_cp26co41_organisation_property_licence.sql",
     "0028_cp26fin_property_licence_catalogue.sql",
     "0029_cp272_domain_a_checkout_claims.sql",
+    "0030_cp272_fix_prepare_booking_payment.sql",
   ]);
 });
 

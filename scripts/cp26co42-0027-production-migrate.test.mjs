@@ -427,7 +427,7 @@ test("canonical 0027 digest is pinned and the prerequisite digest chain matches"
     "0029_cp272_domain_a_checkout_claims.sql",
   ]);
   assert.doesNotMatch(src, /REQUIRED_LEDGER\s*=\s*\[\s*\.\.\.ACCEPTED_LEDGER/);
-  assert.deepEqual(AUTHORISED_PENDING, []);
+  assert.deepEqual(AUTHORISED_PENDING, ["0030_cp272_fix_prepare_booking_payment.sql"]);
   assert.equal(isAuthorisedPending(TARGET_MIGRATION), false);
   for (const [name, expected] of Object.entries(REVIEWED_DIGESTS)) {
     const bytes = readFileSync(join(here, "../migrations", name));
@@ -912,7 +912,7 @@ test("apply failure rolls back and redacts secrets", async () => {
 test("Gate B accepts applied 0027 inside 0001-0028 and build does not invoke this controller", () => {
   assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), true);
   assert.equal(ACCEPTED_LEDGER.at(-1), "0029_cp272_domain_a_checkout_claims.sql");
-  assert.deepEqual(AUTHORISED_PENDING, []);
+  assert.deepEqual(AUTHORISED_PENDING, ["0030_cp272_fix_prepare_booking_payment.sql"]);
   assert.equal(isAuthorisedPending(TARGET_MIGRATION), false);
   const current = evaluatePreflight({
     database: "neondb",

@@ -14,7 +14,7 @@ Living status: **`BUILD_STATE.md`**.
 - Forward roadmap: **[ROADMAP.md](ROADMAP.md)**
 - Fixture policy: **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)**
 - Vercel Production `scan-book-go` / alias `https://scan-book-go.vercel.app`
-- Neon Production migrated through **0029**. Gate B accepted ledger **0001–0029**. `AUTHORISED_PENDING=[]`. 0029 digest `e5897eda1a4f3c8c4025e16235b9d11a677b3cc7994934058142934d4dea7adc` applied (GHA 36404482927). Temporary apply workflow **RETIRED**. Claim table installed and empty. Checkout is not integrated. M5, M7, and M8 are not implemented. Commerce **test**, not live
+- Neon Production migrated through **0029**. Gate B accepted ledger **0001–0029**. `AUTHORISED_PENDING=["0030_cp272_fix_prepare_booking_payment.sql"]` source review only, not applied. 0029 digest `e5897eda1a4f3c8c4025e16235b9d11a677b3cc7994934058142934d4dea7adc` applied (GHA 36404482927). Temporary apply workflow **RETIRED**. Claim table installed and empty. Checkout is not integrated. M5, M6, M7, and M8 are not implemented. Commerce **test**, not live
 - Active platform Owners: **1** (OPERATOR CONTROLLED / REDACTED). Bootstrap workflow **RETIRED**
 - `/app/*` exists (SaaS). `/owner/*` is Production-proven. `/ops/*` remains internal operations
 - First Production hotel through `/app`: **configured, not live** (`sbg-verify-a5`)

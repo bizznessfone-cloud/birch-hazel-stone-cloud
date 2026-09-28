@@ -78,10 +78,14 @@ export const REVIEWED_DIGESTS = {
     "35626cb2d3b21a076f4a2cb982b9d0983610620fb21dbf7f3e94eb4c0576a02d",
   "0029_cp272_domain_a_checkout_claims.sql":
     "e5897eda1a4f3c8c4025e16235b9d11a677b3cc7994934058142934d4dea7adc",
+  "0030_cp272_fix_prepare_booking_payment.sql":
+    "9dec121ac28b8bcca5554576816eb8c764d50f56b6b97c9f0199e0b926e8643f",
 };
 
-/** Nothing is authorised to apply. 0029 is accepted history. */
-export const AUTHORISED_PENDING = [];
+/** 0030 is source-reviewed and not accepted. Nothing else may apply. */
+export const AUTHORISED_PENDING = [
+  "0030_cp272_fix_prepare_booking_payment.sql",
+];
 
 export function isAuthorisedPending(name) {
   return AUTHORISED_PENDING.includes(String(name));

@@ -190,7 +190,9 @@ test("no pending migration is automatically authorised", () => {
   assert.equal(isAuthorisedPending("0026_later.sql"), false);
   assert.equal(isAuthorisedPending("0027_later.sql"), false);
   assert.equal(isAuthorisedPending("0029_cp272_domain_a_checkout_claims.sql"), false);
+  assert.equal(isAuthorisedPending("0030_cp272_fix_prepare_booking_payment.sql"), true);
   assert.equal(isAuthorisedPending("0030_later.sql"), false);
+  assert.equal(isAuthorisedPending("0031_later.sql"), false);
 });
 
 test("0029 is accepted history and 0030 stays fail-closed", () => {
