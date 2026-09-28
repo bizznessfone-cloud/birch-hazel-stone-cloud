@@ -28,7 +28,7 @@ Catalogue amounts are no longer undefined. The published Production price versio
 | CP26C.4 | **SUPERSEDED as previously scoped** — do not cut Checkout over to three tier Prices |
 | Next | **CP27.2 — 0029 source review.** Reviewed pending, not applied. Checkout is not integrated. M5, M7, and M8 are not implemented. Only **CP31** activates LIVE |
 | Commerce | **test** (`SBG_SAAS_COMMERCE=test`). Not live. Only **CP31** activates LIVE |
-| Ledger | Gate B accepted **0001–0028**; source **0029** reviewed pending, not applied; `AUTHORISED_PENDING` is 0029 only; 0030+ fail-closed |
+| Ledger | Gate B accepted **0001–0029**; `AUTHORISED_PENDING=[]`; 0030+ fail-closed |
 | 0026 digest | `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446` unchanged |
 | Production prices | one version `b13f9445-d27a-4e7d-8128-a2238906ce7c` EUR 17900 month; one verified TEST mapping `price_1UKGWjFHnHXHuPOwO50TJS93`; no LIVE mapping |
 | LIVE locks | **false / false** |

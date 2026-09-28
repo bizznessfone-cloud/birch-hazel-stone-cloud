@@ -103,15 +103,16 @@ test("0029 digest is pinned and 0001-0028 are not edited by this controller", ()
   const hash = createHash("sha256").update(sql).digest("hex");
   assert.equal(hash, TARGET_DIGEST);
   assert.equal(REVIEWED_DIGESTS[TARGET_MIGRATION], TARGET_DIGEST);
-  assert.deepEqual(REQUIRED_LEDGER, [...ACCEPTED_LEDGER]);
-  assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), false);
-  assert.deepEqual(AUTHORISED_PENDING, [TARGET_MIGRATION]);
-  assert.equal(isAuthorisedPending(TARGET_MIGRATION), true);
+  assert.deepEqual(REQUIRED_LEDGER, ACCEPTED_LEDGER.filter((name) => name !== TARGET_MIGRATION));
+  assert.equal(ACCEPTED_LEDGER.at(-1), TARGET_MIGRATION);
+  assert.equal(REQUIRED_LEDGER.includes(TARGET_MIGRATION), false);
+  assert.deepEqual(AUTHORISED_PENDING, []);
+  assert.equal(isAuthorisedPending(TARGET_MIGRATION), false);
   assert.equal(isAuthorisedPending("0030_later.sql"), false);
   assert.doesNotMatch(src, /from "\.\/migrate\.mjs"/);
   assert.doesNotMatch(src, /from "\.\/production-db-migrate\.mjs"/);
   assert.doesNotMatch(src, /db:migrate/);
-  assert.equal(existsSync(join(root, ".github/workflows/cp272-0029-production-migrate.yml")), false);
+  assert.equal(existsSync(join(root, ".github/workflows/cp272-0029-production-apply.yml")), false);
   const workflows = readdirSync(join(root, ".github/workflows")).sort();
   assert.deepEqual(workflows, ["production-database.yml"]);
   const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
@@ -229,14 +230,14 @@ test("runSingleUse0029 does not call mutate when confirmation or the plan fails"
   assert.equal(blocked.migrated, false);
 });
 
-test("Gate B sees 0029 as pending and the generic migrator still will not apply it", () => {
+test("Gate B accepts applied 0029 and the generic migrator still will not apply SQL", () => {
   const gate = evaluatePreflight({
     database: "neondb",
     currentUser: "neondb_owner",
     sessionUser: "neondb_owner",
     ledger: [...ACCEPTED_LEDGER],
     ledgerReadable: true,
-    sourceMigrations: [...ACCEPTED_LEDGER, TARGET_MIGRATION],
+    sourceMigrations: [...ACCEPTED_LEDGER],
     authTables: { user: "PRESENT", session: "PRESENT", account: "PRESENT", verification: "PRESENT" },
     aetherAppExists: true,
     occupancy,
@@ -244,11 +245,27 @@ test("Gate B sees 0029 as pending and the generic migrator still will not apply 
     hotel: { code: "demo-kos", status: "live" },
   });
   assert.equal(gate.ok, true);
-  assert.deepEqual(gate.pending, [TARGET_MIGRATION]);
-  assert.equal(gate.ledger.includes(TARGET_MIGRATION), false);
+  assert.deepEqual(gate.pending, []);
+  assert.equal(gate.ledger.includes(TARGET_MIGRATION), true);
   const generic = evaluateMigrationBaseline(gate);
-  assert.equal(generic.ok, false);
+  assert.equal(generic.ok, true);
   assert.equal(generic.migrated, false);
+
+  const stale = evaluatePreflight({
+    database: "neondb",
+    currentUser: "neondb_owner",
+    sessionUser: "neondb_owner",
+    ledger: [...REQUIRED_LEDGER],
+    ledgerReadable: true,
+    sourceMigrations: [...ACCEPTED_LEDGER],
+    authTables: { user: "PRESENT", session: "PRESENT", account: "PRESENT", verification: "PRESENT" },
+    aetherAppExists: true,
+    occupancy,
+    tableOwners: { hotels: "neondb_owner", bookings: "neondb_owner" },
+    hotel: { code: "demo-kos", status: "live" },
+  });
+  assert.equal(stale.ok, false);
+  assert.equal(stale.verdict, "BLOCKED — MIGRATION LEDGER INCONSISTENT");
 });
 
 test("controller entry refuses to run without the confirmation phrase", async () => {

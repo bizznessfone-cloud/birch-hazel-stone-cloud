@@ -18,7 +18,7 @@ GitHub is authoritative for application source. Living status: **`BUILD_STATE.md
 | Fixture policy | **`docs/FIXTURE_POLICY.md`** |
 | Production | Vercel `scan-book-go` / last observed `dpl_FmUosqz2wy7aCT51rNjdanJnuviZ` READY |
 | Alias | `https://scan-book-go.vercel.app` |
-| Migrations | Production Neon **0001–0028**. Source includes reviewed pending **0029** (not applied). Gate B accepted ledger **0001–0028**. `AUTHORISED_PENDING=["0029_cp272_domain_a_checkout_claims.sql"]`. 0029 digest `e5897eda1a4f3c8c4025e16235b9d11a677b3cc7994934058142934d4dea7adc`. 0027 digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef` (run 36251190175). 0028 digest `35626cb2d3b21a076f4a2cb982b9d0983610620fb21dbf7f3e94eb4c0576a02d` (run 36254890554). 0025, 0027, and 0028 workflows **RETIRED**. No 0029 apply workflow. `property_licence` active. basic/pro/premium inactive. One price version EUR 17900 month. One verified TEST mapping. No LIVE mapping. One TEST organisation, quantity 3, active allocations 0. One platform Owner. Commerce **test**, not live. |
+| Migrations | Production Neon **0001–0029**. Gate B accepted ledger **0001–0029**. `AUTHORISED_PENDING=[]`. 0029 digest `e5897eda1a4f3c8c4025e16235b9d11a677b3cc7994934058142934d4dea7adc` applied (GHA 36404482927). Temporary apply workflow **RETIRED**. Claim table empty. Checkout not integrated. Commerce **test**, not live. |
 
 `cp17-known-good` (`45e171a23037b7c94005018cd2126033a449d6f0`) is an **immutable historical tag**. It is **not** current `main`. Checking it out would roll the product backwards.
 

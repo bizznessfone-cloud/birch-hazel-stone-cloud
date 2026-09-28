@@ -591,9 +591,9 @@ test("direct invocation without secret exits before connecting", async () => {
 });
 
 test("Gate B accepts applied 0025 and does not authorise another bootstrap", () => {
-  assert.deepEqual(AUTHORISED_PENDING, ["0029_cp272_domain_a_checkout_claims.sql"]);
+  assert.deepEqual(AUTHORISED_PENDING, []);
   assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), true);
-  assert.equal(ACCEPTED_LEDGER.at(-1), "0028_cp26fin_property_licence_catalogue.sql");
+  assert.equal(ACCEPTED_LEDGER.at(-1), "0029_cp272_domain_a_checkout_claims.sql");
 });
 
 test("catalog identity still uses 0025 function contract", () => {

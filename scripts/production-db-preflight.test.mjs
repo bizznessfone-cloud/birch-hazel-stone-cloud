@@ -116,7 +116,7 @@ test("accepted 0001-0028 ledger with empty pending passes", () => {
   assert.deepEqual(historicalSourceMigrations(SOURCE), LEDGER_0017);
   assert.equal(ACCEPTED_LEDGER.includes("0024_cp26b2_ordered_billing_events.sql"), true);
   assert.equal(ACCEPTED_LEDGER.includes("0027_cp26co41_organisation_property_licence.sql"), true);
-  assert.equal(ACCEPTED_LEDGER.at(-1), "0028_cp26fin_property_licence_catalogue.sql");
+  assert.equal(ACCEPTED_LEDGER.at(-1), "0029_cp272_domain_a_checkout_claims.sql");
 });
 
 test("pending 0024 is stale, not a newly authorised migration", () => {
@@ -189,24 +189,28 @@ test("no pending migration is automatically authorised", () => {
   assert.equal(isAuthorisedPending("0026_cp26co3_commercial_catalogue.sql"), false);
   assert.equal(isAuthorisedPending("0026_later.sql"), false);
   assert.equal(isAuthorisedPending("0027_later.sql"), false);
-  assert.equal(isAuthorisedPending("0029_cp272_domain_a_checkout_claims.sql"), true);
+  assert.equal(isAuthorisedPending("0029_cp272_domain_a_checkout_claims.sql"), false);
   assert.equal(isAuthorisedPending("0030_later.sql"), false);
 });
 
-test("reviewed pending 0029 does not count as applied and 0030 stays fail-closed", () => {
-  const pending = evaluatePreflight(
+test("0029 is accepted history and 0030 stays fail-closed", () => {
+  const current = evaluatePreflight(baseFacts());
+  assert.equal(current.ok, true);
+  assert.equal(current.verdict, PASS_VERDICT);
+  assert.deepEqual(current.pending, []);
+  assert.equal(current.ledger.includes("0029_cp272_domain_a_checkout_claims.sql"), true);
+
+  const missing = evaluatePreflight(
     baseFacts({
-      sourceMigrations: [...SOURCE, "0029_cp272_domain_a_checkout_claims.sql"],
+      ledger: ACCEPTED_LEDGER.filter((name) => name !== "0029_cp272_domain_a_checkout_claims.sql"),
     }),
   );
-  assert.equal(pending.ok, true);
-  assert.equal(pending.verdict, PASS_VERDICT);
-  assert.deepEqual(pending.pending, ["0029_cp272_domain_a_checkout_claims.sql"]);
-  assert.equal(pending.ledger.includes("0029_cp272_domain_a_checkout_claims.sql"), false);
+  assert.equal(missing.ok, false);
+  assert.equal(missing.verdict, "BLOCKED — MIGRATION LEDGER INCONSISTENT");
 
   const extra = evaluatePreflight(
     baseFacts({
-      sourceMigrations: [...SOURCE, "0029_cp272_domain_a_checkout_claims.sql", "0030_later.sql"],
+      sourceMigrations: [...SOURCE, "0030_later.sql"],
     }),
   );
   assert.equal(extra.ok, false);

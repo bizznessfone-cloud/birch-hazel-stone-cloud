@@ -11,7 +11,10 @@
  * REQUIRED_LEDGER is the frozen pre-apply pin (0001–0028). It must not follow Gate B.
  * Re-running against an already-applied valid 0029 contract must not mutate.
  *
- * DO NOT RUN until a later checkpoint authorises Production apply.
+ * Production apply completed in CP27.2 (GHA 36404482927).
+ * Re-running a valid installed contract must return
+ * "0029 ALREADY APPLIED — NO MUTATION".
+ * There is no dispatch workflow. Do not recreate one.
  */
 import { createHash } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";

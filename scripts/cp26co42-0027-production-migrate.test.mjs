@@ -418,15 +418,16 @@ test("canonical 0027 digest is pinned and the prerequisite digest chain matches"
   assert.equal(REQUIRED_LEDGER.at(-1), "0026_cp26co3_commercial_catalogue.sql");
   assert.equal(REQUIRED_LEDGER.includes(TARGET_MIGRATION), false);
   assert.equal(REQUIRED_LEDGER.length, 26);
-  assert.equal(ACCEPTED_LEDGER.at(-1), "0028_cp26fin_property_licence_catalogue.sql");
+  assert.equal(ACCEPTED_LEDGER.at(-1), "0029_cp272_domain_a_checkout_claims.sql");
   assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), true);
   assert.deepEqual(ACCEPTED_LEDGER, [
     ...REQUIRED_LEDGER,
     TARGET_MIGRATION,
     "0028_cp26fin_property_licence_catalogue.sql",
+    "0029_cp272_domain_a_checkout_claims.sql",
   ]);
   assert.doesNotMatch(src, /REQUIRED_LEDGER\s*=\s*\[\s*\.\.\.ACCEPTED_LEDGER/);
-  assert.deepEqual(AUTHORISED_PENDING, ["0029_cp272_domain_a_checkout_claims.sql"]);
+  assert.deepEqual(AUTHORISED_PENDING, []);
   assert.equal(isAuthorisedPending(TARGET_MIGRATION), false);
   for (const [name, expected] of Object.entries(REVIEWED_DIGESTS)) {
     const bytes = readFileSync(join(here, "../migrations", name));
@@ -910,8 +911,8 @@ test("apply failure rolls back and redacts secrets", async () => {
 
 test("Gate B accepts applied 0027 inside 0001-0028 and build does not invoke this controller", () => {
   assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), true);
-  assert.equal(ACCEPTED_LEDGER.at(-1), "0028_cp26fin_property_licence_catalogue.sql");
-  assert.deepEqual(AUTHORISED_PENDING, ["0029_cp272_domain_a_checkout_claims.sql"]);
+  assert.equal(ACCEPTED_LEDGER.at(-1), "0029_cp272_domain_a_checkout_claims.sql");
+  assert.deepEqual(AUTHORISED_PENDING, []);
   assert.equal(isAuthorisedPending(TARGET_MIGRATION), false);
   const current = evaluatePreflight({
     database: "neondb",
@@ -931,7 +932,7 @@ test("Gate B accepts applied 0027 inside 0001-0028 and build does not invoke thi
   assert.equal(generic.migrated, false);
   const genericSrc = readFileSync(join(here, "production-db-migrate.mjs"), "utf8");
   assert.doesNotMatch(genericSrc, /0028_cp26fin_property_licence_catalogue/);
-  assert.match(genericSrc, /0001–0028/);
+  assert.match(genericSrc, /0001–0029/);
   assert.doesNotMatch(pkg.scripts.build, /db:migrate/);
   assert.doesNotMatch(pkg.scripts.build, /cp26co42/);
   assert.equal(pkg.scripts["db:migrate:0027"], undefined);

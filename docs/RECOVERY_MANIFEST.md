@@ -22,7 +22,7 @@ GitHub is authoritative for application source. Living status: **`BUILD_STATE.md
 | Product | SCAN / BOOK / GO |
 | Production | Vercel `scan-book-go` / last observed `dpl_FmUosqz2wy7aCT51rNjdanJnuviZ` READY |
 | Alias | `https://scan-book-go.vercel.app` |
-| Database | Production Neon migrated through **0028**; Gate B **0001–0028**; 0025, 0027, and 0028 workflows **RETIRED** |
+| Database | Production Neon migrated through **0029**; Gate B **0001–0029**; `AUTHORISED_PENDING=[]`; 0029 apply workflow **RETIRED** |
 | Owners | **1** active platform Owner (OPERATOR CONTROLLED / REDACTED); bootstrap workflow **RETIRED** |
 | Runtime | `DATABASE_URL` → `aether_app`; owner URL **ABSENT** from Vercel |
 | Auth | Better Auth Production configured; returning sign-in **proven CP26A.5** |
@@ -49,7 +49,7 @@ A workspace is never authoritative. Recovery ZIPs are secondary artifacts. The C
 
 **Source files and Production Neon:** through `0028_cp26fin_property_licence_catalogue.sql` (digest `35626cb2d3b21a076f4a2cb982b9d0983610620fb21dbf7f3e94eb4c0576a02d`, apply run 36254890554). 0027 digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef`, apply run 36251190175. 0026 digest `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446`, apply run 36135836457, remains accepted history.
 
-Application build does not migrate or bootstrap an Owner. Generic production-migrate GitHub Action is retired/fail-closed and never applies SQL. Permanent owner-plane control is read-only Gate B (accepted ledger **0001–0028**, `AUTHORISED_PENDING` is source **0029** only, not applied). There is no 0029 apply workflow. Spent 0022/0023/0024/0025/0026/0027/0028 single-use mutation workflows are retired. The first-Owner bootstrap workflow is **RETIRED**. Catalogue: `property_licence` active; basic/pro/premium inactive. One price version EUR 17900 month. One verified TEST mapping. No LIVE mapping. One organisation, one billing row, licensed quantity 3, active allocations 0, four released historical allocations. Commerce **test**, not live. Domain B unchanged (`booking_payments` 0). **CP26 COMPLETE.** Next is **CP27.2** source review of 0029, not a Production apply. Former **O3.4** is superseded. Do not resume CP26C.3. Only **CP31** activates LIVE commerce.
+Application build does not migrate or bootstrap an Owner. Generic production-migrate GitHub Action is retired/fail-closed and never applies SQL. Permanent owner-plane control is read-only Gate B (accepted ledger **0001–0029**, `AUTHORISED_PENDING=[]`). 0029 is applied and the temporary apply workflow is **RETIRED**. The claim table is installed and empty. Checkout is not integrated. M5, M7, and M8 are not implemented. Commerce **test**, not live. Domain B unchanged (`booking_payments` 0). **CP26 COMPLETE.** Next is **CP27.2 application remediation**. Only **CP31** activates LIVE commerce.
 
 ## Auth (do not reopen CP25G.3)
 

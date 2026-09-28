@@ -54,6 +54,7 @@ export const ACCEPTED_LEDGER = [
   "0026_cp26co3_commercial_catalogue.sql",
   "0027_cp26co41_organisation_property_licence.sql",
   "0028_cp26fin_property_licence_catalogue.sql",
+  "0029_cp272_domain_a_checkout_claims.sql",
 ];
 
 export const REVIEWED_DIGESTS = {
@@ -79,10 +80,8 @@ export const REVIEWED_DIGESTS = {
     "e5897eda1a4f3c8c4025e16235b9d11a677b3cc7994934058142934d4dea7adc",
 };
 
-/** Reviewed source that Production has not applied. Nothing else is authorised. */
-export const AUTHORISED_PENDING = [
-  "0029_cp272_domain_a_checkout_claims.sql",
-];
+/** Nothing is authorised to apply. 0029 is accepted history. */
+export const AUTHORISED_PENDING = [];
 
 export function isAuthorisedPending(name) {
   return AUTHORISED_PENDING.includes(String(name));
