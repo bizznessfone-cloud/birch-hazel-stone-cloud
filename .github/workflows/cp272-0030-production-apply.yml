@@ -1,0 +1,55 @@
+# TEMPORARY single-use CP27.2 Production apply for migration 0030.
+# Delete this file immediately after one successful verified apply.
+# Not a permanent mutation surface. Does not call Stripe or Vercel.
+name: CP27.2 0030 single-use Production apply
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Exact confirmation APPLY-0030
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cp272-0030-production-apply
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    name: apply-0030
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require confirmation APPLY-0030
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          if [ "$CONFIRMATION" != "APPLY-0030" ]; then
+            echo "BLOCKED — CONFIRMATION PHRASE INVALID"
+            exit 1
+          fi
+          echo "confirmation: ACCEPTED"
+
+      - name: Checkout authorised commit
+        uses: actions/checkout@v4
+        with:
+          ref: 0877978d5b26c2438de81097093fac7054481ddd
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply migration 0030 only
+        env:
+          AETHER_DATABASE_OWNER_URL: ${{ secrets.AETHER_DATABASE_OWNER_URL }}
+          CP272_CONFIRMATION: ${{ inputs.confirmation }}
+        run: node scripts/cp272-0030-production-migrate.mjs
