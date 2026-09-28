@@ -216,6 +216,32 @@ jobs:
               "select live_mapping_enabled, live_checkout_enabled from sbg_saas_commerce_locks where id = 1",
             );
             say(`commerce_locks: ${JSON.stringify(locks.rows[0] ?? null)}`);
+            const acl = await client.query(
+              `select c.relacl::text as acl, pg_get_userbyid(c.relowner) as owner
+                 from pg_class c
+                 join pg_namespace n on n.oid = c.relnamespace
+                where n.nspname = 'public'
+                  and c.relname = 'sbg_domain_a_checkout_claims'`,
+            );
+            say(`claim_acl: ${JSON.stringify(acl.rows[0] ?? null)}`);
+            const members = await client.query(
+              `select mem.rolname as member, m.rolname as inherited
+                 from pg_auth_members am
+                 join pg_roles mem on mem.oid = am.member
+                 join pg_roles m on m.oid = am.roleid
+                where mem.rolname in ('aether_runtime', 'aether_app')
+                order by mem.rolname, m.rolname`,
+            );
+            say("role_memberships:");
+            for (const row of members.rows) say(`  ${JSON.stringify(row)}`);
+            const attrs = await client.query(
+              `select rolname, rolsuper, rolinherit, rolcreaterole, rolcreatedb, rolbypassrls, rolcanlogin
+                 from pg_roles
+                where rolname in ('aether_runtime', 'aether_app', 'neondb_owner')
+                order by rolname`,
+            );
+            say("role_attrs:");
+            for (const row of attrs.rows) say(`  ${JSON.stringify(row)}`);
             await client.query("ROLLBACK");
             say(`snapshot_complete: ${label}`);
           } catch (err) {
@@ -227,12 +253,6 @@ jobs:
             await pool.end();
           }
           NODE
-
-      - name: Apply reviewed migration 0029
-        env:
-          AETHER_DATABASE_OWNER_URL: ${{ secrets.AETHER_DATABASE_OWNER_URL }}
-          CP272_CONFIRMATION: APPLY-0029
-        run: node scripts/cp272-0029-production-migrate.mjs
 
       - name: Read-only post-apply snapshot
         env:
@@ -402,6 +422,32 @@ jobs:
               "select live_mapping_enabled, live_checkout_enabled from sbg_saas_commerce_locks where id = 1",
             );
             say(`commerce_locks: ${JSON.stringify(locks.rows[0] ?? null)}`);
+            const acl = await client.query(
+              `select c.relacl::text as acl, pg_get_userbyid(c.relowner) as owner
+                 from pg_class c
+                 join pg_namespace n on n.oid = c.relnamespace
+                where n.nspname = 'public'
+                  and c.relname = 'sbg_domain_a_checkout_claims'`,
+            );
+            say(`claim_acl: ${JSON.stringify(acl.rows[0] ?? null)}`);
+            const members = await client.query(
+              `select mem.rolname as member, m.rolname as inherited
+                 from pg_auth_members am
+                 join pg_roles mem on mem.oid = am.member
+                 join pg_roles m on m.oid = am.roleid
+                where mem.rolname in ('aether_runtime', 'aether_app')
+                order by mem.rolname, m.rolname`,
+            );
+            say("role_memberships:");
+            for (const row of members.rows) say(`  ${JSON.stringify(row)}`);
+            const attrs = await client.query(
+              `select rolname, rolsuper, rolinherit, rolcreaterole, rolcreatedb, rolbypassrls, rolcanlogin
+                 from pg_roles
+                where rolname in ('aether_runtime', 'aether_app', 'neondb_owner')
+                order by rolname`,
+            );
+            say("role_attrs:");
+            for (const row of attrs.rows) say(`  ${JSON.stringify(row)}`);
             await client.query("ROLLBACK");
             say(`snapshot_complete: ${label}`);
           } catch (err) {
