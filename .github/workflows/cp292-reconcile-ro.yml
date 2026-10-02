@@ -1,0 +1,51 @@
+name: CP29.2 disposable load reconcile
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Exact confirmation string
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  reconcile:
+    name: disposable load reconcile
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Require exact confirmation
+        env:
+          CP292_CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -eu
+          if [ "$CP292_CONFIRMATION" != "RUN-CP29-2" ]; then
+            echo "CP292R confirmation rejected; database not opened"
+            exit 2
+          fi
+          echo "CP292R confirmation accepted"
+
+      - name: Checkout selected commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Read-only disposable branch reconcile
+        env:
+          AETHER_CP29_DATABASE_URL: ${{ secrets.AETHER_CP29_DATABASE_URL }}
+          CP292_CONFIRMATION: ${{ inputs.confirmation }}
+        run: node --experimental-strip-types scripts/cp292-reconcile-ro.mjs
