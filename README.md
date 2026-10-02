@@ -12,7 +12,7 @@ Living source-of-truth. Historical README text below is evidence only.
 | **CP26A** | **CLOSED** |
 | **CP26B** | **CLOSED** |
 | **CP26** | **COMPLETE** — finalisation, Stripe TEST, and exit gate **PASS** |
-| **Next execution checkpoint** | **CP27 — SECURITY HARDENING**. Not started. Commerce remains **test**, not live. Only **CP31** activates LIVE commerce |
+| **Next execution checkpoint** | **CP27.3b** — signup enumeration and billing-read authorisation. CP27.3a Better Auth perimeter is in source. Commerce remains **test**, not live. Only **CP31** activates LIVE commerce |
 | Forward roadmap | **[docs/ROADMAP.md](docs/ROADMAP.md)** |
 | Fixture policy | **[docs/FIXTURE_POLICY.md](docs/FIXTURE_POLICY.md)** |
 
