@@ -7,17 +7,15 @@ import { getRequest } from "@tanstack/react-start/server";
 import { getAetherDb } from "./kysely";
 import type { AetherDatabase } from "./schema";
 import {
-  createBooking as createBookingEngine,
   getPublicBookingByToken as getPublicBookingByTokenEngine,
   getPublicHotel as getPublicHotelEngine,
   type BookingDb,
   type CreateBookingInput,
-  type CreatedBooking,
   type PublicBooking,
   type PublicHotel,
 } from "./booking";
-import { assertGuestCreateRateLimit, hashGuestClientKey } from "./guest-rate-limit";
-import { sendConfirmationEmail, type ConfirmationEmailStatus } from "./confirmation-email";
+import { guestLimiterIdentity } from "./client-ip";
+import { createLimitedGuestBooking } from "./guest-create";
 
 type Executable = Kysely<AetherDatabase> | Transaction<AetherDatabase>;
 
@@ -41,36 +39,20 @@ async function appDb(): Promise<BookingDb> {
 }
 
 function requestClientHint(): string {
+  let headers: { get(name: string): string | null } | null = null;
   try {
     const request = getRequest();
-    const forwarded = request?.headers.get("x-forwarded-for");
-    if (forwarded) {
-      const first = forwarded.split(",")[0]?.trim();
-      if (first) return first;
-    }
-    const real = request?.headers.get("x-real-ip")?.trim();
-    if (real) return real;
+    headers = request?.headers ?? null;
   } catch {
     /* no request context (tests) */
   }
-  return "unknown";
+  return guestLimiterIdentity(headers);
 }
 
 export async function createBookingFromRequest(
   input: CreateBookingInput,
-): Promise<CreatedBooking & { confirmationEmailStatus: ConfirmationEmailStatus }> {
-  const db = await appDb();
-  await assertGuestCreateRateLimit(db, hashGuestClientKey(requestClientHint()));
-
-  // The booking engine completes its transaction before returning. Email is a
-  // separate side effect: a provider failure must never roll back a booking.
-  const booking = await createBookingEngine(db, input);
-  const email = await sendConfirmationEmail(booking, input.guestEmail);
-
-  return {
-    ...booking,
-    confirmationEmailStatus: email.status,
-  };
+): Promise<Awaited<ReturnType<typeof createLimitedGuestBooking>>> {
+  return createLimitedGuestBooking(await appDb(), input, requestClientHint());
 }
 
 export async function getPublicBookingFromRequest(token: string): Promise<PublicBooking> {

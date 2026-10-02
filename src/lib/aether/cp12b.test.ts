@@ -232,7 +232,7 @@ describe("CP12B production hardening", () => {
     await assertGuestCreateRateLimit(db, other, t0);
 
     await pg.exec("drop table public_booking_attempts");
-    await assertGuestCreateRateLimit(db, key, new Date(t0.getTime() + 60_000));
+    await assertGuestCreateRateLimit(db, key, new Date(t0.getTime() + 60_000), { NODE_ENV: "test" });
     await pg.close();
   });
 

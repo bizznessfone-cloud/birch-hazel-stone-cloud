@@ -16,7 +16,13 @@
  *   That table is not in migrations 0001–0030. No Redis is configured.
  *   Memory counters are per process, not per Vercel isolate.
  */
-import { createRateLimitKey, findInvalidTrustedProxies, getIp } from "@better-auth/core/utils/ip";
+import { createRateLimitKey, getIp } from "@better-auth/core/utils/ip";
+import {
+  CLIENT_IP_HEADERS,
+  ClientIpConfigError,
+  NO_TRUSTED_CLIENT_IP,
+  parseClientTrustedProxies,
+} from "../aether/client-ip.ts";
 import { isBundlingProcess, readTrimmedEnv, type EnvMap } from "../aether/runtime-config.ts";
 import { PREVIEW_ALLOWED_HOSTS } from "./preview.ts";
 
@@ -41,16 +47,12 @@ export const LOCAL_DEV_ORIGINS = [
 /**
  * Platform headers first. Vercel overwrites these with the client IP.
  * `x-forwarded-for` is last so a forged leftmost value is not preferred
- * when a platform header resolved.
+ * when a platform header resolved. Shared with the guest booking limiter.
  */
-export const PRODUCTION_AUTH_IP_HEADERS = [
-  "x-vercel-forwarded-for",
-  "x-real-ip",
-  "x-forwarded-for",
-] as const;
+export const PRODUCTION_AUTH_IP_HEADERS = CLIENT_IP_HEADERS;
 
 /** Library fallback key when no trustworthy IP resolves. Not a client identity. */
-export const NO_TRUSTED_IP_KEY = "no-trusted-ip";
+export const NO_TRUSTED_IP_KEY = NO_TRUSTED_CLIENT_IP;
 
 /**
  * Shared storage was not enabled. Database storage needs a new table.
@@ -98,18 +100,12 @@ export function classifyAuthDeployment(
  * Invalid entries throw — a typo must not silently trust the wrong hop.
  */
 export function parseTrustedProxies(raw: string | undefined): string[] {
-  if (!raw?.trim()) return [];
-  const entries = raw
-    .split(",")
-    .map((entry) => entry.trim())
-    .filter(Boolean);
-  const invalid = findInvalidTrustedProxies(entries);
-  if (invalid.length > 0) {
-    throw new AuthPerimeterError(
-      `BETTER_AUTH_TRUSTED_PROXIES contains an invalid IP or CIDR: ${invalid.join(", ")}`,
-    );
+  try {
+    return parseClientTrustedProxies(raw);
+  } catch (err) {
+    if (err instanceof ClientIpConfigError) throw new AuthPerimeterError(err.message);
+    throw err;
   }
-  return entries;
 }
 
 export function productionTrustedProxies(env: EnvMap): string[] {

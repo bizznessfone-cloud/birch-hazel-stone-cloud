@@ -16,7 +16,7 @@ Organisation billing is active, licensed_quantity **3**, price version as above,
 
 Licence balance: licensed **3**, active allocations **0**, available **3**. Released historical rows for `cp26-licence-a`, `cp26-licence-b`, `cp26-licence-c`, and `cp26-licence-d` remain. Those hotels stay **unconfigured**. Protected hotels were not repurposed.
 
-**Next: CP27.3c** (guest booking XFF limiter only). CP27.3b is in source: public email/password signup returns one non-session body for unknown and existing emails, and Domain A billing reads require a current organisation membership after hotel ownership. CP27.3a perimeter is unchanged. No migration 0031. Do not enable LIVE commerce. Do not rerun the 0030 controller. Do not resume CP26C.3.
+**Next: not CP27.4.** CP27.3c guest booking client-IP trust is in source. The public limiter uses the CP27.3a header order and trusted-proxy walk, and production limiter storage failures fail closed. CP27.3b signup and billing-read membership stay in source. No migration 0031. Do not enable LIVE commerce. Do not rerun the 0030 controller. Do not resume CP26C.3. Do not start CP27.4 from this note.
 
 The section below is the historical path through CP26B and finalisation. Present-tense claims there that commerce is OFF, that prices are undefined, or that CP26 STRIPE TEST is next are the state **at that earlier checkpoint**.
 
@@ -93,7 +93,7 @@ Migration **0025** is **Production-applied**. Its dispatch workflow is **RETIRED
 | Catalogue | `property_licence` **active**; `basic` / `pro` / `premium` **inactive** historical; one price version `b13f9445-d27a-4e7d-8128-a2238906ce7c` EUR **17900** month; one verified TEST mapping `price_1UKGWjFHnHXHuPOwO50TJS93`; no LIVE mapping; LIVE locks **false/false** |
 | 0027 | applied once (GHA [36251190175](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36251190175)); digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef`; workflow **RETIRED**; script remains |
 | 0028 | `migrations/0028_cp26fin_property_licence_catalogue.sql` applied once (GHA [36254890554](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36254890554)); digest `35626cb2d3b21a076f4a2cb982b9d0983610620fb21dbf7f3e94eb4c0576a02d`; workflow **RETIRED**; controller `REQUIRED_LEDGER` frozen at **0001–0027** |
-| **Next product** | **CP27.3c** — guest booking XFF limiter only. CP27.3b signup enumeration and billing-read membership are in source. No migration 0031. Do not enable LIVE commerce |
+| **Next product** | **Not CP27.4.** CP27.3c guest booking client-IP trust is in source. No migration 0031. Do not enable LIVE commerce. Do not start CP27.4 from this note |
 
 Do not dispatch historical 0022/0023/0024 controllers or the retired 0025, 0026, 0027, 0028, 0029, or 0030 workflows. Do not rerun `scripts/cp272-0030-production-migrate.mjs`. Do not recreate the retired one-shot CP26 read workflows. Owner secret remains GitHub Actions `AETHER_DATABASE_OWNER_URL` only — never Vercel. The generic migrator never applies SQL. 0030 is accepted. 0031+ stays fail-closed.
 
@@ -114,7 +114,7 @@ Push to `main` currently auto-deploys Vercel Production. That is a known control
 | **CP26B** | **CLOSED** |
 | **CP26** | **COMPLETE** — finalisation, Stripe TEST, and exit gate **PASS** |
 | **Next control-plane** | none; CP26C-O2 **CLOSED**; CP26C.3 not resumed |
-| **Next product checkpoint** | **CP27.3c** — guest booking XFF limiter only. CP27.3b is in source. Only **CP31** activates LIVE commerce |
+| **Next product checkpoint** | **Not CP27.4.** CP27.3c guest client-IP trust is in source. Only **CP31** activates LIVE commerce |
 | Forward roadmap | **[docs/ROADMAP.md](docs/ROADMAP.md)** (CP27–CP31) |
 
 ### Production

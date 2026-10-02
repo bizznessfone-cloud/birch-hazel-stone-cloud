@@ -1,16 +1,18 @@
 /**
  * Public booking-create rate limit. SQL-backed, no Redis.
  *
- * Limitations (future production hardening, not CP12B):
  * - Counts per hashed client key in PostgreSQL. Shared across isolates that
  *   share the database. Not an edge/WAF limiter.
- * - Fail-open if the limiter table is missing or the statement errors, so a
- *   limiter outage cannot block legitimate guests.
+ * - Production limiter/storage failures fail closed. A missing table or
+ *   statement error must not turn guest create into an unlimited endpoint.
+ * - Development and test stay fail-open so a local schema gap does not block
+ *   the booking engine. Ordinary booking errors are outside this catch.
  * - Multi-region / disconnected replicas are not coordinated here.
  * - Tenant isolation is not a substitute for this limiter.
  */
 import { createHash } from "node:crypto";
 import { BookingError } from "./booking.ts";
+import { isProductionRuntime, type EnvMap } from "./runtime-config.ts";
 
 export const GUEST_CREATE_LIMIT = 20;
 export const GUEST_CREATE_WINDOW_MS = 10 * 60 * 1000;
@@ -24,13 +26,25 @@ export function hashGuestClientKey(raw: string): string {
   return createHash("sha256").update(`aether-guest-create:${value}`).digest("hex");
 }
 
+function limiterUnavailable(): BookingError {
+  return new BookingError(
+    "rate_limited",
+    503,
+    "Booking attempts are temporarily unavailable",
+  );
+}
+
 export async function assertGuestCreateRateLimit(
   db: RateLimitDb,
   clientKey: string,
   now: Date = new Date(),
+  env: EnvMap = process.env,
 ): Promise<void> {
   const key = clientKey.trim();
-  if (!key) return;
+  if (!key) {
+    if (isProductionRuntime(env)) throw limiterUnavailable();
+    return;
+  }
   const since = new Date(now.getTime() - GUEST_CREATE_WINDOW_MS);
   try {
     await db.query(
@@ -55,6 +69,6 @@ export async function assertGuestCreateRateLimit(
     );
   } catch (err) {
     if (err instanceof BookingError) throw err;
-    // Fail open: limiter SQL must not take down guest create.
+    if (isProductionRuntime(env)) throw limiterUnavailable();
   }
 }

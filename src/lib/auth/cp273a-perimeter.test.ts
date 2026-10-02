@@ -345,7 +345,10 @@ test("cookie, bearer, signup, guest limiter, ops, and commerce source stay put",
   assert.equal(emailAndPasswordEnabled, true);
 
   const booking = readFileSync(join(root, "src/lib/aether/booking.server.ts"), "utf8");
-  assert.match(booking, /forwarded\.split\(","\)\[0\]/);
+  assert.doesNotMatch(booking, /forwarded\.split\(","\)\[0\]/);
+  assert.match(booking, /guestLimiterIdentity/);
+  assert.doesNotMatch(booking, /better-auth/);
+  assert.doesNotMatch(booking, /lib\/auth\/server/);
 
   const ops = readFileSync(join(root, "src/lib/aether/ops-auth.ts"), "utf8");
   assert.match(ops, /sameSite: "lax"/);

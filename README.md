@@ -12,7 +12,7 @@ Living source-of-truth. Historical README text below is evidence only.
 | **CP26A** | **CLOSED** |
 | **CP26B** | **CLOSED** |
 | **CP26** | **COMPLETE** — finalisation, Stripe TEST, and exit gate **PASS** |
-| **Next execution checkpoint** | **CP27.3c** — guest booking XFF limiter only. CP27.3b is in source. Commerce remains **test**, not live. Only **CP31** activates LIVE commerce |
+| **Next execution checkpoint** | **Not CP27.4.** CP27.3c guest booking client-IP trust is in source. Commerce remains **test**, not live. Only **CP31** activates LIVE commerce |
 | Forward roadmap | **[docs/ROADMAP.md](docs/ROADMAP.md)** |
 | Fixture policy | **[docs/FIXTURE_POLICY.md](docs/FIXTURE_POLICY.md)** |
 

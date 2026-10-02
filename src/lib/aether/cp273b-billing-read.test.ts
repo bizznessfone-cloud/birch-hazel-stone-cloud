@@ -238,7 +238,8 @@ test("billing reads require current membership and do not bypass hotel ownership
   assert.doesNotMatch(billing, /sbg_platform_owners/);
   assert.match(owner, /from sbg_platform_owners/);
   assert.match(ops, /"invalid_credentials"/);
-  assert.match(booking, /forwarded\.split\(","\)\[0\]/);
+  assert.match(booking, /guestLimiterIdentity/);
+  assert.doesNotMatch(booking, /split\(","\)\[0\]/);
   assert.match(domainB, /=== "true"/);
   assert.match(commerce, /mode === "live"/);
   assert.doesNotMatch(commerce, /SBG_DOMAIN_B_LIVE_CHECKOUT/);
