@@ -6,7 +6,7 @@
 import type { Sql } from "@/lib/db";
 import { saasCommerceMode } from "./saas-commerce.server.ts";
 import { assertStripePriceId, SaasLifecycleError } from "./saas-lifecycle.ts";
-import { PROPERTY_LICENCE_PLAN } from "./property-licence.ts";
+import { PROPERTY_LICENCE_PLAN, SELF_SERVICE_LICENCE_MAX } from "./property-licence.ts";
 
 export const ORDERED_BILLING_APPLY_REGPROCEDURE =
   "sbg_apply_billing_event(text,text,bigint,uuid,text,text,text,text,timestamptz,boolean)";
@@ -140,7 +140,12 @@ export function extractDomainASubscriptionEvent(event: unknown): DomainASubscrip
     );
   }
   const quantity = firstItem?.quantity;
-  if (typeof quantity !== "number" || !Number.isInteger(quantity) || quantity < 0) {
+  if (
+    typeof quantity !== "number" ||
+    !Number.isInteger(quantity) ||
+    quantity < 0 ||
+    quantity > SELF_SERVICE_LICENCE_MAX
+  ) {
     throw new DomainAWebhookExtractError(
       "Domain A subscription quantity is missing or malformed.",
       "missing_quantity",
@@ -273,7 +278,11 @@ export async function applyDomainABillingEvent(
   if (!(await hasOrganisationBillingApply(db))) {
     throw new OrderedBillingSchemaError("Organisation billing persistence is not installed.");
   }
-  if (!Number.isInteger(event.quantity) || event.quantity < 0) {
+  if (
+    !Number.isInteger(event.quantity) ||
+    event.quantity < 0 ||
+    event.quantity > SELF_SERVICE_LICENCE_MAX
+  ) {
     throw new DomainAWebhookExtractError(
       "Domain A subscription quantity is missing or malformed.",
       "missing_quantity",

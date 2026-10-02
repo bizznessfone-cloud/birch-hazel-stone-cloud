@@ -49,18 +49,23 @@ export const Route = createFileRoute("/api/stripe/webhook")({
           const bookingId = typeof metadata.booking_id === "string" ? metadata.booking_id : null;
           const paymentId = typeof metadata.payment_id === "string" ? metadata.payment_id : null;
           if (!bookingId || !paymentId) return Response.json({ received: true });
-          const paymentStatus =
-            event.type === "checkout.session.completed" && object?.payment_status === "paid"
-              ? "paid"
-              : event.type === "checkout.session.async_payment_succeeded"
-                ? "paid"
-                : event.type === "checkout.session.async_payment_failed"
-                  ? "failed"
-                  : "pending";
-          const paymentIntentId = typeof object?.payment_intent === "string" ? object.payment_intent : null;
+          const { evaluateDomainBCheckoutBinding } = await import("@/lib/aether/domain-b-payment");
+          const decision = await evaluateDomainBCheckoutBinding(db, event);
+          if (decision.action === "ignore") return Response.json({ received: true });
+          if (decision.action === "mismatch") {
+            return Response.json({ received: false, outcome: "binding_mismatch" }, { status: 409 });
+          }
           await db.query(
             "select sbg_apply_payment_event($1, $2, $3::uuid, $4::uuid, $5, $6, $7)",
-            [event.id, event.type, bookingId, paymentId, paymentIntentId, paymentStatus, typeof event?.account === "string" ? event.account : null],
+            [
+              decision.eventId,
+              decision.eventType,
+              decision.bookingId,
+              decision.paymentId,
+              decision.paymentIntentId,
+              decision.paymentStatus,
+              decision.accountId,
+            ],
           );
           return Response.json({ received: true });
         }
@@ -98,7 +103,7 @@ export const Route = createFileRoute("/api/stripe/webhook")({
           if (error instanceof OrderedBillingSchemaError) {
             return new Response("Ordered billing persistence is not installed.", { status: 503 });
           }
-          if (error instanceof SaasLifecycleError) {
+          if (error instanceof DomainAWebhookExtractError || error instanceof SaasLifecycleError) {
             return Response.json({ received: true, outcome: "rejected" });
           }
           throw error;

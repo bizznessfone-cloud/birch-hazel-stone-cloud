@@ -220,7 +220,7 @@ test("CP26A.1 Domain B guest Checkout is not blocked by SBG_SAAS_COMMERCE=off", 
     });
   }) as typeof fetch;
   try {
-    await withStripeEnv("off", LIVE_KEY, async () => {
+    await withStripeEnv("off", TEST_KEY, async () => {
       const result = await createGuestTransferCheckout({
         accountId: "acct_hotel",
         bookingId: "22222222-2222-2222-2222-222222222222",

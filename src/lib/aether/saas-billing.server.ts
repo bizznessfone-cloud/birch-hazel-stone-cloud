@@ -12,11 +12,12 @@ import {
   billingViewModel,
   type BillingAccountSnapshot,
 } from "./saas-lifecycle.ts";
-import { createBillingPortal, createSubscriptionCheckout } from "./stripe.server.ts";
+import { createBillingPortal, createSubscriptionCheckout, StripeSessionCreatedError } from "./stripe.server.ts";
 import {
   PROPERTY_LICENCE_PLAN,
   authorisePropertyLicenceQuantity,
   propertyHasDomainAEntitlement,
+  usableLicensedQuantity,
 } from "./property-licence.ts";
 
 export type OrganisationBillingRow = {
@@ -157,6 +158,29 @@ export async function ensureHotelOrganisation(input: {
   return { organisationId };
 }
 
+export class DomainACheckoutClaimError extends Error {
+  readonly code: "checkout_in_progress" | "checkout_attach_failed";
+
+  constructor(
+    code: "checkout_in_progress" | "checkout_attach_failed",
+    message = code === "checkout_in_progress"
+      ? "A SCAN BOOK GO checkout is already in progress for this organisation."
+      : "Domain A checkout session could not be attached.",
+  ) {
+    super(message);
+    this.name = "DomainACheckoutClaimError";
+    this.code = code;
+  }
+}
+
+const DOMAIN_A_CLAIM_TTL_SECONDS = 600;
+
+function reusableAttachedCheckout(sessionId: string | null, url: string | null): string | null {
+  if (typeof sessionId !== "string" || !/^cs_[A-Za-z0-9_]+$/.test(sessionId)) return null;
+  if (typeof url !== "string" || !url.startsWith("https://")) return null;
+  return url;
+}
+
 export async function startDomainACheckout(input: {
   db: Sql;
   userId: string;
@@ -170,15 +194,71 @@ export async function startDomainACheckout(input: {
   assertCheckoutAllowed(billing);
   const commerce = assertDomainACommerceAllowedForOrganisation(input.organisationId);
   const priceId = await resolvePropertyLicenceCheckoutPrice(input.db, commerce.mode);
-  const checkout = await createSubscriptionCheckout({
-    priceId,
-    organisationId: input.organisationId,
-    userId: input.userId,
-    quantity,
-    customerId: billing?.stripe_customer_id,
-    successUrl: `${input.origin}/app/billing?organisationId=${input.organisationId}&checkout=success`,
-    cancelUrl: `${input.origin}/app/billing?organisationId=${input.organisationId}&checkout=cancel`,
-  });
+  const claimRows = await input.db.query<{
+    outcome: string;
+    claim_token: string | null;
+    stripe_checkout_session_id: string | null;
+    stripe_checkout_url: string | null;
+  }>(
+    `select outcome, claim_token::text as claim_token, stripe_checkout_session_id, stripe_checkout_url
+       from sbg_claim_domain_a_checkout($1, $2::uuid, $3::integer, $4::integer)`,
+    [input.userId, input.organisationId, quantity, DOMAIN_A_CLAIM_TTL_SECONDS],
+  );
+  const claim = claimRows[0];
+  if (!claim) throw new DomainACheckoutClaimError("checkout_attach_failed");
+  if (claim.outcome === "subscription_exists") {
+    throw new SaasLifecycleError(
+      "This organisation already has a SCAN BOOK GO subscription. Use Manage billing.",
+      "subscription_exists",
+    );
+  }
+  if (claim.outcome === "busy") throw new DomainACheckoutClaimError("checkout_in_progress");
+  if (claim.outcome === "session_attached") {
+    const url = reusableAttachedCheckout(claim.stripe_checkout_session_id, claim.stripe_checkout_url);
+    if (!url) throw new DomainACheckoutClaimError("checkout_in_progress");
+    return { url, quantity };
+  }
+  if (claim.outcome !== "claimed" || !claim.claim_token) {
+    throw new DomainACheckoutClaimError("checkout_attach_failed");
+  }
+
+  const idempotencyKey = `sbg-domain-a:${input.organisationId}:${claim.claim_token}`;
+  let checkout: { id: string; url: string };
+  try {
+    checkout = await createSubscriptionCheckout({
+      priceId,
+      organisationId: input.organisationId,
+      userId: input.userId,
+      quantity,
+      customerId: billing?.stripe_customer_id,
+      successUrl: `${input.origin}/app/billing?organisationId=${input.organisationId}&checkout=success`,
+      cancelUrl: `${input.origin}/app/billing?organisationId=${input.organisationId}&checkout=cancel`,
+      idempotencyKey,
+    });
+  } catch (error) {
+    if (error instanceof StripeSessionCreatedError) {
+      throw new DomainACheckoutClaimError("checkout_attach_failed");
+    }
+    try {
+      await input.db.query("select sbg_release_domain_a_checkout_claim($1, $2::uuid, $3::uuid)", [
+        input.userId,
+        input.organisationId,
+        claim.claim_token,
+      ]);
+    } catch {
+      /* Stripe failure stays visible. The claim is left for a later retry only if release itself failed. */
+    }
+    throw error;
+  }
+
+  try {
+    await input.db.query(
+      "select sbg_attach_domain_a_checkout_session($1, $2::uuid, $3::uuid, $4, $5)",
+      [input.userId, input.organisationId, claim.claim_token, checkout.id, checkout.url],
+    );
+  } catch {
+    throw new DomainACheckoutClaimError("checkout_attach_failed");
+  }
   return { url: checkout.url, quantity };
 }
 
@@ -212,6 +292,17 @@ export async function allocatePropertyLicence(input: {
   hotelId: string;
 }) {
   await ownedHotel(input.db, input.userId, input.hotelId);
+  const billing = await loadOrganisationBilling(input.db, input.organisationId);
+  if (!billing) throw new Error("no purchased property licences");
+  const usable = usableLicensedQuantity(billing.licensed_quantity);
+  const active = await input.db.query<{ n: number }>(
+    `select count(*)::int as n
+       from sbg_property_licence_allocations
+      where organisation_id = $1::uuid
+        and released_at is null`,
+    [input.organisationId],
+  );
+  if (Number(active[0]?.n ?? 0) >= usable) throw new Error("no available property licence");
   const rows = await input.db.query<{ id: string }>(
     "select sbg_allocate_property_licence($1, $2::uuid, $3::uuid)::text as id",
     [input.userId, input.organisationId, input.hotelId],

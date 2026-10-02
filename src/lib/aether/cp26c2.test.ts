@@ -288,6 +288,7 @@ test("CP26C.2 organisation allowlist reaches mocked Stripe without a hotel price
       "select sbg_catalogue_record_stripe_mapping($1, $2::uuid, 'test', 'prod_probe_c2', 'price_probe_c2')",
       [PLATFORM_OWNER_USER.id, version.rows[0]!.id],
     );
+    await pg.exec(read("migrations/0029_cp272_domain_a_checkout_claims.sql"));
     await withEnv(
       {
         SBG_SAAS_COMMERCE: "test",

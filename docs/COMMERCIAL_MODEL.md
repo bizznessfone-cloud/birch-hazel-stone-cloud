@@ -26,7 +26,7 @@ Catalogue amounts are no longer undefined. The published Production price versio
 | Former O3.4 | **SUPERSEDED** — do not start; it would price the obsolete tiers |
 | CP26C.3 | **NOT RESUMED** — its three-tier TEST Price plan is superseded |
 | CP26C.4 | **SUPERSEDED as previously scoped** — do not cut Checkout over to three tier Prices |
-| Next | **CP27.2 application remediation.** 0030 is applied. Do not start M5–M8, CP27.3, or LIVE inside the 0030 reconciliation. Checkout is not integrated. Only **CP31** activates LIVE |
+| Next | **CP27.3**, not started. M5–M8 application remediation is in source. Checkout calls 0029. `SBG_DOMAIN_B_LIVE_CHECKOUT` is not enabled. Only **CP31** activates LIVE |
 | Commerce | **test** (`SBG_SAAS_COMMERCE=test`). Not live. Only **CP31** activates LIVE |
 | Ledger | Gate B accepted **0001–0030**; `AUTHORISED_PENDING=[]`; 0030 applied (GHA 36448160139); 0031+ fail-closed |
 | 0026 digest | `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446` unchanged |

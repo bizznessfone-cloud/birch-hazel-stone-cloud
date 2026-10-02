@@ -34,7 +34,7 @@ Living status: **`BUILD_STATE.md`** (repo root).
 | CP26 FINALISATION | **PASS** — Production ledger **0001–0028**; dormant organisation property-licence cutover. Finalisation snapshot had commerce OFF. That is not the exit-gate state |
 | CP26 STRIPE TEST | **PASS** |
 | CP26 EXIT GATE | **PASS** — **CP26 COMPLETE** |
-| **Next product checkpoint** | **CP27.2 application remediation.** 0030 is applied. Checkout is not integrated. M5–M8 are not implemented. Only **CP31** activates LIVE commerce |
+| **Next product checkpoint** | **CP27.3**, not started. M5–M8 application remediation is in source. Checkout calls 0029. `SBG_DOMAIN_B_LIVE_CHECKOUT` is not enabled. Only **CP31** activates LIVE commerce |
 | Forward roadmap | **[ROADMAP.md](ROADMAP.md)** (CP26–CP31) |
 | Commercial catalogue | **[COMMERCIAL_CATALOGUE.md](COMMERCIAL_CATALOGUE.md)** |
 | Owner architecture | **[OWNER_CONTROL_PLANE.md](OWNER_CONTROL_PLANE.md)** |

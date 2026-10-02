@@ -152,6 +152,26 @@ export async function openCp26finDb(): Promise<PGlite> {
   return openFixtureDb(MIGRATIONS_THROUGH_0028);
 }
 
+export const MIGRATIONS_THROUGH_0029 = [
+  ...MIGRATIONS_THROUGH_0028,
+  "0029_cp272_domain_a_checkout_claims.sql",
+] as const;
+
+export const MIGRATIONS_THROUGH_0030 = [
+  ...MIGRATIONS_THROUGH_0029,
+  "0030_cp272_fix_prepare_booking_payment.sql",
+] as const;
+
+/** Domain A checkout claims. Does not replace openCp26finDb (through 0028). */
+export async function openCp272CheckoutDb(): Promise<PGlite> {
+  return openFixtureDb(MIGRATIONS_THROUGH_0029);
+}
+
+/** Domain B payment preparation through the repaired 0030 function. */
+export async function openCp272PaymentDb(): Promise<PGlite> {
+  return openFixtureDb(MIGRATIONS_THROUGH_0030);
+}
+
 export function asBookingDb(pg: PGlite): BookingDb {
   return {
     query: async <T>(text: string, params?: unknown[]) => (await pg.query<T>(text, params)).rows,

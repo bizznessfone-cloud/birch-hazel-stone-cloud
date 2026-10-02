@@ -6,6 +6,7 @@ import {
 } from "./saas-commerce.server.ts";
 import { assertStripePriceId } from "./saas-lifecycle.ts";
 import { authorisePropertyLicenceQuantity, PROPERTY_LICENCE_PLAN } from "./property-licence.ts";
+import { assertDomainBLiveCheckoutAllowed } from "./domain-b-live.ts";
 
 const API = "https://api.stripe.com/v1";
 
@@ -21,13 +22,19 @@ function hmacSecret() {
   return new TextEncoder().encode(value);
 }
 
-async function stripePost<T>(path: string, params: Record<string, string>, accountId?: string): Promise<T> {
+async function stripePost<T>(
+  path: string,
+  params: Record<string, string>,
+  accountId?: string,
+  idempotencyKey?: string,
+): Promise<T> {
   const body = new URLSearchParams(params);
   const headers: Record<string, string> = {
     Authorization: `Bearer ${secretKey()}`,
     "Content-Type": "application/x-www-form-urlencoded",
   };
   if (accountId) headers["Stripe-Account"] = accountId;
+  if (idempotencyKey) headers["Idempotency-Key"] = idempotencyKey;
 
   const response = await fetch(API + path, { method: "POST", headers, body });
   const data = await response.json();
@@ -38,6 +45,17 @@ async function stripePost<T>(path: string, params: Record<string, string>, accou
   return data as T;
 }
 
+/** Stripe returned a session id. The claim must not be released. */
+export class StripeSessionCreatedError extends Error {
+  readonly sessionId: string;
+
+  constructor(message: string, sessionId: string) {
+    super(message);
+    this.name = "StripeSessionCreatedError";
+    this.sessionId = sessionId;
+  }
+}
+
 export async function createSubscriptionCheckout(input: {
   priceId: string;
   organisationId: string;
@@ -46,27 +64,45 @@ export async function createSubscriptionCheckout(input: {
   successUrl: string;
   cancelUrl: string;
   customerId?: string | null;
+  idempotencyKey?: string;
 }) {
   const quantity = authorisePropertyLicenceQuantity(input.quantity);
   const priceId = assertStripePriceId(input.priceId);
   const { expectedLivemode } = assertDomainACommerceAllowed();
-  const session = await stripePost<{ id: string; url?: string; livemode?: boolean }>("/checkout/sessions", {
-    mode: "subscription",
-    "line_items[0][price]": priceId,
-    "line_items[0][quantity]": String(quantity),
-    success_url: input.successUrl,
-    cancel_url: input.cancelUrl,
-    ...(input.customerId ? { customer: input.customerId } : {}),
-    "metadata[organisation_id]": input.organisationId,
-    "metadata[user_id]": input.userId,
-    "metadata[plan_code]": PROPERTY_LICENCE_PLAN,
-    "subscription_data[metadata][organisation_id]": input.organisationId,
-    "subscription_data[metadata][user_id]": input.userId,
-    "subscription_data[metadata][plan_code]": PROPERTY_LICENCE_PLAN,
-  });
-  assertDomainALivemode(session.livemode, expectedLivemode);
-  if (!session.url) throw new Error("Stripe Checkout URL was not returned.");
-  return { ...session, url: session.url };
+  const session = await stripePost<{ id?: string; url?: string; livemode?: boolean }>(
+    "/checkout/sessions",
+    {
+      mode: "subscription",
+      "line_items[0][price]": priceId,
+      "line_items[0][quantity]": String(quantity),
+      success_url: input.successUrl,
+      cancel_url: input.cancelUrl,
+      ...(input.customerId ? { customer: input.customerId } : {}),
+      "metadata[organisation_id]": input.organisationId,
+      "metadata[user_id]": input.userId,
+      "metadata[plan_code]": PROPERTY_LICENCE_PLAN,
+      "subscription_data[metadata][organisation_id]": input.organisationId,
+      "subscription_data[metadata][user_id]": input.userId,
+      "subscription_data[metadata][plan_code]": PROPERTY_LICENCE_PLAN,
+    },
+    undefined,
+    input.idempotencyKey,
+  );
+  if (typeof session.id === "string" && session.id.length > 0) {
+    try {
+      assertDomainALivemode(session.livemode, expectedLivemode);
+    } catch (error) {
+      throw new StripeSessionCreatedError(
+        error instanceof Error ? error.message : "Stripe Checkout livemode mismatch.",
+        session.id,
+      );
+    }
+    if (typeof session.url !== "string" || !session.url.startsWith("https://")) {
+      throw new StripeSessionCreatedError("Stripe Checkout URL was not returned.", session.id);
+    }
+    return { ...session, id: session.id, url: session.url };
+  }
+  throw new Error("Stripe Checkout URL was not returned.");
 }
 
 export async function createBillingPortal(customerId: string, returnUrl: string) {
@@ -175,15 +211,25 @@ export async function createGuestTransferCheckout(input: {
   successUrl: string;
   cancelUrl: string;
 }) {
-  return stripePost<{ id: string; url: string }>("/checkout/sessions", {
-    mode: "payment",
-    "line_items[0][price_data][currency]": input.currency.toLowerCase(),
-    "line_items[0][price_data][product_data][name]": "Hotel transfer",
-    "line_items[0][price_data][unit_amount]": String(input.amountMinor),
-    "line_items[0][quantity]": "1",
-    success_url: input.successUrl,
-    cancel_url: input.cancelUrl,
-    "metadata[booking_id]": input.bookingId,
-    "metadata[payment_id]": input.paymentId,
-  }, input.accountId);
+  assertDomainBLiveCheckoutAllowed();
+  const session = await stripePost<{ id: string; url?: string }>(
+    "/checkout/sessions",
+    {
+      mode: "payment",
+      "line_items[0][price_data][currency]": input.currency.toLowerCase(),
+      "line_items[0][price_data][product_data][name]": "Hotel transfer",
+      "line_items[0][price_data][unit_amount]": String(input.amountMinor),
+      "line_items[0][quantity]": "1",
+      success_url: input.successUrl,
+      cancel_url: input.cancelUrl,
+      "metadata[booking_id]": input.bookingId,
+      "metadata[payment_id]": input.paymentId,
+    },
+    input.accountId,
+    input.paymentId,
+  );
+  if (typeof session.url !== "string" || !session.url.startsWith("https://")) {
+    throw new Error("Stripe Checkout URL was not returned.");
+  }
+  return { id: session.id, url: session.url };
 }

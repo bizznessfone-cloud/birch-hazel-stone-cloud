@@ -14,7 +14,7 @@ Living status: **`BUILD_STATE.md`**.
 - Forward roadmap: **[ROADMAP.md](ROADMAP.md)**
 - Fixture policy: **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)**
 - Vercel Production `scan-book-go` / alias `https://scan-book-go.vercel.app`
-- Neon Production migrated through **0030**. Gate B accepted ledger **0001–0030**. `AUTHORISED_PENDING=[]`. 0030 digest `9dec121ac28b8bcca5554576816eb8c764d50f56b6b97c9f0199e0b926e8643f` applied (GHA 36448160139). Temporary apply workflow **RETIRED**. Do not rerun `scripts/cp272-0030-production-migrate.mjs`. 0029 digest `e5897eda1a4f3c8c4025e16235b9d11a677b3cc7994934058142934d4dea7adc` applied (GHA 36404482927). Claim table installed and empty. Checkout is not integrated. Booking payments 0. M5, M6, M7, and M8 are not implemented. Commerce **test**, not live. 0031+ fail-closed
+- Neon Production migrated through **0030**. Gate B accepted ledger **0001–0030**. `AUTHORISED_PENDING=[]`. 0030 digest `9dec121ac28b8bcca5554576816eb8c764d50f56b6b97c9f0199e0b926e8643f` applied (GHA 36448160139). Temporary apply workflow **RETIRED**. Do not rerun `scripts/cp272-0030-production-migrate.mjs`. 0029 digest `e5897eda1a4f3c8c4025e16235b9d11a677b3cc7994934058142934d4dea7adc` applied (GHA 36404482927). Checkout calls the installed 0029 claim functions. Booking payments were 0 and were not mutated by M5–M8. M5, M6, M7, and M8 are implemented in application source. `SBG_DOMAIN_B_LIVE_CHECKOUT` is not enabled. Commerce **test**, not live. 0031+ fail-closed
 - Active platform Owners: **1** (OPERATOR CONTROLLED / REDACTED). Bootstrap workflow **RETIRED**
 - `/app/*` exists (SaaS). `/owner/*` is Production-proven. `/ops/*` remains internal operations
 - First Production hotel through `/app`: **configured, not live** (`sbg-verify-a5`)

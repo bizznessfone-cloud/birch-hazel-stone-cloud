@@ -23,7 +23,7 @@ import {
   hotelStatus,
   insertAuthUser,
   onboardConfiguredFixture,
-  openCp26finDb,
+  openCp272CheckoutDb,
 } from "./cp26a4-fixture.ts";
 
 const root = process.cwd();
@@ -86,7 +86,7 @@ function mockStripe() {
   };
 }
 
-async function readyOrg(pg: Awaited<ReturnType<typeof openCp26finDb>>, withPrice: boolean) {
+async function readyOrg(pg: Awaited<ReturnType<typeof openCp272CheckoutDb>>, withPrice: boolean) {
   await insertAuthUser(pg, OWNER_USER);
   await insertAuthUser(pg, OTHER_USER);
   await insertAuthUser(pg, PLATFORM_OWNER_USER);
@@ -128,7 +128,7 @@ function commerce(organisationId: string) {
 }
 
 test("CP26B.1 commerce OFF does not call Stripe or write a licence quantity", async () => {
-  const pg = await openCp26finDb();
+  const pg = await openCp272CheckoutDb();
   const stripe = mockStripe();
   try {
     const { organisationId, hotelId } = await readyOrg(pg, true);
@@ -156,7 +156,7 @@ test("CP26B.1 commerce OFF does not call Stripe or write a licence quantity", as
 });
 
 test("CP26B.1 quantity above 49 is rejected and never reaches Stripe", async () => {
-  const pg = await openCp26finDb();
+  const pg = await openCp272CheckoutDb();
   const stripe = mockStripe();
   try {
     const { organisationId } = await readyOrg(pg, true);
@@ -192,7 +192,7 @@ test("CP26B.1 quantity above 49 is rejected and never reaches Stripe", async () 
 });
 
 test("CP26B.1 missing mapping does not start Checkout", async () => {
-  const pg = await openCp26finDb();
+  const pg = await openCp272CheckoutDb();
   const stripe = mockStripe();
   try {
     const { organisationId } = await readyOrg(pg, false);
@@ -217,7 +217,7 @@ test("CP26B.1 missing mapping does not start Checkout", async () => {
 });
 
 test("CP26B.1 checkout is organisation-scoped property_licence quantity", async () => {
-  const pg = await openCp26finDb();
+  const pg = await openCp272CheckoutDb();
   const stripe = mockStripe();
   try {
     const { organisationId, hotelId } = await readyOrg(pg, true);
@@ -253,7 +253,7 @@ test("CP26B.1 checkout is organisation-scoped property_licence quantity", async 
 });
 
 test("CP26B.1 an existing organisation subscription cannot start a second Checkout", async () => {
-  const pg = await openCp26finDb();
+  const pg = await openCp272CheckoutDb();
   const stripe = mockStripe();
   try {
     const { organisationId } = await readyOrg(pg, true);
@@ -306,7 +306,7 @@ test("CP26B.1 an existing organisation subscription cannot start a second Checko
 });
 
 test("CP26B.1 non-allowlisted organisation and live keys do not open Checkout", async () => {
-  const pg = await openCp26finDb();
+  const pg = await openCp272CheckoutDb();
   const stripe = mockStripe();
   try {
     const { organisationId } = await readyOrg(pg, true);
@@ -381,7 +381,7 @@ test("CP26B.1 Domain B source freeze and gate before Stripe", () => {
 });
 
 test("CP26B.1 property entitlement requires an allocation, not a user or a bare organisation", async () => {
-  const pg = await openCp26finDb();
+  const pg = await openCp272CheckoutDb();
   try {
     const { organisationId, hotelId } = await readyOrg(pg, true);
     await pg.query(

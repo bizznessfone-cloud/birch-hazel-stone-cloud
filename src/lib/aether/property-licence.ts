@@ -48,3 +48,19 @@ export function propertyHasDomainAEntitlement(input: {
   if (!input.organisationId || !input.allocationActive) return false;
   return isSaasEntitled(parseBillingStatus(input.subscriptionStatus));
 }
+
+/**
+ * Capacity the application may allocate. Integers 1–49 only.
+ * Zero, negatives, non-integers, and 50+ grant nothing. Never clamps.
+ */
+export function usableLicensedQuantity(quantity: unknown): number {
+  const value =
+    typeof quantity === "number"
+      ? quantity
+      : typeof quantity === "string" && /^(?:0|[1-9]\d*)$/.test(quantity)
+        ? Number(quantity)
+        : Number.NaN;
+  if (!Number.isInteger(value)) return 0;
+  if (value < SELF_SERVICE_LICENCE_MIN || value > SELF_SERVICE_LICENCE_MAX) return 0;
+  return value;
+}
