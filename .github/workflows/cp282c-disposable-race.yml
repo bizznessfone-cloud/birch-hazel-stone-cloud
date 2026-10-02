@@ -1,0 +1,51 @@
+name: CP28.2C disposable race gate
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Exact confirmation string
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  race:
+    name: disposable race
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Require exact confirmation
+        env:
+          CP282C_CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -eu
+          if [ "$CP282C_CONFIRMATION" != "RUN-CP28-2C" ]; then
+            echo "CP282C confirmation rejected; database not opened"
+            exit 2
+          fi
+          echo "CP282C confirmation accepted"
+
+      - name: Checkout selected commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Disposable branch race gate
+        env:
+          AETHER_DISPOSABLE_DATABASE_URL: ${{ secrets.AETHER_DISPOSABLE_DATABASE_URL }}
+          CP282C_CONFIRMATION: ${{ inputs.confirmation }}
+        run: node scripts/cp282c-disposable-race.mjs
