@@ -4,7 +4,7 @@ Living status: **`BUILD_STATE.md`** (repo root).
 
 | Field | Value |
 |---|---|
-| Last application SHA | 19512c295830fbc6fd9712d688ce364d940f87c3 (CP26B.3R; Production 0024 applied) |
+| Last application SHA | Verification baseline `30173015216ca638a7d63736205fe20be11d3880` (CP28.2C temporary workflow retired). This documentation commit does not change application source. `19512c2` is the last *observed* deployment identity in the Production row below, not current `main` |
 | CP25G.3 | **CLOSED** |
 | **CP26A** | **CLOSED** |
 | CP26B.1 | **PASS** |
@@ -34,13 +34,19 @@ Living status: **`BUILD_STATE.md`** (repo root).
 | CP26 FINALISATION | **PASS** — Production ledger **0001–0028**; dormant organisation property-licence cutover. Finalisation snapshot had commerce OFF. That is not the exit-gate state |
 | CP26 STRIPE TEST | **PASS** |
 | CP26 EXIT GATE | **PASS** — **CP26 COMPLETE** |
-| **Next product checkpoint** | **Not CP27.4.** CP27.3c guest client-IP trust is in source. Checkout calls 0029. `SBG_DOMAIN_B_LIVE_CHECKOUT` is not enabled. Only **CP31** activates LIVE commerce |
+| **CP27** | **CLOSED** — security hardening. CP27.3a `7fb6817`, CP27.3b `9972964`, CP27.3c `b8b04e7`. Read-only CP27.3 closure **PASS** on `b8b04e7`. No migration 0031 |
+| CP28.2 | **VERIFIED** — local `npm run test:aether`, typecheck, and build. Not a Neon proof |
+| CP28.2B | **BLOCKED** — Production fixture/cleanup privilege boundary, not an occupancy defect. Not re-run on Production |
+| CP28.2C | **VERIFIED** — disposable Neon only. Project `quiet-sound-53513710`, branch `cp28-2c-race-gate` / `br-icy-shadow-b1fh96gk`. Not Production `br-green-darkness-b1k7wkue`. GHA [37031757779](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/37031757779) at `55b7e19`. Workflow retired by `3017301` |
+| CP28.3 | **VERIFIED WITH COVERAGE LIMIT** — product tests 628/628 plus typecheck and build. Guest engine, idempotency, token privacy, Ops handoff, tenancy, assignment, overlap, cancel/reuse on throwaway PGLite. Browser shells only. See [`BUILD_STATE.md`](../BUILD_STATE.md) |
+| **CP28** | **CLOSED** |
+| **Next product checkpoint** | **CP29 — LOAD / SCALABILITY / RESILIENCE VERIFICATION. Not started.** Admission is not Production launch, not a public launch of scanbookgo.com, and not LIVE commerce. Only **CP31** activates LIVE commerce |
 | Forward roadmap | **[ROADMAP.md](ROADMAP.md)** (CP26–CP31) |
 | Commercial catalogue | **[COMMERCIAL_CATALOGUE.md](COMMERCIAL_CATALOGUE.md)** |
 | Owner architecture | **[OWNER_CONTROL_PLANE.md](OWNER_CONTROL_PLANE.md)** |
 | Fixture policy | **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)** |
-| Production | Vercel `scan-book-go` last observed `dpl_FmUosqz2wy7aCT51rNjdanJnuviZ` READY |
-| Migrations | Production and Gate B **0001–0030**; `AUTHORISED_PENDING=[]`; 0030 digest `9dec121ac28b8bcca5554576816eb8c764d50f56b6b97c9f0199e0b926e8643f` applied (GHA 36448160139); temporary apply workflow **RETIRED**; 0029 digest `e5897eda1a4f3c8c4025e16235b9d11a677b3cc7994934058142934d4dea7adc` applied (GHA 36404482927); claim table empty; checkout not integrated; booking payments 0; commerce **test** |
+| Production | Vercel `scan-book-go` last *observed* deployment `dpl_FmUosqz2wy7aCT51rNjdanJnuviZ` READY at `19512c2`. Later pushes, including this documentation commit, auto-deploy. That is not an environment change and not a commerce-mode change. No newer deployment id was observed in CP28 |
+| Migrations | Production and Gate B **0001–0030**; `AUTHORISED_PENDING=[]`; no 0031. 0030 digest `9dec121ac28b8bcca5554576816eb8c764d50f56b6b97c9f0199e0b926e8643f` applied (GHA 36448160139); temporary apply workflow **RETIRED**. 0029 digest `e5897eda1a4f3c8c4025e16235b9d11a677b3cc7994934058142934d4dea7adc` applied (GHA 36404482927). Guest payment source exists (`sbg_prepare_booking_payment`, then hotel-owned Checkout). CP28 created no Stripe object and wrote no Production booking payment. Booking payments were **0** at the 0030 checkpoint and were not mutated by CP28. Documented Production `SBG_SAAS_COMMERCE` remains **test**, not live. `SBG_DOMAIN_B_LIVE_CHECKOUT` is not enabled |
 
 This file’s remainder is a **historical Checkpoint 10** record only.
 

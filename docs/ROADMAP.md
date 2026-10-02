@@ -5,7 +5,7 @@ Canonical living roadmap. Other living documents should **point here**, not rede
 | Field | Value |
 |---|---|
 | Formalised on parent | `91ba2c15c6f3b5b11106ebc006e433515e1f0f86` |
-| Last application SHA | `19512c295830fbc6fd9712d688ce364d940f87c3` (CP26B.3R catalog identity) |
+| Last application SHA | Verification baseline `30173015216ca638a7d63736205fe20be11d3880`. `19512c2` is the older CP26B.3R catalog identity, not current `main` |
 | CP25G.3 | **CLOSED** |
 | **CP26A** | **CLOSED** |
 | CP26B.1 | **PASS** — application lifecycle hardened (gate-before-write, one subscription, portal-first) |
@@ -35,7 +35,13 @@ Canonical living roadmap. Other living documents should **point here**, not rede
 | CP26 FINALISATION | **PASS** — Production **0001–0028**; `property_licence` active; basic/pro/premium inactive; Domain A cut over to organisation quantity. Finalisation snapshot: commerce OFF. **CP26 was not yet complete** |
 | CP26 STRIPE TEST | **PASS** — one TEST subscription, quantity 3, EUR 17900/month; allocation and duplicate webhook proven |
 | CP26 EXIT GATE | **PASS** — **CP26 COMPLETE**. Commerce remains **test**. LIVE locks false |
-| **Next** | **CP27 — SECURITY HARDENING**. Not started. The twelve-step O4–O11 chain is superseded and must not be executed. **CP26C.3** is not resumed. Only **CP31** activates LIVE commerce |
+| **CP27** | **CLOSED** — security hardening. CP27.3a/b/c in source. Read-only CP27.3 closure **PASS** on `b8b04e7`. No migration 0031 |
+| CP28.2 | **VERIFIED** — local product regression, typecheck, build. Not a Neon proof |
+| CP28.2B | **BLOCKED** — Production cleanup/privilege boundary. Not an occupancy defect |
+| CP28.2C | **VERIFIED** — disposable Neon race only (`br-icy-shadow-b1fh96gk`, GHA [37031757779](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/37031757779)). Production branch not used. Workflow retired |
+| CP28.3 | **VERIFIED WITH COVERAGE LIMIT** — journeys on throwaway PGLite and unauthenticated browser shells. No Production login. No Stripe session |
+| **CP28** | **CLOSED** |
+| **Next** | **CP29 — LOAD / SCALABILITY / RESILIENCE VERIFICATION**. Not started. Not Production launch. Not public launch. Not LIVE commerce. The twelve-step O4–O11 chain is superseded and must not be executed. **CP26C.3** is not resumed. Only **CP31** activates LIVE commerce |
 
 ---
 
@@ -205,7 +211,7 @@ Non-blocking UI backlog: Owner header showed “SSBG Verification”. Deferred t
 
 **CP26 FINALISATION COMPLETE (snapshot).** This paragraph records the state at the end of finalisation, before Stripe TEST. Production ledger is **0001–0028** exactly once each. Gate B accepted ledger is **0001–0028**. `AUTHORISED_PENDING=[]`. 0027 digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef` (apply GHA [36251190175](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36251190175)) is ordinary accepted history. Its workflow is **RETIRED**. 0028 `migrations/0028_cp26fin_property_licence_catalogue.sql` digest `35626cb2d3b21a076f4a2cb982b9d0983610620fb21dbf7f3e94eb4c0576a02d` applied once (GHA [36254890554](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36254890554)). Its workflow is **RETIRED**. The historical controller script remains; its `REQUIRED_LEDGER` stays frozen at **0001–0027** and must not follow Gate B. At that snapshot: price versions 0, mappings 0, organisations 0, commerce OFF.
 
-**CP26 STRIPE TEST — PASS. CP26 EXIT GATE — PASS. CP26 — COMPLETE.** One TEST organisation `4208626a-ef20-4f5a-b28e-0d8b9c778205`, customer `cus_VKwWNaJ4nwUTfM`, subscription `sub_1UKGdCFHnHXHuPOwgswtqBhL`, one item, quantity 3, price `price_1UKGWjFHnHXHuPOwO50TJS93`, catalogue version `b13f9445-d27a-4e7d-8128-a2238906ce7c` EUR 17900 month. Event `evt_1UKKPiFHnHXHuPOwM7L3ZmoM` applied once; same-id replay did not move `processed_at`. Allocation proof passed, then all four fixtures were released. Licensed 3, active 0, available 3. Domain B unchanged. LIVE locks false. Commerce **test**, not live. The 0025 dispatch workflow is **RETIRED**. **Next is CP27 — SECURITY HARDENING. Not started.**
+**CP26 STRIPE TEST — PASS. CP26 EXIT GATE — PASS. CP26 — COMPLETE.** One TEST organisation `4208626a-ef20-4f5a-b28e-0d8b9c778205`, customer `cus_VKwWNaJ4nwUTfM`, subscription `sub_1UKGdCFHnHXHuPOwgswtqBhL`, one item, quantity 3, price `price_1UKGWjFHnHXHuPOwO50TJS93`, catalogue version `b13f9445-d27a-4e7d-8128-a2238906ce7c` EUR 17900 month. Event `evt_1UKKPiFHnHXHuPOwM7L3ZmoM` applied once; same-id replay did not move `processed_at`. Allocation proof passed, then all four fixtures were released. Licensed 3, active 0, available 3. Domain B unchanged. LIVE locks false. Commerce **test**, not live. The 0025 dispatch workflow is **RETIRED**. **At CP26 close, next was CP27 — SECURITY HARDENING, not started.** That sentence is historical. CP27 and CP28 later closed. Current next is CP29, not started. See the living table.
 
 The O4.2 paragraph below is the historical controller-ready record. It is not the current state. 0027 was later applied and accepted. Do not dispatch a 0027 workflow; the file is gone.
 
@@ -231,6 +237,8 @@ Remaining CP26 work, in order:
 CP26 FINALISATION PASS → CP26 STRIPE TEST PASS → CP26 EXIT GATE PASS → CP26 COMPLETE → CP27 SECURITY HARDENING (not started)
 ```
 
+The line above is the remaining-work list **at CP26 close**. It later completed: CP27 **CLOSED**, CP28 **CLOSED**. Current next is CP29, not started. Do not restart CP27.
+
 **Do not switch public Production commerce from test to live.** Empty organisation and hotel allowlists fail-close. Only **CP31** activates LIVE commerce.
 
 ### CP26D — HOTEL-OWNED GUEST PAYMENT REGRESSION
@@ -247,11 +255,17 @@ Includes: auth/session; tenancy/IDOR; privileges; Stripe webhook and metadata tr
 
 Does **not** commercially activate the platform.
 
+**Outcome: CLOSED.** Implemented in CP27.3a (Better Auth perimeter), CP27.3b (signup enumeration and billing reads), and CP27.3c (guest booking client IP). Read-only reconciliation **PASS** on `b8b04e7`. Residuals (memory auth rate limits, email verification off, last-billing and last-owner races, PGLite `aether_runtime` EXECUTE, Domain A orphan checkout session, raw quantity above the self-service cap, dev guest limiter fail-open, ops lockout) stay deferred. They were not immediate bypasses. No migration 0031.
+
 ## CP28 — FULL SYSTEM VERIFICATION
 
 End-to-end, regression, failure-path, integration, concurrency; auth, tenancy, onboarding, booking, SaaS subscription, Domain B. No commercial activation.
 
+**Outcome: CLOSED.** CP28.2 local regression **VERIFIED**. CP28.2B Production race **BLOCKED** on fixture cleanup privileges, not a product defect. CP28.2C disposable Neon race **VERIFIED** (project `quiet-sound-53513710`, branch `br-icy-shadow-b1fh96gk`, not Production). CP28.3 journeys **VERIFIED WITH COVERAGE LIMIT**: authenticated Production Ops, authenticated Owner, real Stripe TEST Checkout, and a live-preview guest wizard were not exercised. Booking status stays free-form by current V1 design. Guest payment integration exists in source; CP28 created no Stripe object. Commerce stays dormant. **CP29 is not started.**
+
 ## CP29 — LOAD / SCALABILITY TESTING
+
+**Status: FUTURE CHECKPOINT. Not started.** CP28 admission does not begin CP29, does not launch Production, and does not enable LIVE commerce.
 
 Controlled load: occupancy concurrency; pool behaviour; webhook bursts; API concurrency; Checkout/session fan-out where safely testable. No live customer load. No commercial activation.
 
