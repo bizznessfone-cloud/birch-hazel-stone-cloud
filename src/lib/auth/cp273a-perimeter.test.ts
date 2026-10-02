@@ -333,9 +333,15 @@ test("cookie, bearer, signup, guest limiter, ops, and commerce source stay put",
   assert.match(server, /useSecureCookies: false/);
   assert.match(server, /cookieCache: \{ enabled: true, maxAge: 300 \}/);
   assert.match(server, /bearer\(\)/);
-  assert.match(server, /emailAndPassword: \{ enabled: true \}/);
+  assert.match(server, /emailAndPassword: emailAndPasswordAuthOptions/);
+  assert.match(server, /hooks: \{ after: signUpEnumerationAfterHook \}/);
+  const signup = readFileSync(join(root, "src/lib/auth/signup-enumeration.ts"), "utf8");
+  assert.match(signup, /enabled: true/);
+  assert.match(signup, /autoSignIn: false/);
   assert.doesNotMatch(server, /requireEmailVerification/);
+  assert.doesNotMatch(signup, /requireEmailVerification/);
   assert.doesNotMatch(server, /sendResetPassword/);
+  assert.doesNotMatch(signup, /sendResetPassword/);
   assert.equal(emailAndPasswordEnabled, true);
 
   const booking = readFileSync(join(root, "src/lib/aether/booking.server.ts"), "utf8");

@@ -78,6 +78,18 @@ async function resolvePropertyLicenceCheckoutPrice(db: Sql, environment: "test" 
   }
 }
 
+async function assertCurrentOrganisationMember(db: Sql, userId: string, organisationId: string) {
+  const rows = await db.query<{ ok: number }>(
+    `select 1 as ok
+       from sbg_organisation_members
+      where organisation_id = $1::uuid
+        and user_id = $2
+        and removed_at is null`,
+    [organisationId, userId],
+  );
+  if (!rows[0]) throw new Error("Hotel not found.");
+}
+
 export async function loadDomainABillingState(db: Sql, userId: string, hotelId: string) {
   await ownedHotel(db, userId, hotelId);
   const hotelRows = await db.query<{ organisation_id: string | null }>(
@@ -85,6 +97,10 @@ export async function loadDomainABillingState(db: Sql, userId: string, hotelId: 
     [hotelId],
   );
   const organisationId = hotelRows[0]?.organisation_id ?? null;
+  // Hotel ownership is not organisation billing access. Membership is checked
+  // before Stripe, licence, or subscription rows are read. The denial matches
+  // a missing hotel so this path is not an organisation-existence oracle.
+  if (organisationId) await assertCurrentOrganisationMember(db, userId, organisationId);
   const connection = await db.query<{
     stripe_account_id: string;
     livemode: boolean;

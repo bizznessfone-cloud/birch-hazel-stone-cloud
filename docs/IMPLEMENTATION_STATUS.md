@@ -6,7 +6,7 @@ Living status: **`BUILD_STATE.md`**.
 - CP26B.3R SHA `19512c295830fbc6fd9712d688ce364d940f87c3` is historical, not current `main`
 - CP25G.3 / **CP26A** / **CP26B** / **CP26C-O2**: **CLOSED**
 - **CP26 FINALISATION — PASS. CP26 STRIPE TEST — PASS. CP26 EXIT GATE — PASS. CP26 — COMPLETE**
-- **Next: CP27.3b** — signup enumeration and billing-read authorisation only. CP27.3a Better Auth perimeter is in source. Former O3.4 superseded. CP26C.3 not resumed. The O4–O11 chain is superseded
+- **Next: CP27.3c** — guest booking XFF limiter only. CP27.3b is in source. Former O3.4 superseded. CP26C.3 not resumed. The O4–O11 chain is superseded
 - **CP26C-O3R PASS** — commercial model reconciled (`docs/COMMERCIAL_MODEL.md`). Later checkpoints implemented it
 - **CP26C-O2D PASS** — Owner sign-in isolated at `/owner/login`. Human verification **PASS**. No migration
 - **CP26C-O3.3 PASS** — Owner commercial catalogue UI. **O3.3V PASS**. Later a price version was created in CP26 STRIPE TEST

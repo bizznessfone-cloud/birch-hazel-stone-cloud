@@ -42,6 +42,7 @@ import { GROK_PROVIDERS } from "./providers";
 import { pgliteDialect } from "./pglite-dialect";
 import { GROK_ISSUER_DEFAULT, PREVIEW_CLIENT_ID, PREVIEW_CLIENT_SECRET } from "./preview";
 import { resolveAuthPerimeter } from "./perimeter";
+import { emailAndPasswordAuthOptions, signUpEnumerationAfterHook } from "./signup-enumeration";
 
 // Kick (and share) PGLite bootstrap as soon as the auth server module loads.
 void ensureDbReady();
@@ -175,7 +176,15 @@ export const auth = betterAuth({
   session: { cookieCache: { enabled: true, maxAge: 300 } },
 
   // Local email/password — toggled only via `./email-password` (not a plugin).
-  ...(emailAndPasswordEnabled ? { emailAndPassword: { enabled: true } } : {}),
+  // autoSignIn is false so an existing email and a new email share one
+  // non-session response. The after hook removes the synthetic-user shape
+  // difference. It does not enable verification or password reset.
+  ...(emailAndPasswordEnabled
+    ? {
+        emailAndPassword: emailAndPasswordAuthOptions,
+        hooks: { after: signUpEnumerationAfterHook },
+      }
+    : {}),
 
   // `__Host-` prefixed cookies: the browser REFUSES any same-named cookie that
   // carries a `Domain` attribute, so a sibling `*.grok.me` app cannot "toss" a

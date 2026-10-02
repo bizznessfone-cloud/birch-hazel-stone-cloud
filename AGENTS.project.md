@@ -45,7 +45,7 @@ Repository: `bizznessfone-cloud/birch-hazel-stone-cloud`.
 | CP26C-O3.3 | **PASS** — Owner commercial catalogue UI; amounts still **UNDEFINED** |
 | CP26C-O3.3V | **PASS** — operator Production plans verification; no price created |
 | CP26C-O3R | **PASS** — property-licence model reconciled; no implementation (`docs/COMMERCIAL_MODEL.md`) |
-| **Next product checkpoint** | **CP27.3b** — signup enumeration and billing-read authorisation only. CP27.3a perimeter is in source. **CP26 COMPLETE**. **CP26C.3** not resumed |
+| **Next product checkpoint** | **CP27.3c** — guest booking XFF limiter only. CP27.3b is in source. **CP26 COMPLETE**. **CP26C.3** not resumed |
 | Forward roadmap | **`docs/ROADMAP.md`** |
 | Commercial catalogue | **`docs/COMMERCIAL_CATALOGUE.md`** |
 | Fixture policy | **`docs/FIXTURE_POLICY.md`** |
@@ -147,4 +147,4 @@ Do not contact Neon, modify Vercel, change secrets, or deploy unless the active 
 
 Every checkpoint must identify the exact Git commit audited.
 
-Next is **CP27.3b** — signup enumeration and billing-read authorisation only. CP27.3a Better Auth perimeter is in source. Do not start CP27.3b from this file. Do not start former O3.4. Do not resume CP26C.3. Do not re-dispatch the retired 0025 workflow. Canonical roadmap: `docs/ROADMAP.md`. Commercial model: `docs/COMMERCIAL_MODEL.md`. CP26 is **COMPLETE**. CP26 is not go-live. Only CP31 activates LIVE commerce.
+Next is **CP27.3c** — guest booking XFF limiter only. CP27.3b signup enumeration and billing-read membership are in source. Do not start CP27.3c from this file. Do not start former O3.4. Do not resume CP26C.3. Do not re-dispatch the retired 0025 workflow. Canonical roadmap: `docs/ROADMAP.md`. Commercial model: `docs/COMMERCIAL_MODEL.md`. CP26 is **COMPLETE**. CP26 is not go-live. Only CP31 activates LIVE commerce.
