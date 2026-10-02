@@ -124,6 +124,41 @@ async function assertSourceLedger() {
   return true;
 }
 
+function usesPooler(connectionString) {
+  try {
+    return new URL(connectionString).hostname.includes("-pooler");
+  } catch {
+    return false;
+  }
+}
+
+function directConnectionString(connectionString) {
+  const parsed = new URL(connectionString);
+  if (!parsed.hostname.includes("-pooler") || !parsed.hostname.endsWith(".neon.tech")) return null;
+  const directHost = parsed.hostname.replace("-pooler", "");
+  const at = connectionString.indexOf(parsed.hostname);
+  if (at < 0) return null;
+  return connectionString.slice(0, at) + directHost + connectionString.slice(at + parsed.hostname.length);
+}
+
+function makeClient(connectionString, name) {
+  return new pg.Client({
+    connectionString,
+    application_name: name,
+    connectionTimeoutMillis: 45000,
+  });
+}
+
+async function pinIdentity(clientA, clientB) {
+  await Promise.all([clientA.query("BEGIN"), clientB.query("BEGIN")]);
+  try {
+    const [idA, idB] = await Promise.all([readIdentity(clientA), readIdentity(clientB)]);
+    return { idA, idB };
+  } finally {
+    await Promise.allSettled([clientA.query("ROLLBACK"), clientB.query("ROLLBACK")]);
+  }
+}
+
 function hostBindsEndpoint(connectionString, endpointId) {
   if (!endpointId || !/^ep-[a-z0-9-]+$/i.test(endpointId)) return false;
   let hostname = "";
@@ -409,29 +444,40 @@ async function main() {
     return;
   }
 
-  const clientA = new pg.Client({
-    connectionString,
-    application_name: "cp282c-session-a",
-    connectionTimeoutMillis: 45000,
-  });
-  const clientB = new pg.Client({
-    connectionString,
-    application_name: "cp282c-session-b",
-    connectionTimeoutMillis: 45000,
-  });
+  let activeUrl = connectionString;
+  let clientA = makeClient(activeUrl, "cp282c-probe");
+  let clientB = null;
   let opened = false;
   try {
-    await Promise.all([clientA.connect(), clientB.connect()]);
+    await clientA.connect();
     opened = true;
-    const idA = await readIdentity(clientA);
-    const idB = await readIdentity(clientB);
-    if (!identityOk("session_a", idA, connectionString)) return;
-    if (!identityOk("session_b", idB, connectionString)) return;
+    const probe = await readIdentity(clientA);
+    if (!identityOk("probe", probe, activeUrl)) return;
+    say(`probe_transport=${usesPooler(activeUrl) ? "pooler" : "direct"}`);
+    if (usesPooler(activeUrl)) {
+      const direct = directConnectionString(activeUrl);
+      if (!direct) {
+        blocked("pooled URL has no direct Neon endpoint; no writes");
+        return;
+      }
+      say("transport_switch=direct_endpoint_same_branch");
+      await clientA.end();
+      opened = false;
+      activeUrl = direct;
+    }
+    clientA = makeClient(activeUrl, "cp282c-session-a");
+    clientB = makeClient(activeUrl, "cp282c-session-b");
+    opened = true;
+    await Promise.all([clientA.connect(), clientB.connect()]);
+    const { idA, idB } = await pinIdentity(clientA, clientB);
+    if (!identityOk("session_a", idA, activeUrl)) return;
+    if (!identityOk("session_b", idB, activeUrl)) return;
     if (idA.pid === idB.pid) {
       blocked("backend pids are not distinct; no writes");
       return;
     }
     say(`distinct_pids=${idA.pid},${idB.pid}`);
+    say(`transport=${usesPooler(activeUrl) ? "pooler" : "direct"}`);
     say(`production_branch=${FORBIDDEN_BRANCH}`);
     say("production_branch_connected=false");
     if (!(await assertSchema(clientA))) return;
@@ -676,7 +722,7 @@ async function main() {
     }
   } finally {
     if (opened) {
-      await Promise.allSettled([clientA.end(), clientB.end()]);
+      await Promise.allSettled([clientA?.end(), clientB?.end()]);
     }
   }
 }
