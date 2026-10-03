@@ -2,6 +2,23 @@
 
 This file describes **current reality**, not intended future state.
 
+## CP29 — CLOSED. CP29.4A — PASS. CP30 — NOT STARTED
+
+**CP29.2 CLOSED. CP29.3 PASS. CP29.4 measurement completed. CP29.4A PASS. CP29 CLOSED. CP30 NOT STARTED. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
+
+CP29.4A measured the Production runtime and then removed the diagnostic. No booking, schema, grant, pool, index, Stripe, Resend, DNS, or commerce change. The 14-trip figure below is an estimate, not a booking SLA.
+
+| Item | Result |
+|---|---|
+| Topology | Vercel function region **iad1**. Neon region **eu-central-1**. **Cross-region**. Transport **pooler** (`-pooler` host marker). Endpoint `ep-withered-haze-b1fd9hse`. Project `quiet-sound-53513710`. Branch `br-green-darkness-b1k7wkue`. Database `neondb`. `current_user` = `session_user` = `aether_app` |
+| Measurement | Deployment `dpl_HyanFe1gVVusyKvTsUe7zf6muNdN` at `f1d5bbe`. One serial invocation. `SELECT 1` only, plus metadata reads. First sample **1747 ms** (pool was empty; connection setup is inside that sample). Warm n=16: min 93.016, p50 **93.429**, p95 93.718, p99 94.093 (low confidence), max 94.093, mean 93.408 ms. Pool object construction 0.616 ms. Pool total 0 → 1, idle 1, waiting 0. `max` stayed 2 |
+| Estimate, not a booking | `14 × 93.429 ms = 1308 ms` network component. CP29.3 GitHub `centralus` was 14 × 118 ms = 1652 ms, measured create 1663 ms. About 0.34 s of that was the runner being farther away. The rest is this cross-region RTT times 14 serial trips. Not an SLA |
+| Economics | Neon pooler absorbs per-isolate fan-out. Application `max=2` is still the per-isolate queue. Acceptable for a quiet pilot. Not changed |
+| Capacity | 1–5 and 10–25: **AMBER**. 50 and 100: **NOT ENOUGH EVIDENCE**. Not a bookings-per-second promise |
+| CP30 | **NOT STARTED**. Do not start it from this note |
+
+The CP29.4 section below is the earlier blocked measurement. Its statement that transport was unproven was true at that close. CP29.4A superseded it.
+
 ## CP29.4 — BLOCKED. CP29 — NOT CLOSED
 
 **CP29.2 CLOSED. CP29.3 PASS. CP29.4 did not close CP29. CP30 NOT STARTED. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
@@ -19,7 +36,7 @@ No product code, schema, grant, pool setting, index, Stripe object, Resend send,
 | Region effect | Function region `iad1` plus ~200 ms of warm work for two serial reads is not a same-region shape. Impact **HIGH**. The Neon hostname region was not re-read from `DATABASE_URL`. The historical project is `eu-central-1`. Do not treat this as a measured booking SLA |
 | Estimate only | If those two reads are dominated by serial round trips, implied per-query cost is about 100 ms. 14 × 100 ms ≈ 1.4 s. CP29.3 measured 14 × 118 ms = 1663 ms from `centralus`. The estimate is not an end-to-end booking measurement |
 | Capacity | 1–5 and 10–25 remain **AMBER**. 50 and 100 remain **NOT ENOUGH EVIDENCE**. Assumption: a quiet pilot, not a burst. Not a bookings-per-second promise |
-| Why CP29 stays open | Production pooler-versus-direct is still unproven, and in-function warm `SELECT 1` was not sampled. No correctness, grant, or commerce defect was found. Do not start CP30 from this note |
+| Why CP29 stayed open at CP29.4 | Production pooler-versus-direct was still unproven, and in-function warm `SELECT 1` was not sampled. No correctness, grant, or commerce defect was found. CP29.4A later closed those two gaps. Do not start CP30 from this note |
 
 The CP29.3 section below remains the disposable-branch measurement. It is not a Production SLA.
 
@@ -56,7 +73,7 @@ Verification baseline application SHA `30173015216ca638a7d63736205fe20be11d3880`
 | CP28.2B | **BLOCKED** — Production fixture/cleanup privilege boundary. `aether_app` cannot DELETE bookings, vehicles, or drivers and cannot build a removable isolated hotel/provider tree. Not an occupancy defect. Not re-run. Owner DML was not used |
 | CP28.2C | **VERIFIED** — disposable Neon only |
 | CP28.3 | **VERIFIED WITH COVERAGE LIMIT** |
-| CP29 | **At CP28 close:** not started. Living status is the CP29.4 section above. CP29 is not closed. Not Production launch. Not LIVE commerce |
+| CP29 | **At CP28 close:** not started. Living status is the CP29 section at the top: CP29.4A pass, CP29 closed. Not Production launch. Not LIVE commerce |
 | CP31 / LIVE | **NOT YET ACTIVATED**. Domain A `live` stays reserved. Domain B requires the exact env string `true` and was not set |
 
 **CP28.2C (disposable, not Production).** Project `quiet-sound-53513710`. Branch display name `cp28-2c-race-gate`. Branch id `br-icy-shadow-b1fh96gk`. Endpoint identity was proven before writes. Production branch `br-green-darkness-b1k7wkue` was rejected and not used. Runtime `aether_app`. Two independent direct PostgreSQL sessions. GHA [37031757779](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/37031757779) at `55b7e19b4760882aab3b836da6d41a766320df6b`. An earlier pooler attempt (GHA [37031501111](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/37031501111)) failed closed with no writes. Vehicle race: one commit / one `23P01`. Driver race: one commit / one `23P01`. Adjacency accepted. Cancellation released occupancy. Reuse accepted. Loser transaction integrity preserved. Runtime could not disable the occupancy trigger, drop either exclusion constraint, DELETE bookings, or `SET ROLE` owner (`42501`). The temporary workflow is **RETIRED** in `3017301`. The disposable branch was not deleted. Fixtures remain on that branch only.
@@ -73,7 +90,7 @@ Verification baseline application SHA `30173015216ca638a7d63736205fe20be11d3880`
 
 **Migrations.** Source and Gate B remain **0001–0030**. `AUTHORISED_PENDING=[]`. No 0031. No migration applied. No Production SQL.
 
-**Next: CP30 — NOT STARTED.** CP29.2 is closed and CP29.3 passed as measurement only. CP29 as a whole is not closed. Do not start CP30 from this note. Do not activate CP31.
+**Next: CP30 — NOT STARTED.** CP29 is closed. CP29.4A passed as measurement only. Do not start CP30 from this note. Do not activate CP31.
 
 The CP26 section below is the last Production commercial record. Sentences there that say the next checkpoint is CP27, or that the ledger stopped at 0028, are the state **at that earlier checkpoint** unless this CP28 section supersedes them.
 
@@ -91,7 +108,7 @@ Organisation billing is active, licensed_quantity **3**, price version as above,
 
 Licence balance: licensed **3**, active allocations **0**, available **3**. Released historical rows for `cp26-licence-a`, `cp26-licence-b`, `cp26-licence-c`, and `cp26-licence-d` remain. Those hotels stay **unconfigured**. Protected hotels were not repurposed.
 
-The paragraph above is the last Production commercial record through 0030. **Current next is CP30, not started.** CP29.2 is closed and CP29.3 passed as measurement only. CP29 as a whole is not closed. See the CP29.3 section. CP27.3c guest booking client-IP trust is in source. The public limiter uses the CP27.3a header order and trusted-proxy walk, and production limiter storage failures fail closed. CP27.3b signup and billing-read membership stay in source. No migration 0031. Do not enable LIVE commerce. Do not rerun the 0030 controller. Do not resume CP26C.3. Do not start CP27.4. Do not start CP30 from this note.
+The paragraph above is the last Production commercial record through 0030. **Current next is CP30, not started.** CP29 is closed. See the CP29 section at the top. CP27.3c guest booking client-IP trust is in source. The public limiter uses the CP27.3a header order and trusted-proxy walk, and production limiter storage failures fail closed. CP27.3b signup and billing-read membership stay in source. No migration 0031. Do not enable LIVE commerce. Do not rerun the 0030 controller. Do not resume CP26C.3. Do not start CP27.4. Do not start CP30 from this note.
 
 The section below is the historical path through CP26B and finalisation. Present-tense claims there that commerce is OFF, that prices are undefined, or that CP26 STRIPE TEST is next are the state **at that earlier checkpoint**.
 
@@ -168,7 +185,7 @@ Migration **0025** is **Production-applied**. Its dispatch workflow is **RETIRED
 | Catalogue | `property_licence` **active**; `basic` / `pro` / `premium` **inactive** historical; one price version `b13f9445-d27a-4e7d-8128-a2238906ce7c` EUR **17900** month; one verified TEST mapping `price_1UKGWjFHnHXHuPOwO50TJS93`; no LIVE mapping; LIVE locks **false/false** |
 | 0027 | applied once (GHA [36251190175](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36251190175)); digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef`; workflow **RETIRED**; script remains |
 | 0028 | `migrations/0028_cp26fin_property_licence_catalogue.sql` applied once (GHA [36254890554](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36254890554)); digest `35626cb2d3b21a076f4a2cb982b9d0983610620fb21dbf7f3e94eb4c0576a02d`; workflow **RETIRED**; controller `REQUIRED_LEDGER` frozen at **0001–0027** |
-| **Next product** | **CP30 — NOT STARTED.** CP29.2 closed. CP29.3 pass. CP29 not closed. See the CP29.3 section. CP27 is **CLOSED**. No migration 0031. Do not enable LIVE commerce |
+| **Next product** | **CP30 — NOT STARTED.** CP29 is closed. See the CP29 section at the top. CP27 is **CLOSED**. No migration 0031. Do not enable LIVE commerce |
 
 Do not dispatch historical 0022/0023/0024 controllers or the retired 0025, 0026, 0027, 0028, 0029, or 0030 workflows. Do not rerun `scripts/cp272-0030-production-migrate.mjs`. Do not recreate the retired one-shot CP26 read workflows. Owner secret remains GitHub Actions `AETHER_DATABASE_OWNER_URL` only — never Vercel. The generic migrator never applies SQL. 0030 is accepted. 0031+ stays fail-closed.
 
@@ -192,7 +209,8 @@ Push to `main` currently auto-deploys Vercel Production. That is a known control
 | **CP28** | **CLOSED** — see the CP28 section |
 | **CP29.2** | **CLOSED** — disposable load only. Not Production |
 | **CP29.3** | **PASS** — measurement only. No optimisation |
-| **CP29** | **NOT CLOSED** |
+| **CP29.4A** | **PASS** — Production pooler, `eu-central-1`, warm `SELECT 1` p50 93.429 ms. Diagnostic removed |
+| **CP29** | **CLOSED** |
 | **Next control-plane** | none; CP26C-O2 **CLOSED**; CP26C.3 not resumed |
 | **Next product checkpoint** | **CP30 — NOT STARTED.** Only **CP31** activates LIVE commerce |
 | Forward roadmap | **[docs/ROADMAP.md](docs/ROADMAP.md)** (CP27–CP31) |
@@ -319,7 +337,7 @@ account → hotel → service → preview → QR → plan → Stripe → LIVE
 - Do not invent CP26B.5.
 - Do not claim CP26 STRIPE TEST is still pending, or that CP26 is incomplete.
 
-Canonical forward path: **`docs/ROADMAP.md`**. Commercial model: **`docs/COMMERCIAL_MODEL.md`**. Commercial catalogue: **`docs/COMMERCIAL_CATALOGUE.md`**. Fixture policy: **`docs/FIXTURE_POLICY.md`**. Owner architecture: **`docs/OWNER_CONTROL_PLANE.md`**. **CP26 COMPLETE. CP27 CLOSED. CP28 CLOSED.** Gate B accepted ledger is **0001–0030**. `AUTHORISED_PENDING=[]`. 0027 digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef` applied (GHA [36251190175](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36251190175)). 0028 digest `35626cb2d3b21a076f4a2cb982b9d0983610620fb21dbf7f3e94eb4c0576a02d` applied (GHA [36254890554](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36254890554)). 0029 and 0030 are applied; see the CP28 section. 0025–0030 dispatch workflows are **RETIRED**. `property_licence` is the only active plan. basic/pro/premium are inactive. One price version EUR 17900 month. One verified TEST mapping. No LIVE mapping. One TEST organisation, one subscription, quantity 3. Licensed 3, active allocations 0, available 3. Commerce **test**, not live. **Next is CP30 — NOT STARTED.** CP29.2 is closed. CP29.3 passed as measurement only. CP29 as a whole is not closed. Only **CP31** activates LIVE commerce. Historical O3.2B remains PASS (GHA [36135836457](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36135836457)). Active Production platform Owners: **1**. First-Owner bootstrap workflow **RETIRED** (historical run [36116463589](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36116463589)). Password never enters git.
+Canonical forward path: **`docs/ROADMAP.md`**. Commercial model: **`docs/COMMERCIAL_MODEL.md`**. Commercial catalogue: **`docs/COMMERCIAL_CATALOGUE.md`**. Fixture policy: **`docs/FIXTURE_POLICY.md`**. Owner architecture: **`docs/OWNER_CONTROL_PLANE.md`**. **CP26 COMPLETE. CP27 CLOSED. CP28 CLOSED.** Gate B accepted ledger is **0001–0030**. `AUTHORISED_PENDING=[]`. 0027 digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef` applied (GHA [36251190175](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36251190175)). 0028 digest `35626cb2d3b21a076f4a2cb982b9d0983610620fb21dbf7f3e94eb4c0576a02d` applied (GHA [36254890554](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36254890554)). 0029 and 0030 are applied; see the CP28 section. 0025–0030 dispatch workflows are **RETIRED**. `property_licence` is the only active plan. basic/pro/premium are inactive. One price version EUR 17900 month. One verified TEST mapping. No LIVE mapping. One TEST organisation, one subscription, quantity 3. Licensed 3, active allocations 0, available 3. Commerce **test**, not live. **Next is CP30 — NOT STARTED.** CP29 is **CLOSED**. Only **CP31** activates LIVE commerce. Historical O3.2B remains PASS (GHA [36135836457](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36135836457)). Active Production platform Owners: **1**. First-Owner bootstrap workflow **RETIRED** (historical run [36116463589](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36116463589)). Password never enters git.
 
 Non-blocking UI backlog: Owner header rendered “SSBG Verification” (presentation/spacing or avatar-initial concatenation). Deferred. Not an authorization defect.
 
