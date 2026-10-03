@@ -1,0 +1,51 @@
+name: CP29.3 disposable capacity
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Exact confirmation string
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  capacity:
+    name: disposable capacity
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Require exact confirmation
+        env:
+          CP293_CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -eu
+          if [ "$CP293_CONFIRMATION" != "RUN-CP29-3" ]; then
+            echo "CP293 confirmation rejected; database not opened"
+            exit 2
+          fi
+          echo "CP293 confirmation accepted"
+
+      - name: Checkout selected commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Disposable capacity measurement
+        env:
+          AETHER_CP29_DATABASE_URL: ${{ secrets.AETHER_CP29_DATABASE_URL }}
+          CP293_CONFIRMATION: ${{ inputs.confirmation }}
+        run: node --experimental-strip-types scripts/cp293-capacity.mjs
