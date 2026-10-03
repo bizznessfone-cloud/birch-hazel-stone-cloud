@@ -40,7 +40,10 @@ Living status: **`BUILD_STATE.md`** (repo root).
 | CP28.2C | **VERIFIED** — disposable Neon only. Project `quiet-sound-53513710`, branch `cp28-2c-race-gate` / `br-icy-shadow-b1fh96gk`. Not Production `br-green-darkness-b1k7wkue`. GHA [37031757779](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/37031757779) at `55b7e19`. Workflow retired by `3017301` |
 | CP28.3 | **VERIFIED WITH COVERAGE LIMIT** — product tests 628/628 plus typecheck and build. Guest engine, idempotency, token privacy, Ops handoff, tenancy, assignment, overlap, cancel/reuse on throwaway PGLite. Browser shells only. See [`BUILD_STATE.md`](../BUILD_STATE.md) |
 | **CP28** | **CLOSED** |
-| **Next product checkpoint** | **CP29 — LOAD / SCALABILITY / RESILIENCE VERIFICATION. Not started.** Admission is not Production launch, not a public launch of scanbookgo.com, and not LIVE commerce. Only **CP31** activates LIVE commerce |
+| CP29.2 | **CLOSED** — disposable load gate. GHA [37103649966](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/37103649966). Not Production |
+| CP29.3 | **PASS** — capacity measurement on the same disposable branch. GHA [37105141618](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/37105141618). No optimisation. No schema change |
+| **CP29** | **NOT CLOSED**. CP29.2 and CP29.3 are done. Further CP29 work is not authorised by CP29.3 |
+| **Next product checkpoint** | **CP30 — NOT STARTED**. Not Production launch. Not LIVE commerce. Only **CP31** activates LIVE commerce |
 | Forward roadmap | **[ROADMAP.md](ROADMAP.md)** (CP26–CP31) |
 | Commercial catalogue | **[COMMERCIAL_CATALOGUE.md](COMMERCIAL_CATALOGUE.md)** |
 | Owner architecture | **[OWNER_CONTROL_PLANE.md](OWNER_CONTROL_PLANE.md)** |
