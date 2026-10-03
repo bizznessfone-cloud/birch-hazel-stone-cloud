@@ -41,14 +41,15 @@ Living status: **`BUILD_STATE.md`** (repo root).
 | CP28.3 | **VERIFIED WITH COVERAGE LIMIT** — product tests 628/628 plus typecheck and build. Guest engine, idempotency, token privacy, Ops handoff, tenancy, assignment, overlap, cancel/reuse on throwaway PGLite. Browser shells only. See [`BUILD_STATE.md`](../BUILD_STATE.md) |
 | **CP28** | **CLOSED** |
 | CP29.2 | **CLOSED** — disposable load gate. GHA [37103649966](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/37103649966). Not Production |
-| CP29.3 | **PASS** — capacity measurement on the same disposable branch. GHA [37105141618](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/37105141618). No optimisation. No schema change |
-| **CP29** | **NOT CLOSED**. CP29.2 and CP29.3 are done. Further CP29 work is not authorised by CP29.3 |
+| CP29.3 | **PASS** — capacity measurement on the disposable branch. GHA [37105141618](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/37105141618). No optimisation. No schema change |
+| CP29.4 | **BLOCKED** — deployed runtime region is `iad1` on `dpl_v5TyFAPYjVQ12hZZLdtvF4SN6bqw` at `ff11393`. Production `DATABASE_URL` pooler-versus-direct was not decrypted. In-function `SELECT 1` was not measured. No Production DML. No booking |
+| **CP29** | **NOT CLOSED**. CP29.4 did not close it. CP30 is not started |
 | **Next product checkpoint** | **CP30 — NOT STARTED**. Not Production launch. Not LIVE commerce. Only **CP31** activates LIVE commerce |
 | Forward roadmap | **[ROADMAP.md](ROADMAP.md)** (CP26–CP31) |
 | Commercial catalogue | **[COMMERCIAL_CATALOGUE.md](COMMERCIAL_CATALOGUE.md)** |
 | Owner architecture | **[OWNER_CONTROL_PLANE.md](OWNER_CONTROL_PLANE.md)** |
 | Fixture policy | **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)** |
-| Production | Vercel `scan-book-go` last *observed* deployment `dpl_FmUosqz2wy7aCT51rNjdanJnuviZ` READY at `19512c2`. Later pushes, including this documentation commit, auto-deploy. That is not an environment change and not a commerce-mode change. No newer deployment id was observed in CP28 |
+| Production | Vercel `scan-book-go` current Production deployment `dpl_v5TyFAPYjVQ12hZZLdtvF4SN6bqw` READY at `ff113933f9cd7ceb652330e932e31041b5e5250d` (2026-10-03T07:22:21Z). Alias `https://scan-book-go.vercel.app`. Function region `iad1`. `dpl_FmUosqz2wy7aCT51rNjdanJnuviZ` at `19512c2` is the older CP28 observation, not current. This documentation commit auto-deploys. That is not an environment change and not a commerce-mode change |
 | Migrations | Production and Gate B **0001–0030**; `AUTHORISED_PENDING=[]`; no 0031. 0030 digest `9dec121ac28b8bcca5554576816eb8c764d50f56b6b97c9f0199e0b926e8643f` applied (GHA 36448160139); temporary apply workflow **RETIRED**. 0029 digest `e5897eda1a4f3c8c4025e16235b9d11a677b3cc7994934058142934d4dea7adc` applied (GHA 36404482927). Guest payment source exists (`sbg_prepare_booking_payment`, then hotel-owned Checkout). CP28 created no Stripe object and wrote no Production booking payment. Booking payments were **0** at the 0030 checkpoint and were not mutated by CP28. Documented Production `SBG_SAAS_COMMERCE` remains **test**, not live. `SBG_DOMAIN_B_LIVE_CHECKOUT` is not enabled |
 
 This file’s remainder is a **historical Checkpoint 10** record only.

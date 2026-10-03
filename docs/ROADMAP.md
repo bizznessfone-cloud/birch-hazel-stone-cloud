@@ -43,6 +43,7 @@ Canonical living roadmap. Other living documents should **point here**, not rede
 | **CP28** | **CLOSED** |
 | CP29.2 | **CLOSED** — disposable guest-create load, occupancy, limiter, and publication boundary. Not Production |
 | CP29.3 | **PASS** — bottleneck and capacity measurement. Pool max 2 was not changed. Guest-create time is serial database round trips. See [`BUILD_STATE.md`](../BUILD_STATE.md) |
+| CP29.4 | **BLOCKED** — Production function region `iad1` observed. `DATABASE_URL` transport not decrypted. In-function `SELECT 1` not measured. CP29 not closed |
 | **CP29** | **NOT CLOSED**. CP30 is not started |
 | **Next** | **CP30 — PRODUCTION READINESS. NOT STARTED**. Not Production launch. Not public launch. Not LIVE commerce. The twelve-step O4–O11 chain is superseded and must not be executed. **CP26C.3** is not resumed. Only **CP31** activates LIVE commerce |
 
@@ -268,7 +269,7 @@ End-to-end, regression, failure-path, integration, concurrency; auth, tenancy, o
 
 ## CP29 — LOAD / SCALABILITY TESTING
 
-**Status: NOT CLOSED.** CP29.2 disposable load gate is **CLOSED**. CP29.3 bottleneck and capacity measurement is **PASS**. Neither result starts CP30, launches Production, or enables LIVE commerce. The CP28 outcome above still says CP29 was not started; that sentence is the state at the CP28 close.
+**Status: NOT CLOSED.** CP29.2 is **CLOSED**. CP29.3 is **PASS**. CP29.4 is **BLOCKED**: the deployed function runs in `iad1`, and Production pooler-versus-direct plus in-function `SELECT 1` were not proven. That does not start CP30, launch Production, or enable LIVE commerce. The CP28 outcome above still says CP29 was not started; that sentence is the state at the CP28 close.
 
 Controlled load: occupancy concurrency; pool behaviour; webhook bursts; API concurrency; Checkout/session fan-out where safely testable. No live customer load. No commercial activation. CP29.2 and CP29.3 measured guest create, occupancy, idempotency, the existing pool, and Ops reads on the disposable branch only. They did not optimise, and they did not exercise webhook or Checkout fan-out.
 

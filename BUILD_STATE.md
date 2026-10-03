@@ -2,6 +2,27 @@
 
 This file describes **current reality**, not intended future state.
 
+## CP29.4 — BLOCKED. CP29 — NOT CLOSED
+
+**CP29.2 CLOSED. CP29.3 PASS. CP29.4 did not close CP29. CP30 NOT STARTED. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
+
+No product code, schema, grant, pool setting, index, Stripe object, Resend send, Vercel env, or DNS change was made. No Production booking was created. No temporary workflow was added.
+
+| Item | Result |
+|---|---|
+| Deployment | Production `scan-book-go` `dpl_v5TyFAPYjVQ12hZZLdtvF4SN6bqw` READY at `ff113933f9cd7ceb652330e932e31041b5e5250d`. Alias `https://scan-book-go.vercel.app`. Framework TanStack Start. Node 24.x. Deployment type `LAMBDAS`. Regions `["iad1"]`. A Fluid Compute flag was not in the deployment payload |
+| Invocation region | Observed `x-vercel-id` `iad1::iad1::…` on the public alias. The function executed in `iad1`. The deployment-specific hostname is SSO-gated and was not used as the measurement path |
+| Database reachability | Existing public homepage loader only. Payload `backend:"neon"`, `ok:true`, `kyselyOk:true`. That is two metadata reads, not a booking. `aether_meta` still reports `schemaPhase` 16 and `checkpoint` 23. That is old application metadata, not the Gate B ledger |
+| `DATABASE_URL` transport | **NOT PROVEN**. The Production variable exists, type sensitive, and the API did not return a decrypted value. The string was not copied, printed, or changed. Pooler versus direct remains unknown |
+| Deployed `SELECT 1` | **NOT SAFELY MEASURABLE IN CP29.4**. No existing timing diagnostic. A new public endpoint was not added. Preview was not given Production credentials |
+| Warm public read | 12 homepage requests after a static warmup, reused TLS, all `x-vercel-cache: MISS`, all `backend:"neon"`. TTFB p50 215 ms, p95 228 ms, max 982 ms. The 982 ms sample was the first function hit. The other 11 were 209–228 ms. Static `/favicon.svg` on the same connection was p50 7 ms. This is request latency for two serial metadata reads plus render, not SQL RTT and not a booking |
+| Region effect | Function region `iad1` plus ~200 ms of warm work for two serial reads is not a same-region shape. Impact **HIGH**. The Neon hostname region was not re-read from `DATABASE_URL`. The historical project is `eu-central-1`. Do not treat this as a measured booking SLA |
+| Estimate only | If those two reads are dominated by serial round trips, implied per-query cost is about 100 ms. 14 × 100 ms ≈ 1.4 s. CP29.3 measured 14 × 118 ms = 1663 ms from `centralus`. The estimate is not an end-to-end booking measurement |
+| Capacity | 1–5 and 10–25 remain **AMBER**. 50 and 100 remain **NOT ENOUGH EVIDENCE**. Assumption: a quiet pilot, not a burst. Not a bookings-per-second promise |
+| Why CP29 stays open | Production pooler-versus-direct is still unproven, and in-function warm `SELECT 1` was not sampled. No correctness, grant, or commerce defect was found. Do not start CP30 from this note |
+
+The CP29.3 section below remains the disposable-branch measurement. It is not a Production SLA.
+
 ## CP29.3 — PASS. CP29.2 — CLOSED. CP29 — NOT CLOSED
 
 **CP29.2 DISPOSABLE LOAD GATE — CLOSED. CP29.3 CAPACITY VERIFICATION — PASS. CP30 NOT STARTED. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
@@ -35,7 +56,7 @@ Verification baseline application SHA `30173015216ca638a7d63736205fe20be11d3880`
 | CP28.2B | **BLOCKED** — Production fixture/cleanup privilege boundary. `aether_app` cannot DELETE bookings, vehicles, or drivers and cannot build a removable isolated hotel/provider tree. Not an occupancy defect. Not re-run. Owner DML was not used |
 | CP28.2C | **VERIFIED** — disposable Neon only |
 | CP28.3 | **VERIFIED WITH COVERAGE LIMIT** |
-| CP29 | **At CP28 close:** not started. Living status is the CP29.3 section above: CP29.2 closed, CP29.3 pass, CP29 not closed. Not Production launch. Not LIVE commerce |
+| CP29 | **At CP28 close:** not started. Living status is the CP29.4 section above. CP29 is not closed. Not Production launch. Not LIVE commerce |
 | CP31 / LIVE | **NOT YET ACTIVATED**. Domain A `live` stays reserved. Domain B requires the exact env string `true` and was not set |
 
 **CP28.2C (disposable, not Production).** Project `quiet-sound-53513710`. Branch display name `cp28-2c-race-gate`. Branch id `br-icy-shadow-b1fh96gk`. Endpoint identity was proven before writes. Production branch `br-green-darkness-b1k7wkue` was rejected and not used. Runtime `aether_app`. Two independent direct PostgreSQL sessions. GHA [37031757779](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/37031757779) at `55b7e19b4760882aab3b836da6d41a766320df6b`. An earlier pooler attempt (GHA [37031501111](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/37031501111)) failed closed with no writes. Vehicle race: one commit / one `23P01`. Driver race: one commit / one `23P01`. Adjacency accepted. Cancellation released occupancy. Reuse accepted. Loser transaction integrity preserved. Runtime could not disable the occupancy trigger, drop either exclusion constraint, DELETE bookings, or `SET ROLE` owner (`42501`). The temporary workflow is **RETIRED** in `3017301`. The disposable branch was not deleted. Fixtures remain on that branch only.
