@@ -1,0 +1,52 @@
+name: CP29.2A disposable publication
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Exact confirmation string
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: disposable publication
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Require exact confirmation
+        env:
+          CP292A_CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -eu
+          if [ "$CP292A_CONFIRMATION" != "RUN-CP29-2A" ]; then
+            echo "CP292A confirmation rejected; database not opened"
+            exit 2
+          fi
+          echo "CP292A confirmation accepted"
+
+      - name: Checkout selected commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Disposable fixture publication and skipped load
+        env:
+          AETHER_CP29_DATABASE_URL: ${{ secrets.AETHER_CP29_DATABASE_URL }}
+          AETHER_CP29_OWNER_DATABASE_URL: ${{ secrets.AETHER_CP29_OWNER_DATABASE_URL }}
+          CP292A_CONFIRMATION: ${{ inputs.confirmation }}
+        run: node --experimental-strip-types scripts/cp292a-disposable-publication.mjs
