@@ -26,7 +26,7 @@ const EXPECTED_DB = "neondb";
 const EXPECTED_ROLE = "aether_app";
 const FIXTURE_CODES = ["cp29-load-05af6a0", "cp29-load-05af6a1", "cp29-load-05af6a2", "cp29-load-05af6a3"];
 const EMAIL_LIKE = "cp29-load-%@example.test";
-const KEY_PREFIX = "cp29-3-";
+const KEY_PREFIX = "cp29-3b-";
 const ALLOWED_DIFF = [".github/workflows/cp293-capacity.yml", "scripts/cp293-capacity.mjs"];
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const report = {};
@@ -620,20 +620,54 @@ async function main() {
     await readWave("ops_stage_b10", 10, "10 concurrent reads on the existing 4 hotels, not 10 tenants");
     await readWave("ops_stage_c100", 100, "100 concurrent today/list reads through pool max 2; not 100 tenant universes");
 
-    const occWhen = { date: "2027-02-06", time: "10:00", minutes: 60 };
-    const left = await createLimitedGuestBooking(app, bookingInput(hotel0, occWhen, `${KEY_PREFIX}occ-a`), `${KEY_PREFIX}hint-occ-a`);
-    const right = await createLimitedGuestBooking(app, bookingInput(hotel0, occWhen, `${KEY_PREFIX}occ-b`), `${KEY_PREFIX}hint-occ-b`);
+    async function idFor(key) {
+      const row = (await observe.query(
+        `select b.id::text as id from bookings b join idempotency_keys k on k.booking_id = b.id
+          where k.scope = 'booking.create' and k.key = $1`,
+        [key],
+      )).rows[0];
+      if (!row?.id) throw new Error(`booking id missing for ${key}`);
+      return row.id;
+    }
+    const occWhen = { date: "2027-02-06", time: "15:00", minutes: 60 };
+    const leftKey = `${KEY_PREFIX}occ2-a`;
+    const rightKey = `${KEY_PREFIX}occ2-b`;
+    await createLimitedGuestBooking(app, bookingInput(hotel0, occWhen, leftKey), `${KEY_PREFIX}hint-occ2-a`);
+    await createLimitedGuestBooking(app, bookingInput(hotel0, occWhen, rightKey), `${KEY_PREFIX}hint-occ2-b`);
+    const leftId = await idFor(leftKey);
+    const rightId = await idFor(rightKey);
     const scopeOcc = scopeFor(hotel0.providerId);
-    const race = await Promise.all([left, right].map((booking) => assignVehicle(app, { bookingId: booking.id, vehicleId: hotel0.vehicleId, scope: scopeOcc }).then(() => ({ ok: true, code: "" }), (err) => ({ ok: false, code: failCode(err) }))));
-    const assigned = (await observe.query(`select vehicle_id::text from bookings where id = any($1::uuid[])`, [[left.id, right.id]])).rows;
+    const race = await Promise.all([leftId, rightId].map((bookingId) => assignVehicle(app, { bookingId, vehicleId: hotel0.vehicleId, scope: scopeOcc }).then(() => ({ ok: true, code: "" }), (err) => ({ ok: false, code: failCode(err) }))));
+    const assigned = (await observe.query(`select id::text, vehicle_id::text from bookings where id = any($1::uuid[])`, [[leftId, rightId]])).rows;
     say(`occupancy_results=${JSON.stringify(race)}`);
     say(`occupancy_winners=${assigned.filter((row) => row.vehicle_id === hotel0.vehicleId).length}`);
     say(`occupancy_unchanged=${assigned.filter((row) => row.vehicle_id == null).length}`);
     if (race.filter((row) => row.ok).length !== 1 || !race.some((row) => row.code === "unavailable")) failed("pool occupancy race was not one winner and one unavailable");
+    const rawWhen = { date: "2027-02-06", time: "16:00", minutes: 60 };
+    const rawLeftKey = `${KEY_PREFIX}raw2-a`;
+    const rawRightKey = `${KEY_PREFIX}raw2-b`;
+    await createLimitedGuestBooking(app, bookingInput(hotel0, rawWhen, rawLeftKey), `${KEY_PREFIX}hint-raw-a`);
+    await createLimitedGuestBooking(app, bookingInput(hotel0, rawWhen, rawRightKey), `${KEY_PREFIX}hint-raw-b`);
+    const rawIds = [await idFor(rawLeftKey), await idFor(rawRightKey)];
+    async function rawAssign(client, bookingId) {
+      await client.query("BEGIN");
+      try {
+        await client.query(`update bookings set vehicle_id = $1::uuid where id = $2::uuid`, [hotel0.vehicleId, bookingId]);
+        await client.query("COMMIT");
+        return { ok: true, code: "" };
+      } catch (err) {
+        try { await client.query("ROLLBACK"); } catch { /* aborted */ }
+        return { ok: false, code: err?.code || "" };
+      }
+    }
+    const raw = await Promise.all([rawAssign(observe, rawIds[0]), rawAssign(direct, rawIds[1])]);
+    say(`occupancy_raw=${JSON.stringify(raw)}`);
+    if (raw.filter((row) => row.ok).length !== 1 || !raw.some((row) => row.code === "23P01")) failed("raw occupancy race did not return one 23P01");
     const adj = [];
-    for (const [time, key] of [["12:00", "adj-a"], ["13:00", "adj-b"]]) {
-      const booking = await createLimitedGuestBooking(app, bookingInput(hotel0, { date: "2027-02-06", time, minutes: 60 }, `${KEY_PREFIX}${key}`), `${KEY_PREFIX}hint-${key}`);
-      adj.push(await assignVehicle(app, { bookingId: booking.id, vehicleId: hotel0.vehicleId, scope: scopeOcc }).then(() => "assigned", (err) => failCode(err)));
+    for (const [time, key] of [["18:00", "adj2-a"], ["19:00", "adj2-b"]]) {
+      await createLimitedGuestBooking(app, bookingInput(hotel0, { date: "2027-02-06", time, minutes: 60 }, `${KEY_PREFIX}${key}`), `${KEY_PREFIX}hint-${key}`);
+      const bookingId = await idFor(`${KEY_PREFIX}${key}`);
+      adj.push(await assignVehicle(app, { bookingId, vehicleId: hotel0.vehicleId, scope: scopeOcc }).then(() => "assigned", (err) => failCode(err)));
     }
     say(`adjacency=${adj.join(",")}`);
     if (adj.some((item) => item !== "assigned")) failed("adjacency assignment did not both succeed");
