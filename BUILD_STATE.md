@@ -2,6 +2,29 @@
 
 This file describes **current reality**, not intended future state.
 
+## CP30.3D — PASS. CP30.3C — PASS. CP30 — NOT CLOSED
+
+**CP30.2A PASS. CP30.2B PASS. CP30.2C PASS. CP30.2 CLOSED. CP30.3A PASS. CP30.3B PASS. CP30.3C PASS. CP30.3D PASS. CP30 NOT CLOSED. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
+
+Incident procedure: `docs/V1_INCIDENT_RUNBOOK.md`. Neon project `quiet-sound-53513710` (Aether Transfer), subscription `free_v3`, AWS `eu-central-1`. Production branch `br-green-darkness-b1k7wkue` is ready, primary, default, and `protected=false`. History retention is `21600` seconds (6 hours, rolling). That window is a V1 limitation, not a mature backup strategy.
+
+Historical recovery is snapshot restoration onto a new branch only. `create_branch` at HEAD is not historical recovery. Do not restore Production in place. Do not change `DATABASE_URL` for an investigation. `snap-autumn-band-b1nvf8cu` (2026-09-10, CP13A) must not be restored or deleted. CP28/CP29 disposable branches must not be deleted to free a slot. Branch limit is 10. No restore and no recovery branch were created.
+
+UptimeRobot Application and Readiness monitors remain ACTIVE. Test notification was received. A real DOWN/RECOVERY cycle was not tested. Production Resend remains **NOT CONFIGURED**. Commerce remains **test**.
+
+| Item | Result |
+|---|---|
+| CP30.2 | **CLOSED** |
+| CP30.3A | **PASS** — reconnaissance |
+| CP30.3B | **PASS** — incident runbook established |
+| CP30.3C | **PASS** — Neon recovery capability verified. No restore |
+| CP30.3D | **PASS** — runbook records that boundary. Documentation only |
+| Accepted deployment pointer | `dpl_AdKc8WkBsw9a45kStuU9ZUenNGwK` at `b49adfb57e2c44943fd0d689fb16d978a3831187`. Documentation deploy relative to application runtime `cf0d5a3` |
+| CP30 / CP31 | CP30 **NOT CLOSED**. CP31 **NOT STARTED** |
+| LIVE commerce | **NOT ACTIVATED** |
+
+The CP30.3B section below was true when the runbook was first added and Neon retention was still unproven. It is not the current pointer.
+
 ## CP30.3B — PASS. CP30.2 — CLOSED. CP30 — NOT CLOSED
 
 **CP30.2A PASS. CP30.2B PASS. CP30.2C-1 PASS. CP30.2C-2 PASS. CP30.2 CLOSED. CP30.3A PASS. CP30.3B PASS. CP30 NOT CLOSED. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**

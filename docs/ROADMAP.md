@@ -53,8 +53,10 @@ Canonical living roadmap. Other living documents should **point here**, not rede
 | **CP30.2** | **CLOSED** |
 | CP30.3A | **PASS** — recovery reconnaissance. Scope defined. Nothing remediated |
 | CP30.3B | **PASS** — [`V1_INCIDENT_RUNBOOK.md`](V1_INCIDENT_RUNBOOK.md) is the incident procedure |
+| CP30.3C | **PASS** — Neon recovery capability verified. `free_v3`, 6-hour history. No restore |
+| CP30.3D | **PASS** — runbook records that boundary. CP30 stays open |
 | **CP30** | **NOT CLOSED**. CP31 is not started. LIVE commerce is not activated |
-| **Next** | **CP30 remains open.** Deferred controls from CP30.3A are not authorised by CP30.3B. Not Production launch. Not public launch. Not LIVE commerce. The twelve-step O4–O11 chain is superseded and must not be executed. **CP26C.3** is not resumed. Only **CP31** activates LIVE commerce |
+| **Next** | **CP30 remains open.** Not a restore, retention change, or branch-protection change. Not Production launch. Not public launch. Not LIVE commerce. The twelve-step O4–O11 chain is superseded and must not be executed. **CP26C.3** is not resumed. Only **CP31** activates LIVE commerce |
 
 ---
 

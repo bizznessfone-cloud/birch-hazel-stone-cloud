@@ -52,12 +52,14 @@ Living status: **`BUILD_STATE.md`** (repo root).
 | **CP30.2** | **CLOSED** |
 | CP30.3A | **PASS** — operations and recovery reconnaissance. No changes |
 | CP30.3B | **PASS** — V1 incident runbook is [`V1_INCIDENT_RUNBOOK.md`](V1_INCIDENT_RUNBOOK.md). Documentation only. CP30 remains open |
-| **Next product checkpoint** | **CP30 remains open.** Not CP30.3 implementation of deferred controls. Not Production launch. Not LIVE commerce. Only **CP31** activates LIVE commerce |
+| CP30.3C | **PASS** — Neon project `quiet-sound-53513710`, `free_v3`, history retention 6 hours. No restore. No branch created |
+| CP30.3D | **PASS** — runbook records the Neon recovery boundary. Documentation only. CP30 remains open |
+| **Next product checkpoint** | **CP30 remains open.** Not a restore. Not a retention change. Not Production launch. Not LIVE commerce. Only **CP31** activates LIVE commerce |
 | Forward roadmap | **[ROADMAP.md](ROADMAP.md)** (CP26–CP31) |
 | Commercial catalogue | **[COMMERCIAL_CATALOGUE.md](COMMERCIAL_CATALOGUE.md)** |
 | Owner architecture | **[OWNER_CONTROL_PLANE.md](OWNER_CONTROL_PLANE.md)** |
 | Fixture policy | **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)** |
-| Production | Vercel `scan-book-go`. Incident identity and the deployment proven at CP30.3B start are in [`V1_INCIDENT_RUNBOOK.md`](V1_INCIDENT_RUNBOOK.md). Alias `https://scan-book-go.vercel.app`. CP29.4A measurement deployment `dpl_HyanFe1gVVusyKvTsUe7zf6muNdN` at `f1d5bbe` was temporary and must not be promoted. `dpl_FmUosqz2wy7aCT51rNjdanJnuviZ` at `19512c2` is an older observation, not current. This documentation commit auto-deploys. That is not an environment change and not a commerce-mode change |
+| Production | Vercel `scan-book-go`. Accepted pointer at CP30.3D: `dpl_AdKc8WkBsw9a45kStuU9ZUenNGwK` at `b49adfb`, documentation relative to application runtime `cf0d5a3`. Procedure: [`V1_INCIDENT_RUNBOOK.md`](V1_INCIDENT_RUNBOOK.md). Alias `https://scan-book-go.vercel.app`. CP29.4A measurement deployment `dpl_HyanFe1gVVusyKvTsUe7zf6muNdN` at `f1d5bbe` was temporary and must not be promoted. `dpl_FmUosqz2wy7aCT51rNjdanJnuviZ` at `19512c2` is an older observation, not current. This documentation commit auto-deploys. That is not an environment change and not a commerce-mode change |
 | Migrations | Production and Gate B **0001–0030**; `AUTHORISED_PENDING=[]`; no 0031. 0030 digest `9dec121ac28b8bcca5554576816eb8c764d50f56b6b97c9f0199e0b926e8643f` applied (GHA 36448160139); temporary apply workflow **RETIRED**. 0029 digest `e5897eda1a4f3c8c4025e16235b9d11a677b3cc7994934058142934d4dea7adc` applied (GHA 36404482927). Guest payment source exists (`sbg_prepare_booking_payment`, then hotel-owned Checkout). CP28 created no Stripe object and wrote no Production booking payment. Booking payments were **0** at the 0030 checkpoint and were not mutated by CP28. Documented Production `SBG_SAAS_COMMERCE` remains **test**, not live. `SBG_DOMAIN_B_LIVE_CHECKOUT` is not enabled |
 
 This file’s remainder is a **historical Checkpoint 10** record only.
