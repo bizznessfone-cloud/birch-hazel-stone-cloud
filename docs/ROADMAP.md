@@ -55,8 +55,9 @@ Canonical living roadmap. Other living documents should **point here**, not rede
 | CP30.3B | **PASS** — [`V1_INCIDENT_RUNBOOK.md`](V1_INCIDENT_RUNBOOK.md) is the incident procedure |
 | CP30.3C | **PASS** — Neon recovery capability verified. `free_v3`, 6-hour history. No restore |
 | CP30.3D | **PASS** — runbook records that boundary. CP30 stays open |
-| **CP30** | **NOT CLOSED**. CP31 is not started. LIVE commerce is not activated |
-| **Next** | **CP30 remains open.** Not a restore, retention change, or branch-protection change. Not Production launch. Not public launch. Not LIVE commerce. The twelve-step O4–O11 chain is superseded and must not be executed. **CP26C.3** is not resumed. Only **CP31** activates LIVE commerce |
+| **CP30.3** | **CLOSED** |
+| **CP30** | **CLOSED**. Controlled 1–5 hotel V1 pilot. Capacity **AMBER**. Commerce **test**. CP31 is not started. LIVE commerce is not activated |
+| **Next** | **CP31 admission is not started.** CP30 close does not authorise LIVE Stripe, hotel onboarding, public launch, a custom domain, a restore, or optimisation. The twelve-step O4–O11 chain is superseded and must not be executed. **CP26C.3** is not resumed. Only **CP31** activates LIVE commerce |
 
 ---
 
@@ -228,7 +229,7 @@ Non-blocking UI backlog: Owner header showed “SSBG Verification”. Deferred t
 
 **CP26 FINALISATION COMPLETE (snapshot).** This paragraph records the state at the end of finalisation, before Stripe TEST. Production ledger is **0001–0028** exactly once each. Gate B accepted ledger is **0001–0028**. `AUTHORISED_PENDING=[]`. 0027 digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef` (apply GHA [36251190175](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36251190175)) is ordinary accepted history. Its workflow is **RETIRED**. 0028 `migrations/0028_cp26fin_property_licence_catalogue.sql` digest `35626cb2d3b21a076f4a2cb982b9d0983610620fb21dbf7f3e94eb4c0576a02d` applied once (GHA [36254890554](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36254890554)). Its workflow is **RETIRED**. The historical controller script remains; its `REQUIRED_LEDGER` stays frozen at **0001–0027** and must not follow Gate B. At that snapshot: price versions 0, mappings 0, organisations 0, commerce OFF.
 
-**CP26 STRIPE TEST — PASS. CP26 EXIT GATE — PASS. CP26 — COMPLETE.** One TEST organisation `4208626a-ef20-4f5a-b28e-0d8b9c778205`, customer `cus_VKwWNaJ4nwUTfM`, subscription `sub_1UKGdCFHnHXHuPOwgswtqBhL`, one item, quantity 3, price `price_1UKGWjFHnHXHuPOwO50TJS93`, catalogue version `b13f9445-d27a-4e7d-8128-a2238906ce7c` EUR 17900 month. Event `evt_1UKKPiFHnHXHuPOwM7L3ZmoM` applied once; same-id replay did not move `processed_at`. Allocation proof passed, then all four fixtures were released. Licensed 3, active 0, available 3. Domain B unchanged. LIVE locks false. Commerce **test**, not live. The 0025 dispatch workflow is **RETIRED**. **At CP26 close, next was CP27 — SECURITY HARDENING, not started.** That sentence is historical. CP27, CP28, and CP29 later closed. Current next is CP30.2C, not started. See the living table.
+**CP26 STRIPE TEST — PASS. CP26 EXIT GATE — PASS. CP26 — COMPLETE.** One TEST organisation `4208626a-ef20-4f5a-b28e-0d8b9c778205`, customer `cus_VKwWNaJ4nwUTfM`, subscription `sub_1UKGdCFHnHXHuPOwgswtqBhL`, one item, quantity 3, price `price_1UKGWjFHnHXHuPOwO50TJS93`, catalogue version `b13f9445-d27a-4e7d-8128-a2238906ce7c` EUR 17900 month. Event `evt_1UKKPiFHnHXHuPOwM7L3ZmoM` applied once; same-id replay did not move `processed_at`. Allocation proof passed, then all four fixtures were released. Licensed 3, active 0, available 3. Domain B unchanged. LIVE locks false. Commerce **test**, not live. The 0025 dispatch workflow is **RETIRED**. **At CP26 close, next was CP27 — SECURITY HARDENING, not started.** That sentence is historical. CP27, CP28, CP29, and CP30 later closed. CP31 is not started. See the living table.
 
 The O4.2 paragraph below is the historical controller-ready record. It is not the current state. 0027 was later applied and accepted. Do not dispatch a 0027 workflow; the file is gone.
 
@@ -254,7 +255,7 @@ Remaining CP26 work, in order:
 CP26 FINALISATION PASS → CP26 STRIPE TEST PASS → CP26 EXIT GATE PASS → CP26 COMPLETE → CP27 SECURITY HARDENING (not started)
 ```
 
-The line above is the remaining-work list **at CP26 close**. It later completed: CP27 **CLOSED**, CP28 **CLOSED**, CP29 **CLOSED**. Current next is CP30.2C, not started. Do not restart CP27. Do not start CP30.2C from this note.
+The line above is the remaining-work list **at CP26 close**. It later completed: CP27 **CLOSED**, CP28 **CLOSED**, CP29 **CLOSED**, CP30 **CLOSED**. CP31 is not started. Do not restart CP27. Do not treat CP30 close as LIVE commerce.
 
 **Do not switch public Production commerce from test to live.** Empty organisation and hotel allowlists fail-close. Only **CP31** activates LIVE commerce.
 
@@ -288,11 +289,11 @@ Controlled load: occupancy concurrency; pool behaviour; webhook bursts; API conc
 
 ## CP30 — PRODUCTION READINESS GATE
 
-**Status: NOT CLOSED.** CP30.2A **PASS**. CP30.2B **PASS** (`GET /api/ready`). External deterministic monitors are **not configured**. The Ops Agent is **not built**. CP30.2C is **not started**. CP30.3 is **not started**.
+**Status: CLOSED.** CP30.2 and CP30.3 are **CLOSED**. Operating envelope: controlled 1–5 hotel V1 pilot. Capacity **AMBER**. Commerce remains **test**. CP31 is **not started**. There was no separately numbered CP30.1; topology remains the CP29.4A record.
 
-Final readiness **without** commercial activation. The system may be technically capable of going live but must remain commercially dormant.
+Final readiness **without** commercial activation. The system may be technically capable of a later live decision but remains commercially dormant.
 
-Includes: production configuration review; runbooks; rollback; monitoring; domain; backup/recovery; closed security findings; regression/load gates; **commercial activation checklist prepared**. Live commerce remains **OFF**.
+Includes, as completed for this envelope: production topology carried from CP29.4A; the incident runbook; external UptimeRobot monitoring; the 6-hour Neon recovery boundary; migration fail-closed at `0001`–`0030`. Live commerce remains **OFF**. This close does not authorise LIVE Stripe, onboarding, public launch, a custom domain, a restore, or optimisation.
 
 ## CP31 — INTENTIONAL COMMERCIAL GO-LIVE
 

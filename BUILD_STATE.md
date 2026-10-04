@@ -2,6 +2,29 @@
 
 This file describes **current reality**, not intended future state.
 
+## CP30 — CLOSED. CP31 — NOT STARTED
+
+**CP30.2 CLOSED. CP30.3 CLOSED. CP30 CLOSED. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
+
+This close is an operations admission only. It does not authorise LIVE Stripe, CP31 execution, hotel onboarding, public launch, a custom domain, a database restore, or performance work.
+
+Operating envelope: **CONTROLLED 1–5 HOTEL V1 PILOT**. Capacity posture: **AMBER**. Commerce remains **test**. `SBG_DOMAIN_B_LIVE_CHECKOUT` is not set. Production is healthy at `dpl_4hVF3RBDne7csNG54PigccBZqTXk`, SHA `e18c082b57a03235b9a322171b397cf5d1edbb59`, which is documentation on the CP30.2B application runtime `cf0d5a3`.
+
+No checkpoint in this repository was named CP30.1. Topology used here is the accepted CP29.4A record: Vercel `iad1`, Neon pooler, `eu-central-1`, runtime `aether_app`. That work is not relabelled CP30.1.
+
+UptimeRobot monitors **SBG Production — Application** and **SBG Production — Readiness** remain the detectors. Owner email received a test from each. A real DOWN/RECOVERY cycle was not induced. The Ops Agent is not required. The incident procedure remains `docs/V1_INCIDENT_RUNBOOK.md`. Neon history retention stays 6 hours and is not mature disaster recovery. Resend remains **NOT CONFIGURED**. The confirmation page says so. A missing email does not roll a booking back.
+
+| Item | Result |
+|---|---|
+| CP30.2 | **CLOSED** |
+| CP30.3 | **CLOSED** |
+| CP30 | **CLOSED** — 1–5 hotel operating envelope accepted |
+| CP31 | **NOT STARTED** |
+| LIVE commerce | **NOT ACTIVATED** |
+| Production commerce | **test** |
+
+The CP30.3D section below was the state before this close. Its statement that CP30 was not closed was true then.
+
 ## CP30.3D — PASS. CP30.3C — PASS. CP30 — NOT CLOSED
 
 **CP30.2A PASS. CP30.2B PASS. CP30.2C PASS. CP30.2 CLOSED. CP30.3A PASS. CP30.3B PASS. CP30.3C PASS. CP30.3D PASS. CP30 NOT CLOSED. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
