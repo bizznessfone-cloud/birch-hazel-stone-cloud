@@ -7,6 +7,7 @@
   --color-muted: var(--aether-muted);
   --color-line: var(--aether-line);
   --color-surface: var(--aether-surface);
+  --color-danger: var(--aether-danger);
   --radius-none: 0px;
 }
 
@@ -17,6 +18,10 @@
   --aether-ink: #161616;
   --aether-muted: #6a6a66;
   --aether-line: #dddcd6;
+  --aether-danger: #8c2f2f;
+  --aether-width: 72rem;
+  --aether-gutter: 1.25rem;
+  --aether-radius: 0px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -27,6 +32,7 @@
     --aether-ink: #f4f4f2;
     --aether-muted: #a3a3a3;
     --aether-line: #2a2a2a;
+    --aether-danger: #e7b4b4;
   }
 }
 
@@ -37,6 +43,7 @@ html.dark {
   --aether-ink: #f4f4f2;
   --aether-muted: #a3a3a3;
   --aether-line: #2a2a2a;
+  --aether-danger: #e7b4b4;
 }
 
 html.light {
@@ -46,6 +53,7 @@ html.light {
   --aether-ink: #161616;
   --aether-muted: #6a6a66;
   --aether-line: #dddcd6;
+  --aether-danger: #8c2f2f;
 }
 
 @layer base {
@@ -65,6 +73,11 @@ html.light {
     cursor: pointer;
   }
 
+  :focus-visible {
+    outline: 2px solid var(--aether-ink);
+    outline-offset: 2px;
+  }
+
   h1,
   h2,
   h3 {
@@ -73,6 +86,81 @@ html.light {
 
   p {
     text-wrap: pretty;
+  }
+}
+
+@media (min-width: 768px) {
+  :root {
+    --aether-gutter: 2rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  :root {
+    --aether-gutter: 2.5rem;
+  }
+}
+
+@layer components {
+  .sbg-container {
+    width: 100%;
+    max-width: var(--aether-width);
+    margin-inline: auto;
+    padding-inline: var(--aether-gutter);
+  }
+
+  .sbg-display {
+    font-size: clamp(2rem, 4vw, 3.25rem);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+  }
+
+  .sbg-title {
+    font-size: clamp(1.75rem, 2.4vw, 2.25rem);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+
+  .sbg-section {
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+  }
+
+  .sbg-panel-title {
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  .sbg-body {
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  .sbg-muted {
+    color: var(--aether-muted);
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  .sbg-label {
+    color: var(--aether-muted);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    line-height: 1.4;
+    text-transform: uppercase;
+  }
+
+  .sbg-meta {
+    color: var(--aether-muted);
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    line-height: 1.4;
   }
 }
 

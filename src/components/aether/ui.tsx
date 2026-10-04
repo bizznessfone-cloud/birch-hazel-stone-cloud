@@ -25,16 +25,25 @@ export function PageHeader({
   eyebrow,
   title,
   lead,
+  actions,
 }: {
   eyebrow?: string;
   title: string;
   lead?: string;
+  actions?: ReactNode;
 }) {
-  return (
+  const heading = (
     <div>
       {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
       <h1 className={`${eyebrow ? "mt-1" : ""} text-3xl font-semibold tracking-tight`}>{title}</h1>
       {lead ? <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">{lead}</p> : null}
+    </div>
+  );
+  if (!actions) return heading;
+  return (
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      {heading}
+      <div className="flex shrink-0 flex-wrap gap-2">{actions}</div>
     </div>
   );
 }
@@ -139,11 +148,26 @@ export function DefinitionRow({ label, value }: { label: string; value: string }
   );
 }
 
-export function Field({ label, children }: { label: string; children: ReactNode }) {
+export function Field({
+  label,
+  hint,
+  error,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  error?: string;
+  children: ReactNode;
+}) {
   return (
     <label className="block">
       <span className="mb-2 block text-xs tracking-widest text-muted uppercase">{label}</span>
       {children}
+      {error ? (
+        <span className="mt-2 block text-sm text-danger">{error}</span>
+      ) : hint ? (
+        <span className="mt-2 block text-sm leading-relaxed text-muted">{hint}</span>
+      ) : null}
     </label>
   );
 }
@@ -176,5 +200,119 @@ export function Screen({
     <div className={`flex min-h-dvh flex-col bg-canvas text-ink ${className ?? ""}`} {...props}>
       {children}
     </div>
+  );
+}
+
+type ButtonVariant = "primary" | "secondary" | "quiet" | "danger";
+
+const buttonVariantClass: Record<ButtonVariant, string> = {
+  primary: "border border-ink bg-ink text-canvas hover:opacity-90",
+  secondary: "border border-line bg-surface text-ink hover:border-ink",
+  quiet: "border border-transparent bg-transparent text-ink hover:border-line",
+  danger: "border border-danger bg-transparent text-danger hover:bg-surface",
+};
+
+export function Button({
+  variant = "primary",
+  className,
+  type = "button",
+  ...props
+}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant }) {
+  return (
+    <button
+      type={type}
+      {...props}
+      className={`inline-flex min-h-11 items-center justify-center px-4 text-sm font-medium transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40 ${buttonVariantClass[variant]} ${className ?? ""}`}
+    />
+  );
+}
+
+export function Container({
+  children,
+  className,
+  ...props
+}: HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div className={`sbg-container ${className ?? ""}`} {...props}>
+      {children}
+    </div>
+  );
+}
+
+export function Section({
+  children,
+  className,
+  ...props
+}: HTMLAttributes<HTMLElement>) {
+  return (
+    <section className={`py-10 md:py-14 ${className ?? ""}`} {...props}>
+      {children}
+    </section>
+  );
+}
+
+export function Metric({
+  label,
+  value,
+  note,
+}: {
+  label: string;
+  value: string;
+  note?: string;
+}) {
+  return (
+    <div className="border border-line bg-surface px-4 py-4">
+      <p className="sbg-label">{label}</p>
+      <p className="mt-2 text-2xl font-semibold tracking-tight">{value}</p>
+      {note ? <p className="sbg-meta mt-1">{note}</p> : null}
+    </div>
+  );
+}
+
+export function Status({
+  tone = "neutral",
+  children,
+}: {
+  tone?: "neutral" | "ok" | "attention" | "danger";
+  children: ReactNode;
+}) {
+  const cls =
+    tone === "danger"
+      ? "border-danger text-danger"
+      : tone === "neutral"
+        ? "border-line text-muted"
+        : "border-ink text-ink";
+  return (
+    <span className={`inline-flex min-h-6 items-center border px-2 text-[10px] font-medium tracking-widest uppercase ${cls}`}>
+      {children}
+    </span>
+  );
+}
+
+export function PublicHeader({
+  brand = "SCAN. BOOK. GO.",
+  children,
+}: {
+  brand?: string;
+  children?: ReactNode;
+}) {
+  return (
+    <header className="border-b border-line bg-canvas text-ink">
+      <Container className="flex min-h-16 items-center justify-between gap-4 py-3">
+        <p className="text-xs font-medium tracking-widest uppercase">{brand}</p>
+        {children ? <div className="flex items-center gap-2">{children}</div> : null}
+      </Container>
+    </header>
+  );
+}
+
+export function PublicFooter({ children }: { children?: ReactNode }) {
+  return (
+    <footer className="border-t border-line bg-canvas text-ink">
+      <Container className="flex flex-col gap-3 py-6 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-xs tracking-widest text-muted uppercase">SCAN. BOOK. GO.</p>
+        {children ? <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted">{children}</div> : null}
+      </Container>
+    </footer>
   );
 }
