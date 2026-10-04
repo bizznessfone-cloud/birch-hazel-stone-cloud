@@ -1,4 +1,6 @@
 {
+  "authority": "HISTORICAL SNAPSHOT. Not the incident source of truth. Do not use current_source_sha, next_execution_checkpoint, or production.deployment_id as the live identity. Use docs/V1_INCIDENT_RUNBOOK.md.",
+  "incident_runbook": "docs/V1_INCIDENT_RUNBOOK.md",
   "project": "SCAN / BOOK / GO",
   "guest_lockup": "SCAN. BOOK. GO.",
   "internal_history_name": "Aether Transfer",

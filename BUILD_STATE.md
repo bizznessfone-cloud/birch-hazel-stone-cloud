@@ -2,6 +2,33 @@
 
 This file describes **current reality**, not intended future state.
 
+## CP30.3B — PASS. CP30.2 — CLOSED. CP30 — NOT CLOSED
+
+**CP30.2A PASS. CP30.2B PASS. CP30.2C-1 PASS. CP30.2C-2 PASS. CP30.2 CLOSED. CP30.3A PASS. CP30.3B PASS. CP30 NOT CLOSED. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
+
+Incident procedure: `docs/V1_INCIDENT_RUNBOOK.md`. It supersedes operational instructions in the older restore and recovery files. Those files stay historical.
+
+UptimeRobot monitors **SBG Production — Application** and **SBG Production — Readiness** are ACTIVE / HEALTHY. Owner email received a test notification from each. A real DOWN/RECOVERY cycle was not tested. The Ops Agent is not built and is not required for detection. Production Resend confirmation email is **NOT CONFIGURED**. Email failure does not roll back a committed booking.
+
+| Item | Result |
+|---|---|
+| CP30.2A | **PASS** — observability boundary designed |
+| CP30.2B | **PASS** — `GET /api/ready` implemented |
+| CP30.2C-1 | **PASS** — monitoring audit. Better Stack was the design preference |
+| CP30.2C-2 | **PASS** — UptimeRobot substituted after Better Stack onboarding blocked the workflow. No Better Stack credential was created |
+| CP30.2 | **CLOSED** |
+| CP30.3A | **PASS** — reconnaissance only. No remediation in that checkpoint |
+| CP30.3B | **PASS** — this runbook. Documentation only |
+| External monitors | **ACTIVE** via UptimeRobot. Test notification received. Real outage cycle **NOT TESTED** |
+| Ops Agent | **NOT BUILT** |
+| Production Resend | **NOT CONFIGURED** |
+| CP30 / CP31 | CP30 **NOT CLOSED**. CP31 **NOT STARTED** |
+| LIVE commerce | **NOT ACTIVATED** |
+
+Deferred, not done here: Neon PITR proof, rollback drill, branch protection, `CP294A_DIAG_SECRET` deletion, second monitor vendor, status page, custom domain, password recovery, pool changes, performance work, LIVE commerce.
+
+The CP30.2B section below was the state when `/api/ready` landed and monitors were not configured yet. That was true then. It is not the current pointer.
+
 ## CP30.2B — PASS. CP30.2A — PASS. CP30 — NOT CLOSED
 
 **CP30.2A PASS. CP30.2B PASS. `GET /api/ready` IMPLEMENTED. External deterministic monitors NOT YET CONFIGURED. Ops Agent NOT BUILT. CP30.2C NOT STARTED. CP30.3 NOT STARTED. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**

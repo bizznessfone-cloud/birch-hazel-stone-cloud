@@ -1,10 +1,10 @@
 # Restore
 
-Canonical restore instructions: **`/RESTORE.md`** (repo root).
-Living status: **`BUILD_STATE.md`**.
-Machine-readable identity: **`AETHER_RECOVERY_MANIFEST.json`**.
+> **Not the incident procedure.** Current Production incidents use **[V1_INCIDENT_RUNBOOK.md](V1_INCIDENT_RUNBOOK.md)** only. This file and `AETHER_RECOVERY_MANIFEST.json` are historical. Do not follow the SHA, deployment, migration ceiling, or next-checkpoint lines below.
 
-## Current accepted baseline (POST-CP26B CLOSED)
+Canonical reconstruction notes remain in **`/RESTORE.md`**, also historical for incidents. Living status: **`BUILD_STATE.md`**.
+
+## HISTORICAL SNAPSHOT — not current (label formerly “Current accepted baseline”, POST-CP26B CLOSED)
 
 GitHub is authoritative for application source.
 
@@ -32,7 +32,8 @@ The Grok workspace is ephemeral and **never authoritative**. Recovery ZIPs are *
 git clone https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud.git
 cd birch-hazel-stone-cloud
 git checkout main
-# last application SHA: 19512c295830fbc6fd9712d688ce364d940f87c3
+# HISTORICAL marker only, not the live SHA: 19512c295830fbc6fd9712d688ce364d940f87c3
+# Incident identity: docs/V1_INCIDENT_RUNBOOK.md
 ```
 
 Then:

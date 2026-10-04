@@ -1,6 +1,8 @@
 # RESTORE.md — reconstruct SCAN / BOOK / GO without this conversation
 
-## Current accepted baseline (CP26 CLOSED)
+> **Not the incident procedure.** Current Production incidents use **[docs/V1_INCIDENT_RUNBOOK.md](docs/V1_INCIDENT_RUNBOOK.md)** only. The baseline below is a historical reconstruction snapshot. Do not treat its SHA, deployment id, or “next checkpoint” as live.
+
+## HISTORICAL SNAPSHOT — not current (label formerly “Current accepted baseline”, CP26 CLOSED)
 
 GitHub is authoritative for application source. Living status: **`BUILD_STATE.md`**.
 
@@ -87,7 +89,8 @@ Authoritative living status: `BUILD_STATE.md`. Architecture notes: `docs/ARCHITE
 git clone https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud.git
 cd birch-hazel-stone-cloud
 git checkout main
-# last application SHA: 19512c295830fbc6fd9712d688ce364d940f87c3
+# HISTORICAL marker only, not the live SHA: 19512c295830fbc6fd9712d688ce364d940f87c3
+# Incident identity: docs/V1_INCIDENT_RUNBOOK.md
 ```
 
 Do **not** default to `git checkout cp17-known-good`.
@@ -141,9 +144,9 @@ See `.env.example`.
 - Do not extract the CP10 ZIP over current `main`.
 - Do not reopen CP25G.3 or CP26A.
 - Do not treat CP26 as go-live. Only CP31 activates commerce.
-- Next execution is **CP26C**. See `docs/ROADMAP.md` and `docs/FIXTURE_POLICY.md`.
+- Historical pointer, superseded: this file once said the next execution was CP26C or CP27. It is not. Use `BUILD_STATE.md` and `docs/V1_INCIDENT_RUNBOOK.md`.
 - Do not add `AETHER_DATABASE_OWNER_URL` to Vercel.
 - Do not run migrations during `npm run build`.
 - Do not dispatch retired 0022/0023/0024 production-migrate workflows.
 - Do not mutate or delete the Production verification tenant (`sbg-verify-a5`) unless a later checkpoint explicitly authorises it.
-- Do not set `SBG_SAAS_COMMERCE=test` on public Production until CP26C establishes an authorised isolation strategy.
+- Historical CP26B hold, superseded: “Do not set `SBG_SAAS_COMMERCE=test` until CP26C.” Production is already `test`. The current rule is the commerce freeze in `docs/V1_INCIDENT_RUNBOOK.md`: do not set `live`.

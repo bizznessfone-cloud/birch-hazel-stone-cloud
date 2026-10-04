@@ -1,9 +1,11 @@
 # Recovery manifest
 
-This file must let a new developer or coding agent continue without the
-original conversation. No secrets.
+> **Not the incident procedure.** Current Production incidents use **[V1_INCIDENT_RUNBOOK.md](V1_INCIDENT_RUNBOOK.md)** only. The baseline below is a historical manifest, including its “next checkpoint” and deployment id.
 
-## Current accepted baseline (CP26 CLOSED)
+This file must let a new developer or coding agent continue without the
+original conversation. No secrets. It is not the live incident identity.
+
+## HISTORICAL SNAPSHOT — not current (label formerly “Current accepted baseline”, CP26 CLOSED)
 
 GitHub is authoritative for application source. Living status: **`BUILD_STATE.md`**.
 

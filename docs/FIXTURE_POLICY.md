@@ -112,7 +112,7 @@ non-empty `SBG_SAAS_TEST_HOTEL_IDS` hotel-UUID allowlist before any Domain A
 Checkout, portal, or webhook persistence in test mode. Empty/malformed
 allowlist fail-closes every hotel. Live mode ignores this allowlist.
 
-Do **not** set `SBG_SAAS_COMMERCE=test` on public Production. Former CP26C.4
+Historical hold, superseded: do **not** set `SBG_SAAS_COMMERCE=test` on public Production. Production is already `test`. Do **not** set `live`. Incident rule: [`V1_INCIDENT_RUNBOOK.md`](V1_INCIDENT_RUNBOOK.md). Former CP26C.4
 is superseded. Do **not** put a Production hotel UUID in git.
 
 `main` auto-deploys Vercel Production. Source/docs changes here do not activate

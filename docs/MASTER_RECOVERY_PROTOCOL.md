@@ -1,9 +1,11 @@
 # Aether Transfer — Master Recovery Protocol
 
+> **Not the incident procedure.** This file is the historical rebuild protocol. Current Production incidents use **[V1_INCIDENT_RUNBOOK.md](V1_INCIDENT_RUNBOOK.md)** only. Do not follow the SHA, deployment, migration ceiling, or next-checkpoint lines below.
+
 This file is the permanent copy of the rebuild protocol used to reconstruct
 Aether Transfer after the original implementation workspace was lost.
 
-## Current accepted baseline (POST-CP26B CLOSED)
+## HISTORICAL SNAPSHOT — not current (label formerly “Current accepted baseline”, POST-CP26B CLOSED)
 
 GitHub is the authoritative source for application source code. Living status: **`BUILD_STATE.md`**.
 
@@ -72,10 +74,10 @@ Stripe Connect source, CP25 guest-payment source, CP25G.3 Production Better Auth
 (CLOSED), CP26A commercial dormancy (CLOSED), CP26B Domain A lifecycle +
 Production 0024 (CLOSED).
 
-Next execution checkpoint: **CP26C**. Canonical roadmap: **[ROADMAP.md](ROADMAP.md)**. Fixture policy: **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)**.
+Historical note, not current: this protocol next pointed at **CP26C**. Current status is `BUILD_STATE.md`. Incidents use **[V1_INCIDENT_RUNBOOK.md](V1_INCIDENT_RUNBOOK.md)**. Canonical roadmap: **[ROADMAP.md](ROADMAP.md)**. Fixture policy: **[FIXTURE_POLICY.md](FIXTURE_POLICY.md)**.
 CP26 is not commercial go-live. Only CP31 activates commerce.
 
 ## If the workspace disappears
 
-Restore from GitHub `main` at the current SHA in `BUILD_STATE.md`. Do not check
+Restore source from GitHub `main`. For a Production incident, follow **[V1_INCIDENT_RUNBOOK.md](V1_INCIDENT_RUNBOOK.md)** before this protocol. Do not check
 out `cp17-known-good` unless a human authorises a historical rollback.

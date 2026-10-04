@@ -48,8 +48,13 @@ Canonical living roadmap. Other living documents should **point here**, not rede
 | **CP29** | **CLOSED** |
 | CP30.2A | **PASS** — observability boundary designed. Agent not built. Monitors not configured |
 | CP30.2B | **PASS** — `GET /api/ready` only. See [`BUILD_STATE.md`](../BUILD_STATE.md) |
-| **CP30** | **NOT CLOSED**. CP30.2C is not started. CP30.3 is not started |
-| **Next** | **CP30.2C — DETERMINISTIC EXTERNAL MONITORING. NOT STARTED**. Not Production launch. Not public launch. Not LIVE commerce. The twelve-step O4–O11 chain is superseded and must not be executed. **CP26C.3** is not resumed. Only **CP31** activates LIVE commerce |
+| CP30.2C-1 | **PASS** — external monitoring audit. No activation in that checkpoint |
+| CP30.2C-2 | **PASS** — UptimeRobot monitors active. Test notification received. Real outage cycle not tested |
+| **CP30.2** | **CLOSED** |
+| CP30.3A | **PASS** — recovery reconnaissance. Scope defined. Nothing remediated |
+| CP30.3B | **PASS** — [`V1_INCIDENT_RUNBOOK.md`](V1_INCIDENT_RUNBOOK.md) is the incident procedure |
+| **CP30** | **NOT CLOSED**. CP31 is not started. LIVE commerce is not activated |
+| **Next** | **CP30 remains open.** Deferred controls from CP30.3A are not authorised by CP30.3B. Not Production launch. Not public launch. Not LIVE commerce. The twelve-step O4–O11 chain is superseded and must not be executed. **CP26C.3** is not resumed. Only **CP31** activates LIVE commerce |
 
 ---
 
@@ -140,6 +145,8 @@ Still open (later CP26 work):
 - Stripe TEST products/prices/webhook endpoint preparation (**CP26C.3 superseded; not resumed**; later **CP26C-O9**)
 - Production Stripe configuration remains **absent** (must stay absent; former CP26C.4 is superseded)
 - Do **not** set `SBG_SAAS_COMMERCE=test` on public Production until **CP26C-O11** explicitly authorises it. Empty `SBG_SAAS_TEST_HOTEL_IDS` fail-closes every hotel even if mode=test.
+
+**Superseded.** That hold is not current. Production commerce is already `test`, not live. During an incident, follow the commerce freeze in [`V1_INCIDENT_RUNBOOK.md`](V1_INCIDENT_RUNBOOK.md). Do not set `live`.
 
 ---
 
