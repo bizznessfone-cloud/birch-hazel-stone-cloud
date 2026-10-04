@@ -2,6 +2,23 @@
 
 This file describes **current reality**, not intended future state.
 
+## CP30.2B — PASS. CP30.2A — PASS. CP30 — NOT CLOSED
+
+**CP30.2A PASS. CP30.2B PASS. `GET /api/ready` IMPLEMENTED. External deterministic monitors NOT YET CONFIGURED. Ops Agent NOT BUILT. CP30.2C NOT STARTED. CP30.3 NOT STARTED. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
+
+`GET /api/ready` answers `200 {"ok":true}` or `503 {"ok":false}` after one `select 1` on the existing application pool. It is not linked from the UI. It does not write, set a cookie, or return driver or topology text. `Cache-Control: no-store`. No migration. No Stripe, Resend, Neon, DNS, or Vercel environment change.
+
+| Item | Result |
+|---|---|
+| CP30.2A | **PASS** — observability boundary designed. Not built, except the readiness route authorised as CP30.2B |
+| `/api/ready` | **IMPLEMENTED** |
+| External monitors | **NOT YET CONFIGURED** |
+| Ops Agent | **NOT BUILT** |
+| CP30.2C / CP30.3 / CP31 | **NOT STARTED** |
+| LIVE commerce | **NOT ACTIVATED** |
+
+The CP29 section below is the close state of CP29. Its statement that CP30 had not started was true at that close.
+
 ## CP29 — CLOSED. CP29.4A — PASS. CP30 — NOT STARTED
 
 **CP29.2 CLOSED. CP29.3 PASS. CP29.4 measurement completed. CP29.4A PASS. CP29 CLOSED. CP30 NOT STARTED. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
@@ -90,7 +107,7 @@ Verification baseline application SHA `30173015216ca638a7d63736205fe20be11d3880`
 
 **Migrations.** Source and Gate B remain **0001–0030**. `AUTHORISED_PENDING=[]`. No 0031. No migration applied. No Production SQL.
 
-**Next: CP30 — NOT STARTED.** CP29 is closed. CP29.4A passed as measurement only. Do not start CP30 from this note. Do not activate CP31.
+**Next: CP30.2C — NOT STARTED.** CP30.2A and CP30.2B passed. `/api/ready` is implemented. External monitors are not configured. The Ops Agent is not built. Do not start CP30.2C, CP30.3, or CP31 from this note. Do not activate LIVE commerce.
 
 The CP26 section below is the last Production commercial record. Sentences there that say the next checkpoint is CP27, or that the ledger stopped at 0028, are the state **at that earlier checkpoint** unless this CP28 section supersedes them.
 
@@ -108,7 +125,7 @@ Organisation billing is active, licensed_quantity **3**, price version as above,
 
 Licence balance: licensed **3**, active allocations **0**, available **3**. Released historical rows for `cp26-licence-a`, `cp26-licence-b`, `cp26-licence-c`, and `cp26-licence-d` remain. Those hotels stay **unconfigured**. Protected hotels were not repurposed.
 
-The paragraph above is the last Production commercial record through 0030. **Current next is CP30, not started.** CP29 is closed. See the CP29 section at the top. CP27.3c guest booking client-IP trust is in source. The public limiter uses the CP27.3a header order and trusted-proxy walk, and production limiter storage failures fail closed. CP27.3b signup and billing-read membership stay in source. No migration 0031. Do not enable LIVE commerce. Do not rerun the 0030 controller. Do not resume CP26C.3. Do not start CP27.4. Do not start CP30 from this note.
+The paragraph above is the last Production commercial record through 0030. **Current next is CP30.2C, not started.** CP30.2A and CP30.2B passed. See the CP30.2B section at the top. No migration 0031. Do not enable LIVE commerce. Do not rerun the 0030 controller. Do not resume CP26C.3. Do not start CP27.4. Do not start CP30.2C from this note.
 
 The section below is the historical path through CP26B and finalisation. Present-tense claims there that commerce is OFF, that prices are undefined, or that CP26 STRIPE TEST is next are the state **at that earlier checkpoint**.
 
@@ -185,7 +202,7 @@ Migration **0025** is **Production-applied**. Its dispatch workflow is **RETIRED
 | Catalogue | `property_licence` **active**; `basic` / `pro` / `premium` **inactive** historical; one price version `b13f9445-d27a-4e7d-8128-a2238906ce7c` EUR **17900** month; one verified TEST mapping `price_1UKGWjFHnHXHuPOwO50TJS93`; no LIVE mapping; LIVE locks **false/false** |
 | 0027 | applied once (GHA [36251190175](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36251190175)); digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef`; workflow **RETIRED**; script remains |
 | 0028 | `migrations/0028_cp26fin_property_licence_catalogue.sql` applied once (GHA [36254890554](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36254890554)); digest `35626cb2d3b21a076f4a2cb982b9d0983610620fb21dbf7f3e94eb4c0576a02d`; workflow **RETIRED**; controller `REQUIRED_LEDGER` frozen at **0001–0027** |
-| **Next product** | **CP30 — NOT STARTED.** CP29 is closed. See the CP29 section at the top. CP27 is **CLOSED**. No migration 0031. Do not enable LIVE commerce |
+| **Next product** | **CP30.2C — NOT STARTED.** CP30.2A and CP30.2B passed. See the CP30.2B section at the top. CP27 is **CLOSED**. No migration 0031. Do not enable LIVE commerce |
 
 Do not dispatch historical 0022/0023/0024 controllers or the retired 0025, 0026, 0027, 0028, 0029, or 0030 workflows. Do not rerun `scripts/cp272-0030-production-migrate.mjs`. Do not recreate the retired one-shot CP26 read workflows. Owner secret remains GitHub Actions `AETHER_DATABASE_OWNER_URL` only — never Vercel. The generic migrator never applies SQL. 0030 is accepted. 0031+ stays fail-closed.
 

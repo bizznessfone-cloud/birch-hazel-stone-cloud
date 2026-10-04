@@ -44,8 +44,10 @@ Living status: **`BUILD_STATE.md`** (repo root).
 | CP29.3 | **PASS** — capacity measurement on the disposable branch. GHA [37105141618](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/37105141618). No optimisation. No schema change |
 | CP29.4 | **Measurement completed, then blocked** — function region `iad1`. Transport and in-function `SELECT 1` were not proven in CP29.4. CP29.4A later proved them |
 | CP29.4A | **PASS** — Production transport **pooler**, Neon **eu-central-1**, branch `br-green-darkness-b1k7wkue`, warm `SELECT 1` p50 **93.429 ms**. Diagnostic removed. Not a booking SLA |
-| **CP29** | **CLOSED**. CP30 is not started |
-| **Next product checkpoint** | **CP30 — NOT STARTED**. Not Production launch. Not LIVE commerce. Only **CP31** activates LIVE commerce |
+| **CP29** | **CLOSED**. CP30.2A and CP30.2B later passed. CP30 is not closed |
+| CP30.2A | **PASS** — observability architecture only. Not an implementation |
+| CP30.2B | **PASS** — `GET /api/ready` implemented. `200 {"ok":true}` or `503 {"ok":false}`. One `select 1`. No topology. External monitors **not configured**. Ops Agent **not built** |
+| **Next product checkpoint** | **CP30.2C — NOT STARTED**. Not Production launch. Not LIVE commerce. Only **CP31** activates LIVE commerce |
 | Forward roadmap | **[ROADMAP.md](ROADMAP.md)** (CP26–CP31) |
 | Commercial catalogue | **[COMMERCIAL_CATALOGUE.md](COMMERCIAL_CATALOGUE.md)** |
 | Owner architecture | **[OWNER_CONTROL_PLANE.md](OWNER_CONTROL_PLANE.md)** |

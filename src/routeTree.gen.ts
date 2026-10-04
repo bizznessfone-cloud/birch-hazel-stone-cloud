@@ -15,6 +15,7 @@ import { Route as AppRouteImport } from './routes/app'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as OpsRouteImport } from './routes/ops'
 import { Route as OwnerRouteImport } from './routes/owner'
+import { Route as ApiReadyRouteImport } from './routes/api/ready'
 import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as AppBillingRouteImport } from './routes/app.billing'
 import { Route as AppOnboardingRouteImport } from './routes/app.onboarding'
@@ -70,6 +71,11 @@ const OpsRoute = OpsRouteImport.update({
 const OwnerRoute = OwnerRouteImport.update({
   id: '/owner',
   path: '/owner',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiReadyRoute = ApiReadyRouteImport.update({
+  id: '/api/ready',
+  path: '/api/ready',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppIndexRoute = AppIndexRouteImport.update({
@@ -212,6 +218,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/ops': typeof OpsRouteWithChildren
   '/owner': typeof OwnerRouteWithChildren
+  '/api/ready': typeof ApiReadyRoute
   '/app/billing': typeof AppBillingRoute
   '/app/onboarding': typeof AppOnboardingRoute
   '/book/$hotelCode': typeof BookHotelCodeRoute
@@ -243,6 +250,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$hotelSlug': typeof HotelSlugRoute
   '/login': typeof LoginRoute
+  '/api/ready': typeof ApiReadyRoute
   '/app/billing': typeof AppBillingRoute
   '/app/onboarding': typeof AppOnboardingRoute
   '/book/$hotelCode': typeof BookHotelCodeRoute
@@ -278,6 +286,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/ops': typeof OpsRouteWithChildren
   '/owner': typeof OwnerRouteWithChildren
+  '/api/ready': typeof ApiReadyRoute
   '/app/billing': typeof AppBillingRoute
   '/app/onboarding': typeof AppOnboardingRoute
   '/book/$hotelCode': typeof BookHotelCodeRoute
@@ -314,6 +323,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/ops'
     | '/owner'
+    | '/api/ready'
     | '/app/billing'
     | '/app/onboarding'
     | '/book/$hotelCode'
@@ -345,6 +355,7 @@ export interface FileRouteTypes {
     | '/'
     | '/$hotelSlug'
     | '/login'
+    | '/api/ready'
     | '/app/billing'
     | '/app/onboarding'
     | '/book/$hotelCode'
@@ -379,6 +390,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/ops'
     | '/owner'
+    | '/api/ready'
     | '/app/billing'
     | '/app/onboarding'
     | '/book/$hotelCode'
@@ -414,6 +426,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   OpsRoute: typeof OpsRouteWithChildren
   OwnerRoute: typeof OwnerRouteWithChildren
+  ApiReadyRoute: typeof ApiReadyRoute
   BookHotelCodeRoute: typeof BookHotelCodeRoute
   ConfirmedTokenRoute: typeof ConfirmedTokenRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
@@ -463,6 +476,13 @@ declare module '@tanstack/react-router' {
       path: '/owner'
       fullPath: '/owner'
       preLoaderRoute: typeof OwnerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ready': {
+      id: '/api/ready'
+      path: '/api/ready'
+      fullPath: '/api/ready'
+      preLoaderRoute: typeof ApiReadyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app/': {
@@ -732,6 +752,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   OpsRoute: OpsRouteWithChildren,
   OwnerRoute: OwnerRouteWithChildren,
+  ApiReadyRoute: ApiReadyRoute,
   BookHotelCodeRoute: BookHotelCodeRoute,
   ConfirmedTokenRoute: ConfirmedTokenRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,

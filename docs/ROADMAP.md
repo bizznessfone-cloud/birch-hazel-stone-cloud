@@ -45,8 +45,11 @@ Canonical living roadmap. Other living documents should **point here**, not rede
 | CP29.3 | **PASS** — bottleneck and capacity measurement. Pool max 2 was not changed. Guest-create time is serial database round trips. See [`BUILD_STATE.md`](../BUILD_STATE.md) |
 | CP29.4 | **Measurement completed** — function region `iad1`. Transport and SQL RTT were still open until CP29.4A |
 | CP29.4A | **PASS** — Production URL is Neon **pooler**, region **eu-central-1**, warm in-function `SELECT 1` p50 93.429 ms. See [`BUILD_STATE.md`](../BUILD_STATE.md) |
-| **CP29** | **CLOSED**. CP30 is not started |
-| **Next** | **CP30 — PRODUCTION READINESS. NOT STARTED**. Not Production launch. Not public launch. Not LIVE commerce. The twelve-step O4–O11 chain is superseded and must not be executed. **CP26C.3** is not resumed. Only **CP31** activates LIVE commerce |
+| **CP29** | **CLOSED** |
+| CP30.2A | **PASS** — observability boundary designed. Agent not built. Monitors not configured |
+| CP30.2B | **PASS** — `GET /api/ready` only. See [`BUILD_STATE.md`](../BUILD_STATE.md) |
+| **CP30** | **NOT CLOSED**. CP30.2C is not started. CP30.3 is not started |
+| **Next** | **CP30.2C — DETERMINISTIC EXTERNAL MONITORING. NOT STARTED**. Not Production launch. Not public launch. Not LIVE commerce. The twelve-step O4–O11 chain is superseded and must not be executed. **CP26C.3** is not resumed. Only **CP31** activates LIVE commerce |
 
 ---
 
@@ -216,7 +219,7 @@ Non-blocking UI backlog: Owner header showed “SSBG Verification”. Deferred t
 
 **CP26 FINALISATION COMPLETE (snapshot).** This paragraph records the state at the end of finalisation, before Stripe TEST. Production ledger is **0001–0028** exactly once each. Gate B accepted ledger is **0001–0028**. `AUTHORISED_PENDING=[]`. 0027 digest `1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef` (apply GHA [36251190175](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36251190175)) is ordinary accepted history. Its workflow is **RETIRED**. 0028 `migrations/0028_cp26fin_property_licence_catalogue.sql` digest `35626cb2d3b21a076f4a2cb982b9d0983610620fb21dbf7f3e94eb4c0576a02d` applied once (GHA [36254890554](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/36254890554)). Its workflow is **RETIRED**. The historical controller script remains; its `REQUIRED_LEDGER` stays frozen at **0001–0027** and must not follow Gate B. At that snapshot: price versions 0, mappings 0, organisations 0, commerce OFF.
 
-**CP26 STRIPE TEST — PASS. CP26 EXIT GATE — PASS. CP26 — COMPLETE.** One TEST organisation `4208626a-ef20-4f5a-b28e-0d8b9c778205`, customer `cus_VKwWNaJ4nwUTfM`, subscription `sub_1UKGdCFHnHXHuPOwgswtqBhL`, one item, quantity 3, price `price_1UKGWjFHnHXHuPOwO50TJS93`, catalogue version `b13f9445-d27a-4e7d-8128-a2238906ce7c` EUR 17900 month. Event `evt_1UKKPiFHnHXHuPOwM7L3ZmoM` applied once; same-id replay did not move `processed_at`. Allocation proof passed, then all four fixtures were released. Licensed 3, active 0, available 3. Domain B unchanged. LIVE locks false. Commerce **test**, not live. The 0025 dispatch workflow is **RETIRED**. **At CP26 close, next was CP27 — SECURITY HARDENING, not started.** That sentence is historical. CP27 and CP28 later closed. Current next is CP30, not started. CP29.2 is closed and CP29.3 passed as measurement only. CP29 as a whole is not closed. See the living table.
+**CP26 STRIPE TEST — PASS. CP26 EXIT GATE — PASS. CP26 — COMPLETE.** One TEST organisation `4208626a-ef20-4f5a-b28e-0d8b9c778205`, customer `cus_VKwWNaJ4nwUTfM`, subscription `sub_1UKGdCFHnHXHuPOwgswtqBhL`, one item, quantity 3, price `price_1UKGWjFHnHXHuPOwO50TJS93`, catalogue version `b13f9445-d27a-4e7d-8128-a2238906ce7c` EUR 17900 month. Event `evt_1UKKPiFHnHXHuPOwM7L3ZmoM` applied once; same-id replay did not move `processed_at`. Allocation proof passed, then all four fixtures were released. Licensed 3, active 0, available 3. Domain B unchanged. LIVE locks false. Commerce **test**, not live. The 0025 dispatch workflow is **RETIRED**. **At CP26 close, next was CP27 — SECURITY HARDENING, not started.** That sentence is historical. CP27, CP28, and CP29 later closed. Current next is CP30.2C, not started. See the living table.
 
 The O4.2 paragraph below is the historical controller-ready record. It is not the current state. 0027 was later applied and accepted. Do not dispatch a 0027 workflow; the file is gone.
 
@@ -242,7 +245,7 @@ Remaining CP26 work, in order:
 CP26 FINALISATION PASS → CP26 STRIPE TEST PASS → CP26 EXIT GATE PASS → CP26 COMPLETE → CP27 SECURITY HARDENING (not started)
 ```
 
-The line above is the remaining-work list **at CP26 close**. It later completed: CP27 **CLOSED**, CP28 **CLOSED**. Current next is CP30, not started. CP29.2 is closed and CP29.3 passed as measurement only. CP29 as a whole is not closed. Do not restart CP27. Do not start CP30 from this note.
+The line above is the remaining-work list **at CP26 close**. It later completed: CP27 **CLOSED**, CP28 **CLOSED**, CP29 **CLOSED**. Current next is CP30.2C, not started. Do not restart CP27. Do not start CP30.2C from this note.
 
 **Do not switch public Production commerce from test to live.** Empty organisation and hotel allowlists fail-close. Only **CP31** activates LIVE commerce.
 
@@ -275,6 +278,8 @@ End-to-end, regression, failure-path, integration, concurrency; auth, tenancy, o
 Controlled load: occupancy concurrency; pool behaviour; webhook bursts; API concurrency; Checkout/session fan-out where safely testable. No live customer load. No commercial activation. CP29.2 and CP29.3 measured guest create, occupancy, idempotency, the existing pool, and Ops reads on the disposable branch only. They did not optimise, and they did not exercise webhook or Checkout fan-out.
 
 ## CP30 — PRODUCTION READINESS GATE
+
+**Status: NOT CLOSED.** CP30.2A **PASS**. CP30.2B **PASS** (`GET /api/ready`). External deterministic monitors are **not configured**. The Ops Agent is **not built**. CP30.2C is **not started**. CP30.3 is **not started**.
 
 Final readiness **without** commercial activation. The system may be technically capable of going live but must remain commercially dormant.
 
