@@ -8,7 +8,7 @@ This file describes **current reality**, not intended future state.
 
 `sbg_organisations.organisation_type` is `hotel` or `transfer_operator`, or NULL. NULL means unclassified. Existing rows are not backfilled. The create function is unchanged, so a new organisation stays NULL until a later checkpoint sets the type. Membership `role` is not the type. `hotels.organisation_id` is still not unique. One organisation can hold many hotels. Licence quantity stays on `sbg_organisation_billing.licensed_quantity`.
 
-Gate B accepts the file only as the single authorised pending migration. It is not in `ACCEPTED_LEDGER`. Putting it there before the single-use Production apply would make the next preflight fail. The permanent workflow is still read-only. Temporary `.github/workflows/cp3005e2c-0031-production-apply.yml` checks out `ef615c41d6999f8c834d39c18f3edfebbbd99c69` and runs only the 0031 controller after `APPLY-0031`. It has not been dispatched. Delete it after one verified apply.
+Gate B accepts the file only as the single authorised pending migration. It is not in `ACCEPTED_LEDGER`. Putting it there before the single-use Production apply would make the next preflight fail. The permanent workflow is still read-only. Temporary `.github/workflows/cp3005e2c-0031-production-apply.yml` checks out `2648bad7d69d52d7da37ce2e022473335228edbc` and runs only the 0031 controller after `APPLY-0031`. The first dispatch (GHA [37279095087](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/37279095087)) stopped in read-only preflight and did not mutate. It has not been applied. Delete the workflow after one verified apply.
 
 ## CP30.05E-2B — identity session. Onboarding not started
 
