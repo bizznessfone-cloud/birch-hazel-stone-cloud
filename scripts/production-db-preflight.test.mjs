@@ -116,7 +116,7 @@ test("accepted 0001-0028 ledger with empty pending passes", () => {
   assert.deepEqual(historicalSourceMigrations(SOURCE), LEDGER_0017);
   assert.equal(ACCEPTED_LEDGER.includes("0024_cp26b2_ordered_billing_events.sql"), true);
   assert.equal(ACCEPTED_LEDGER.includes("0027_cp26co41_organisation_property_licence.sql"), true);
-  assert.equal(ACCEPTED_LEDGER.at(-1), "0031_cp3005e2c_organisation_type.sql");
+  assert.equal(ACCEPTED_LEDGER.at(-1), "0032_cp3005e2c1_organisation_acceptance.sql");
 });
 
 test("pending 0024 is stale, not a newly authorised migration", () => {
@@ -195,32 +195,32 @@ test("no pending migration is automatically authorised", () => {
   assert.equal(isAuthorisedPending("0031_later.sql"), false);
 });
 
-test("0031 is accepted history and 0032 stays fail-closed", () => {
-  assert.equal(isAuthorisedPending("0031_cp3005e2c_organisation_type.sql"), false);
+test("0032 is accepted history and 0033 stays fail-closed", () => {
+  assert.equal(isAuthorisedPending("0032_cp3005e2c1_organisation_acceptance.sql"), false);
   const current = evaluatePreflight(baseFacts());
   assert.equal(current.ok, true);
   assert.equal(current.verdict, PASS_VERDICT);
   assert.deepEqual(current.pending, []);
-  assert.equal(current.ledger.at(-1), "0031_cp3005e2c_organisation_type.sql");
+  assert.equal(current.ledger.at(-1), "0032_cp3005e2c1_organisation_acceptance.sql");
 
   const missing = evaluatePreflight(
     baseFacts({
-      ledger: ACCEPTED_LEDGER.filter((name) => name !== "0031_cp3005e2c_organisation_type.sql"),
+      ledger: ACCEPTED_LEDGER.filter((name) => name !== "0032_cp3005e2c1_organisation_acceptance.sql"),
     }),
   );
   assert.equal(missing.ok, false);
   assert.equal(missing.verdict, "BLOCKED — MIGRATION LEDGER INCONSISTENT");
-  assert.deepEqual(missing.missingAccepted, ["0031_cp3005e2c_organisation_type.sql"]);
-  assert.deepEqual(missing.unexpectedPending, ["0031_cp3005e2c_organisation_type.sql"]);
+  assert.deepEqual(missing.missingAccepted, ["0032_cp3005e2c1_organisation_acceptance.sql"]);
+  assert.deepEqual(missing.unexpectedPending, ["0032_cp3005e2c1_organisation_acceptance.sql"]);
 
   const later = evaluatePreflight(
     baseFacts({
-      sourceMigrations: [...SOURCE, "0032_later.sql"],
+      sourceMigrations: [...SOURCE, "0033_later.sql"],
     }),
   );
   assert.equal(later.ok, false);
-  assert.deepEqual(later.unexpectedPending, ["0032_later.sql"]);
-  assert.equal(isAuthorisedPending("0032_later.sql"), false);
+  assert.deepEqual(later.unexpectedPending, ["0033_later.sql"]);
+  assert.equal(isAuthorisedPending("0033_later.sql"), false);
 });
 
 test("0029 and 0030 are accepted history and 0031 stays fail-closed", () => {
@@ -345,5 +345,5 @@ test("spent single-use and generic production migrate workflows stay retired", (
   assert.equal(existsSync(join(workflows, "cp26fin-0028-production-migrate.yml")), false);
   assert.equal(existsSync(join(workflows, "cp26co2c-first-owner-bootstrap.yml")), false);
   const yaml = readdirSync(workflows).filter((name) => name.endsWith(".yml") || name.endsWith(".yaml")).sort();
-  assert.deepEqual(yaml, ["cp3005e2c1-0032-production-apply.yml", "production-database.yml"]);
+  assert.deepEqual(yaml, ["production-database.yml"]);
 });

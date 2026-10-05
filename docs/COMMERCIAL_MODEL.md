@@ -33,23 +33,24 @@ CP30.05E-2A reconnaissance is accepted. CP30.05E-2B lets a new `/login`
 account obtain a Better Auth session before entering `/app`. That signup
 still does not create an organisation, a membership, or a hotel. Password
 recovery delivery is blocked until email transport exists. E-2C applied
-organisation classification and did not build onboarding. E-2C.1 adds an
-append-only acceptance table as authorised pending migration 0032. It is not
-applied and writes no acceptance. Public onboarding
+organisation classification and did not build onboarding. E-2C.1 applied
+append-only acceptance evidence and did not record an acceptance. Public onboarding
 is not built. CP31 has not started. Commerce stays test.
 
 `organisation_type` is applied migration `0031_cp3005e2c_organisation_type.sql`
 (digest `be0921b852dda7904863f34bc1160fab844b2aaf0821423f6863c91b71b592b6`,
-GHA 37279300118). It is accepted Production history. The sole authorised
-pending file is `0032_cp3005e2c1_organisation_acceptance.sql`.
+GHA 37279300118). It is accepted Production history. `AUTHORISED_PENDING=[]`.
 Allowed values are `hotel` and `transfer_operator`. NULL means unclassified.
 The one existing Production organisation was not guessed. `sbg_organisations`
 otherwise remains `id`, `name`, `created_at`, `created_by_user_id`. Hotels may
 point at an organisation through `hotels.organisation_id`. That column is not
 unique: one organisation can hold many properties. Licence quantity stays on
 the organisation billing row. Acceptance, when recorded, belongs to the
-organisation, not to each property or licence. E-2D has not started.
-0032 is authorised pending and not applied. 0033+ stays fail-closed.
+organisation, not to each property or licence. `0032` is applied
+(`0032_cp3005e2c1_organisation_acceptance.sql`, digest
+`c3412d2b6efc05786ea3edf1146da25853b88ac0df69b1ce215240be0c72ab48`,
+GHA 37333642947) and its workflow is retired. Production has no acceptance
+row. E-2D has not started. 0033+ stays fail-closed.
 
 The classification is kept so later onboarding copy, terminology, defaults,
 acquisition, conversion, churn, pricing, and communications can use it.
@@ -85,7 +86,7 @@ Catalogue amounts are no longer undefined. The published Production price versio
 | CP26C.4 | **SUPERSEDED as previously scoped** — do not cut Checkout over to three tier Prices |
 | Next | **CP27.3**, not started. M5–M8 application remediation is in source. Checkout calls 0029. `SBG_DOMAIN_B_LIVE_CHECKOUT` is not enabled. Only **CP31** activates LIVE |
 | Commerce | **test** (`SBG_SAAS_COMMERCE=test`). Not live. Only **CP31** activates LIVE |
-| Ledger | Gate B accepted **0001–0031**; sole pending `0032_cp3005e2c1_organisation_acceptance.sql` (not applied); 0031 applied (GHA 37279300118); 0033+ fail-closed |
+| Ledger | Gate B accepted **0001–0032**; `AUTHORISED_PENDING=[]`; 0032 applied (GHA 37333642947); no acceptance rows; 0033+ fail-closed |
 | 0026 digest | `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446` unchanged |
 | Production prices | one version `b13f9445-d27a-4e7d-8128-a2238906ce7c` EUR 17900 month; one verified TEST mapping `price_1UKGWjFHnHXHuPOwO50TJS93`; no LIVE mapping |
 | LIVE locks | **false / false** |

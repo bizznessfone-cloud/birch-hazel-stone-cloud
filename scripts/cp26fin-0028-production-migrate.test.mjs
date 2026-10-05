@@ -81,7 +81,7 @@ function facts(overrides = {}) {
 test("0028 digest is pinned, accepted, and the controller ledger stays frozen at 0001-0027", () => {
   assert.equal(sha256(Buffer.from(sql)), TARGET_DIGEST);
   assert.equal(assertMigrationFile(file).ok, true);
-  assert.equal(ACCEPTED_LEDGER.at(-1), "0031_cp3005e2c_organisation_type.sql");
+  assert.equal(ACCEPTED_LEDGER.at(-1), "0032_cp3005e2c1_organisation_acceptance.sql");
   assert.equal(ACCEPTED_LEDGER.includes("0027_cp26co41_organisation_property_licence.sql"), true);
   assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), true);
   assert.deepEqual(
@@ -91,14 +91,15 @@ test("0028 digest is pinned, accepted, and the controller ledger stays frozen at
         name !== TARGET_MIGRATION &&
         name !== "0029_cp272_domain_a_checkout_claims.sql" &&
         name !== "0030_cp272_fix_prepare_booking_payment.sql" &&
-        name !== "0031_cp3005e2c_organisation_type.sql",
+        name !== "0031_cp3005e2c_organisation_type.sql" &&
+        name !== "0032_cp3005e2c1_organisation_acceptance.sql",
     ),
   );
   assert.equal(REQUIRED_LEDGER.at(-1), "0027_cp26co41_organisation_property_licence.sql");
   assert.equal(REQUIRED_LEDGER.includes(TARGET_MIGRATION), false);
   assert.notDeepEqual(REQUIRED_LEDGER, [...ACCEPTED_LEDGER]);
   assert.doesNotMatch(src, /REQUIRED_LEDGER\s*=\s*\[\s*\.\.\.ACCEPTED_LEDGER/);
-  assert.deepEqual(AUTHORISED_PENDING, ["0032_cp3005e2c1_organisation_acceptance.sql"]);
+  assert.deepEqual(AUTHORISED_PENDING, []);
   assert.equal(isAuthorisedPending(TARGET_MIGRATION), false);
   assert.equal(REVIEWED_DIGESTS["0027_cp26co41_organisation_property_licence.sql"],
     "1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef");
@@ -176,7 +177,7 @@ test("0028 dispatch is retired and build does not apply 0028", () => {
   assert.equal(existsSync(join(here, "../.github/workflows/cp26co42-0027-production-migrate.yml")), false);
   assert.equal(existsSync(join(here, "../.github/workflows/cp26fin-0028-production-migrate.yml")), false);
   assert.equal(existsSync(join(here, "cp26fin-0028-production-migrate.mjs")), true);
-  assert.deepEqual(workflows, ["cp3005e2c1-0032-production-apply.yml", "production-database.yml"]);
+  assert.deepEqual(workflows, ["production-database.yml"]);
   for (const name of workflows) {
     const text = readFileSync(join(here, "../.github/workflows", name), "utf8");
     assert.equal(text.includes("cp26fin-0028-production-migrate.mjs"), false, name);

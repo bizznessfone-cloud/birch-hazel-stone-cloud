@@ -2,6 +2,7 @@
 /**
  * CP30.05E-2C.1 — single-use production controller for 0032 only.
  *
+ * Applied once in Production (GHA 37333642947). Do not run this file again.
  * Applies migrations/0032_cp3005e2c1_organisation_acceptance.sql and nothing else.
  * Does not insert an acceptance row. Does not classify organisation_type.
  * Never uses DATABASE_URL. Never prints secrets. Never calls Stripe.
@@ -10,6 +11,7 @@
  * REQUIRED_LEDGER is the frozen pre-apply pin (0001–0031). It must not follow
  * Gate B after 0032 is accepted. Re-running a valid installed contract
  * must return "0032 ALREADY APPLIED — NO MUTATION" and must not rewrite SQL.
+ * The temporary dispatch workflow is retired. Do not recreate it.
  */
 import { createHash } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";
