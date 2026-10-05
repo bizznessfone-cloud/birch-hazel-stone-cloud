@@ -1,8 +1,11 @@
 /**
  * CP27.3b — signup enumeration boundary.
+ * CP30.05E-2B — session is not created here.
  * Better Auth 1.6.30 returns 422 USER_ALREADY_EXISTS unless autoSignIn is
  * false (or email verification is required). Verification stays off.
  * autoSignIn false makes both paths 200 with token null and no session.
+ * Turning autoSignIn on would also skip that generic response, so it stays
+ * false. /login calls email sign-in after this response.
  * The synthetic user still includes image:null while a new user omits it,
  * so this hook rewrites only that success body to one key set.
  * Malformed, origin, CSRF, and rate-limit errors are not rewritten.

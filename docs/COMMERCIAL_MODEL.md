@@ -29,6 +29,13 @@ The public homepage stays hotel-led. Its close is “Activate your SCAN BOOK GO
 system.” Get started does not yet open that flow. `SCAN.` / `BOOK.` / `GO.`
 is accepted brand language.
 
+CP30.05E-2A reconnaissance is accepted. CP30.05E-2B lets a new `/login`
+account obtain a Better Auth session before entering `/app`. That signup
+still does not create an organisation, a membership, or a hotel. Password
+recovery delivery is blocked until email transport exists. E-2C has not
+started. Public onboarding is not built. CP31 has not started. Commerce
+stays test.
+
 `organisation_type` does not exist. `sbg_organisations` (`0027`) is
 `id`, `name`, `created_at`, `created_by_user_id`. Hotels may point at an
 organisation through `hotels.organisation_id`. A future field has to be

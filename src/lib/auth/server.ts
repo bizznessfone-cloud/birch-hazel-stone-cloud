@@ -176,9 +176,12 @@ export const auth = betterAuth({
   session: { cookieCache: { enabled: true, maxAge: 300 } },
 
   // Local email/password — toggled only via `./email-password` (not a plugin).
-  // autoSignIn is false so an existing email and a new email share one
-  // non-session response. The after hook removes the synthetic-user shape
-  // difference. It does not enable verification or password reset.
+  // autoSignIn stays false so an existing email and a new email share one
+  // non-session response. /login then uses email sign-in to open a session.
+  // Enabling autoSignIn would return 422 for an existing email. The after
+  // hook removes the synthetic-user shape difference. It does not enable
+  // verification or password reset. Reset stays disabled until email
+  // delivery exists; a no-op sender would still claim the mail was sent.
   ...(emailAndPasswordEnabled
     ? {
         emailAndPassword: emailAndPasswordAuthOptions,

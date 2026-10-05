@@ -2,6 +2,18 @@
 
 This file describes **current reality**, not intended future state.
 
+## CP30.05E-2B — identity session. Onboarding not started
+
+**CP30.05E-2A PASS. CP30.05E-2B identity/session foundation is in this change. E-2C NOT STARTED. Public onboarding does not exist. Homepage Get started is not connected. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
+
+A new `/login` account is signed in with Better Auth email sign-in immediately after signup. The signup endpoint itself stays `autoSignIn: false`, so a new email and an existing email still share one sessionless 200 response. Signup does not create an organisation, a membership, a hotel, or an Owner/Ops grant.
+
+Password recovery delivery is **BLOCKED ON EMAIL TRANSPORT**. Better Auth reset is not enabled, because its success body would claim an email was sent. Production Resend is still not configured. No reset token is issued by the application.
+
+An authenticated user with no hotel still reaches the existing `/app/onboarding` wizard. That is temporary. E-2D must reconcile it. This checkpoint does not build onboarding.
+
+Commerce remains **test**. Migrations remain **0001–0030**. `AUTHORISED_PENDING=[]`. No 0031.
+
 ## CP30 — CLOSED. CP31 — NOT STARTED
 
 **CP30.2 CLOSED. CP30.3 CLOSED. CP30 CLOSED. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**

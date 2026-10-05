@@ -1,6 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { authClient, authEnabled } from "@/lib/auth/client";
+import { passwordRecoveryDeliveryAvailable } from "@/lib/auth/password-recovery";
+import { PUBLIC_AUTH_ERRORS, establishSignupSession } from "@/lib/auth/signup-session";
 import { ThemeToggle } from "@/components/aether/theme-toggle";
 
 export const Route = createFileRoute("/login")({ component: Login });
@@ -23,24 +25,39 @@ function Login() {
     setBusy(true);
     setError(null);
     try {
-      const result =
-        mode === "signup"
-          ? await authClient.signUp.email({
+      if (mode === "signup") {
+        const established = await establishSignupSession({
+          signUp: () =>
+            authClient.signUp.email({
               name: name.trim() || "Operator",
               email: email.trim(),
               password,
-            })
-          : await authClient.signIn.email({
+            }),
+          signIn: () =>
+            authClient.signIn.email({
               email: email.trim(),
               password,
-            });
-      if (result.error) {
-        setError(result.error.message ?? "Authentication failed.");
-        return;
+            }),
+        });
+        if (!established.ok) {
+          setError(established.message);
+          return;
+        }
+      } else {
+        const signedIn = await authClient.signIn.email({
+          email: email.trim(),
+          password,
+        });
+        if (signedIn.error) {
+          setError(PUBLIC_AUTH_ERRORS.signInRejected);
+          return;
+        }
       }
       await navigate({ to: "/app" });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Authentication failed.");
+    } catch {
+      setError(
+        mode === "signup" ? PUBLIC_AUTH_ERRORS.signupRejected : PUBLIC_AUTH_ERRORS.signInRejected,
+      );
     } finally {
       setBusy(false);
     }
@@ -66,7 +83,7 @@ function Login() {
           </h1>
           <p className="mt-4 text-sm leading-relaxed text-muted">
             {mode === "signup"
-              ? "Use your work email. You can set up your hotel next."
+              ? "This creates your sign-in. Hotel setup, if you continue, is a later step."
               : "Use the email and password for your operator account."}
           </p>
           {!authEnabled ? (
@@ -98,6 +115,11 @@ function Login() {
           <button type="button" className="mt-5 text-sm text-muted underline underline-offset-4" onClick={() => { setMode(mode === "signup" ? "signin" : "signup"); setError(null); }}>
             {mode === "signup" ? "Already have an account? Sign in" : "Create a new account"}
           </button>
+          {mode === "signin" && !passwordRecoveryDeliveryAvailable() ? (
+            <p className="mt-4 text-sm text-muted">
+              Password recovery is not available until email delivery is configured.
+            </p>
+          ) : null}
         </div>
       </section>
     </main>
