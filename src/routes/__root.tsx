@@ -16,7 +16,7 @@ export const Route = createRootRoute({
       { name: "theme-color", content: "#111111" },
       {
         name: "description",
-        content: "SCAN. BOOK. GO. Private hotel transfers.",
+        content: "A hotel's own transfer booking page. Guests scan a QR code or open a link, book, and go. No guest account. No app.",
       },
     ],
     links: [
