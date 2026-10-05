@@ -388,6 +388,15 @@ export async function inspect0031State(client, sourceMigrations) {
           and column_name = 'organisation_type'`,
     )
   ).rows[0];
+  // Do not mention organisation_type in SQL until the column exists.
+  // PostgreSQL plans every CASE branch, so a missing column fails preflight.
+  const classified = column
+    ? (
+        await client.query(
+          "select count(*)::int as n from sbg_organisations where organisation_type is not null",
+        )
+      ).rows[0]
+    : { n: 0 };
   const check = (
     await client.query(
       `select pg_get_constraintdef(oid) as definition
@@ -434,20 +443,6 @@ export async function inspect0031State(client, sourceMigrations) {
     )
   ).rows;
   const organisations = (await client.query("select count(*)::int as n from sbg_organisations")).rows[0];
-  const classified = (
-    await client.query(
-      `select case
-                when exists (
-                  select 1 from information_schema.columns
-                   where table_schema = 'public'
-                     and table_name = 'sbg_organisations'
-                     and column_name = 'organisation_type'
-                )
-                then (select count(*)::int from sbg_organisations where organisation_type is not null)
-                else 0
-              end as n`,
-    )
-  ).rows[0];
   const members = (
     await client.query(
       `select organisation_id::text as organisation_id, user_id, role, billing_authority

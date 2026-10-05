@@ -9,6 +9,7 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { OWNER_USER, createHotelForUser, insertAuthUser, openCp272PaymentDb } from "./cp26a4-fixture.ts";
 import { isOrganisationType } from "./organisation-type.ts";
+import { inspect0031State } from "../../../scripts/cp3005e2c-0031-production-migrate.mjs";
 
 const root = process.cwd();
 const MIGRATION = "0031_cp3005e2c_organisation_type.sql";
@@ -40,6 +41,25 @@ test("0031 is classification only and does not guess, grant, or collapse cardina
   assert.equal(isOrganisationType("transfer_operator"), true);
   assert.equal(isOrganisationType("member"), false);
   assert.equal(isOrganisationType(null), false);
+});
+
+test("pre-apply inspect tolerates a missing organisation_type column", async () => {
+  const pg = await openCp272PaymentDb();
+  const facts = await inspect0031State(pg, [MIGRATION]);
+  assert.equal(facts.organisationType.present, false);
+  assert.equal(facts.classifiedCount, 0);
+  assert.equal(facts.organisationType.createFunctionArgs, "p_user_id text, p_name text");
+  assert.equal(facts.organisationType.uniqueHotelOrganisation, false);
+  assert.equal(facts.organisationType.appInsert, false);
+  await pg.exec(SQL);
+  const after = await inspect0031State(pg, [MIGRATION]);
+  assert.equal(after.organisationType.present, true);
+  assert.equal(after.organisationType.dataType, "text");
+  assert.equal(after.organisationType.nullable, true);
+  assert.equal(after.organisationType.columnDefault, null);
+  assert.equal(after.organisationType.checkAcceptsHotel, true);
+  assert.equal(after.organisationType.checkAcceptsTransfer, true);
+  assert.equal(after.classifiedCount, 0);
 });
 
 test("0031 rolls back as one transaction and then accepts only the two types", async () => {
