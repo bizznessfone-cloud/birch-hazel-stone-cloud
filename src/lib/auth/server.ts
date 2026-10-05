@@ -43,6 +43,7 @@ import { pgliteDialect } from "./pglite-dialect";
 import { GROK_ISSUER_DEFAULT, PREVIEW_CLIENT_ID, PREVIEW_CLIENT_SECRET } from "./preview";
 import { resolveAuthPerimeter } from "./perimeter";
 import { emailAndPasswordAuthOptions, signUpEnumerationAfterHook } from "./signup-enumeration";
+import { passwordResetDeliveryOptions } from "./password-recovery";
 
 // Kick (and share) PGLite bootstrap as soon as the auth server module loads.
 void ensureDbReady();
@@ -180,11 +181,14 @@ export const auth = betterAuth({
   // non-session response. /login then uses email sign-in to open a session.
   // Enabling autoSignIn would return 422 for an existing email. The after
   // hook removes the synthetic-user shape difference. It does not enable
-  // verification or password reset. Reset stays disabled until email
-  // delivery exists; a no-op sender would still claim the mail was sent.
+  // verification. Password reset is added only when Resend is configured.
+  // A delivery failure still receives Better Auth's generic acknowledgement.
   ...(emailAndPasswordEnabled
     ? {
-        emailAndPassword: emailAndPasswordAuthOptions,
+        emailAndPassword: {
+          ...emailAndPasswordAuthOptions,
+          ...passwordResetDeliveryOptions(),
+        },
         hooks: { after: signUpEnumerationAfterHook },
       }
     : {}),

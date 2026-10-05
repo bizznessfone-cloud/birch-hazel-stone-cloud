@@ -2,6 +2,18 @@
 
 This file describes **current reality**, not intended future state.
 
+## CP30.05E-2D-1B — password recovery implemented, delivery not proven
+
+**Option B is accepted. Better Auth stays 1.6.30. Recovery code is in the tree and fail-closed. A real Resend send has not been proven. E-2D-1 is not complete. E-2D-2 NOT STARTED. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
+
+Native reset stays inside Better Auth: token, one-hour expiry, consume-once, and `revokeSessionsOnPasswordReset`. SBG registers `sendResetPassword` only when `RESEND_API_KEY` and `RESEND_FROM_EMAIL` are both set. Until then the route stays disabled and no token is issued. When it is enabled, known addresses, unknown addresses, and sender failure share one browser acknowledgement. That acknowledgement is not a delivery receipt. Resend can reject or throw and the HTTP body stays the same. The server log is `sbg.password_reset.delivery` with `outcome` and `providerStatus` only. It does not store the token, the reset URL, the password, or the API key. An undelivered token can remain until it expires. That limit is accepted.
+
+The reset link origin is `BETTER_AUTH_URL` in production. It is not `PUBLIC_APP_URL` and not the request Host. Successful reset deletes database sessions for that user. The signed `session_data` cookie can still satisfy `get-session` until its 300-second cache ends. Cookie cache stays on. A token-only cookie does not.
+
+`/login` can offer Forgot password only when delivery is configured. `/forgot-password` and `/reset-password` are the only new public surfaces. Homepage Get started is still `#start`. No organisation, hotel, membership, acceptance, or Stripe change. Migrations remain **0001–0032**. `AUTHORISED_PENDING=[]`. Commerce remains **test**.
+
+Human configuration still required before any delivery claim: set `RESEND_API_KEY` and `RESEND_FROM_EMAIL` for a verified sender domain, keep `BETTER_AUTH_URL` as the production origin, restart so the callback registers, then send one controlled reset to a human-owned address. Do not paste secrets into chat.
+
 ## CP30.05E-2C.1 — versioned acceptance evidence applied
 
 **E-2C organisation type remains PASS. E-2C.1 versioned legal-acceptance evidence is applied. No acceptance row was written. E-2D NOT STARTED. Get started is not connected. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**

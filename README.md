@@ -57,7 +57,7 @@ Environment (names/presence only; never secret values):
 
 **Proven in Production:** email/password signup, session creation, secure cookies, authenticated `/app`, session persistence, sign-out, signed-out `/app` boundary, **returning email/password sign-in (CP26A.5)**.
 
-**Backlog / deferred:** copied-cookie stale-session replay; password recovery; email verification.
+**Backlog / deferred:** copied-cookie stale-session replay; password-recovery delivery proof (code is fail-closed until Resend is configured); email verification.
 
 ### SaaS / guest / Ops
 

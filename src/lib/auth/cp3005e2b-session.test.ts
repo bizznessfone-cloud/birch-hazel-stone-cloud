@@ -268,9 +268,9 @@ test("identity creation does not provision, elevate, or enable reset delivery", 
   assert.match(login, /authClient\.signIn\.email/);
   assert.match(login, /establishSignupSession/);
   assert.doesNotMatch(login, /error\.message/);
-  assert.match(login, /Password recovery is not available until email delivery is configured/);
+  assert.match(login, /PASSWORD_RESET_UNAVAILABLE/);
   assert.equal(passwordRecoveryDeliveryAvailable(), false);
-  assert.match(recovery, /blocked_on_email_transport/);
+  assert.match(recovery, /The callback is registered only when RESEND_API_KEY and RESEND_FROM_EMAIL/);
   assert.doesNotMatch(server, /sendResetPassword/);
   assert.match(server, /autoSignIn stays false/);
   assert.equal(emailAndPasswordAuthOptions.autoSignIn, false);

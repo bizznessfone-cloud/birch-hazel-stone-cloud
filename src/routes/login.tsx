@@ -1,13 +1,17 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { authClient, authEnabled } from "@/lib/auth/client";
-import { passwordRecoveryDeliveryAvailable } from "@/lib/auth/password-recovery";
+import { PASSWORD_RESET_UNAVAILABLE, getPasswordRecoveryAvailability } from "@/lib/auth/password-recovery";
 import { PUBLIC_AUTH_ERRORS, establishSignupSession } from "@/lib/auth/signup-session";
 import { ThemeToggle } from "@/components/aether/theme-toggle";
 
-export const Route = createFileRoute("/login")({ component: Login });
+export const Route = createFileRoute("/login")({
+  loader: () => getPasswordRecoveryAvailability(),
+  component: Login,
+});
 
 function Login() {
+  const recovery = Route.useLoaderData();
   const navigate = useNavigate();
   const [mode, setMode] = useState<"signup" | "signin">("signup");
   const [name, setName] = useState("");
@@ -115,9 +119,14 @@ function Login() {
           <button type="button" className="mt-5 text-sm text-muted underline underline-offset-4" onClick={() => { setMode(mode === "signup" ? "signin" : "signup"); setError(null); }}>
             {mode === "signup" ? "Already have an account? Sign in" : "Create a new account"}
           </button>
-          {mode === "signin" && !passwordRecoveryDeliveryAvailable() ? (
+          {mode === "signin" && recovery.available ? (
+            <Link to="/forgot-password" className="mt-4 inline-flex min-h-11 items-center text-sm text-muted underline underline-offset-4">
+              Forgot password?
+            </Link>
+          ) : null}
+          {mode === "signin" && !recovery.available ? (
             <p className="mt-4 text-sm text-muted">
-              Password recovery is not available until email delivery is configured.
+              {PASSWORD_RESET_UNAVAILABLE}
             </p>
           ) : null}
         </div>

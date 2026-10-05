@@ -12,9 +12,11 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as HotelSlugRouteImport } from './routes/$hotelSlug'
 import { Route as AppRouteImport } from './routes/app'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as OpsRouteImport } from './routes/ops'
 import { Route as OwnerRouteImport } from './routes/owner'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ApiReadyRouteImport } from './routes/api/ready'
 import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as AppBillingRouteImport } from './routes/app.billing'
@@ -58,6 +60,11 @@ const AppRoute = AppRouteImport.update({
   path: '/app',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -71,6 +78,11 @@ const OpsRoute = OpsRouteImport.update({
 const OwnerRoute = OwnerRouteImport.update({
   id: '/owner',
   path: '/owner',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiReadyRoute = ApiReadyRouteImport.update({
@@ -215,9 +227,11 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$hotelSlug': typeof HotelSlugRoute
   '/app': typeof AppRouteWithChildren
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/ops': typeof OpsRouteWithChildren
   '/owner': typeof OwnerRouteWithChildren
+  '/reset-password': typeof ResetPasswordRoute
   '/api/ready': typeof ApiReadyRoute
   '/app/billing': typeof AppBillingRoute
   '/app/onboarding': typeof AppOnboardingRoute
@@ -249,7 +263,9 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$hotelSlug': typeof HotelSlugRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/api/ready': typeof ApiReadyRoute
   '/app/billing': typeof AppBillingRoute
   '/app/onboarding': typeof AppOnboardingRoute
@@ -283,9 +299,11 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/$hotelSlug': typeof HotelSlugRoute
   '/app': typeof AppRouteWithChildren
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/ops': typeof OpsRouteWithChildren
   '/owner': typeof OwnerRouteWithChildren
+  '/reset-password': typeof ResetPasswordRoute
   '/api/ready': typeof ApiReadyRoute
   '/app/billing': typeof AppBillingRoute
   '/app/onboarding': typeof AppOnboardingRoute
@@ -320,9 +338,11 @@ export interface FileRouteTypes {
     | '/'
     | '/$hotelSlug'
     | '/app'
+    | '/forgot-password'
     | '/login'
     | '/ops'
     | '/owner'
+    | '/reset-password'
     | '/api/ready'
     | '/app/billing'
     | '/app/onboarding'
@@ -354,7 +374,9 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/$hotelSlug'
+    | '/forgot-password'
     | '/login'
+    | '/reset-password'
     | '/api/ready'
     | '/app/billing'
     | '/app/onboarding'
@@ -387,9 +409,11 @@ export interface FileRouteTypes {
     | '/'
     | '/$hotelSlug'
     | '/app'
+    | '/forgot-password'
     | '/login'
     | '/ops'
     | '/owner'
+    | '/reset-password'
     | '/api/ready'
     | '/app/billing'
     | '/app/onboarding'
@@ -423,9 +447,11 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   HotelSlugRoute: typeof HotelSlugRoute
   AppRoute: typeof AppRouteWithChildren
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   OpsRoute: typeof OpsRouteWithChildren
   OwnerRoute: typeof OwnerRouteWithChildren
+  ResetPasswordRoute: typeof ResetPasswordRoute
   ApiReadyRoute: typeof ApiReadyRoute
   BookHotelCodeRoute: typeof BookHotelCodeRoute
   ConfirmedTokenRoute: typeof ConfirmedTokenRoute
@@ -457,6 +483,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -476,6 +509,13 @@ declare module '@tanstack/react-router' {
       path: '/owner'
       fullPath: '/owner'
       preLoaderRoute: typeof OwnerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/ready': {
@@ -749,9 +789,11 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   HotelSlugRoute: HotelSlugRoute,
   AppRoute: AppRouteWithChildren,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   OpsRoute: OpsRouteWithChildren,
   OwnerRoute: OwnerRouteWithChildren,
+  ResetPasswordRoute: ResetPasswordRoute,
   ApiReadyRoute: ApiReadyRoute,
   BookHotelCodeRoute: BookHotelCodeRoute,
   ConfirmedTokenRoute: ConfirmedTokenRoute,

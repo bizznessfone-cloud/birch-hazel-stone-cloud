@@ -263,9 +263,10 @@ test("sign-in and disabled password reset stay uniform", async () => {
   assert.equal(state.user[0]?.email, "member@example.com");
 });
 
-test("server wires the enumeration options and does not enable verification or reset", () => {
+test("server wires the enumeration options and does not inline reset or verification", () => {
   const server = readFileSync(join(process.cwd(), "src/lib/auth/server.ts"), "utf8");
-  assert.match(server, /emailAndPassword: emailAndPasswordAuthOptions/);
+  assert.match(server, /\.\.\.emailAndPasswordAuthOptions/);
+  assert.match(server, /passwordResetDeliveryOptions\(\)/);
   assert.match(server, /hooks: \{ after: signUpEnumerationAfterHook \}/);
   assert.equal(emailAndPasswordEnabled, true);
   assert.equal(emailAndPasswordAuthOptions.enabled, true);
