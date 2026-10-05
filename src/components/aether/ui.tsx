@@ -305,7 +305,7 @@ export function PublicHeader({
         <a href="#product" className="text-sm font-semibold tracking-[0.2em] uppercase md:text-base">
           {brand}
         </a>
-        {children ? <div className="flex items-center gap-2">{children}</div> : null}
+        {children ? <div className="flex items-center gap-3">{children}</div> : null}
       </Container>
     </header>
   );

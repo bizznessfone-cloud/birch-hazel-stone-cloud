@@ -1,5 +1,45 @@
 # CP26C-O3R — organisation property-licence commercial model
 
+## Current product decision — organisation type (CP30.05E-1A.1)
+
+This block is the living commercial-identity decision. It does not rewrite the
+O3R record below, and it does not change the database.
+
+SCAN BOOK GO serves two organisation types on one platform:
+
+| Organisation type | Meaning |
+|---|---|
+| Hotel / accommodation | Offers transfer booking directly to its guests |
+| Transfer operator | Manages transfer bookings for the properties and guests it serves |
+
+These are organisation classifications, not user roles. Membership `role` on
+`sbg_organisation_members` stays a separate token (`owner`, `admin`, `operator`,
+and any later role). Do not store organisation type in that column.
+
+Both types use the same product, the same onboarding engine, and the same
+data. There is not a second application, site, or database.
+
+Public onboarding, when it is built, starts with one question: what type of
+operation is being set up. Hotel and transfer operator may then use different
+wording. They must converge on the same steps: organisation details, plan,
+account, system configuration, payment where it applies, and activation.
+Do not build two onboarding flows.
+
+The public homepage stays hotel-led. Its close is “Activate your SCAN BOOK GO
+system.” Get started does not yet open that flow. `SCAN.` / `BOOK.` / `GO.`
+is accepted brand language.
+
+`organisation_type` does not exist. `sbg_organisations` (`0027`) is
+`id`, `name`, `created_at`, `created_by_user_id`. Hotels may point at an
+organisation through `hotels.organisation_id`. A future field has to be
+designed against that table. No migration is authorised for it here.
+
+The classification is kept so later onboarding copy, terminology, defaults,
+acquisition, conversion, churn, pricing, and communications can use it.
+None of that is authorised now.
+
+---
+
 **Decision only.** This checkpoint inspected source and living docs. It did not
 add a migration, change runtime, call Stripe, create a price version, or enable
 commerce.

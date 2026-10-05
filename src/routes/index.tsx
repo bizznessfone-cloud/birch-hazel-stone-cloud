@@ -39,13 +39,13 @@ function NavLinks({ stacked = false }: { stacked?: boolean }) {
   return (
     <>
       {NAV.map((item) => (
-        <a key={item.href} href={item.href} className="inline-flex min-h-11 items-center px-3 text-sm text-ink">
+        <a key={item.href} href={item.href} className={`inline-flex min-h-11 items-center px-3 text-ink ${stacked ? "text-sm" : "text-base"}`}>
           {item.label}
         </a>
       ))}
       <a
         href="#start"
-        className={`inline-flex min-h-11 items-center justify-center bg-ink px-4 text-sm font-medium text-canvas ${stacked ? "mt-2" : ""}`}
+        className={`inline-flex min-h-11 items-center justify-center bg-ink px-4 font-medium text-canvas ${stacked ? "mt-2 text-sm" : "text-base"}`}
       >
         Get started
       </a>
@@ -81,6 +81,9 @@ function Home() {
                 Hotel transfers. Without the friction.
               </h1>
               <p className="sbg-body mt-8 max-w-md text-muted">{DESCRIPTION}</p>
+              <p className="mt-4 max-w-md text-sm leading-relaxed text-muted">
+                A private transfer operator uses the same system.
+              </p>
               <div className="mt-10 flex flex-col gap-3 sm:flex-row">
                 <a href="#start" className="inline-flex min-h-12 items-center justify-center bg-ink px-6 text-sm font-medium text-canvas">
                   Get started
@@ -95,7 +98,7 @@ function Home() {
                 <PresentationQr className="h-24 w-24 text-ink" />
                 <p className="sbg-meta mt-3">Artwork only. Not a live hotel code.</p>
               </div>
-              <DeviceFrame caption="The guest page. Shown here. It does not start a booking.">
+              <DeviceFrame presence caption="The guest page. Shown here. It does not start a booking.">
                 <GuestArrivalPlate />
               </DeviceFrame>
             </div>
@@ -120,8 +123,8 @@ function Home() {
         </section>
 
         <section id="hotels" className="scroll-mt-6">
-          <div className="sbg-container sbg-container-wide grid items-center gap-16 py-20 md:py-28 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-            <DeviceFrame caption="The hotel's destinations, on the guest's phone.">
+          <div className="sbg-container sbg-container-wide grid items-start gap-10 py-20 md:py-28 lg:grid-cols-[auto_minmax(0,1fr)] lg:gap-14">
+            <DeviceFrame presence caption="The hotel's destinations, on the guest's phone.">
               <GuestJourneyPlate />
             </DeviceFrame>
             <div>
@@ -168,10 +171,12 @@ function Home() {
           <div className="sbg-container sbg-container-wide py-24 md:py-40">
             <p className="sbg-label">The next step</p>
             <h2 className="mt-5 max-w-4xl text-[clamp(3rem,7vw,6.25rem)] leading-[0.92] font-semibold tracking-tight">
-              Start with the property.
+              Activate your
+              <br />
+              SCAN BOOK GO system.
             </h2>
             <p className="mt-8 max-w-md text-lg leading-relaxed text-muted">
-              A hotel is set up directly with SCAN BOOK GO. This page does not create an account, and it does not open a guest booking.
+              Start taking transfer bookings with a system built around your operation. This page does not create an account.
             </p>
             <a href="#start" className="mt-10 inline-flex min-h-14 items-center justify-center bg-ink px-8 text-sm font-medium text-canvas">
               Get started

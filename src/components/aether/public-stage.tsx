@@ -20,19 +20,23 @@ export function PresentationQr({ className }: { className?: string }) {
 export function DeviceFrame({
   children,
   caption,
+  presence = false,
 }: {
   children: ReactNode;
   caption: string;
+  presence?: boolean;
 }) {
+  const width = presence ? "w-[min(100%,22rem)]" : "w-[min(100%,17.5rem)]";
+  const screen = presence ? "h-[35rem]" : "h-[28rem]";
   return (
-    <figure className="w-[min(100%,17.5rem)]">
+    <figure className={width}>
       <div className="border-[12px] border-ink bg-ink">
         <div className="flex h-6 items-center justify-center bg-canvas">
           <span className="h-1 w-10 bg-line" />
         </div>
-        <div className="h-[28rem] overflow-hidden bg-surface text-ink">{children}</div>
+        <div className={`${screen} overflow-hidden bg-surface text-ink`}>{children}</div>
       </div>
-      <figcaption className="sbg-meta mt-4 max-w-[17.5rem]">{caption}</figcaption>
+      <figcaption className={`sbg-meta mt-4 ${width}`}>{caption}</figcaption>
     </figure>
   );
 }
