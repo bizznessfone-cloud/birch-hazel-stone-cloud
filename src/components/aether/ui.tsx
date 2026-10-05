@@ -228,12 +228,13 @@ export function Button({
 }
 
 export function Container({
+  wide = false,
   children,
   className,
   ...props
-}: HTMLAttributes<HTMLDivElement>) {
+}: HTMLAttributes<HTMLDivElement> & { wide?: boolean }) {
   return (
-    <div className={`sbg-container ${className ?? ""}`} {...props}>
+    <div className={`sbg-container ${wide ? "sbg-container-wide" : ""} ${className ?? ""}`} {...props}>
       {children}
     </div>
   );
@@ -291,26 +292,30 @@ export function Status({
 
 export function PublicHeader({
   brand = "SCAN. BOOK. GO.",
+  wide = false,
   children,
 }: {
   brand?: string;
+  wide?: boolean;
   children?: ReactNode;
 }) {
   return (
-    <header className="border-b border-line bg-canvas text-ink">
-      <Container className="flex min-h-16 items-center justify-between gap-4 py-3">
-        <p className="text-xs font-medium tracking-widest uppercase">{brand}</p>
+    <header className="bg-canvas text-ink">
+      <Container wide={wide} className="flex min-h-[4.5rem] items-center justify-between gap-6 py-4">
+        <a href="#product" className="text-sm font-semibold tracking-[0.2em] uppercase md:text-base">
+          {brand}
+        </a>
         {children ? <div className="flex items-center gap-2">{children}</div> : null}
       </Container>
     </header>
   );
 }
 
-export function PublicFooter({ children }: { children?: ReactNode }) {
+export function PublicFooter({ wide = false, children }: { wide?: boolean; children?: ReactNode }) {
   return (
-    <footer className="border-t border-line bg-canvas text-ink">
-      <Container className="flex flex-col gap-3 py-6 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-xs tracking-widest text-muted uppercase">SCAN. BOOK. GO.</p>
+    <footer className="bg-canvas text-ink">
+      <Container wide={wide} className="flex flex-col gap-3 py-8 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-xs tracking-[0.2em] text-muted uppercase">SCAN. BOOK. GO.</p>
         {children ? <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted">{children}</div> : null}
       </Container>
     </footer>

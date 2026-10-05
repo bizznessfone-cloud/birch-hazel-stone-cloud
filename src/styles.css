@@ -109,6 +109,10 @@ html.light {
     padding-inline: var(--aether-gutter);
   }
 
+  .sbg-container-wide {
+    max-width: 90rem;
+  }
+
   .sbg-display {
     font-size: clamp(2rem, 4vw, 3.25rem);
     font-weight: 600;

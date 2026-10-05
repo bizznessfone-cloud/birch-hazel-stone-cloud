@@ -1,6 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Container, PublicFooter, PublicHeader, Section } from "@/components/aether/ui";
+import { PublicFooter, PublicHeader } from "@/components/aether/ui";
 import { ThemeToggle } from "@/components/aether/theme-toggle";
+import {
+  DeviceFrame,
+  GuestArrivalPlate,
+  GuestJourneyPlate,
+  PresentationQr,
+} from "@/components/aether/public-stage";
 
 const DESCRIPTION =
   "A hotel's own transfer booking page. Guests scan a QR code or open a link, book, and go. No guest account. No app.";
@@ -15,21 +21,31 @@ const NAV = [
   { href: "#hotels", label: "For hotels" },
 ] as const;
 
+const STEPS = [
+  ["SCAN.", "The guest opens the hotel's QR code or its booking link."],
+  ["BOOK.", "The journey is entered on that page. No guest account. No app."],
+  ["GO.", "The guest keeps a confirmation and a private link. The hotel runs the transfer."],
+] as const;
+
+const FLOW = [
+  ["Hotel", "The property is the front door."],
+  ["QR", "Or the hotel's booking link."],
+  ["Guest", "They open it on their phone."],
+  ["Booking", "The journey is captured there."],
+  ["Operation", "The transfer is ready to run."],
+] as const;
+
 function NavLinks({ stacked = false }: { stacked?: boolean }) {
   return (
     <>
       {NAV.map((item) => (
-        <a
-          key={item.href}
-          href={item.href}
-          className={`inline-flex min-h-11 items-center text-sm text-ink ${stacked ? "px-3" : "px-3"}`}
-        >
+        <a key={item.href} href={item.href} className="inline-flex min-h-11 items-center px-3 text-sm text-ink">
           {item.label}
         </a>
       ))}
       <a
         href="#start"
-        className={`inline-flex min-h-11 items-center justify-center bg-ink px-4 text-sm font-medium text-canvas ${stacked ? "mt-1" : ""}`}
+        className={`inline-flex min-h-11 items-center justify-center bg-ink px-4 text-sm font-medium text-canvas ${stacked ? "mt-2" : ""}`}
       >
         Get started
       </a>
@@ -40,18 +56,15 @@ function NavLinks({ stacked = false }: { stacked?: boolean }) {
 function Home() {
   return (
     <div className="min-h-dvh bg-canvas text-ink">
-      <PublicHeader>
-        <nav className="hidden items-center gap-1 md:flex" aria-label="Primary">
+      <PublicHeader wide>
+        <nav className="hidden items-center gap-1 lg:flex" aria-label="Primary">
           <NavLinks />
         </nav>
-        <details className="relative md:hidden">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center border border-line px-3 text-sm [&::-webkit-details-marker]:hidden">
+        <details className="relative lg:hidden">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center px-3 text-sm [&::-webkit-details-marker]:hidden">
             Menu
           </summary>
-          <nav
-            aria-label="Primary"
-            className="absolute right-0 z-10 mt-2 flex w-56 flex-col border border-line bg-surface p-2"
-          >
+          <nav aria-label="Primary" className="absolute right-0 z-10 mt-2 flex w-56 flex-col border border-line bg-surface p-2">
             <NavLinks stacked />
           </nav>
         </details>
@@ -59,107 +72,115 @@ function Home() {
       </PublicHeader>
 
       <main>
-        <Section id="product" className="scroll-mt-6">
-          <Container>
-            <p className="sbg-label">Hotel transfer infrastructure</p>
-            <h1 className="sbg-display mt-4 max-w-3xl">Hotel transfers. Without the friction.</h1>
-            <p className="sbg-body mt-6 max-w-xl text-muted">{DESCRIPTION}</p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <a
-                href="#start"
-                className="inline-flex min-h-12 items-center justify-center bg-ink px-5 text-sm font-medium text-canvas"
-              >
-                Get started
-              </a>
-              <a
-                href="#how"
-                className="inline-flex min-h-12 items-center justify-center border border-line bg-surface px-5 text-sm font-medium text-ink"
-              >
-                See how it works
-              </a>
+        <section id="product" className="scroll-mt-6">
+          <div className="sbg-container sbg-container-wide grid items-end gap-14 py-14 md:py-20 lg:grid-cols-[minmax(0,1.15fr)_auto] lg:gap-16 lg:py-28">
+            <div>
+              <p className="text-2xl font-semibold tracking-tight md:text-3xl">SCAN. BOOK. GO.</p>
+              <p className="sbg-label mt-8">For hotels</p>
+              <h1 className="mt-4 max-w-4xl text-[clamp(3.25rem,7.4vw,6.75rem)] leading-[0.9] font-semibold tracking-tight">
+                Hotel transfers. Without the friction.
+              </h1>
+              <p className="sbg-body mt-8 max-w-md text-muted">{DESCRIPTION}</p>
+              <div className="mt-10 flex flex-col gap-3 sm:flex-row">
+                <a href="#start" className="inline-flex min-h-12 items-center justify-center bg-ink px-6 text-sm font-medium text-canvas">
+                  Get started
+                </a>
+                <a href="#how" className="inline-flex min-h-12 items-center justify-center px-6 text-sm font-medium text-ink">
+                  See how it works
+                </a>
+              </div>
             </div>
-          </Container>
-        </Section>
+            <div className="flex items-end justify-start gap-6 sm:gap-8 lg:justify-end">
+              <div className="mb-16 hidden w-24 shrink-0 sm:block">
+                <PresentationQr className="h-24 w-24 text-ink" />
+                <p className="sbg-meta mt-3">Artwork only. Not a live hotel code.</p>
+              </div>
+              <DeviceFrame caption="The guest page. Shown here. It does not start a booking.">
+                <GuestArrivalPlate />
+              </DeviceFrame>
+            </div>
+            <div className="flex items-center gap-4 sm:hidden">
+              <PresentationQr className="h-16 w-16 shrink-0 text-ink" />
+              <p className="sbg-meta">A hotel QR, drawn as artwork. It does not open a booking.</p>
+            </div>
+          </div>
+        </section>
 
-        <Section id="how" className="scroll-mt-6 border-t border-line">
-          <Container>
-            <h2 className="sbg-title">Scan. Book. Go.</h2>
-            <p className="sbg-muted mt-3 max-w-xl">Three steps. Nothing else for the guest to install.</p>
-            <ol className="mt-8 grid gap-px border border-line bg-line md:grid-cols-3">
-              <li className="bg-canvas p-5">
-                <p className="sbg-label">01 — Scan</p>
-                <h3 className="sbg-panel-title mt-3">Open the hotel's page</h3>
-                <p className="sbg-muted mt-2">The guest scans the hotel's QR code or opens its booking link.</p>
-              </li>
-              <li className="bg-canvas p-5">
-                <p className="sbg-label">02 — Book</p>
-                <h3 className="sbg-panel-title mt-3">Give the journey</h3>
-                <p className="sbg-muted mt-2">Pickup, destination, time, and party. No guest account.</p>
-              </li>
-              <li className="bg-canvas p-5">
-                <p className="sbg-label">03 — Go</p>
-                <h3 className="sbg-panel-title mt-3">The transfer is booked</h3>
-                <p className="sbg-muted mt-2">The guest gets a confirmation and a private link. The hotel can run the transfer.</p>
-              </li>
-            </ol>
-          </Container>
-        </Section>
-
-        <Section id="hotels" className="scroll-mt-6 border-t border-line">
-          <Container>
-            <h2 className="sbg-title">A booking page that belongs to the hotel.</h2>
-            <ul className="mt-8 grid gap-px border border-line bg-line md:grid-cols-2">
-              <li className="bg-canvas p-5">
-                <h3 className="sbg-panel-title">The hotel's own entry</h3>
-                <p className="sbg-muted mt-2">Each hotel has a public address and a QR code. Guests are not sent through a marketplace.</p>
-              </li>
-              <li className="bg-canvas p-5">
-                <h3 className="sbg-panel-title">No guest account</h3>
-                <p className="sbg-muted mt-2">A guest does not register, and does not download an app, to book a transfer.</p>
-              </li>
-              <li className="bg-canvas p-5">
-                <h3 className="sbg-panel-title">A clear confirmation</h3>
-                <p className="sbg-muted mt-2">The booking ends on a confirmation page with a private link the guest can keep.</p>
-              </li>
-              <li className="bg-canvas p-5">
-                <h3 className="sbg-panel-title">One operational list</h3>
-                <p className="sbg-muted mt-2">Booked transfers are there for the hotel to see, assign, and run.</p>
-              </li>
-            </ul>
-          </Container>
-        </Section>
-
-        <Section id="flow" className="scroll-mt-6 border-t border-line">
-          <Container>
-            <h2 className="sbg-title">From the hotel to the transfer.</h2>
-            <ol className="mt-8 border border-line">
-              {[
-                ["Hotel", "The property is the front door."],
-                ["QR or booking link", "That address is what the guest opens."],
-                ["Guest booking", "The journey is captured on the hotel's page."],
-                ["Transfer operation", "The booking is ready for the hotel to carry out."],
-              ].map(([title, note], index) => (
-                <li key={title} className="border-b border-line px-5 py-4 last:border-b-0">
-                  <p className="sbg-label">{String(index + 1).padStart(2, "0")}</p>
-                  <h3 className="sbg-panel-title mt-1">{title}</h3>
-                  <p className="sbg-muted mt-1">{note}</p>
+        <section id="how" className="scroll-mt-6">
+          <div className="sbg-container sbg-container-wide py-8 md:py-16">
+            <ol>
+              {STEPS.map(([word, note]) => (
+                <li key={word} className="grid items-end gap-3 border-t border-line py-8 md:grid-cols-[minmax(0,1fr)_18rem] md:py-10">
+                  <h2 className="text-[clamp(4.5rem,15vw,10.5rem)] leading-[0.82] font-semibold tracking-tight">{word}</h2>
+                  <p className="max-w-xs pb-2 text-base leading-relaxed text-muted md:pb-4">{note}</p>
                 </li>
               ))}
             </ol>
-          </Container>
-        </Section>
+          </div>
+        </section>
 
-        <Section id="start" className="scroll-mt-6 border-t border-line">
-          <Container>
-            <h2 className="sbg-title">Start with the property.</h2>
-            <p className="sbg-body mt-4 max-w-xl text-muted">
+        <section id="hotels" className="scroll-mt-6">
+          <div className="sbg-container sbg-container-wide grid items-center gap-16 py-20 md:py-28 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+            <DeviceFrame caption="The hotel's destinations, on the guest's phone.">
+              <GuestJourneyPlate />
+            </DeviceFrame>
+            <div>
+              <h2 className="max-w-xl text-[clamp(2.75rem,5vw,4.75rem)] leading-[0.95] font-semibold tracking-tight">
+                A booking page that belongs to the hotel.
+              </h2>
+              <p className="mt-6 max-w-md text-lg leading-relaxed text-muted">
+                Each hotel has its own address and QR. Guests are not sent through a marketplace.
+              </p>
+            </div>
+          </div>
+          <div className="sbg-container sbg-container-wide pb-20 md:pb-32">
+            <div className="grid gap-x-16 gap-y-10 md:grid-cols-2">
+              <p className="text-[clamp(2rem,4vw,3.25rem)] leading-none font-semibold tracking-tight">No guest account.</p>
+              <p className="max-w-sm self-end text-base leading-relaxed text-muted">
+                A guest does not register, and does not install an app, to book the transfer.
+              </p>
+              <p className="text-[clamp(2rem,4vw,3.25rem)] leading-none font-semibold tracking-tight">A private link.</p>
+              <p className="max-w-sm self-end text-base leading-relaxed text-muted">
+                The booking ends on a confirmation the guest can keep. The hotel can see it and run it.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section id="flow" className="scroll-mt-6">
+          <div className="sbg-container sbg-container-wide py-16 md:py-28">
+            <h2 className="max-w-3xl text-[clamp(2.5rem,5vw,4.5rem)] leading-[0.95] font-semibold tracking-tight">
+              From the hotel to the transfer.
+            </h2>
+            <ol className="mt-14 grid gap-8 md:mt-20 md:grid-cols-2 lg:grid-cols-5 lg:gap-6">
+              {FLOW.map(([title, note], index) => (
+                <li key={title} className="border-t border-line pt-4">
+                  <p className="sbg-label">{String(index + 1).padStart(2, "0")}</p>
+                  <h3 className="mt-3 text-2xl font-semibold tracking-tight md:text-3xl">{title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted">{note}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+
+        <section id="start" className="scroll-mt-6">
+          <div className="sbg-container sbg-container-wide py-24 md:py-40">
+            <p className="sbg-label">The next step</p>
+            <h2 className="mt-5 max-w-4xl text-[clamp(3rem,7vw,6.25rem)] leading-[0.92] font-semibold tracking-tight">
+              Start with the property.
+            </h2>
+            <p className="mt-8 max-w-md text-lg leading-relaxed text-muted">
               A hotel is set up directly with SCAN BOOK GO. This page does not create an account, and it does not open a guest booking.
             </p>
-          </Container>
-        </Section>
+            <a href="#start" className="mt-10 inline-flex min-h-14 items-center justify-center bg-ink px-8 text-sm font-medium text-canvas">
+              Get started
+            </a>
+          </div>
+        </section>
       </main>
 
-      <PublicFooter>
+      <PublicFooter wide>
         <span>Guest bookings stay on the hotel's own link.</span>
       </PublicFooter>
     </div>
