@@ -133,7 +133,7 @@ test("0030 digest is pinned, accepted, and the controller ledger stays frozen at
   assert.doesNotMatch(src, /db:migrate/);
   assert.equal(existsSync(join(root, ".github/workflows/cp272-0030-production-apply.yml")), false);
   const workflows = readdirSync(join(root, ".github/workflows")).sort();
-  assert.deepEqual(workflows, ["production-database.yml"]);
+  assert.deepEqual(workflows, ["cp3005e2c-0031-production-apply.yml", "production-database.yml"]);
   const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
   assert.equal(pkg.scripts["db:migrate:0030"], undefined);
   assert.doesNotMatch(pkg.scripts.build, /0030|cp272-0030/);

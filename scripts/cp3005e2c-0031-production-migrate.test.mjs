@@ -114,9 +114,14 @@ test("0031 digest is pinned and the controller ledger stays frozen at 0001-0030"
   assert.doesNotMatch(src, /db:migrate/);
   assert.doesNotMatch(src, /process\.env\.DATABASE_URL/);
   assert.doesNotMatch(src, /STRIPE_SECRET|sk_live|sk_test|api\.stripe\.com/);
-  assert.equal(existsSync(join(root, ".github/workflows/cp3005e2c-0031-production-apply.yml")), false);
+  assert.equal(existsSync(join(root, ".github/workflows/cp3005e2c-0031-production-apply.yml")), true);
+  const applyWorkflow = readFileSync(join(root, ".github/workflows/cp3005e2c-0031-production-apply.yml"), "utf8");
+  assert.match(applyWorkflow, /ref: ef615c41d6999f8c834d39c18f3edfebbbd99c69/);
+  assert.match(applyWorkflow, /APPLY-0031/);
+  assert.match(applyWorkflow, /cp3005e2c-0031-production-migrate\.mjs/);
+  assert.doesNotMatch(applyWorkflow, /DATABASE_URL|sk_live|sk_test|api\.stripe\.com/);
   const workflows = readdirSync(join(root, ".github/workflows")).sort();
-  assert.deepEqual(workflows, ["production-database.yml"]);
+  assert.deepEqual(workflows, ["cp3005e2c-0031-production-apply.yml", "production-database.yml"]);
   const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
   assert.equal(pkg.scripts["db:migrate:0031"], undefined);
   assert.doesNotMatch(pkg.scripts.build, /0031|cp3005e2c/);

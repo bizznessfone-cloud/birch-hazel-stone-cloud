@@ -1,0 +1,55 @@
+# TEMPORARY single-use CP30.05E-2C Production apply for migration 0031.
+# Delete this file immediately after one successful verified apply.
+# Not a permanent mutation surface. Does not call a payment provider or change DNS.
+name: CP30.05E-2C 0031 single-use Production apply
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Exact confirmation APPLY-0031
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cp3005e2c-0031-production-apply
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    name: apply-0031
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require confirmation APPLY-0031
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          if [ "$CONFIRMATION" != "APPLY-0031" ]; then
+            echo "BLOCKED — CONFIRMATION PHRASE INVALID"
+            exit 1
+          fi
+          echo "confirmation: ACCEPTED"
+
+      - name: Checkout authorised commit
+        uses: actions/checkout@v4
+        with:
+          ref: ef615c41d6999f8c834d39c18f3edfebbbd99c69
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply migration 0031 only
+        env:
+          AETHER_DATABASE_OWNER_URL: ${{ secrets.AETHER_DATABASE_OWNER_URL }}
+          CP3005E2C_CONFIRMATION: ${{ inputs.confirmation }}
+        run: node scripts/cp3005e2c-0031-production-migrate.mjs

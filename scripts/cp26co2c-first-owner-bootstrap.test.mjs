@@ -546,7 +546,7 @@ test("first-Owner dispatch surface is retired", () => {
     .filter((name) => name.endsWith(".yml") || name.endsWith(".yaml"))
     .sort();
   assert.equal(yaml.includes("cp26co2c-first-owner-bootstrap.yml"), false);
-  assert.deepEqual(yaml, ["production-database.yml"]);
+  assert.deepEqual(yaml, ["cp3005e2c-0031-production-apply.yml", "production-database.yml"]);
 });
 
 test("controller source never emits secrets, never uses DATABASE_URL, never grants", () => {
