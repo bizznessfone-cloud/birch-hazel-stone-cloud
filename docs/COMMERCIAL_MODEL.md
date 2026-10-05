@@ -36,10 +36,15 @@ recovery delivery is blocked until email transport exists. E-2C has not
 started. Public onboarding is not built. CP31 has not started. Commerce
 stays test.
 
-`organisation_type` does not exist. `sbg_organisations` (`0027`) is
+`organisation_type` is source migration `0031_cp3005e2c_organisation_type.sql`.
+It is authorised pending, not accepted Production history, and not applied here.
+The single-use controller exists and has not been dispatched.
+Allowed values are `hotel` and `transfer_operator`. NULL means unclassified.
+Existing rows are not guessed. `sbg_organisations` otherwise remains
 `id`, `name`, `created_at`, `created_by_user_id`. Hotels may point at an
-organisation through `hotels.organisation_id`. A future field has to be
-designed against that table. No migration is authorised for it here.
+organisation through `hotels.organisation_id`. That column is not unique:
+one organisation can hold many properties. Licence quantity stays on the
+organisation billing row. E-2D has not started. No 0032.
 
 The classification is kept so later onboarding copy, terminology, defaults,
 acquisition, conversion, churn, pricing, and communications can use it.

@@ -195,6 +195,27 @@ test("no pending migration is automatically authorised", () => {
   assert.equal(isAuthorisedPending("0031_later.sql"), false);
 });
 
+test("authorised 0031 is pending and 0032 stays fail-closed", () => {
+  const pending = evaluatePreflight(
+    baseFacts({
+      sourceMigrations: [...SOURCE, "0031_cp3005e2c_organisation_type.sql"],
+    }),
+  );
+  assert.equal(pending.ok, true);
+  assert.equal(pending.verdict, PASS_VERDICT);
+  assert.deepEqual(pending.pending, ["0031_cp3005e2c_organisation_type.sql"]);
+  assert.equal(isAuthorisedPending("0031_cp3005e2c_organisation_type.sql"), true);
+
+  const later = evaluatePreflight(
+    baseFacts({
+      sourceMigrations: [...SOURCE, "0031_cp3005e2c_organisation_type.sql", "0032_later.sql"],
+    }),
+  );
+  assert.equal(later.ok, false);
+  assert.deepEqual(later.unexpectedPending, ["0032_later.sql"]);
+  assert.equal(isAuthorisedPending("0032_later.sql"), false);
+});
+
 test("0029 and 0030 are accepted history and 0031 stays fail-closed", () => {
   const current = evaluatePreflight(baseFacts());
   assert.equal(current.ok, true);

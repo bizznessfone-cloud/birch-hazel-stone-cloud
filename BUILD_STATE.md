@@ -2,6 +2,14 @@
 
 This file describes **current reality**, not intended future state.
 
+## CP30.05E-2C — organisation type source. Not applied
+
+**CP30.05E-2A PASS. CP30.05E-2B PASS. CP30.05E-2C source is in this change. 0031 is AUTHORISED PENDING, not accepted history, and not applied to Neon. The single-use controller is `scripts/cp3005e2c-0031-production-migrate.mjs`. It has not been dispatched. E-2D NOT STARTED. Public onboarding is not built. Get started is not connected. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
+
+`sbg_organisations.organisation_type` is `hotel` or `transfer_operator`, or NULL. NULL means unclassified. Existing rows are not backfilled. The create function is unchanged, so a new organisation stays NULL until a later checkpoint sets the type. Membership `role` is not the type. `hotels.organisation_id` is still not unique. One organisation can hold many hotels. Licence quantity stays on `sbg_organisation_billing.licensed_quantity`.
+
+Gate B accepts the file only as the single authorised pending migration. It is not in `ACCEPTED_LEDGER`. Putting it there before the single-use Production apply would make the next preflight fail. The permanent workflow is still read-only. No apply workflow was added.
+
 ## CP30.05E-2B — identity session. Onboarding not started
 
 **CP30.05E-2A PASS. CP30.05E-2B identity/session foundation is in this change. E-2C NOT STARTED. Public onboarding does not exist. Homepage Get started is not connected. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**

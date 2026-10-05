@@ -363,7 +363,8 @@ test("cookie, bearer, signup, guest limiter, ops, and commerce source stay put",
 
   assert.equal(existsSync(join(root, "migrations/0031_cp273a.sql")), false);
   const preflight = readFileSync(join(root, "scripts/production-db-preflight.mjs"), "utf8");
-  assert.match(preflight, /export const AUTHORISED_PENDING = \[\];/);
   assert.match(preflight, /"0030_cp272_fix_prepare_booking_payment.sql"/);
-  assert.doesNotMatch(preflight, /0031_/);
+  assert.match(preflight, /0031_cp3005e2c_organisation_type\.sql/);
+  assert.doesNotMatch(preflight, /0031_cp273a/);
+  assert.doesNotMatch(preflight, /0032_/);
 });

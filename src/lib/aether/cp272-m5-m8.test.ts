@@ -1065,5 +1065,8 @@ test("M8 Domain B live checkout is an exact-true lock independent of Domain A", 
     createHash("sha256").update(read("migrations/0030_cp272_fix_prepare_booking_payment.sql")).digest("hex"),
     "9dec121ac28b8bcca5554576816eb8c764d50f56b6b97c9f0199e0b926e8643f",
   );
-  assert.equal(read("scripts/production-db-preflight.mjs").includes("0031_"), false);
+  const preflight = read("scripts/production-db-preflight.mjs");
+  assert.match(preflight, /0031_cp3005e2c_organisation_type\.sql/);
+  assert.doesNotMatch(preflight, /0031_cp273a/);
+  assert.doesNotMatch(preflight, /0032_/);
 });

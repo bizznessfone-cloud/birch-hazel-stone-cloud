@@ -112,7 +112,7 @@ test("0029 digest is pinned and 0001-0028 are not edited by this controller", ()
   assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), true);
   assert.equal(ACCEPTED_LEDGER.at(-1), "0030_cp272_fix_prepare_booking_payment.sql");
   assert.equal(REQUIRED_LEDGER.includes(TARGET_MIGRATION), false);
-  assert.deepEqual(AUTHORISED_PENDING, []);
+  assert.deepEqual(AUTHORISED_PENDING, ["0031_cp3005e2c_organisation_type.sql"]);
   assert.equal(isAuthorisedPending(TARGET_MIGRATION), false);
   assert.equal(isAuthorisedPending("0030_later.sql"), false);
   assert.doesNotMatch(src, /from "\.\/migrate\.mjs"/);

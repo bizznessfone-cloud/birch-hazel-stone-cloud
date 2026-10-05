@@ -83,8 +83,10 @@ export const REVIEWED_DIGESTS = {
     "9dec121ac28b8bcca5554576816eb8c764d50f56b6b97c9f0199e0b926e8643f",
 };
 
-/** Nothing is authorised pending. 0031+ fails closed. */
-export const AUTHORISED_PENDING = [];
+/** Nothing earlier is awaiting apply. 0031 is the only authorised pending migration. 0032+ fails closed. */
+export const AUTHORISED_PENDING = [
+  "0031_cp3005e2c_organisation_type.sql",
+];
 
 export function isAuthorisedPending(name) {
   return AUTHORISED_PENDING.includes(String(name));

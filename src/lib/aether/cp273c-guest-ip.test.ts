@@ -357,5 +357,8 @@ test("guest booking source does not trust the leftmost XFF hop", () => {
   assert.ok(body.indexOf("createBookingEngine(") < body.indexOf("sendConfirmationEmail"));
   assert.match(ip, /getIPFromHeader/);
   assert.match(ip, /x-vercel-forwarded-for/);
-  assert.doesNotMatch(readFileSync(`${root}/scripts/production-db-preflight.mjs`, "utf8"), /0031_/);
+  const preflight = readFileSync(`${root}/scripts/production-db-preflight.mjs`, "utf8");
+  assert.match(preflight, /0031_cp3005e2c_organisation_type\.sql/);
+  assert.doesNotMatch(preflight, /0031_cp273a/);
+  assert.doesNotMatch(preflight, /0032_/);
 });
