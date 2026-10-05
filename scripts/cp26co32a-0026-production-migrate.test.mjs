@@ -321,8 +321,8 @@ test("canonical 0026 digest is pinned and 0001-0025 digests match", () => {
   assert.equal(assertMigrationFile(canonicalFile()).ok, true);
   assert.equal(REQUIRED_CONFIRMATION, "APPLY-0026");
   assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), true);
-  assert.equal(ACCEPTED_LEDGER.at(-1), "0030_cp272_fix_prepare_booking_payment.sql");
-  assert.deepEqual(AUTHORISED_PENDING, ["0031_cp3005e2c_organisation_type.sql"]);
+  assert.equal(ACCEPTED_LEDGER.at(-1), "0031_cp3005e2c_organisation_type.sql");
+  assert.deepEqual(AUTHORISED_PENDING, []);
   assert.equal(isAuthorisedPending(TARGET_MIGRATION), false);
   assert.equal(REQUIRED_LEDGER.at(-1), "0025_cp26co2_platform_owners.sql");
   assert.equal(REQUIRED_LEDGER.includes(TARGET_MIGRATION), false);
@@ -702,8 +702,8 @@ test("apply failure rolls back the transaction and redacts secrets", async () =>
 
 test("Gate B accepts applied 0026 inside 0001-0028; build and the npm alias do not apply 0026", () => {
   assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), true);
-  assert.equal(ACCEPTED_LEDGER.at(-1), "0030_cp272_fix_prepare_booking_payment.sql");
-  assert.deepEqual(AUTHORISED_PENDING, ["0031_cp3005e2c_organisation_type.sql"]);
+  assert.equal(ACCEPTED_LEDGER.at(-1), "0031_cp3005e2c_organisation_type.sql");
+  assert.deepEqual(AUTHORISED_PENDING, []);
   assert.equal(isAuthorisedPending(TARGET_MIGRATION), false);
   assert.equal(isAuthorisedPending("0027_later.sql"), false);
   const current = evaluatePreflight({
@@ -741,14 +741,14 @@ test("Gate B accepts applied 0026 inside 0001-0028; build and the npm alias do n
   assert.doesNotMatch(pkg.scripts.build, /cp26co32a-0026/);
   assert.equal(pkg.scripts["db:migrate:0026"], undefined);
   const genericSrc = readFileSync(join(here, "production-db-migrate.mjs"), "utf8");
-  assert.match(genericSrc, /0001–0030/);
+  assert.match(genericSrc, /0001–0031/);
   assert.doesNotMatch(genericSrc, new RegExp(TARGET_MIGRATION));
 });
 
 test("spent 0026 workflow is absent and no workflow dispatches the controller", () => {
   assert.equal(existsSync(workflowPath), false);
   const workflows = readdirSync(join(here, "../.github/workflows"));
-  assert.deepEqual(workflows.sort(), ["cp3005e2c-0031-production-apply.yml", "production-database.yml"]);
+  assert.deepEqual(workflows.sort(), ["production-database.yml"]);
   for (const name of workflows) {
     const text = readFileSync(join(here, "../.github/workflows", name), "utf8");
     assert.equal(text.includes("cp26co32a-0026-production-migrate.mjs"), false, name);

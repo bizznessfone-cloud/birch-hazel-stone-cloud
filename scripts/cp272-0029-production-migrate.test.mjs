@@ -106,13 +106,16 @@ test("0029 digest is pinned and 0001-0028 are not edited by this controller", ()
   assert.deepEqual(
     REQUIRED_LEDGER,
     ACCEPTED_LEDGER.filter(
-      (name) => name !== TARGET_MIGRATION && name !== "0030_cp272_fix_prepare_booking_payment.sql",
+      (name) =>
+        name !== TARGET_MIGRATION &&
+        name !== "0030_cp272_fix_prepare_booking_payment.sql" &&
+        name !== "0031_cp3005e2c_organisation_type.sql",
     ),
   );
   assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), true);
-  assert.equal(ACCEPTED_LEDGER.at(-1), "0030_cp272_fix_prepare_booking_payment.sql");
+  assert.equal(ACCEPTED_LEDGER.at(-1), "0031_cp3005e2c_organisation_type.sql");
   assert.equal(REQUIRED_LEDGER.includes(TARGET_MIGRATION), false);
-  assert.deepEqual(AUTHORISED_PENDING, ["0031_cp3005e2c_organisation_type.sql"]);
+  assert.deepEqual(AUTHORISED_PENDING, []);
   assert.equal(isAuthorisedPending(TARGET_MIGRATION), false);
   assert.equal(isAuthorisedPending("0030_later.sql"), false);
   assert.doesNotMatch(src, /from "\.\/migrate\.mjs"/);
@@ -120,7 +123,7 @@ test("0029 digest is pinned and 0001-0028 are not edited by this controller", ()
   assert.doesNotMatch(src, /db:migrate/);
   assert.equal(existsSync(join(root, ".github/workflows/cp272-0029-production-apply.yml")), false);
   const workflows = readdirSync(join(root, ".github/workflows")).sort();
-  assert.deepEqual(workflows, ["cp3005e2c-0031-production-apply.yml", "production-database.yml"]);
+  assert.deepEqual(workflows, ["production-database.yml"]);
   const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
   assert.equal(pkg.scripts["db:migrate:0029"], undefined);
   assert.doesNotMatch(pkg.scripts.build, /0029|cp272/);

@@ -8,8 +8,29 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import { OWNER_USER, createHotelForUser, insertAuthUser, openCp272PaymentDb } from "./cp26a4-fixture.ts";
+import { createRequire } from "node:module";
 import { isOrganisationType } from "./organisation-type.ts";
-import { inspect0031State } from "../../../scripts/cp3005e2c-0031-production-migrate.mjs";
+
+const require = createRequire(import.meta.url);
+const { inspect0031State } = require("../../../scripts/cp3005e2c-0031-production-migrate.mjs") as {
+  inspect0031State: (
+    client: { query: (text: string, params?: unknown[]) => Promise<{ rows: Array<Record<string, unknown>> }> },
+    sourceMigrations: string[],
+  ) => Promise<{
+    classifiedCount: number;
+    organisationType: {
+      present: boolean;
+      dataType: string;
+      nullable: boolean;
+      columnDefault: string | null;
+      checkAcceptsHotel: boolean;
+      checkAcceptsTransfer: boolean;
+      createFunctionArgs: string;
+      uniqueHotelOrganisation: boolean;
+      appInsert: boolean;
+    };
+  }>;
+};
 
 const root = process.cwd();
 const MIGRATION = "0031_cp3005e2c_organisation_type.sql";
@@ -25,8 +46,8 @@ test("0031 is classification only and does not guess, grant, or collapse cardina
     createHash("sha256").update(SQL).digest("hex"),
     "be0921b852dda7904863f34bc1160fab844b2aaf0821423f6863c91b71b592b6",
   );
-  assert.match(preflight, /"0030_cp272_fix_prepare_booking_payment.sql",\n\];/);
-  assert.match(preflight, /AUTHORISED_PENDING = \[\n  "0031_cp3005e2c_organisation_type.sql",\n\];/);
+  assert.match(preflight, /"0031_cp3005e2c_organisation_type.sql",\n\];/);
+  assert.match(preflight, /AUTHORISED_PENDING = \[\];/);
   const executable = SQL.replace(/--.*$/gm, "");
   assert.doesNotMatch(executable, /\bupdate\s+sbg_organisations\b/i);
   assert.doesNotMatch(executable, /\binsert\s+into\b/i);

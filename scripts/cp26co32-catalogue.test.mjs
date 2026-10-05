@@ -18,7 +18,7 @@ import {
   evaluatePreflight,
   isAuthorisedPending,
 } from "./production-db-preflight.mjs";
-import { GENERIC_MIGRATE_BLOCKED, LEDGER_CURRENT, evaluateMigrationBaseline, runGuardedMigrate } from "./production-db-migrate.mjs";
+import { LEDGER_CURRENT, evaluateMigrationBaseline, runGuardedMigrate } from "./production-db-migrate.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const migrationName = "0026_cp26co3_commercial_catalogue.sql";
@@ -87,17 +87,19 @@ test("0026 exists once and 0001-0025 are unchanged versus the source commit", ()
 });
 
 test("Gate B accepts 0001-0030 and the generic migrator still never applies SQL", async () => {
-  assert.equal(ACCEPTED_LEDGER.at(-1), "0030_cp272_fix_prepare_booking_payment.sql");
+  assert.equal(ACCEPTED_LEDGER.at(-1), "0031_cp3005e2c_organisation_type.sql");
   assert.equal(ACCEPTED_LEDGER.includes(migrationName), true);
   assert.equal(ACCEPTED_LEDGER.includes("0027_cp26co41_organisation_property_licence.sql"), true);
   assert.equal(ACCEPTED_LEDGER.includes("0028_cp26fin_property_licence_catalogue.sql"), true);
   assert.equal(ACCEPTED_LEDGER.includes("0029_cp272_domain_a_checkout_claims.sql"), true);
-  assert.deepEqual(AUTHORISED_PENDING, ["0031_cp3005e2c_organisation_type.sql"]);
+  assert.equal(ACCEPTED_LEDGER.includes("0030_cp272_fix_prepare_booking_payment.sql"), true);
+  assert.deepEqual(AUTHORISED_PENDING, []);
   assert.equal(isAuthorisedPending(migrationName), false);
   assert.equal(isAuthorisedPending("0027_cp26co41_organisation_property_licence.sql"), false);
   assert.equal(isAuthorisedPending("0028_cp26fin_property_licence_catalogue.sql"), false);
   assert.equal(isAuthorisedPending("0029_cp272_domain_a_checkout_claims.sql"), false);
   assert.equal(isAuthorisedPending("0030_cp272_fix_prepare_booking_payment.sql"), false);
+  assert.equal(isAuthorisedPending("0031_cp3005e2c_organisation_type.sql"), false);
   assert.equal(isAuthorisedPending("0030_later.sql"), false);
   assert.equal(isAuthorisedPending("0031_later.sql"), false);
 
@@ -113,12 +115,12 @@ test("Gate B accepts 0001-0030 and the generic migrator still never applies SQL"
 
   const live = evaluatePreflight(acceptedFacts());
   assert.equal(live.ok, true);
-  assert.deepEqual(live.pending, ["0031_cp3005e2c_organisation_type.sql"]);
+  assert.deepEqual(live.pending, []);
   assert.equal(live.unexpectedPending, undefined);
   const liveBaseline = evaluateMigrationBaseline(live);
-  assert.equal(liveBaseline.ok, false);
+  assert.equal(liveBaseline.ok, true);
   assert.equal(liveBaseline.migrated, false);
-  assert.equal(liveBaseline.verdict, GENERIC_MIGRATE_BLOCKED);
+  assert.equal(liveBaseline.verdict, LEDGER_CURRENT);
 
   const future = evaluatePreflight({
     ...acceptedFacts(),
@@ -154,14 +156,14 @@ test("Gate B accepts 0001-0030 and the generic migrator still never applies SQL"
     env: { AETHER_DATABASE_OWNER_URL: "postgres://owner@host/neondb" },
     loadFacts: async () => acceptedFacts(),
   });
-  assert.equal(liveGuarded.ok, false);
+  assert.equal(liveGuarded.ok, true);
   assert.equal(liveGuarded.migrated, false);
-  assert.equal(liveGuarded.verdict, GENERIC_MIGRATE_BLOCKED);
+  assert.equal(liveGuarded.verdict, LEDGER_CURRENT);
 });
 
 test("generic migrator cannot apply 0026 and the spent dispatch surface is gone", () => {
   const workflows = readdirSync(join(root, ".github/workflows"));
-  assert.deepEqual(workflows.sort(), ["cp3005e2c-0031-production-apply.yml", "production-database.yml"]);
+  assert.deepEqual(workflows.sort(), ["production-database.yml"]);
   for (const name of workflows) {
     const text = readFileSync(join(root, ".github/workflows", name), "utf8");
     assert.equal(text.includes("0026"), false, name);
@@ -175,7 +177,7 @@ test("generic migrator cannot apply 0026 and the spent dispatch surface is gone"
   assert.match(controller, /0025_cp26co2_platform_owners\.sql/);
   assert.doesNotMatch(controller, /0026_cp26co3_commercial_catalogue/);
   const generic = readFileSync(join(root, "scripts/production-db-migrate.mjs"), "utf8");
-  assert.match(generic, /Accepted Production history is 0001–0030/);
+  assert.match(generic, /Accepted Production history is 0001–0031/);
   assert.doesNotMatch(generic, /AUTHORISED_PENDING\s*=\s*\[[^\]]+\]/);
   const dedicatedController = readFileSync(join(root, "scripts/cp26co32a-0026-production-migrate.mjs"), "utf8");
   assert.match(dedicatedController, /0026_cp26co3_commercial_catalogue\.sql/);

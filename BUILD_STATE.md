@@ -2,13 +2,13 @@
 
 This file describes **current reality**, not intended future state.
 
-## CP30.05E-2C — organisation type source. Not applied
+## CP30.05E-2C — organisation type applied
 
-**CP30.05E-2A PASS. CP30.05E-2B PASS. CP30.05E-2C source is in this change. 0031 is AUTHORISED PENDING, not accepted history, and not applied to Neon. The single-use controller is `scripts/cp3005e2c-0031-production-migrate.mjs`. It has not been dispatched. E-2D NOT STARTED. Public onboarding is not built. Get started is not connected. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
+**CP30.05E-2A PASS. CP30.05E-2B PASS. CP30.05E-2C organisation type foundation is applied. E-2D NOT STARTED. Public onboarding is not built. Get started is not connected. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
 
-`sbg_organisations.organisation_type` is `hotel` or `transfer_operator`, or NULL. NULL means unclassified. Existing rows are not backfilled. The create function is unchanged, so a new organisation stays NULL until a later checkpoint sets the type. Membership `role` is not the type. `hotels.organisation_id` is still not unique. One organisation can hold many hotels. Licence quantity stays on `sbg_organisation_billing.licensed_quantity`.
+`sbg_organisations.organisation_type` is `hotel` or `transfer_operator`, or NULL. NULL means unclassified. Production had **1** organisation row. It was not backfilled: classified rows stayed **0**. The create function is unchanged, so a new organisation stays NULL until a later checkpoint sets the type. Membership `role` is not the type. `hotels.organisation_id` is still not unique. One organisation can hold many hotels. Licence quantity stays on `sbg_organisation_billing.licensed_quantity`. The apply left licensed quantity **3** and allocations **4**.
 
-Gate B accepts the file only as the single authorised pending migration. It is not in `ACCEPTED_LEDGER`. Putting it there before the single-use Production apply would make the next preflight fail. The permanent workflow is still read-only. Temporary `.github/workflows/cp3005e2c-0031-production-apply.yml` checks out `2648bad7d69d52d7da37ce2e022473335228edbc` and runs only the 0031 controller after `APPLY-0031`. The first dispatch (GHA [37279095087](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/37279095087)) stopped in read-only preflight and did not mutate. It has not been applied. Delete the workflow after one verified apply.
+Migration **0031** (`0031_cp3005e2c_organisation_type.sql`, digest `be0921b852dda7904863f34bc1160fab844b2aaf0821423f6863c91b71b592b6`) is accepted history. Gate B ledger is **0001–0031**. `AUTHORISED_PENDING=[]`. It is applied (GHA [37279300118](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/37279300118)). The first dispatch (GHA [37279095087](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/37279095087)) stopped in read-only preflight and did not mutate. The temporary apply workflow is **RETIRED**. Do not rerun `scripts/cp3005e2c-0031-production-migrate.mjs`. Its `REQUIRED_LEDGER` stays frozen at **0001–0030**. Commerce remains **test**.
 
 ## CP30.05E-2B — identity session. Onboarding not started
 

@@ -2,16 +2,16 @@
 /**
  * CP30.05E-2C — single-use production controller for 0031 only.
  *
+ * Applied once in Production (GHA 37279300118). Do not run this file again.
+ * The first dispatch (GHA 37279095087) stopped in read-only preflight and did not mutate.
  * Applies migrations/0031_cp3005e2c_organisation_type.sql and nothing else.
  * Never uses DATABASE_URL. Never prints secrets. Never calls Stripe.
  * Does not invoke the generic production migrator or any historical controller.
- * Does not classify existing organisations. NULL stays unclassified.
- * Does not change membership role, licence quantity, allocation, or
- * hotels.organisation_id cardinality.
  *
  * REQUIRED_LEDGER is the frozen pre-apply pin (0001–0030). It must not follow
- * Gate B after 0031 is accepted. Re-running a valid installed contract must
- * return "0031 ALREADY APPLIED — NO MUTATION" and must not rewrite SQL.
+ * Gate B after 0031 is accepted. Re-running a valid installed contract
+ * must return "0031 ALREADY APPLIED — NO MUTATION" and must not rewrite SQL.
+ * The temporary dispatch workflow is retired. Do not recreate it.
  */
 import { createHash } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";

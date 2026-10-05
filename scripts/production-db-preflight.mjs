@@ -24,7 +24,7 @@ const OCCUPANCY_CONSTRAINTS = [
   "bookings_driver_occupancy_excl",
 ];
 
-/** Accepted Production history after CP27.2 applied 0030. Not a future-pending allowlist. */
+/** Accepted Production history after CP30.05E-2C applied 0031. Not a future-pending allowlist. */
 export const ACCEPTED_LEDGER = [
   "0001_auth.sql",
   "0002_foundation.sql",
@@ -56,6 +56,7 @@ export const ACCEPTED_LEDGER = [
   "0028_cp26fin_property_licence_catalogue.sql",
   "0029_cp272_domain_a_checkout_claims.sql",
   "0030_cp272_fix_prepare_booking_payment.sql",
+  "0031_cp3005e2c_organisation_type.sql",
 ];
 
 export const REVIEWED_DIGESTS = {
@@ -81,12 +82,12 @@ export const REVIEWED_DIGESTS = {
     "e5897eda1a4f3c8c4025e16235b9d11a677b3cc7994934058142934d4dea7adc",
   "0030_cp272_fix_prepare_booking_payment.sql":
     "9dec121ac28b8bcca5554576816eb8c764d50f56b6b97c9f0199e0b926e8643f",
+  "0031_cp3005e2c_organisation_type.sql":
+    "be0921b852dda7904863f34bc1160fab844b2aaf0821423f6863c91b71b592b6",
 };
 
-/** Nothing earlier is awaiting apply. 0031 is the only authorised pending migration. 0032+ fails closed. */
-export const AUTHORISED_PENDING = [
-  "0031_cp3005e2c_organisation_type.sql",
-];
+/** Nothing is authorised pending. 0032+ fails closed. */
+export const AUTHORISED_PENDING = [];
 
 export function isAuthorisedPending(name) {
   return AUTHORISED_PENDING.includes(String(name));
