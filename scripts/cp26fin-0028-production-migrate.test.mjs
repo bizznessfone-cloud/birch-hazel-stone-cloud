@@ -98,7 +98,7 @@ test("0028 digest is pinned, accepted, and the controller ledger stays frozen at
   assert.equal(REQUIRED_LEDGER.includes(TARGET_MIGRATION), false);
   assert.notDeepEqual(REQUIRED_LEDGER, [...ACCEPTED_LEDGER]);
   assert.doesNotMatch(src, /REQUIRED_LEDGER\s*=\s*\[\s*\.\.\.ACCEPTED_LEDGER/);
-  assert.deepEqual(AUTHORISED_PENDING, []);
+  assert.deepEqual(AUTHORISED_PENDING, ["0032_cp3005e2c1_organisation_acceptance.sql"]);
   assert.equal(isAuthorisedPending(TARGET_MIGRATION), false);
   assert.equal(REVIEWED_DIGESTS["0027_cp26co41_organisation_property_licence.sql"],
     "1710fa05f3ab05d77a86ef061df43a9239220fa9d955f03628fdca39a9c08eef");

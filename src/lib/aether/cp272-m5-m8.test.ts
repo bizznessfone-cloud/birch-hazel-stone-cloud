@@ -1067,6 +1067,7 @@ test("M8 Domain B live checkout is an exact-true lock independent of Domain A", 
   );
   const preflight = read("scripts/production-db-preflight.mjs");
   assert.match(preflight, /0031_cp3005e2c_organisation_type\.sql/);
+  assert.match(preflight, /0032_cp3005e2c1_organisation_acceptance\.sql/);
   assert.doesNotMatch(preflight, /0031_cp273a/);
-  assert.doesNotMatch(preflight, /0032_/);
+  assert.doesNotMatch(preflight, /0033_/);
 });

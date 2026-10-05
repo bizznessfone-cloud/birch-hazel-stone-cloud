@@ -18,7 +18,7 @@ import {
   evaluatePreflight,
   isAuthorisedPending,
 } from "./production-db-preflight.mjs";
-import { LEDGER_CURRENT, evaluateMigrationBaseline, runGuardedMigrate } from "./production-db-migrate.mjs";
+import { GENERIC_MIGRATE_BLOCKED, LEDGER_CURRENT, evaluateMigrationBaseline, runGuardedMigrate } from "./production-db-migrate.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const migrationName = "0026_cp26co3_commercial_catalogue.sql";
@@ -77,6 +77,7 @@ test("0026 exists once and 0001-0025 are unchanged versus the source commit", ()
     "0029_cp272_domain_a_checkout_claims.sql",
     "0030_cp272_fix_prepare_booking_payment.sql",
     "0031_cp3005e2c_organisation_type.sql",
+    "0032_cp3005e2c1_organisation_acceptance.sql",
   ]);
   for (const name of changed) assert.ok(present.includes(name.slice("migrations/".length)), name);
   for (const [name, digest] of Object.entries(REVIEWED_DIGESTS)) {
@@ -93,13 +94,14 @@ test("Gate B accepts 0001-0030 and the generic migrator still never applies SQL"
   assert.equal(ACCEPTED_LEDGER.includes("0028_cp26fin_property_licence_catalogue.sql"), true);
   assert.equal(ACCEPTED_LEDGER.includes("0029_cp272_domain_a_checkout_claims.sql"), true);
   assert.equal(ACCEPTED_LEDGER.includes("0030_cp272_fix_prepare_booking_payment.sql"), true);
-  assert.deepEqual(AUTHORISED_PENDING, []);
+  assert.deepEqual(AUTHORISED_PENDING, ["0032_cp3005e2c1_organisation_acceptance.sql"]);
   assert.equal(isAuthorisedPending(migrationName), false);
   assert.equal(isAuthorisedPending("0027_cp26co41_organisation_property_licence.sql"), false);
   assert.equal(isAuthorisedPending("0028_cp26fin_property_licence_catalogue.sql"), false);
   assert.equal(isAuthorisedPending("0029_cp272_domain_a_checkout_claims.sql"), false);
   assert.equal(isAuthorisedPending("0030_cp272_fix_prepare_booking_payment.sql"), false);
   assert.equal(isAuthorisedPending("0031_cp3005e2c_organisation_type.sql"), false);
+  assert.equal(isAuthorisedPending("0032_cp3005e2c1_organisation_acceptance.sql"), true);
   assert.equal(isAuthorisedPending("0030_later.sql"), false);
   assert.equal(isAuthorisedPending("0031_later.sql"), false);
 
@@ -115,12 +117,12 @@ test("Gate B accepts 0001-0030 and the generic migrator still never applies SQL"
 
   const live = evaluatePreflight(acceptedFacts());
   assert.equal(live.ok, true);
-  assert.deepEqual(live.pending, []);
+  assert.deepEqual(live.pending, ["0032_cp3005e2c1_organisation_acceptance.sql"]);
   assert.equal(live.unexpectedPending, undefined);
   const liveBaseline = evaluateMigrationBaseline(live);
-  assert.equal(liveBaseline.ok, true);
+  assert.equal(liveBaseline.ok, false);
   assert.equal(liveBaseline.migrated, false);
-  assert.equal(liveBaseline.verdict, LEDGER_CURRENT);
+  assert.equal(liveBaseline.verdict, GENERIC_MIGRATE_BLOCKED);
 
   const future = evaluatePreflight({
     ...acceptedFacts(),
@@ -156,9 +158,9 @@ test("Gate B accepts 0001-0030 and the generic migrator still never applies SQL"
     env: { AETHER_DATABASE_OWNER_URL: "postgres://owner@host/neondb" },
     loadFacts: async () => acceptedFacts(),
   });
-  assert.equal(liveGuarded.ok, true);
+  assert.equal(liveGuarded.ok, false);
   assert.equal(liveGuarded.migrated, false);
-  assert.equal(liveGuarded.verdict, LEDGER_CURRENT);
+  assert.equal(liveGuarded.verdict, GENERIC_MIGRATE_BLOCKED);
 });
 
 test("generic migrator cannot apply 0026 and the spent dispatch surface is gone", () => {

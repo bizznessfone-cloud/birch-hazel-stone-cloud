@@ -322,7 +322,7 @@ test("canonical 0026 digest is pinned and 0001-0025 digests match", () => {
   assert.equal(REQUIRED_CONFIRMATION, "APPLY-0026");
   assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), true);
   assert.equal(ACCEPTED_LEDGER.at(-1), "0031_cp3005e2c_organisation_type.sql");
-  assert.deepEqual(AUTHORISED_PENDING, []);
+  assert.deepEqual(AUTHORISED_PENDING, ["0032_cp3005e2c1_organisation_acceptance.sql"]);
   assert.equal(isAuthorisedPending(TARGET_MIGRATION), false);
   assert.equal(REQUIRED_LEDGER.at(-1), "0025_cp26co2_platform_owners.sql");
   assert.equal(REQUIRED_LEDGER.includes(TARGET_MIGRATION), false);
@@ -703,7 +703,7 @@ test("apply failure rolls back the transaction and redacts secrets", async () =>
 test("Gate B accepts applied 0026 inside 0001-0028; build and the npm alias do not apply 0026", () => {
   assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), true);
   assert.equal(ACCEPTED_LEDGER.at(-1), "0031_cp3005e2c_organisation_type.sql");
-  assert.deepEqual(AUTHORISED_PENDING, []);
+  assert.deepEqual(AUTHORISED_PENDING, ["0032_cp3005e2c1_organisation_acceptance.sql"]);
   assert.equal(isAuthorisedPending(TARGET_MIGRATION), false);
   assert.equal(isAuthorisedPending("0027_later.sql"), false);
   const current = evaluatePreflight({

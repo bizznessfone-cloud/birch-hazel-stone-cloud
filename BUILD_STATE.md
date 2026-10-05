@@ -2,6 +2,14 @@
 
 This file describes **current reality**, not intended future state.
 
+## CP30.05E-2C.1 — acceptance evidence authorised, not applied
+
+**E-2C organisation type remains PASS. E-2C.1 adds versioned acceptance evidence as the sole authorised pending migration 0032. It is not applied. No acceptance row is written. E-2D NOT STARTED. Get started is not connected. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
+
+`sbg_organisation_acceptances` records organisation, accepting user, an explicit agreement-version token, and timestamp. It is not a boolean. The same organisation, user, and version cannot be stored twice. A later version is a new row and does not rewrite the earlier one. Acceptance is not per hotel and not per licence. `aether_app` receives no new privilege. The existing Production organisation is not given an acceptance. `organisation_type` stays nullable and unclassified. Commerce remains **test**.
+
+Migration **0032** (`0032_cp3005e2c1_organisation_acceptance.sql`, digest `c3412d2b6efc05786ea3edf1146da25853b88ac0df69b1ce215240be0c72ab48`) is `AUTHORISED_PENDING`. Accepted history remains **0001–0031**. The generic migrator does not apply it.
+
 ## CP30.05E-2C — organisation type applied
 
 **CP30.05E-2A PASS. CP30.05E-2B PASS. CP30.05E-2C organisation type foundation is applied. E-2D NOT STARTED. Public onboarding is not built. Get started is not connected. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**

@@ -365,6 +365,7 @@ test("cookie, bearer, signup, guest limiter, ops, and commerce source stay put",
   const preflight = readFileSync(join(root, "scripts/production-db-preflight.mjs"), "utf8");
   assert.match(preflight, /"0030_cp272_fix_prepare_booking_payment.sql"/);
   assert.match(preflight, /0031_cp3005e2c_organisation_type\.sql/);
+  assert.match(preflight, /0032_cp3005e2c1_organisation_acceptance\.sql/);
   assert.doesNotMatch(preflight, /0031_cp273a/);
-  assert.doesNotMatch(preflight, /0032_/);
+  assert.doesNotMatch(preflight, /0033_/);
 });

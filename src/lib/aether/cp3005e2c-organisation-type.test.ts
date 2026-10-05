@@ -47,7 +47,7 @@ test("0031 is classification only and does not guess, grant, or collapse cardina
     "be0921b852dda7904863f34bc1160fab844b2aaf0821423f6863c91b71b592b6",
   );
   assert.match(preflight, /"0031_cp3005e2c_organisation_type.sql",\n\];/);
-  assert.match(preflight, /AUTHORISED_PENDING = \[\];/);
+  assert.match(preflight, /AUTHORISED_PENDING = \[\n  "0032_cp3005e2c1_organisation_acceptance.sql",\n\];/);
   const executable = SQL.replace(/--.*$/gm, "");
   assert.doesNotMatch(executable, /\bupdate\s+sbg_organisations\b/i);
   assert.doesNotMatch(executable, /\binsert\s+into\b/i);
