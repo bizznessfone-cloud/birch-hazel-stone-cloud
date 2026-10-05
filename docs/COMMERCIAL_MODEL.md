@@ -35,7 +35,9 @@ still does not create an organisation, a membership, or a hotel. Password
 recovery code is implemented on Better Auth 1.6.30 and stays fail-closed
 until `RESEND_API_KEY` and `RESEND_FROM_EMAIL` are set. The public
 acknowledgement is not a delivery receipt. A real reset email has not been
-proven. E-2C applied
+proven. Cookie cache is off, so a successful reset is visible on the next
+`get-session` instead of for up to five minutes. That database read is
+accepted for the 1–5 hotel pilot. E-2C applied
 organisation classification and did not build onboarding. E-2C.1 applied
 append-only acceptance evidence and did not record an acceptance. Public onboarding
 is not built. CP31 has not started. Commerce stays test.
@@ -53,7 +55,8 @@ organisation, not to each property or licence. `0032` is applied
 (`0032_cp3005e2c1_organisation_acceptance.sql`, digest
 `c3412d2b6efc05786ea3edf1146da25853b88ac0df69b1ce215240be0c72ab48`,
 GHA 37333642947) and its workflow is retired. Production has no acceptance
-row. E-2D-1 recovery is not delivery-proven. E-2D-2 admission has not
+row. E-2D-1 recovery is not delivery-proven. Cookie cache is disabled.
+E-2D-2 admission has not
 started. 0033+ stays fail-closed.
 
 The classification is kept so later onboarding copy, terminology, defaults,

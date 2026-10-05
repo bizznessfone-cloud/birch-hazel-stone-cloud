@@ -2,6 +2,14 @@
 
 This file describes **current reality**, not intended future state.
 
+## CP30.05E-2D-1D — cookie cache off, revocation is strict
+
+**E-2D-1D is in this change. Better Auth stays 1.6.30. `session.cookieCache.enabled` is false. A real Resend send has not been proven. E-2D-1 is not complete. E-2D-2 NOT STARTED. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
+
+Password reset still deletes every Better Auth database session for that user when recovery is configured (`revokeSessionsOnPasswordReset`). `get-session` now reads that row. A previously issued `session_data` cookie is not issued and cannot keep the account authenticated. The extra session lookup is accepted for the controlled 1–5 hotel pilot. No pool change, no Redis, no second cache.
+
+Ops still uses `aether_ops_session`. It is not this cookie and was not changed. Cookie names stay `__Host-`, `Secure`, `SameSite=Lax`. Homepage Get started is still `#start`. Migrations remain **0001–0032**. `AUTHORISED_PENDING=[]`. Commerce remains **test**.
+
 ## CP30.05E-2D-1B — password recovery implemented, delivery not proven
 
 **Option B is accepted. Better Auth stays 1.6.30. Recovery code is in the tree and fail-closed. A real Resend send has not been proven. E-2D-1 is not complete. E-2D-2 NOT STARTED. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**

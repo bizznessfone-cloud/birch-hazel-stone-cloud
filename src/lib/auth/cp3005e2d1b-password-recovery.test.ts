@@ -49,14 +49,14 @@ function authFor(state: State, env: NodeJS.ProcessEnv) {
       ...passwordResetDeliveryOptions(env),
     },
     hooks: { after: signUpEnumerationAfterHook },
-    session: { cookieCache: { enabled: true, maxAge: 300 } },
+    session: { cookieCache: { enabled: false } },
     advanced: { ipAddress: { ipAddressHeaders: ["x-forwarded-for"] } },
     rateLimit: { enabled: true },
   });
 }
 
 function post(
-  auth: ReturnType<typeof authFor>,
+  auth: { handler: (request: Request) => Promise<Response> },
   path: string,
   body: Record<string, unknown>,
   ip: string,
@@ -389,11 +389,12 @@ test("invalid, expired, and spent tokens do not change the password; a valid tok
     assert.equal(tokenOnly.status, 200);
     assert.equal(tokenOnly.text, "null");
 
-    const cached = await read(await auth.handler(new Request(`${BASE}/api/auth/get-session`, {
+    assert.equal(signedIn.cookies.some((cookie) => cookie.includes("session_data")), false);
+    const replay = await read(await auth.handler(new Request(`${BASE}/api/auth/get-session`, {
       headers: { origin: BASE, cookie: cookieHeader(signedIn.cookies) },
     })));
-    const cachedBody = JSON.parse(cached.text) as { user?: { email?: string } };
-    assert.equal(cachedBody.user?.email, "lifecycle@example.com");
+    assert.equal(replay.status, 200);
+    assert.equal(replay.text, "null");
     assert.equal(state.session.length, 0);
 
     const oldPassword = await read(await post(auth, "/sign-in/email", {
@@ -409,6 +410,126 @@ test("invalid, expired, and spent tokens do not change the password; a valid tok
     assert.equal(state.session.length, 1);
     assert.equal(state.user.length, 1);
     assertNoSecrets(logs.lines.join("\n"), [token, expiredToken, API_KEY, "newpassword99", "password123"]);
+  } finally {
+    logs.restore();
+    fetchLog.restore();
+  }
+});
+
+test("disabling cookie cache revokes every issued session on the next check", async () => {
+  const state = emptyState();
+  const auth = betterAuth({
+    baseURL: BASE,
+    secret: SECRET,
+    database: memoryAdapter(state),
+    trustedOrigins: [BASE],
+    emailAndPassword: {
+      ...emailAndPasswordAuthOptions,
+      ...passwordResetDeliveryOptions(CONFIGURED),
+    },
+    hooks: { after: signUpEnumerationAfterHook },
+    session: { cookieCache: { enabled: false } },
+    advanced: {
+      useSecureCookies: false,
+      defaultCookieAttributes: { secure: true, sameSite: "lax", path: "/" },
+      ipAddress: { ipAddressHeaders: ["x-forwarded-for"] },
+      cookies: {
+        session_token: { name: "__Host-grok-auth.session_token" },
+        session_data: { name: "__Host-grok-auth.session_data" },
+      },
+    },
+    rateLimit: { enabled: true },
+  });
+  const fetchLog = installFetch(() => new Response("{}", { status: 202 }));
+  const logs = spyInfo();
+  try {
+    const email = "two-sessions@example.com";
+    const created = await read(await post(auth, "/sign-up/email", {
+      email, password: "password123", name: "Op",
+    }, "203.0.113.60"));
+    assert.equal(created.status, 200);
+    assert.equal(JSON.parse(created.text).token, null);
+    assert.equal(state.session.length, 0);
+
+    const sessionA = await read(await post(auth, "/sign-in/email", {
+      email, password: "password123",
+    }, "203.0.113.61"));
+    const sessionB = await read(await post(auth, "/sign-in/email", {
+      email, password: "password123",
+    }, "203.0.113.62"));
+    assert.equal(sessionA.status, 200);
+    assert.equal(sessionB.status, 200);
+    assert.equal(state.session.length, 2);
+    for (const issued of [sessionA, sessionB]) {
+      assert.equal(issued.cookies.some((cookie) => cookie.includes("session_data")), false);
+      const token = issued.cookies.find((cookie) => cookie.startsWith("__Host-grok-auth.session_token="));
+      assert.ok(token);
+      assert.match(token, /Secure/);
+      assert.match(token, /SameSite=Lax/);
+      assert.match(token, /Path=\//);
+      assert.match(token, /HttpOnly/);
+    }
+    const beforeA = await read(await auth.handler(new Request(`${BASE}/api/auth/get-session`, {
+      headers: { origin: BASE, cookie: cookieHeader(sessionA.cookies) },
+    })));
+    const beforeB = await read(await auth.handler(new Request(`${BASE}/api/auth/get-session`, {
+      headers: { origin: BASE, cookie: cookieHeader(sessionB.cookies) },
+    })));
+    assert.equal(JSON.parse(beforeA.text).user.email, email);
+    assert.equal(JSON.parse(beforeB.text).user.email, email);
+
+    const requested = await read(await post(auth, "/request-password-reset", {
+      email, redirectTo: `${BASE}/reset-password`,
+    }, "203.0.113.63"));
+    assert.equal(requested.status, 200);
+    const token = tokenFrom(state);
+    const updated = await read(await post(auth, "/reset-password", {
+      newPassword: "newpassword99", token,
+    }, "203.0.113.64"));
+    assert.equal(updated.status, 200);
+    assert.equal(updated.cookies.length, 0);
+    assert.equal(state.session.length, 0);
+
+    const afterA = await read(await auth.handler(new Request(`${BASE}/api/auth/get-session`, {
+      headers: { origin: BASE, cookie: cookieHeader(sessionA.cookies) },
+    })));
+    const afterB = await read(await auth.handler(new Request(`${BASE}/api/auth/get-session`, {
+      headers: { origin: BASE, cookie: cookieHeader(sessionB.cookies) },
+    })));
+    assert.equal(afterA.text, "null");
+    assert.equal(afterB.text, "null");
+
+    const oldPassword = await read(await post(auth, "/sign-in/email", {
+      email, password: "password123",
+    }, "203.0.113.65"));
+    assert.equal(oldPassword.status, 401);
+    const fresh = await read(await post(auth, "/sign-in/email", {
+      email, password: "newpassword99",
+    }, "203.0.113.66"));
+    assert.equal(fresh.status, 200);
+    assert.equal(fresh.cookies.some((cookie) => cookie.includes("session_data")), false);
+    assert.equal(state.session.length, 1);
+    const freshSession = await read(await auth.handler(new Request(`${BASE}/api/auth/get-session`, {
+      headers: { origin: BASE, cookie: cookieHeader(fresh.cookies) },
+    })));
+    assert.equal(JSON.parse(freshSession.text).user.email, email);
+
+    const signedOut = await read(await auth.handler(new Request(`${BASE}/api/auth/sign-out`, {
+      method: "POST",
+      headers: {
+        origin: BASE,
+        "content-type": "application/json",
+        cookie: cookieHeader(fresh.cookies),
+        "x-forwarded-for": "203.0.113.67",
+      },
+    })));
+    assert.equal(signedOut.status, 200);
+    assert.equal(state.session.length, 0);
+    const afterOut = await read(await auth.handler(new Request(`${BASE}/api/auth/get-session`, {
+      headers: { origin: BASE, cookie: cookieHeader(fresh.cookies) },
+    })));
+    assert.equal(afterOut.text, "null");
+    assertNoSecrets(logs.lines.join("\n"), [token, API_KEY, "newpassword99", "password123", `${BASE}/reset-password/${token}`]);
   } finally {
     logs.restore();
     fetchLog.restore();
@@ -442,7 +563,19 @@ test("recovery surfaces stay identity-only and do not open onboarding, Owner, or
   assert.match(server, /autoSignIn stays false/);
   assert.match(server, /passwordResetDeliveryOptions\(\)/);
   assert.doesNotMatch(server, /sendResetPassword/);
-  assert.match(server, /cookieCache: \{ enabled: true, maxAge: 300 \}/);
+  assert.match(server, /cookieCache: \{ enabled: false \}/);
+  assert.doesNotMatch(server, /cookieCache: \{ enabled: true/);
+  const app = readFileSync(join(root, "src/routes/app.tsx"), "utf8");
+  assert.match(app, /getAppSession/);
+  assert.match(app, /to: "\/login"/);
+  const owner = readFileSync(join(root, "src/lib/auth/owner-session.ts"), "utf8");
+  assert.match(owner, /getSessionUser/);
+  assert.match(owner, /isPlatformOwner/);
+  const ops = readFileSync(join(root, "src/lib/aether/ops-auth.ts"), "utf8");
+  assert.match(ops, /aether_ops_session/);
+  assert.doesNotMatch(ops, /cookieCache|session_data/);
+  const verify = readFileSync(join(root, "src/lib/auth/verify.server.ts"), "utf8");
+  assert.match(verify, /auth\.api\.getSession/);
   assert.match(home, /href="#start"/);
   assert.doesNotMatch(home, /forgot-password|\/get-started|href="\/login"|to="\/login"/);
   const names = readdirSync(join(root, "migrations")).filter((name) => name.endsWith(".sql"));

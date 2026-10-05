@@ -331,7 +331,7 @@ test("cookie, bearer, signup, guest limiter, ops, and commerce source stay put",
   assert.match(server, /sameSite: "lax"/);
   assert.match(server, /secure: true/);
   assert.match(server, /useSecureCookies: false/);
-  assert.match(server, /cookieCache: \{ enabled: true, maxAge: 300 \}/);
+  assert.match(server, /cookieCache: \{ enabled: false \}/);
   assert.match(server, /bearer\(\)/);
   assert.match(server, /\.\.\.emailAndPasswordAuthOptions/);
   assert.match(server, /passwordResetDeliveryOptions\(\)/);

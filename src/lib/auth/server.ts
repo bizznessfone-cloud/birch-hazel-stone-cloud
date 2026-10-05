@@ -170,11 +170,12 @@ export const auth = betterAuth({
     },
   },
 
-  // Cache the session in the short-lived signed `session_data` cookie so reads
-  // (incl. the client's `/get-session`) skip the DB — this shrinks the "loading"
-  // window and reduces auth flicker. See the `auth` skill for the full
-  // flicker-prevention guidance (gate on `isPending`; SSR the session).
-  session: { cookieCache: { enabled: true, maxAge: 300 } },
+  // Cookie cache is off. A signed session_data cookie would satisfy get-session
+  // without a database read, so a password reset that deleted every session row
+  // could stay authenticated for maxAge. The next get-session now uses
+  // findSession. That lookup is accepted for the 1–5 hotel pilot. Do not turn
+  // the cache back on to hide a revoked session.
+  session: { cookieCache: { enabled: false } },
 
   // Local email/password — toggled only via `./email-password` (not a plugin).
   // autoSignIn stays false so an existing email and a new email share one
