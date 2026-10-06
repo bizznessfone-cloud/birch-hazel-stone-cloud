@@ -2,6 +2,22 @@
 
 This file describes **current reality**, not intended future state.
 
+## CP30.05E-2D-1 — CLOSED / PASS
+
+**Password recovery is closed. Better Auth stays 1.6.30. A controlled Production reset on `https://scanbookgo.com` was delivered and completed. E-2D-2 NOT STARTED. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
+
+E-2D-1B put native reset in the tree and left it fail-closed until Resend existed. E-2D-1D turned cookie cache off so `get-session` reads the database after `revokeSessionsOnPasswordReset`. This closeout records the human Production proof. It does not change code, schema, Stripe, or commerce.
+
+Production was redeployed from `3d193cb9e2daba4f516700bf3aa2aaeaeda44650` after `scanbookgo.com` was attached and verified on Vercel, the Resend domain `scanbookgo.com` was verified (DKIM and SPF), and Production had `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, and `BETTER_AUTH_URL=https://scanbookgo.com`. The deployment reached READY and `scanbookgo.com` was aliased to it. `GET https://scanbookgo.com/api/ready` returned `{"ok":true}`. The Resend key is not recorded here.
+
+On Production `/login`, Sign in showed **Forgot password?**. `/forgot-password` rendered. The existing human-controlled SBG Production verification account was submitted. The browser showed exactly: “If an account exists for that email, password reset instructions will be sent.” A real email arrived in that account’s Gmail inbox, not Spam. Subject: `Reset your SCAN BOOK GO password`. That is one controlled delivery, not a claim of universal deliverability.
+
+The link returned the user to `scanbookgo.com`. The page said **Choose a new password**. No `vercel.app` hostname was visible in that flow. After the new password, the page said: “Your password has been updated. Sign in with the new password.” Sign-in with the new password reached the existing authenticated hotel workspace. That fixture was not changed. Opening the same link again showed: “This reset link is invalid or has expired.” The old password was rejected.
+
+Two already-signed-in browsers were **not** set up before this reset. Dual-session revocation was not repeated as a live Production test. The evidence for that property remains the E-2D-1D memory-adapter test: two sessions, cache disabled, both cookies fail `get-session` after reset.
+
+Migrations remain **0001–0032**. `AUTHORISED_PENDING=[]`. No 0033. `SBG_SAAS_COMMERCE` remains **test**. Homepage Get started is still `#start`. Ops still uses `aether_ops_session`.
+
 ## CP30.05E-2D-1D — cookie cache off, revocation is strict
 
 **E-2D-1D is in this change. Better Auth stays 1.6.30. `session.cookieCache.enabled` is false. A real Resend send has not been proven. E-2D-1 is not complete. E-2D-2 NOT STARTED. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**

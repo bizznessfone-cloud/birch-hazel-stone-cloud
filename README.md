@@ -55,9 +55,9 @@ Environment (names/presence only; never secret values):
 
 ### Auth (do not reopen CP25G.3)
 
-**Proven in Production:** email/password signup, session creation, secure cookies, authenticated `/app`, session persistence, sign-out, signed-out `/app` boundary, **returning email/password sign-in (CP26A.5)**.
+**Proven in Production:** email/password signup, session creation, secure cookies, authenticated `/app`, session persistence, sign-out, signed-out `/app` boundary, **returning email/password sign-in (CP26A.5)**, **password recovery (CP30.05E-2D-1)** — one controlled `scanbookgo.com` reset was delivered to Gmail and completed. Dual already-open sessions were not repeated live; E-2D-1D’s automated two-session proof covers immediate revocation.
 
-**Backlog / deferred:** password-recovery delivery proof (code is fail-closed until Resend is configured; cookie cache is off so reset revocation is checked in the database); email verification.
+**Backlog / deferred:** email verification.
 
 ### SaaS / guest / Ops
 
