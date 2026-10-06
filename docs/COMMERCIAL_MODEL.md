@@ -12,9 +12,26 @@ SCAN BOOK GO serves two organisation types on one platform:
 | Hotel / accommodation | Offers transfer booking directly to its guests |
 | Transfer operator | Manages transfer bookings for the properties and guests it serves |
 
-These are organisation classifications, not user roles. Membership `role` on
-`sbg_organisation_members` stays a separate token (`owner`, `admin`, `operator`,
-and any later role). Do not store organisation type in that column.
+These are organisation classifications, not user roles. Membership `role` and
+`organisation_type` stay different facts. The V1 founding membership is
+`member` with `billing_authority` true. Do not introduce `owner`, `admin`, or
+`operator` as onboarding role tokens. `billing_authority` is the billing
+capability. Do not store organisation type in the role column.
+
+PROPERTY means an actual hotel or accommodation property served by the
+organisation. It is not the organisation. A hotel organisation operates its
+own hotels. A transfer operator is the transfer business; its property rows
+are the hotels it serves. “Kos Transfers Limited” is an organisation.
+“Portobello Royal” is a property. The operator is not stored as a fake hotel.
+Both types use one organisation model, one property model, one transfer
+service, one guest link, and one property-licence subscription. There is not
+a second operator application, property table, or booking engine.
+
+V2+ IDEA ONLY. Not V1. No schema and no route change. A public location QR,
+for example a board in Kardamena, could later mean a place rather than a
+hotel: scan, choose the hotel, resolve that hotel’s serving organisation,
+book the transfer from that place to the hotel. V1 does not build it. Keeping
+property = a real hotel is what leaves the idea possible.
 
 Both types use the same product, the same onboarding engine, and the same
 data. There is not a second application, site, or database.
@@ -58,8 +75,20 @@ organisation, not to each property or licence. `0032` is applied
 `c3412d2b6efc05786ea3edf1146da25853b88ac0df69b1ce215240be0c72ab48`,
 GHA 37333642947) and its workflow is retired. Production has no acceptance
 row. E-2D-1 password recovery is CLOSED / PASS. Cookie cache stays disabled.
-E-2D-2 admission has not
-started. 0033+ stays fail-closed.
+E-2D-2A is accepted. The business name is not the property name. Founding
+role stays `member` with `billing_authority` true. Organisation type stays
+unset until a later checkpoint. V1 legal acceptance, when recorded later, is
+one versioned Terms of Service row; privacy may be linked and is not a second
+acceptance record in that decision. Going live stays an explicit later
+customer action after entitlement and allocation, not a Stripe webhook.
+Onboarding progress, when built, is derived from durable server rows.
+E-2D-2B authors `sbg_ensure_founding_organisation` in
+`0033_cp3005e2d2b_founding_organisation.sql` (digest
+`8880dbf93aa416e393af621957e3170da6390a6e3aef792d68fe97b709c22875`). 0033 is
+not in the accepted ledger and is not authorised pending. It is not applied.
+It does not create a hotel. `ensureHotelOrganisation` is unchanged and remains
+the checkout-time creator until a later checkpoint retires that call.
+E-2D-2C has not started. 0033+ stays fail-closed for Production apply.
 
 The classification is kept so later onboarding copy, terminology, defaults,
 acquisition, conversion, churn, pricing, and communications can use it.

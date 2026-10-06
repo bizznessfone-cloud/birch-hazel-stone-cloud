@@ -2,6 +2,26 @@
 
 This file describes **current reality**, not intended future state.
 
+## CP30.05E-2D-2B — founding organisation primitive authored, not applied
+
+**E-2D-2A is ACCEPTED. E-2D-2B is in source only. 0033 is not authorised and is not applied. E-2D-2C NOT STARTED. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
+
+Organisation and property are different things. The organisation is the business that operates SCAN BOOK GO. A property is an actual hotel or accommodation property that business serves. A transfer operator is not stored as a hotel. Example: organisation “Kos Transfers Limited”, properties “Portobello Royal”, “Atlantica Beach Resort”. A hotel organisation such as “Greco Blu Hotels” uses the same shape for its own hotels. One product, one organisation model, one property model.
+
+`sbg_ensure_founding_organisation(text, text)` is the V1 self-service founding primitive. It locks the caller’s `"user"` row, then either returns the one organisation that user created (when they still have an active billing membership on it) or creates that organisation and one membership in the same call. The membership is `role = member`, `billing_authority = true`. `organisation_type` stays NULL. A different name on retry does not rename. Two organisations already created by that user, or a billing seat on someone else’s organisation, fails closed. There is no `UNIQUE(user_id)`. A non-billing membership elsewhere does not become this user’s organisation.
+
+No hotel is created or attached. No billing row, allocation, acceptance, or Stripe call. `ensureHotelOrganisation` is unchanged and still creates an organisation from a hotel name at checkout. That remains the E-2D-2E boundary.
+
+Migration **0033** (`0033_cp3005e2d2b_founding_organisation.sql`, digest `8880dbf93aa416e393af621957e3170da6390a6e3aef792d68fe97b709c22875`) is source only. Gate B accepted ledger stays **0001–0032**. `AUTHORISED_PENDING=[]`. A directory scan of this commit therefore reports the file as unexpected pending and does not apply it. Do not apply 0033 from this checkpoint.
+
+V1 acceptance, later, is one versioned Terms of Service record. Privacy may be linked and is not a second acceptance record in that decision. Nothing was written to `sbg_organisation_acceptances`.
+
+Publication stays a later explicit customer action after entitlement and allocation. The Stripe webhook must not publish a hotel. That action is not built here.
+
+V2+ IDEA ONLY, not built, no schema: a public place QR (for example Kardamena) could later mean a location rather than a hotel. The guest would choose a hotel, SBG would resolve that hotel’s serving organisation, and the transfer would run from that place to the hotel. V1 property remains a real hotel so that idea stays possible. Do not add entry points, change QR, or change guest booking for it.
+
+Homepage Get started is still `#start`. Commerce remains **test**. Better Auth stays 1.6.30. Cookie cache stays off.
+
 ## CP30.05E-2D-1 — CLOSED / PASS
 
 **Password recovery is closed. Better Auth stays 1.6.30. A controlled Production reset on `https://scanbookgo.com` was delivered and completed. E-2D-2 NOT STARTED. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**

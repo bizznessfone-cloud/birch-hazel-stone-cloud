@@ -580,7 +580,10 @@ test("recovery surfaces stay identity-only and do not open onboarding, Owner, or
   assert.doesNotMatch(home, /forgot-password|\/get-started|href="\/login"|to="\/login"/);
   const names = readdirSync(join(root, "migrations")).filter((name) => name.endsWith(".sql"));
   assert.equal(names.includes("0032_cp3005e2c1_organisation_acceptance.sql"), true);
-  assert.equal(names.some((name) => name.startsWith("0033")), false);
+  assert.deepEqual(
+    names.filter((name) => name.startsWith("0033")).sort(),
+    ["0033_cp3005e2d2b_founding_organisation.sql"],
+  );
   assert.equal(existsSync(join(root, "migrations/0033_cp3005e2d1b.sql")), false);
   const preflight = readFileSync(join(root, "scripts/production-db-preflight.mjs"), "utf8");
   assert.match(preflight, /"0032_cp3005e2c1_organisation_acceptance.sql",\n\];/);

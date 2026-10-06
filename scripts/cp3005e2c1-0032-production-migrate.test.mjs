@@ -120,7 +120,12 @@ test("0032 digest is pinned and the controller ledger stays frozen at 0001-0031"
   assert.equal(isAuthorisedPending(TARGET_MIGRATION), false);
   assert.equal(isAuthorisedPending("0032_later.sql"), false);
   assert.equal(isAuthorisedPending("0033_later.sql"), false);
-  assert.equal(readdirSync(join(root, "migrations")).some((name) => name.startsWith("0033")), false);
+  assert.equal(isAuthorisedPending("0033_cp3005e2d2b_founding_organisation.sql"), false);
+  assert.equal(ACCEPTED_LEDGER.includes("0033_cp3005e2d2b_founding_organisation.sql"), false);
+  assert.deepEqual(
+    readdirSync(join(root, "migrations")).filter((name) => name.startsWith("0033")).sort(),
+    ["0033_cp3005e2d2b_founding_organisation.sql"],
+  );
   const executable = sql.replace(/--.*$/gm, "");
   assert.doesNotMatch(executable, /\binsert\s+into\b/i);
   assert.doesNotMatch(executable, /\bgrant\b/i);
