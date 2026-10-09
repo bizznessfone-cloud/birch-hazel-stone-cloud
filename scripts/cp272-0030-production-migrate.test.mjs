@@ -122,7 +122,7 @@ test("0030 digest is pinned, accepted, and the controller ledger stays frozen at
   assert.equal(REQUIRED_LEDGER.at(-1), "0029_cp272_domain_a_checkout_claims.sql");
   assert.equal(REQUIRED_LEDGER.includes(TARGET_MIGRATION), false);
   assert.doesNotMatch(src, /REQUIRED_LEDGER\s*=\s*\[\s*\.\.\.ACCEPTED_LEDGER/);
-  assert.deepEqual(AUTHORISED_PENDING, []);
+  assert.deepEqual(AUTHORISED_PENDING, ["0033_cp3005e2d2b_founding_organisation.sql"]);
   assert.equal(isAuthorisedPending(TARGET_MIGRATION), false);
   assert.equal(isAuthorisedPending("0030_later.sql"), false);
   assert.equal(isAuthorisedPending("0031_later.sql"), false);

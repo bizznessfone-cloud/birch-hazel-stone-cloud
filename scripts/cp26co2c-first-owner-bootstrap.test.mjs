@@ -591,7 +591,7 @@ test("direct invocation without secret exits before connecting", async () => {
 });
 
 test("Gate B accepts applied 0025 and does not authorise another bootstrap", () => {
-  assert.deepEqual(AUTHORISED_PENDING, []);
+  assert.deepEqual(AUTHORISED_PENDING, ["0033_cp3005e2d2b_founding_organisation.sql"]);
   assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), true);
   assert.equal(ACCEPTED_LEDGER.at(-1), "0032_cp3005e2c1_organisation_acceptance.sql");
 });

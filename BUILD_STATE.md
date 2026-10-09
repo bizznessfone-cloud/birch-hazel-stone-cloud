@@ -4,7 +4,7 @@ This file describes **current reality**, not intended future state.
 
 ## CP30.05E-2D-2B — founding organisation primitive authored, not applied
 
-**E-2D-2A is ACCEPTED. E-2D-2B is in source only. 0033 is not authorised and is not applied. E-2D-2C NOT STARTED. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
+**E-2D-2A is ACCEPTED. E-2D-2B code is COMPLETE. 0033 is the sole authorised pending migration and is not applied yet. E-2D-2C NOT STARTED. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
 
 Organisation and property are different things. The organisation is the business that operates SCAN BOOK GO. A property is an actual hotel or accommodation property that business serves. A transfer operator is not stored as a hotel. Example: organisation “Kos Transfers Limited”, properties “Portobello Royal”, “Atlantica Beach Resort”. A hotel organisation such as “Greco Blu Hotels” uses the same shape for its own hotels. One product, one organisation model, one property model.
 
@@ -12,7 +12,7 @@ Organisation and property are different things. The organisation is the business
 
 No hotel is created or attached. No billing row, allocation, acceptance, or Stripe call. `ensureHotelOrganisation` is unchanged and still creates an organisation from a hotel name at checkout. That remains the E-2D-2E boundary.
 
-Migration **0033** (`0033_cp3005e2d2b_founding_organisation.sql`, digest `8880dbf93aa416e393af621957e3170da6390a6e3aef792d68fe97b709c22875`) is source only. Gate B accepted ledger stays **0001–0032**. `AUTHORISED_PENDING=[]`. A directory scan of this commit therefore reports the file as unexpected pending and does not apply it. Do not apply 0033 from this checkpoint.
+Migration **0033** (`0033_cp3005e2d2b_founding_organisation.sql`, digest `8880dbf93aa416e393af621957e3170da6390a6e3aef792d68fe97b709c22875`) is authorised pending. Gate B accepted ledger stays **0001–0032** until the single-use controller applies it. `AUTHORISED_PENDING` names only that file. The generic migrator still does not apply SQL. Do not apply 0033 except through `scripts/cp3005e2d2b1-0033-production-migrate.mjs`.
 
 V1 acceptance, later, is one versioned Terms of Service record. Privacy may be linked and is not a second acceptance record in that decision. Nothing was written to `sbg_organisation_acceptances`.
 

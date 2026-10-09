@@ -53,7 +53,7 @@ test("0032 is evidence only and does not guess, grant, or collapse cardinality",
   );
   assert.match(preflight, /"0032_cp3005e2c1_organisation_acceptance.sql",\n\];/);
   assert.match(preflight, /"0032_cp3005e2c1_organisation_acceptance.sql",/);
-  assert.doesNotMatch(preflight, /0033_/);
+  assert.doesNotMatch(preflight, /0034_/);
   const executable = SQL.replace(/--.*$/gm, "");
   assert.doesNotMatch(executable, /\binsert\s+into\b/i);
   assert.doesNotMatch(executable, /\bgrant\b/i);
