@@ -77,18 +77,34 @@ async function neonApi(apiKey, path, options = {}) {
   });
   const text = await response.text();
   if (!response.ok) {
-    throw new Error(`BLOCKED — NEON API ${response.status}`);
+    let message = "";
+    try {
+      message = String(JSON.parse(text).message ?? "");
+    } catch {
+      message = "";
+    }
+    throw new Error(`BLOCKED — NEON API ${response.status} ${message}`.slice(0, 240));
   }
   return text ? JSON.parse(text) : {};
 }
 
 async function resolveProjectId(apiKey, explicit) {
   if (explicit) return explicit;
-  const listed = await neonApi(apiKey, "/projects");
-  const projects = listed.projects ?? [];
-  if (projects.length !== 1) {
-    throw new Error("BLOCKED — AMBIGUOUS NEON PROJECT");
+  const orgOverride = String(process.env.NEON_ORG_ID ?? "").trim();
+  let orgId = orgOverride;
+  if (!orgId) {
+    const listed = await neonApi(apiKey, "/users/me/organizations");
+    const orgs = listed.organizations ?? [];
+    say(`neon_orgs: ${orgs.length}`);
+    if (orgs.length !== 1) throw new Error("BLOCKED — AMBIGUOUS NEON ORGANIZATION");
+    orgId = String(orgs[0].id ?? "");
   }
+  if (!orgId) throw new Error("BLOCKED — NEON ORGANIZATION UNKNOWN");
+  say(`neon_org: ${orgId}`);
+  const listed = await neonApi(apiKey, `/projects?org_id=${encodeURIComponent(orgId)}&limit=100`);
+  const projects = listed.projects ?? [];
+  say(`neon_projects: ${projects.length}`);
+  if (projects.length !== 1) throw new Error("BLOCKED — AMBIGUOUS NEON PROJECT");
   return projects[0].id;
 }
 
