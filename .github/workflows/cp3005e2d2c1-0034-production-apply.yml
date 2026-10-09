@@ -47,7 +47,7 @@ jobs:
       - name: Checkout authorised commit
         uses: actions/checkout@v4
         with:
-          ref: PENDING_REVIEWED_SHA
+          ref: 5a9c21fc0b7b2fc2ef8222eb5fe2268c92627738
           persist-credentials: false
 
       - name: Setup Node

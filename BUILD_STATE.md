@@ -12,6 +12,8 @@ GHA [37961828006](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/
 
 GHA [37964615765](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/37964615765) on `7509d881831ac23f5adcaff48366a3664936efcf` completed successfully. It proved the isolated ledger 0001–0034, the installed contract, three independent sessions, classification locking, conflicting-type rejection, idempotent retries, terms-v1 acceptance, unauthorised-member rejection, a read-only state check, no direct acceptance-table privileges, and that the owner cannot `SET ROLE aether_app`. Marker fixtures were removed and triggers stayed enabled. That run is the isolated evidence. The Production workflow no longer calls the Neon API or the isolated script. It has not been dispatched. Production SQL was not run.
 
+The single-use Production workflow checks out `5a9c21fc0b7b2fc2ef8222eb5fe2268c92627738` and calls only `scripts/cp3005e2d2c1-0034-production-migrate.mjs`. That checkout is immutable. It has not been dispatched.
+
 ## CP30.05E-2D-2C — classification and provisional terms acceptance authored, not applied
 
 **E-2D-2B.1 is PASS. E-2D-2C is in source only. 0034 is not authorised and is not applied. E-2D-2D NOT STARTED. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
