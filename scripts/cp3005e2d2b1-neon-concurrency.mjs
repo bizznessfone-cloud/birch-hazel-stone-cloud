@@ -32,8 +32,14 @@ export function assertConfirmation(value) {
   return String(value ?? "") === REQUIRED_CONFIRMATION;
 }
 
+export function directOwnerUrl(value) {
+  // A Neon pooler can serialize every client onto one backend. The race needs
+  // three sessions, so a "-pooler" host is rewritten to the direct endpoint.
+  return String(value ?? "").replace(/-pooler\./g, ".");
+}
+
 function say(line) {
-  console.log(redact(line));
+  console.log(redact(line).replace(/[A-Za-z0-9.-]+\.neon\.tech/g, "neon-host"));
 }
 
 function delay(ms) {
@@ -331,9 +337,11 @@ function rowOf(row) {
 }
 
 async function main() {
-  const ownerUrl = String(process.env.AETHER_DATABASE_OWNER_URL ?? "").trim();
+  const configured = String(process.env.AETHER_DATABASE_OWNER_URL ?? "").trim();
+  const ownerUrl = directOwnerUrl(configured);
   const confirmation = process.env.CP3005E2D2B1_CONFIRMATION;
-  say(`AETHER_DATABASE_OWNER_URL: ${ownerUrl ? "PRESENT" : "ABSENT"}`);
+  say(`AETHER_DATABASE_OWNER_URL: ${configured ? "PRESENT" : "ABSENT"}`);
+  say(`connection_mode: ${ownerUrl === configured ? "as-configured" : "direct-endpoint"}`);
   if (!assertConfirmation(confirmation)) {
     say("BLOCKED — CONFIRMATION PHRASE INVALID");
     process.exitCode = 1;

@@ -25,7 +25,7 @@ import {
   evaluate0033Baseline,
   runSingleUse0033,
 } from "./cp3005e2d2b1-0033-production-migrate.mjs";
-import { MARKER, NAME_PREFIX, assertConfirmation } from "./cp3005e2d2b1-neon-concurrency.mjs";
+import { MARKER, NAME_PREFIX, assertConfirmation, directOwnerUrl } from "./cp3005e2d2b1-neon-concurrency.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -215,6 +215,14 @@ test("runSingleUse0033 does not call mutate when already applied or the phrase i
 });
 
 test("the concurrency harness is marker-scoped and does not open a generic migrator", () => {
+  assert.equal(
+    directOwnerUrl("postgres://owner:secret@ep-example-pooler.eu-central-1.aws.neon.tech/neondb"),
+    "postgres://owner:secret@ep-example.eu-central-1.aws.neon.tech/neondb",
+  );
+  assert.equal(
+    directOwnerUrl("postgres://owner:secret@ep-example.eu-central-1.aws.neon.tech/neondb"),
+    "postgres://owner:secret@ep-example.eu-central-1.aws.neon.tech/neondb",
+  );
   assert.equal(assertConfirmation(REQUIRED_CONFIRMATION), true);
   assert.equal(assertConfirmation("nope"), false);
   assert.equal(MARKER, "e2d2b1");
