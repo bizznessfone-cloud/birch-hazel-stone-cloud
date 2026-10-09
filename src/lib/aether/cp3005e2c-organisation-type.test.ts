@@ -46,7 +46,7 @@ test("0031 is classification only and does not guess, grant, or collapse cardina
     createHash("sha256").update(SQL).digest("hex"),
     "be0921b852dda7904863f34bc1160fab844b2aaf0821423f6863c91b71b592b6",
   );
-  assert.match(preflight, /"0033_cp3005e2d2b_founding_organisation.sql",\n\];/);
+  assert.match(preflight, /"0034_cp3005e2d2c_founding_classification_acceptance.sql",\n\];/);
   assert.match(preflight, /AUTHORISED_PENDING = \[\];/);
   const executable = SQL.replace(/--.*$/gm, "");
   assert.doesNotMatch(executable, /\bupdate\s+sbg_organisations\b/i);

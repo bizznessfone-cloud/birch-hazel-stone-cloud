@@ -59,6 +59,7 @@ export const ACCEPTED_LEDGER = [
   "0031_cp3005e2c_organisation_type.sql",
   "0032_cp3005e2c1_organisation_acceptance.sql",
   "0033_cp3005e2d2b_founding_organisation.sql",
+  "0034_cp3005e2d2c_founding_classification_acceptance.sql",
 ];
 
 export const REVIEWED_DIGESTS = {
@@ -90,9 +91,11 @@ export const REVIEWED_DIGESTS = {
     "c3412d2b6efc05786ea3edf1146da25853b88ac0df69b1ce215240be0c72ab48",
   "0033_cp3005e2d2b_founding_organisation.sql":
     "8880dbf93aa416e393af621957e3170da6390a6e3aef792d68fe97b709c22875",
+  "0034_cp3005e2d2c_founding_classification_acceptance.sql":
+    "3a80e2ec5ff9ab474c8dabf562fe8e3e37b8fcaa77ef7e8467bd0127afdc433c",
 };
 
-/** Nothing is authorised pending. 0034+ fails closed. */
+/** Nothing is authorised pending. 0035+ fails closed. */
 export const AUTHORISED_PENDING = [];
 
 export function isAuthorisedPending(name) {

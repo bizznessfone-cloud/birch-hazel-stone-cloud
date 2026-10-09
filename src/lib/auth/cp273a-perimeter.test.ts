@@ -368,5 +368,4 @@ test("cookie, bearer, signup, guest limiter, ops, and commerce source stay put",
   assert.match(preflight, /0031_cp3005e2c_organisation_type\.sql/);
   assert.match(preflight, /0032_cp3005e2c1_organisation_acceptance\.sql/);
   assert.doesNotMatch(preflight, /0031_cp273a/);
-  assert.doesNotMatch(preflight, /0034_/);
 });

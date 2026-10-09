@@ -110,28 +110,23 @@ function facts(overrides = {}) {
 
 test("0034 digest is pinned and the controller ledger stays frozen at 0001-0033", () => {
   assert.equal(createHash("sha256").update(sql).digest("hex"), TARGET_DIGEST);
-  assert.deepEqual(REQUIRED_LEDGER, ACCEPTED_LEDGER);
-  assert.equal(ACCEPTED_LEDGER.at(-1), "0033_cp3005e2d2b_founding_organisation.sql");
-  assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), false);
+  assert.deepEqual(
+    REQUIRED_LEDGER,
+    ACCEPTED_LEDGER.filter((name) => name !== TARGET_MIGRATION),
+  );
+  assert.equal(ACCEPTED_LEDGER.at(-1), TARGET_MIGRATION);
+  assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), true);
+  assert.equal(REQUIRED_LEDGER.at(-1), "0033_cp3005e2d2b_founding_organisation.sql");
+  assert.equal(REQUIRED_LEDGER.includes(TARGET_MIGRATION), false);
   assert.equal(isAuthorisedPending(TARGET_MIGRATION), false);
   assert.deepEqual(AUTHORISED_PENDING, []);
   assert.doesNotMatch(src, /REQUIRED_LEDGER\s*=\s*\[\s*\.\.\.ACCEPTED_LEDGER/);
   assert.doesNotMatch(src, /from "\.\/production-db-migrate\.mjs"/);
   assert.doesNotMatch(src, /process\.env\.DATABASE_URL/);
   assert.doesNotMatch(src, /STRIPE_SECRET|sk_live|sk_test|api\.stripe\.com/);
-  assert.equal(existsSync(join(root, ".github/workflows/cp3005e2d2c1-0034-production-apply.yml")), true);
-  const workflow = readFileSync(join(root, ".github/workflows/cp3005e2d2c1-0034-production-apply.yml"), "utf8");
-  assert.match(workflow, /ref: 5a9c21fc0b7b2fc2ef8222eb5fe2268c92627738/);
-  assert.match(workflow, /APPLY-0034/);
-  assert.match(workflow, /AETHER_DATABASE_OWNER_URL/);
-  assert.match(workflow, /cp3005e2d2c1-0034-production-migrate\.mjs/);
-  assert.match(workflow, /37964615765/);
-  assert.doesNotMatch(workflow, /NEON_API_KEY/);
-  assert.doesNotMatch(workflow, /NEON_PROJECT_ID/);
-  assert.doesNotMatch(workflow, /neon-concurrency\.mjs/);
-  assert.doesNotMatch(workflow, /AETHER_0034_ISOLATED_OWNER_URL/);
-  assert.doesNotMatch(workflow, /production-db-migrate\.mjs/);
-  assert.doesNotMatch(workflow, /stripe/i);
+  assert.equal(existsSync(join(root, ".github/workflows/cp3005e2d2c1-0034-production-apply.yml")), false);
+  const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
+  assert.equal(pkg.scripts["db:migrate:0034"], undefined);
   assert.match(race, /BLOCKED — ISOLATED VERIFICATION UNAVAILABLE/);
   assert.match(race, /BEGIN READ ONLY/);
   assert.match(race, /quiet-sound-53513710/);
@@ -150,7 +145,6 @@ test("0034 digest is pinned and the controller ledger stays frozen at 0001-0033"
   const workflows = readdirSync(join(root, ".github/workflows")).sort();
   assert.deepEqual(workflows, [
     "cp3005e2d2c1-0034-isolated-verify.yml",
-    "cp3005e2d2c1-0034-production-apply.yml",
     "production-database.yml",
   ]);
 });

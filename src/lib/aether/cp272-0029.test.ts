@@ -92,7 +92,7 @@ test("0029 is accepted history and does not touch commerce rows", () => {
   assert.equal(files.includes("0030_later.sql"), false);
   const preflight = readFileSync(join(root, "scripts/production-db-preflight.mjs"), "utf8");
   assert.match(preflight, /"0029_cp272_domain_a_checkout_claims.sql",/);
-  assert.match(preflight, /"0033_cp3005e2d2b_founding_organisation.sql",\n\];/);
+  assert.match(preflight, /"0034_cp3005e2d2c_founding_classification_acceptance.sql",\n\];/);
   assert.match(preflight, /AUTHORISED_PENDING = \[\];/);
   assert.equal(
     createHash("sha256").update(SQL).digest("hex"),

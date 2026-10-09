@@ -99,12 +99,11 @@ async function counts(pg: PGlite, userId?: string) {
 test("0033 is accepted history and least privilege", () => {
   assert.equal(createHash("sha256").update(SQL).digest("hex"), DIGEST);
   assert.equal(ACCEPTED_LEDGER.includes(MIGRATION), true);
-  assert.equal(ACCEPTED_LEDGER.at(-1), "0033_cp3005e2d2b_founding_organisation.sql");
+  assert.equal(ACCEPTED_LEDGER.at(-1), "0034_cp3005e2d2c_founding_classification_acceptance.sql");
   assert.deepEqual(AUTHORISED_PENDING, []);
   assert.equal(isAuthorisedPending(MIGRATION), false);
   const preflight = read("scripts/production-db-preflight.mjs");
-  assert.match(preflight, /"0033_cp3005e2d2b_founding_organisation.sql",\n\];/);
-  assert.doesNotMatch(preflight, /0034_/);
+  assert.match(preflight, /"0034_cp3005e2d2c_founding_classification_acceptance.sql",\n\];/);
   const executable = SQL.replace(/--.*$/gm, "");
   assert.match(executable, /for update/);
   assert.match(executable, /'member'/);

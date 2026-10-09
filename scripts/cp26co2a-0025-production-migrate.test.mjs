@@ -669,7 +669,7 @@ test("unnamed equivalent bootstrap types are accepted", () => {
 test("Gate B accepts applied 0025 and still refuses generic pending", () => {
   assert.equal(isAuthorisedPending(TARGET_MIGRATION), false);
   assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), true);
-  assert.equal(ACCEPTED_LEDGER.at(-1), "0033_cp3005e2d2b_founding_organisation.sql");
+  assert.equal(ACCEPTED_LEDGER.at(-1), "0034_cp3005e2d2c_founding_classification_acceptance.sql");
   assert.deepEqual(AUTHORISED_PENDING, []);
   const currentFacts = {
     database: "neondb",
@@ -714,7 +714,7 @@ test("0025 dispatch is retired; controller script remains; build does not invoke
   const yaml = readdirSync(join(here, "../.github/workflows"))
     .filter((name) => name.endsWith(".yml") || name.endsWith(".yaml"))
     .sort();
-  assert.deepEqual(yaml, ["cp3005e2d2c1-0034-isolated-verify.yml", "cp3005e2d2c1-0034-production-apply.yml", "production-database.yml"]);
+  assert.deepEqual(yaml, ["cp3005e2d2c1-0034-isolated-verify.yml", "production-database.yml"]);
   assert.doesNotMatch(pkg.scripts.build, /db:migrate/);
   assert.doesNotMatch(pkg.scripts.build, /cp26co2a-0025/);
   assert.equal(pkg.scripts["db:migrate:0025"], "node scripts/cp26co2a-0025-production-migrate.mjs");

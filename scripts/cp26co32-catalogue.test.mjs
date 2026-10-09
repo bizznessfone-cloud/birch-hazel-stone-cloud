@@ -90,7 +90,7 @@ test("0026 exists once and 0001-0025 are unchanged versus the source commit", ()
 });
 
 test("Gate B accepts 0001-0030 and the generic migrator still never applies SQL", async () => {
-  assert.equal(ACCEPTED_LEDGER.at(-1), "0033_cp3005e2d2b_founding_organisation.sql");
+  assert.equal(ACCEPTED_LEDGER.at(-1), "0034_cp3005e2d2c_founding_classification_acceptance.sql");
   assert.equal(ACCEPTED_LEDGER.includes(migrationName), true);
   assert.equal(ACCEPTED_LEDGER.includes("0027_cp26co41_organisation_property_licence.sql"), true);
   assert.equal(ACCEPTED_LEDGER.includes("0028_cp26fin_property_licence_catalogue.sql"), true);
@@ -120,13 +120,18 @@ test("Gate B accepts 0001-0030 and the generic migrator still never applies SQL"
   assert.equal(baseline.migrated, false);
 
   const live = evaluatePreflight(acceptedFacts());
-  assert.equal(live.ok, false);
-  assert.equal(live.verdict, "BLOCKED — MIGRATION LEDGER INCONSISTENT");
-  assert.deepEqual(live.unexpectedPending, ["0034_cp3005e2d2c_founding_classification_acceptance.sql"]);
-  assert.deepEqual(live.pending, ["0034_cp3005e2d2c_founding_classification_acceptance.sql"]);
+  assert.equal(live.ok, true);
+  assert.deepEqual(live.pending, []);
   const liveBaseline = evaluateMigrationBaseline(live);
-  assert.equal(liveBaseline.ok, false);
+  assert.equal(liveBaseline.ok, true);
   assert.equal(liveBaseline.migrated, false);
+
+  const future35 = evaluatePreflight({
+    ...acceptedFacts(),
+    sourceMigrations: [...sourceMigrations(), "0035_later.sql"],
+  });
+  assert.equal(future35.ok, false);
+  assert.deepEqual(future35.unexpectedPending, ["0035_later.sql"]);
 
   const future = evaluatePreflight({
     ...acceptedFacts(),
@@ -162,13 +167,14 @@ test("Gate B accepts 0001-0030 and the generic migrator still never applies SQL"
     env: { AETHER_DATABASE_OWNER_URL: "postgres://owner@host/neondb" },
     loadFacts: async () => acceptedFacts(),
   });
-  assert.equal(liveGuarded.ok, false);
+  assert.equal(liveGuarded.ok, true);
   assert.equal(liveGuarded.migrated, false);
+  assert.equal(liveGuarded.verdict, LEDGER_CURRENT);
 });
 
 test("generic migrator cannot apply 0026 and the spent dispatch surface is gone", () => {
   const workflows = readdirSync(join(root, ".github/workflows"));
-  assert.deepEqual(workflows.sort(), ["cp3005e2d2c1-0034-isolated-verify.yml", "cp3005e2d2c1-0034-production-apply.yml", "production-database.yml"]);
+  assert.deepEqual(workflows.sort(), ["cp3005e2d2c1-0034-isolated-verify.yml", "production-database.yml"]);
   for (const name of workflows) {
     const text = readFileSync(join(root, ".github/workflows", name), "utf8");
     assert.equal(text.includes("0026"), false, name);
@@ -182,7 +188,7 @@ test("generic migrator cannot apply 0026 and the spent dispatch surface is gone"
   assert.match(controller, /0025_cp26co2_platform_owners\.sql/);
   assert.doesNotMatch(controller, /0026_cp26co3_commercial_catalogue/);
   const generic = readFileSync(join(root, "scripts/production-db-migrate.mjs"), "utf8");
-  assert.match(generic, /Accepted Production history is 0001–0033/);
+  assert.match(generic, /Accepted Production history is 0001–0034/);
   assert.doesNotMatch(generic, /AUTHORISED_PENDING\s*=\s*\[[^\]]+\]/);
   const dedicatedController = readFileSync(join(root, "scripts/cp26co32a-0026-production-migrate.mjs"), "utf8");
   assert.match(dedicatedController, /0026_cp26co3_commercial_catalogue\.sql/);

@@ -101,9 +101,11 @@ test("0033 digest is pinned and the controller ledger stays frozen at 0001-0032"
   assert.equal(createHash("sha256").update(sql).digest("hex"), TARGET_DIGEST);
   assert.deepEqual(
     REQUIRED_LEDGER,
-    ACCEPTED_LEDGER.filter((name) => name !== TARGET_MIGRATION),
+    ACCEPTED_LEDGER.filter(
+      (name) => name !== TARGET_MIGRATION && name !== "0034_cp3005e2d2c_founding_classification_acceptance.sql",
+    ),
   );
-  assert.equal(ACCEPTED_LEDGER.at(-1), TARGET_MIGRATION);
+  assert.equal(ACCEPTED_LEDGER.at(-1), "0034_cp3005e2d2c_founding_classification_acceptance.sql");
   assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), true);
   assert.equal(REQUIRED_LEDGER.at(-1), "0032_cp3005e2c1_organisation_acceptance.sql");
   assert.equal(REQUIRED_LEDGER.includes(TARGET_MIGRATION), false);
@@ -242,7 +244,7 @@ test("the concurrency harness is marker-scoped and does not open a generic migra
   assert.doesNotMatch(race, /delete from hotels/i);
   assert.match(race, /created_by_user_id = any/);
   const workflows = readdirSync(join(root, ".github/workflows")).sort();
-  assert.deepEqual(workflows, ["cp3005e2d2c1-0034-isolated-verify.yml", "cp3005e2d2c1-0034-production-apply.yml", "production-database.yml"]);
+  assert.deepEqual(workflows, ["cp3005e2d2c1-0034-isolated-verify.yml", "production-database.yml"]);
   assert.deepEqual(AUTHORISED_PENDING, []);
   assert.equal(AUTHORISED_PENDING.includes(TARGET_MIGRATION), false);
   assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), true);
