@@ -49,6 +49,18 @@ export function sameDatabaseHost(left, right) {
   return a !== "" && a === b;
 }
 
+export function matchingEndpointBranchIds(endpoints, productionUrl) {
+  const host = databaseHost(productionUrl);
+  const endpointId = host.split(".")[0] ?? "";
+  if (!host || !endpointId) return [];
+  const matches = (endpoints ?? []).filter((endpoint) => {
+    const endpointHost = String(endpoint?.host ?? "").toLowerCase();
+    const id = String(endpoint?.id ?? "").toLowerCase();
+    return (endpointHost !== "" && endpointHost === host) || (id !== "" && id === endpointId);
+  });
+  return [...new Set(matches.map((endpoint) => String(endpoint?.branch_id ?? "")).filter(Boolean))];
+}
+
 function say(line) {
   console.log(redact(line).replace(/[A-Za-z0-9.-]+\.neon\.tech/g, "neon-host"));
 }
@@ -152,17 +164,26 @@ async function resolveProjectId(apiKey, explicit) {
   }
 }
 
-async function createVerifyBranch(apiKey, projectId) {
+async function createVerifyBranch(apiKey, projectId, parentBranchId) {
   const expires = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
   const created = await neonApi(apiKey, `/projects/${projectId}/branches`, {
     method: "POST",
     body: {
-      branch: { name: `sbg-verify-0034-${Date.now()}`, expires_at: expires },
+      branch: {
+        name: `sbg-verify-0034-${Date.now()}`,
+        parent_id: parentBranchId,
+        expires_at: expires,
+      },
       endpoints: [{ type: "read_write" }],
     },
   });
   const branchId = created.branch?.id;
+  const parentId = String(created.branch?.parent_id ?? "");
   if (!branchId) throw new Error("BLOCKED — NEON BRANCH WAS NOT CREATED");
+  if (parentId !== parentBranchId) {
+    await discardVerifyBranch(apiKey, projectId, branchId);
+    throw new Error("BLOCKED — VERIFY BRANCH PARENT MISMATCH");
+  }
   let uri = "";
   for (let attempt = 1; attempt <= 8; attempt += 1) {
     try {
@@ -177,12 +198,25 @@ async function createVerifyBranch(apiKey, projectId) {
     }
     await delay(2000);
   }
-  if (!uri) throw new Error("BLOCKED — NEON BRANCH URI UNAVAILABLE");
+  if (!uri) {
+    await discardVerifyBranch(apiKey, projectId, branchId);
+    throw new Error("BLOCKED — NEON BRANCH URI UNAVAILABLE");
+  }
   return { branchId, uri };
 }
 
 async function deleteVerifyBranch(apiKey, projectId, branchId) {
   await neonApi(apiKey, `/projects/${projectId}/branches/${branchId}`, { method: "DELETE" });
+}
+
+async function discardVerifyBranch(apiKey, projectId, branchId) {
+  try {
+    await deleteVerifyBranch(apiKey, projectId, branchId);
+    say(`verify_branch_deleted: ${branchId}`);
+  } catch (err) {
+    say(`verify_branch_delete_failed: ${branchId}`);
+    say(redact(err?.message || err));
+  }
 }
 
 async function triggerState(db) {
@@ -444,7 +478,14 @@ async function main() {
     if (!productionBefore.ledger.includes("0033_cp3005e2d2b_founding_organisation.sql")) {
       throw new Error("BLOCKED — PRODUCTION 0033 IS NOT INSTALLED");
     }
-    const created = await createVerifyBranch(apiKey, projectId);
+    const endpoints = await neonApi(apiKey, `/projects/${encodeURIComponent(projectId)}/endpoints`);
+    say(`neon_endpoints: ${(endpoints.endpoints ?? []).length}`);
+    const parents = matchingEndpointBranchIds(endpoints.endpoints ?? [], productionUrl);
+    say(`production_endpoint_matches: ${parents.length}`);
+    if (parents.length !== 1) throw new Error("BLOCKED — PRODUCTION ENDPOINT DID NOT MATCH ONE BRANCH");
+    const parentBranchId = parents[0];
+    say(`production_branch: ${parentBranchId}`);
+    const created = await createVerifyBranch(apiKey, projectId, parentBranchId);
     branchId = created.branchId;
     branchUrl = created.uri;
     say(`verify_branch: ${branchId}`);

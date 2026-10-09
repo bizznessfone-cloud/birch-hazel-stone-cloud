@@ -24,7 +24,7 @@ import {
   apply0034Transaction,
   evaluate0034Baseline,
 } from "./cp3005e2d2c1-0034-production-migrate.mjs";
-import { databaseHost, directOwnerUrl, projectIdFromScopedKeyError, sameDatabaseHost } from "./cp3005e2d2c1-neon-concurrency.mjs";
+import { databaseHost, directOwnerUrl, matchingEndpointBranchIds, projectIdFromScopedKeyError, sameDatabaseHost } from "./cp3005e2d2c1-neon-concurrency.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -118,6 +118,8 @@ test("0034 digest is pinned and the controller ledger stays frozen at 0001-0033"
   assert.match(race, /BEGIN READ ONLY/);
   assert.match(race, /neon_project_source: scoped-key/);
   assert.match(race, /SCOPED NEON PROJECT DID NOT MATCH/);
+  assert.match(race, /parent_id: parentBranchId/);
+  assert.match(race, /PRODUCTION ENDPOINT DID NOT MATCH ONE BRANCH/);
   assert.doesNotMatch(race, /round-sunset-/);
   assert.doesNotMatch(race, /AETHER_DATABASE_OWNER_URL: branch/);
   const workflows = readdirSync(join(root, ".github/workflows")).sort();
@@ -129,6 +131,29 @@ test("a verify branch must not be the production host", () => {
   assert.equal(sameDatabaseHost("postgres://u@ep-a-pooler.eu.neon.tech/db", "postgres://o@ep-a.eu.neon.tech/db"), true);
   assert.equal(sameDatabaseHost("postgres://u@ep-branch.eu.neon.tech/db", "postgres://o@ep-prod.eu.neon.tech/db"), false);
   assert.equal(databaseHost("not a url"), "");
+});
+
+test("a verify branch must parent the production endpoint, not the project default", () => {
+  const endpoints = [
+    { id: "ep-prod", host: "ep-prod.eu.neon.tech", branch_id: "br-prod" },
+    { id: "ep-default", host: "ep-default.eu.neon.tech", branch_id: "br-default" },
+    { id: "ep-prod-ro", host: "ep-prod-ro.eu.neon.tech", branch_id: "br-prod" },
+  ];
+  assert.deepEqual(
+    matchingEndpointBranchIds(endpoints, "postgres://u@ep-prod-pooler.eu.neon.tech/neondb"),
+    ["br-prod"],
+  );
+  assert.deepEqual(matchingEndpointBranchIds(endpoints, "postgres://u@ep-missing.eu.neon.tech/neondb"), []);
+  assert.deepEqual(
+    matchingEndpointBranchIds(
+      [
+        { id: "ep-a", host: "ep-a.eu.neon.tech", branch_id: "br-a" },
+        { id: "ep-b", host: "ep-a.eu.neon.tech", branch_id: "br-b" },
+      ],
+      "postgres://u@ep-a.eu.neon.tech/neondb",
+    ),
+    ["br-a", "br-b"],
+  );
 });
 
 test("a scoped Neon key error names at most one project", () => {
