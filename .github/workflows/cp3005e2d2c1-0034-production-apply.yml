@@ -1,0 +1,81 @@
+# TEMPORARY single-use CP30.05E-2D-2C.1 Production apply for migration 0034.
+# Delete this file immediately after one successful verified apply.
+# Not a permanent mutation surface. Does not call a payment provider or change DNS.
+name: CP30.05E-2D-2C.1 0034 single-use Production apply
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Exact confirmation APPLY-0034
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cp3005e2d2c1-0034-production-apply
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    name: apply-0034
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require confirmation APPLY-0034
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          if [ "$CONFIRMATION" != "APPLY-0034" ]; then
+            echo "BLOCKED — CONFIRMATION PHRASE INVALID"
+            exit 1
+          fi
+          echo "confirmation: ACCEPTED"
+
+      - name: Production health before
+        run: |
+          code=$(curl -sS -o /dev/null -w '%{http_code}' https://scanbookgo.com/)
+          echo "home_status: $code"
+          test "$code" = "200"
+          ready=$(curl -fsS https://scanbookgo.com/api/ready)
+          echo "ready: $ready"
+          test "$ready" = '{"ok":true}'
+
+      - name: Checkout authorised commit
+        uses: actions/checkout@v4
+        with:
+          ref: 54707949a6837cb3805d27f016d23dddd0110062
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prove classification on an isolated Neon branch
+        env:
+          AETHER_DATABASE_OWNER_URL: ${{ secrets.AETHER_DATABASE_OWNER_URL }}
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_PROJECT_ID: ${{ secrets.NEON_PROJECT_ID }}
+          CP3005E2D2C1_CONFIRMATION: ${{ inputs.confirmation }}
+        run: node scripts/cp3005e2d2c1-neon-concurrency.mjs
+
+      - name: Apply migration 0034 only
+        env:
+          AETHER_DATABASE_OWNER_URL: ${{ secrets.AETHER_DATABASE_OWNER_URL }}
+          CP3005E2D2C1_CONFIRMATION: ${{ inputs.confirmation }}
+        run: node scripts/cp3005e2d2c1-0034-production-migrate.mjs
+
+      - name: Production health after
+        run: |
+          code=$(curl -sS -o /dev/null -w '%{http_code}' https://scanbookgo.com/)
+          echo "home_status: $code"
+          test "$code" = "200"
+          ready=$(curl -fsS https://scanbookgo.com/api/ready)
+          echo "ready: $ready"
+          test "$ready" = '{"ok":true}'

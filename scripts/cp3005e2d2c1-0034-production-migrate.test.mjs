@@ -109,12 +109,16 @@ test("0034 digest is pinned and the controller ledger stays frozen at 0001-0033"
   assert.doesNotMatch(src, /from "\.\/production-db-migrate\.mjs"/);
   assert.doesNotMatch(src, /process\.env\.DATABASE_URL/);
   assert.doesNotMatch(src, /STRIPE_SECRET|sk_live|sk_test|api\.stripe\.com/);
-  assert.equal(existsSync(join(root, ".github/workflows/cp3005e2d2c1-0034-production-apply.yml")), false);
+  assert.equal(existsSync(join(root, ".github/workflows/cp3005e2d2c1-0034-production-apply.yml")), true);
+  const workflow = readFileSync(join(root, ".github/workflows/cp3005e2d2c1-0034-production-apply.yml"), "utf8");
+  assert.match(workflow, /ref: 54707949a6837cb3805d27f016d23dddd0110062/);
+  assert.match(workflow, /APPLY-0034/);
+  assert.doesNotMatch(workflow, /production-db-migrate\.mjs/);
   assert.match(race, /BLOCKED — ISOLATED VERIFICATION UNAVAILABLE/);
   assert.match(race, /BEGIN READ ONLY/);
   assert.doesNotMatch(race, /AETHER_DATABASE_OWNER_URL: branch/);
   const workflows = readdirSync(join(root, ".github/workflows")).sort();
-  assert.deepEqual(workflows, ["production-database.yml"]);
+  assert.deepEqual(workflows, ["cp3005e2d2c1-0034-production-apply.yml", "production-database.yml"]);
 });
 
 test("a verify branch must not be the production host", () => {
