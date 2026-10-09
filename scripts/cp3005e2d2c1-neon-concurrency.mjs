@@ -66,6 +66,31 @@ function client(ownerUrl) {
   });
 }
 
+export function projectIdFromScopedKeyError(value) {
+  const chunks = [];
+  if (typeof value === "string") chunks.push(value);
+  else if (value && typeof value === "object") {
+    if (typeof value.message === "string") chunks.push(value.message);
+    const details = value.details;
+    if (details && typeof details === "object") {
+      const named = details.subject_project_id ?? details.subjectProjectId;
+      if (typeof named === "string") chunks.push(`subject_project_id:${named}`);
+    }
+    try {
+      chunks.push(JSON.stringify(value));
+    } catch {
+      // ignore a non-serialisable error body
+    }
+  }
+  const text = chunks.join("\n");
+  if (!/subject_project_id/i.test(text)) return "";
+  const matches = [
+    ...text.matchAll(/subject_project_id["']?\s*[:=]\s*["']?([a-z0-9][a-z0-9-]{2,80})/gi),
+  ].map((match) => match[1]);
+  const unique = [...new Set(matches)];
+  return unique.length === 1 ? unique[0] : "";
+}
+
 async function neonApi(apiKey, path, options = {}) {
   const response = await fetch(`https://console.neon.tech/api/v2${path}`, {
     method: options.method ?? "GET",
@@ -77,19 +102,26 @@ async function neonApi(apiKey, path, options = {}) {
   });
   const text = await response.text();
   if (!response.ok) {
-    let message = "";
+    let body = {};
     try {
-      message = String(JSON.parse(text).message ?? "");
+      body = JSON.parse(text);
     } catch {
-      message = "";
+      body = { message: text.slice(0, 180) };
     }
-    throw new Error(`BLOCKED — NEON API ${response.status} ${message}`.slice(0, 240));
+    const message = String(body.message ?? "").slice(0, 180);
+    const error = new Error(`BLOCKED — NEON API ${response.status} ${message}`);
+    error.status = response.status;
+    error.body = body;
+    throw error;
   }
   return text ? JSON.parse(text) : {};
 }
 
 async function resolveProjectId(apiKey, explicit) {
-  if (explicit) return explicit;
+  if (explicit) {
+    say("neon_project_source: explicit");
+    return explicit;
+  }
   const orgOverride = String(process.env.NEON_ORG_ID ?? "").trim();
   let orgId = orgOverride;
   if (!orgId) {
@@ -101,11 +133,23 @@ async function resolveProjectId(apiKey, explicit) {
   }
   if (!orgId) throw new Error("BLOCKED — NEON ORGANIZATION UNKNOWN");
   say(`neon_org: ${orgId}`);
-  const listed = await neonApi(apiKey, `/projects?org_id=${encodeURIComponent(orgId)}&limit=100`);
-  const projects = listed.projects ?? [];
-  say(`neon_projects: ${projects.length}`);
-  if (projects.length !== 1) throw new Error("BLOCKED — AMBIGUOUS NEON PROJECT");
-  return projects[0].id;
+  try {
+    const listed = await neonApi(apiKey, `/projects?org_id=${encodeURIComponent(orgId)}&limit=100`);
+    const projects = listed.projects ?? [];
+    say(`neon_projects: ${projects.length}`);
+    if (projects.length !== 1) throw new Error("BLOCKED — AMBIGUOUS NEON PROJECT");
+    say("neon_project_source: list");
+    return projects[0].id;
+  } catch (err) {
+    const scoped = projectIdFromScopedKeyError(err.body) || projectIdFromScopedKeyError(err.message);
+    if (!scoped) throw err;
+    say("neon_project_source: scoped-key");
+    const confirmed = await neonApi(apiKey, `/projects/${encodeURIComponent(scoped)}`);
+    const id = String(confirmed.project?.id ?? "");
+    if (id !== scoped) throw new Error("BLOCKED — SCOPED NEON PROJECT DID NOT MATCH");
+    say(`neon_project_name: ${String(confirmed.project?.name ?? "")}`);
+    return id;
+  }
 }
 
 async function createVerifyBranch(apiKey, projectId) {

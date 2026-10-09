@@ -24,7 +24,7 @@ import {
   apply0034Transaction,
   evaluate0034Baseline,
 } from "./cp3005e2d2c1-0034-production-migrate.mjs";
-import { databaseHost, directOwnerUrl, sameDatabaseHost } from "./cp3005e2d2c1-neon-concurrency.mjs";
+import { databaseHost, directOwnerUrl, projectIdFromScopedKeyError, sameDatabaseHost } from "./cp3005e2d2c1-neon-concurrency.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -116,6 +116,9 @@ test("0034 digest is pinned and the controller ledger stays frozen at 0001-0033"
   assert.doesNotMatch(workflow, /production-db-migrate\.mjs/);
   assert.match(race, /BLOCKED — ISOLATED VERIFICATION UNAVAILABLE/);
   assert.match(race, /BEGIN READ ONLY/);
+  assert.match(race, /neon_project_source: scoped-key/);
+  assert.match(race, /SCOPED NEON PROJECT DID NOT MATCH/);
+  assert.doesNotMatch(race, /round-sunset-/);
   assert.doesNotMatch(race, /AETHER_DATABASE_OWNER_URL: branch/);
   const workflows = readdirSync(join(root, ".github/workflows")).sort();
   assert.deepEqual(workflows, ["cp3005e2d2c1-0034-production-apply.yml", "production-database.yml"]);
@@ -126,6 +129,30 @@ test("a verify branch must not be the production host", () => {
   assert.equal(sameDatabaseHost("postgres://u@ep-a-pooler.eu.neon.tech/db", "postgres://o@ep-a.eu.neon.tech/db"), true);
   assert.equal(sameDatabaseHost("postgres://u@ep-branch.eu.neon.tech/db", "postgres://o@ep-prod.eu.neon.tech/db"), false);
   assert.equal(databaseHost("not a url"), "");
+});
+
+test("a scoped Neon key error names at most one project", () => {
+  assert.equal(
+    projectIdFromScopedKeyError({
+      message:
+        'not allowed to perform actions outside the project this key is scoped to; subject_project_id:"round-sunset-69114165"',
+    }),
+    "round-sunset-69114165",
+  );
+  assert.equal(
+    projectIdFromScopedKeyError({
+      message: "not allowed to perform actions outside the project this key is scoped to",
+      details: { subject_project_id: "quiet-rain-1" },
+    }),
+    "quiet-rain-1",
+  );
+  assert.equal(
+    projectIdFromScopedKeyError({
+      message: 'subject_project_id:"alpha-1" subject_project_id:"beta-2"',
+    }),
+    "",
+  );
+  assert.equal(projectIdFromScopedKeyError({ message: "not found" }), "");
 });
 
 test("confirmation and an unexpected migration fail closed", () => {
