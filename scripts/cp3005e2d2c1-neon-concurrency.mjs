@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
- * CP30.05E-2D-2C.1 — classification and acceptance proof on an isolated Neon branch.
+ * CP30.05E-2D-2C.1 — classification and acceptance proof on the existing
+ * isolated Neon branch br-late-paper-b15gkfj3 only.
  *
- * Production is read-only here. No Terms row, classification, or user is written
- * to Production. terms-v1 stays provisional. The branch is deleted afterwards.
- * If NEON_API_KEY is absent, this exits before any database write.
- * Never uses DATABASE_URL. Never prints a connection string.
+ * Does not create or delete a Neon branch. Does not call the Neon API.
+ * Does not open AETHER_DATABASE_OWNER_URL. Does not write Production.
+ * terms-v1 stays provisional. Never uses DATABASE_URL. Never prints a connection string.
  */
 import { randomUUID } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
@@ -15,6 +15,7 @@ import pg from "pg";
 import { redact } from "./production-db-preflight.mjs";
 import {
   REQUIRED_CONFIRMATION,
+  REQUIRED_LEDGER,
   TARGET_MIGRATION,
   apply0034Transaction,
   inspect0034State,
@@ -24,6 +25,12 @@ import {
 
 export const MARKER = "e2d2c1";
 export const NAME_PREFIX = "E2D2C1 ";
+export const ISOLATED_OWNER_ENV = "AETHER_0034_ISOLATED_OWNER_URL";
+export const ISOLATED_CONFIRMATION = "VERIFY-0034-ISOLATED";
+export const EXPECTED_PROJECT = "quiet-sound-53513710";
+export const EXPECTED_BRANCH = "br-late-paper-b15gkfj3";
+export const FORBIDDEN_BRANCH = "br-green-darkness-b1k7wkue";
+export const FORBIDDEN_ENDPOINT = "ep-withered-haze-b1fd9hse";
 const DELETE_TRIGGERS = [
   ["sbg_organisations", "sbg_organisations_no_delete"],
   ["sbg_organisation_members", "sbg_organisation_members_no_delete"],
@@ -49,16 +56,33 @@ export function sameDatabaseHost(left, right) {
   return a !== "" && a === b;
 }
 
-export function matchingEndpointBranchIds(endpoints, productionUrl) {
-  const host = databaseHost(productionUrl);
-  const endpointId = host.split(".")[0] ?? "";
-  if (!host || !endpointId) return [];
-  const matches = (endpoints ?? []).filter((endpoint) => {
-    const endpointHost = String(endpoint?.host ?? "").toLowerCase();
-    const id = String(endpoint?.id ?? "").toLowerCase();
-    return (endpointHost !== "" && endpointHost === host) || (id !== "" && id === endpointId);
-  });
-  return [...new Set(matches.map((endpoint) => String(endpoint?.branch_id ?? "")).filter(Boolean))];
+export function hostIsProductionEndpoint(value) {
+  const host = databaseHost(value);
+  if (!host) return false;
+  const label = host.split(".")[0] ?? "";
+  return label === FORBIDDEN_ENDPOINT || host.startsWith(`${FORBIDDEN_ENDPOINT}.`) || host.startsWith(`${FORBIDDEN_ENDPOINT}-`);
+}
+
+export function isolatedGateFailures({ identity, ledger, schema }) {
+  const failures = [];
+  if (identity?.projectId !== EXPECTED_PROJECT) failures.push("project");
+  if (identity?.branchId !== EXPECTED_BRANCH) failures.push("branch");
+  if (identity?.branchId === FORBIDDEN_BRANCH) failures.push("production-branch");
+  if (!identity?.endpointId || identity.endpointId === FORBIDDEN_ENDPOINT) failures.push("endpoint");
+  if (identity?.database !== "neondb") failures.push("database");
+  if (identity?.currentUser !== "neondb_owner" || identity?.sessionUser !== "neondb_owner") failures.push("role");
+  const names = Array.isArray(ledger) ? ledger : [];
+  if (names.includes(TARGET_MIGRATION) || names.join("\n") !== REQUIRED_LEDGER.join("\n")) failures.push("ledger");
+  if (
+    schema?.organisationType !== true ||
+    schema?.acceptances !== true ||
+    schema?.hotels !== true ||
+    schema?.founding !== true ||
+    schema?.immutableTrigger !== true
+  ) {
+    failures.push("schema");
+  }
+  return failures;
 }
 
 function say(line) {
@@ -76,147 +100,6 @@ function client(ownerUrl) {
     statement_timeout: 30000,
     query_timeout: 30000,
   });
-}
-
-export function projectIdFromScopedKeyError(value) {
-  const chunks = [];
-  if (typeof value === "string") chunks.push(value);
-  else if (value && typeof value === "object") {
-    if (typeof value.message === "string") chunks.push(value.message);
-    const details = value.details;
-    if (details && typeof details === "object") {
-      const named = details.subject_project_id ?? details.subjectProjectId;
-      if (typeof named === "string") chunks.push(`subject_project_id:${named}`);
-    }
-    try {
-      chunks.push(JSON.stringify(value));
-    } catch {
-      // ignore a non-serialisable error body
-    }
-  }
-  const text = chunks.join("\n");
-  if (!/subject_project_id/i.test(text)) return "";
-  const matches = [
-    ...text.matchAll(/subject_project_id["']?\s*[:=]\s*["']?([a-z0-9][a-z0-9-]{2,80})/gi),
-  ].map((match) => match[1]);
-  const unique = [...new Set(matches)];
-  return unique.length === 1 ? unique[0] : "";
-}
-
-async function neonApi(apiKey, path, options = {}) {
-  const response = await fetch(`https://console.neon.tech/api/v2${path}`, {
-    method: options.method ?? "GET",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: options.body ? JSON.stringify(options.body) : undefined,
-  });
-  const text = await response.text();
-  if (!response.ok) {
-    let body = {};
-    try {
-      body = JSON.parse(text);
-    } catch {
-      body = { message: text.slice(0, 180) };
-    }
-    const message = String(body.message ?? "").slice(0, 180);
-    const error = new Error(`BLOCKED — NEON API ${response.status} ${message}`);
-    error.status = response.status;
-    error.body = body;
-    throw error;
-  }
-  return text ? JSON.parse(text) : {};
-}
-
-async function resolveProjectId(apiKey, explicit) {
-  if (explicit) {
-    say("neon_project_source: explicit");
-    return explicit;
-  }
-  const orgOverride = String(process.env.NEON_ORG_ID ?? "").trim();
-  let orgId = orgOverride;
-  if (!orgId) {
-    const listed = await neonApi(apiKey, "/users/me/organizations");
-    const orgs = listed.organizations ?? [];
-    say(`neon_orgs: ${orgs.length}`);
-    if (orgs.length !== 1) throw new Error("BLOCKED — AMBIGUOUS NEON ORGANIZATION");
-    orgId = String(orgs[0].id ?? "");
-  }
-  if (!orgId) throw new Error("BLOCKED — NEON ORGANIZATION UNKNOWN");
-  say(`neon_org: ${orgId}`);
-  try {
-    const listed = await neonApi(apiKey, `/projects?org_id=${encodeURIComponent(orgId)}&limit=100`);
-    const projects = listed.projects ?? [];
-    say(`neon_projects: ${projects.length}`);
-    if (projects.length !== 1) throw new Error("BLOCKED — AMBIGUOUS NEON PROJECT");
-    say("neon_project_source: list");
-    return projects[0].id;
-  } catch (err) {
-    const scoped = projectIdFromScopedKeyError(err.body) || projectIdFromScopedKeyError(err.message);
-    if (!scoped) throw err;
-    say("neon_project_source: scoped-key");
-    const confirmed = await neonApi(apiKey, `/projects/${encodeURIComponent(scoped)}`);
-    const id = String(confirmed.project?.id ?? "");
-    if (id !== scoped) throw new Error("BLOCKED — SCOPED NEON PROJECT DID NOT MATCH");
-    say(`neon_project_name: ${String(confirmed.project?.name ?? "")}`);
-    return id;
-  }
-}
-
-async function createVerifyBranch(apiKey, projectId, parentBranchId) {
-  const expires = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
-  const created = await neonApi(apiKey, `/projects/${projectId}/branches`, {
-    method: "POST",
-    body: {
-      branch: {
-        name: `sbg-verify-0034-${Date.now()}`,
-        parent_id: parentBranchId,
-        expires_at: expires,
-      },
-      endpoints: [{ type: "read_write" }],
-    },
-  });
-  const branchId = created.branch?.id;
-  const parentId = String(created.branch?.parent_id ?? "");
-  if (!branchId) throw new Error("BLOCKED — NEON BRANCH WAS NOT CREATED");
-  if (parentId !== parentBranchId) {
-    await discardVerifyBranch(apiKey, projectId, branchId);
-    throw new Error("BLOCKED — VERIFY BRANCH PARENT MISMATCH");
-  }
-  let uri = "";
-  for (let attempt = 1; attempt <= 8; attempt += 1) {
-    try {
-      const connection = await neonApi(
-        apiKey,
-        `/projects/${projectId}/connection_uri?branch_id=${encodeURIComponent(branchId)}&database_name=neondb&role_name=neondb_owner`,
-      );
-      uri = String(connection.uri ?? "");
-      if (uri) break;
-    } catch {
-      // endpoint may still be starting
-    }
-    await delay(2000);
-  }
-  if (!uri) {
-    await discardVerifyBranch(apiKey, projectId, branchId);
-    throw new Error("BLOCKED — NEON BRANCH URI UNAVAILABLE");
-  }
-  return { branchId, uri };
-}
-
-async function deleteVerifyBranch(apiKey, projectId, branchId) {
-  await neonApi(apiKey, `/projects/${projectId}/branches/${branchId}`, { method: "DELETE" });
-}
-
-async function discardVerifyBranch(apiKey, projectId, branchId) {
-  try {
-    await deleteVerifyBranch(apiKey, projectId, branchId);
-    say(`verify_branch_deleted: ${branchId}`);
-  } catch (err) {
-    say(`verify_branch_delete_failed: ${branchId}`);
-    say(redact(err?.message || err));
-  }
 }
 
 async function triggerState(db) {
@@ -415,21 +298,66 @@ async function connectReady(ownerUrl) {
   throw new Error(`BLOCKED — VERIFY BRANCH NOT READY ${last}`);
 }
 
-async function readOnlySnapshot(ownerUrl) {
+async function readIsolatedGate(ownerUrl) {
   const db = client(ownerUrl);
   await db.connect();
   try {
     await db.query("BEGIN READ ONLY");
-    const identity = (
-      await db.query("select current_database() as database, current_user, session_user")
+    const row = (
+      await db.query(
+        `select current_database() as database,
+                current_user,
+                session_user,
+                current_setting('neon.project_id', true) as project_id,
+                current_setting('neon.branch_id', true) as branch_id,
+                current_setting('neon.endpoint_id', true) as endpoint_id`,
+      )
     ).rows[0];
-    const ledger = (await db.query("select name from _migrations order by name")).rows.map((row) => row.name);
-    const counts = await snapshot(db);
-    const hotels = (
-      await db.query("select code, status, organisation_id::text as organisation_id from hotels order by code")
-    ).rows;
+    const ledger = (await db.query("select name from _migrations order by name")).rows.map((item) => item.name);
+    const schema = (
+      await db.query(
+        `select
+           exists (
+             select 1 from information_schema.columns
+              where table_schema = 'public'
+                and table_name = 'sbg_organisations'
+                and column_name = 'organisation_type'
+           ) as organisation_type,
+           to_regclass('public.sbg_organisation_acceptances') is not null as acceptances,
+           to_regclass('public.hotels') is not null as hotels,
+           exists (
+             select 1
+               from pg_proc p
+               join pg_namespace n on n.oid = p.pronamespace
+              where n.nspname = 'public'
+                and p.proname = 'sbg_ensure_founding_organisation'
+           ) as founding,
+           exists (
+             select 1 from pg_trigger
+              where not tgisinternal
+                and tgname = 'sbg_organisation_acceptances_immutable'
+           ) as immutable_trigger`,
+      )
+    ).rows[0];
     await db.query("ROLLBACK");
-    return { identity, ledger, counts, hotels };
+    return {
+      identity: {
+        projectId: String(row.project_id ?? "").trim(),
+        branchId: String(row.branch_id ?? "").trim(),
+        endpointId: String(row.endpoint_id ?? "").trim(),
+        database: String(row.database ?? ""),
+        currentUser: String(row.current_user ?? ""),
+        sessionUser: String(row.session_user ?? ""),
+      },
+      ledger,
+      schema: {
+        organisationType: schema.organisation_type === true,
+        acceptances: schema.acceptances === true,
+        hotels: schema.hotels === true,
+        founding: schema.founding === true,
+        immutableTrigger: schema.immutable_trigger === true,
+      },
+    };
   } finally {
     await db.end();
   }
@@ -437,25 +365,28 @@ async function readOnlySnapshot(ownerUrl) {
 
 async function main() {
   const confirmation = process.env.CP3005E2D2C1_CONFIRMATION;
-  const productionUrl = String(process.env.AETHER_DATABASE_OWNER_URL ?? "").trim();
-  const apiKey = String(process.env.NEON_API_KEY ?? "").trim();
-  const explicitProject = String(process.env.NEON_PROJECT_ID ?? "").trim();
-  say(`AETHER_DATABASE_OWNER_URL: ${productionUrl ? "PRESENT" : "ABSENT"}`);
-  say(`NEON_API_KEY: ${apiKey ? "PRESENT" : "ABSENT"}`);
-  say(`confirmation: ${confirmation === REQUIRED_CONFIRMATION ? "ACCEPTED" : "INVALID"}`);
-  if (confirmation !== REQUIRED_CONFIRMATION) {
+  const isolatedUrl = String(process.env[ISOLATED_OWNER_ENV] ?? "").trim();
+  const productionOwner = String(process.env.AETHER_DATABASE_OWNER_URL ?? "").trim();
+  say(`${ISOLATED_OWNER_ENV}: ${isolatedUrl ? "PRESENT" : "ABSENT"}`);
+  say(`confirmation: ${confirmation === ISOLATED_CONFIRMATION ? "ACCEPTED" : "INVALID"}`);
+  if (confirmation !== ISOLATED_CONFIRMATION) {
     say("BLOCKED — CONFIRMATION PHRASE INVALID");
     process.exitCode = 1;
     return;
   }
-  if (!productionUrl) {
-    say("BLOCKED — AETHER_DATABASE_OWNER_URL is not configured");
+  if (!isolatedUrl) {
+    say("BLOCKED — ISOLATED VERIFICATION UNAVAILABLE");
+    say(`reason: ${ISOLATED_OWNER_ENV} is absent. No database was opened.`);
     process.exitCode = 1;
     return;
   }
-  if (!apiKey) {
-    say("BLOCKED — ISOLATED VERIFICATION UNAVAILABLE");
-    say("reason: NEON_API_KEY is absent. No Production test data was written.");
+  if (hostIsProductionEndpoint(isolatedUrl)) {
+    say("BLOCKED — ISOLATED URL IS THE PRODUCTION ENDPOINT");
+    process.exitCode = 1;
+    return;
+  }
+  if (productionOwner && sameDatabaseHost(productionOwner, isolatedUrl)) {
+    say("BLOCKED — ISOLATED URL MATCHES THE PRODUCTION OWNER HOST");
     process.exitCode = 1;
     return;
   }
@@ -463,63 +394,31 @@ async function main() {
   const rootDir = join(dirname(fileURLToPath(import.meta.url)), "..");
   const bytes = await readFile(join(rootDir, "migrations", TARGET_MIGRATION));
   const file = { name: TARGET_MIGRATION, bytes, digest: sha256(bytes), sql: bytes.toString("utf8") };
-  let projectId = "";
-  let branchId = "";
-  let branchUrl = "";
+  const branchUrl = directOwnerUrl(isolatedUrl);
   try {
-    projectId = await resolveProjectId(apiKey, explicitProject);
-    say(`neon_project: ${projectId}`);
-    const productionBefore = await readOnlySnapshot(productionUrl);
-    say(`production_database: ${productionBefore.identity.database}`);
-    say(`production_user: ${productionBefore.identity.current_user}`);
-    if (productionBefore.identity.database !== "neondb" || productionBefore.identity.current_user !== "neondb_owner") {
-      throw new Error("BLOCKED — PRODUCTION IDENTITY MISMATCH");
+    const gate = await readIsolatedGate(branchUrl);
+    const failures = isolatedGateFailures(gate);
+    say(`neon_project: ${gate.identity.projectId}`);
+    say(`neon_branch: ${gate.identity.branchId}`);
+    say(`neon_endpoint: ${gate.identity.endpointId}`);
+    say(`database: ${gate.identity.database}`);
+    say(`role: ${gate.identity.currentUser}`);
+    say(`ledger_last: ${gate.ledger.at(-1) ?? ""}`);
+    say(`ledger_count: ${gate.ledger.length}`);
+    if (failures.length) {
+      say(`BLOCKED — ISOLATED IDENTITY ${failures.join(",")}`);
+      process.exitCode = 1;
+      return;
     }
-    if (!productionBefore.ledger.includes("0033_cp3005e2d2b_founding_organisation.sql")) {
-      throw new Error("BLOCKED — PRODUCTION 0033 IS NOT INSTALLED");
-    }
-    const endpoints = await neonApi(apiKey, `/projects/${encodeURIComponent(projectId)}/endpoints`);
-    const listed = endpoints.endpoints ?? [];
-    say(`neon_endpoints: ${listed.length}`);
-    const productionLabel = databaseHost(productionUrl).split(".")[0] ?? "";
-    say(`production_label: ${productionLabel}`);
-    for (const endpoint of listed) {
-      const hostLabel = String(endpoint?.host ?? "").toLowerCase().split(".")[0] ?? "";
-      say(`endpoint_keys: ${Object.keys(endpoint ?? {}).sort().join(",")}`);
-      say(`endpoint_id: ${String(endpoint?.id ?? "")}`);
-      say(`endpoint_host_label: ${hostLabel}`);
-      say(`endpoint_branch_field: ${String(endpoint?.branch_id ?? "")}`);
-      say(`endpoint_id_matches_production_label: ${String(endpoint?.id ?? "").toLowerCase() === productionLabel}`);
-    }
-    const parents = matchingEndpointBranchIds(listed, productionUrl);
-    say(`production_endpoint_matches: ${parents.length}`);
-    if (parents.length !== 1) throw new Error("BLOCKED — PRODUCTION ENDPOINT DID NOT MATCH ONE BRANCH");
-    const parentBranchId = parents[0];
-    say(`production_branch: ${parentBranchId}`);
-    const created = await createVerifyBranch(apiKey, projectId, parentBranchId);
-    branchId = created.branchId;
-    branchUrl = created.uri;
-    say(`verify_branch: ${branchId}`);
-    if (sameDatabaseHost(branchUrl, productionUrl)) {
-      throw new Error("BLOCKED — VERIFY BRANCH HOST MATCHES PRODUCTION");
-    }
-    say("verify_host_differs: true");
-    const branchBefore = await readOnlySnapshot(branchUrl);
-    if (JSON.stringify(branchBefore.counts) !== JSON.stringify(productionBefore.counts)) {
-      throw new Error("BLOCKED — BRANCH SNAPSHOT DOES NOT MATCH PRODUCTION");
-    }
-    if (JSON.stringify(branchBefore.hotels) !== JSON.stringify(productionBefore.hotels)) {
-      throw new Error("BLOCKED — BRANCH HOTELS DO NOT MATCH PRODUCTION");
-    }
-    if (branchBefore.ledger.includes(TARGET_MIGRATION)) {
-      throw new Error("BLOCKED — BRANCH ALREADY HAS 0034");
-    }
-    say("branch_matches_production: true");
+    say("isolated_identity: PASS");
+    say("production_branch_rejected: true");
+    say("production_endpoint_rejected: true");
 
     const sourceMigrations = (await readdir(join(rootDir, "migrations"))).filter((name) => name.endsWith(".sql"));
     const applied = await runSingleUse0034({
-      env: { AETHER_DATABASE_OWNER_URL: directOwnerUrl(branchUrl) },
-      confirmation,
+      // Argument name required by the existing applier. This does not read or set the Production secret.
+      env: { AETHER_DATABASE_OWNER_URL: branchUrl },
+      confirmation: REQUIRED_CONFIRMATION,
       file,
       loadFacts: async () => {
         const db = await connectReady(branchUrl);
@@ -824,33 +723,13 @@ async function main() {
       const triggers = await triggerState(observer);
       if (triggers.some((row) => !row.present || !row.enabled)) throw new Error("BLOCKED — TRIGGER LEFT DISABLED");
       say("branch_concurrency: PASS");
+      say("isolated_branch_retained: true");
     } finally {
       await Promise.all([holder.end(), waiter.end(), observer.end()]);
-    }
-
-    const productionAfter = await readOnlySnapshot(productionUrl);
-    say(`production_unchanged: ${JSON.stringify(productionAfter.counts) === JSON.stringify(productionBefore.counts) && JSON.stringify(productionAfter.hotels) === JSON.stringify(productionBefore.hotels) && JSON.stringify(productionAfter.ledger) === JSON.stringify(productionBefore.ledger)}`);
-    if (
-      JSON.stringify(productionAfter.counts) !== JSON.stringify(productionBefore.counts) ||
-      JSON.stringify(productionAfter.hotels) !== JSON.stringify(productionBefore.hotels) ||
-      JSON.stringify(productionAfter.ledger) !== JSON.stringify(productionBefore.ledger)
-    ) {
-      throw new Error("BLOCKED — PRODUCTION CHANGED DURING BRANCH PROOF");
     }
   } catch (err) {
     say(redact(err?.message || err));
     process.exitCode = 1;
-  } finally {
-    if (apiKey && projectId && branchId) {
-      try {
-        await deleteVerifyBranch(apiKey, projectId, branchId);
-        say(`verify_branch_deleted: ${branchId}`);
-      } catch (err) {
-        say(`verify_branch_delete_failed: ${branchId}`);
-        say(redact(err?.message || err));
-        process.exitCode = 1;
-      }
-    }
   }
 }
 

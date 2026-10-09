@@ -125,7 +125,7 @@ test("0029 digest is pinned and 0001-0028 are not edited by this controller", ()
   assert.doesNotMatch(src, /db:migrate/);
   assert.equal(existsSync(join(root, ".github/workflows/cp272-0029-production-apply.yml")), false);
   const workflows = readdirSync(join(root, ".github/workflows")).sort();
-  assert.deepEqual(workflows, ["cp3005e2d2c1-0034-production-apply.yml", "production-database.yml"]);
+  assert.deepEqual(workflows, ["cp3005e2d2c1-0034-isolated-verify.yml", "cp3005e2d2c1-0034-production-apply.yml", "production-database.yml"]);
   const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
   assert.equal(pkg.scripts["db:migrate:0029"], undefined);
   assert.doesNotMatch(pkg.scripts.build, /0029|cp272/);

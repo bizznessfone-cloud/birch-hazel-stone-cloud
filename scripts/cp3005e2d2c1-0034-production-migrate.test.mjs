@@ -24,7 +24,7 @@ import {
   apply0034Transaction,
   evaluate0034Baseline,
 } from "./cp3005e2d2c1-0034-production-migrate.mjs";
-import { databaseHost, directOwnerUrl, matchingEndpointBranchIds, projectIdFromScopedKeyError, sameDatabaseHost } from "./cp3005e2d2c1-neon-concurrency.mjs";
+import { databaseHost, directOwnerUrl, EXPECTED_BRANCH, EXPECTED_PROJECT, FORBIDDEN_BRANCH, FORBIDDEN_ENDPOINT, hostIsProductionEndpoint, ISOLATED_CONFIRMATION, ISOLATED_OWNER_ENV, isolatedGateFailures, sameDatabaseHost } from "./cp3005e2d2c1-neon-concurrency.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -116,14 +116,25 @@ test("0034 digest is pinned and the controller ledger stays frozen at 0001-0033"
   assert.doesNotMatch(workflow, /production-db-migrate\.mjs/);
   assert.match(race, /BLOCKED — ISOLATED VERIFICATION UNAVAILABLE/);
   assert.match(race, /BEGIN READ ONLY/);
-  assert.match(race, /neon_project_source: scoped-key/);
-  assert.match(race, /SCOPED NEON PROJECT DID NOT MATCH/);
-  assert.match(race, /parent_id: parentBranchId/);
-  assert.match(race, /PRODUCTION ENDPOINT DID NOT MATCH ONE BRANCH/);
+  assert.match(race, /quiet-sound-53513710/);
+  assert.match(race, /br-late-paper-b15gkfj3/);
+  assert.doesNotMatch(race, /console\.neon\.tech/);
+  assert.doesNotMatch(race, /NEON_API_KEY/);
+  assert.doesNotMatch(race, /process\.env\.AETHER_DATABASE_OWNER_URL\s*=/);
   assert.doesNotMatch(race, /round-sunset-/);
-  assert.doesNotMatch(race, /AETHER_DATABASE_OWNER_URL: branch/);
+  const verify = readFileSync(join(root, ".github/workflows/cp3005e2d2c1-0034-isolated-verify.yml"), "utf8");
+  assert.match(verify, /VERIFY-0034-ISOLATED/);
+  assert.match(verify, /AETHER_0034_ISOLATED_OWNER_URL/);
+  assert.doesNotMatch(verify, /AETHER_DATABASE_OWNER_URL/);
+  assert.doesNotMatch(verify, /NEON_API_KEY/);
+  assert.doesNotMatch(verify, /production-migrate\.mjs/);
+  assert.doesNotMatch(verify, /Apply migration 0034 only/);
   const workflows = readdirSync(join(root, ".github/workflows")).sort();
-  assert.deepEqual(workflows, ["cp3005e2d2c1-0034-production-apply.yml", "production-database.yml"]);
+  assert.deepEqual(workflows, [
+    "cp3005e2d2c1-0034-isolated-verify.yml",
+    "cp3005e2d2c1-0034-production-apply.yml",
+    "production-database.yml",
+  ]);
 });
 
 test("a verify branch must not be the production host", () => {
@@ -133,51 +144,38 @@ test("a verify branch must not be the production host", () => {
   assert.equal(databaseHost("not a url"), "");
 });
 
-test("a verify branch must parent the production endpoint, not the project default", () => {
-  const endpoints = [
-    { id: "ep-prod", host: "ep-prod.eu.neon.tech", branch_id: "br-prod" },
-    { id: "ep-default", host: "ep-default.eu.neon.tech", branch_id: "br-default" },
-    { id: "ep-prod-ro", host: "ep-prod-ro.eu.neon.tech", branch_id: "br-prod" },
-  ];
+test("the isolated gate accepts only the named quiet-sound branch", () => {
+  assert.equal(hostIsProductionEndpoint("postgres://u@ep-withered-haze-b1fd9hse-pooler.eu.neon.tech/neondb"), true);
+  assert.equal(hostIsProductionEndpoint("postgres://u@ep-other.eu.neon.tech/neondb"), false);
+  const schema = { organisationType: true, acceptances: true, hotels: true, founding: true, immutableTrigger: true };
+  const identity = {
+    projectId: EXPECTED_PROJECT,
+    branchId: EXPECTED_BRANCH,
+    endpointId: "ep-isolated-example",
+    database: "neondb",
+    currentUser: "neondb_owner",
+    sessionUser: "neondb_owner",
+  };
+  assert.deepEqual(isolatedGateFailures({ identity, ledger: [...REQUIRED_LEDGER], schema }), []);
   assert.deepEqual(
-    matchingEndpointBranchIds(endpoints, "postgres://u@ep-prod-pooler.eu.neon.tech/neondb"),
-    ["br-prod"],
+    isolatedGateFailures({ identity: { ...identity, projectId: "round-sunset-69114165" }, ledger: [...REQUIRED_LEDGER], schema }),
+    ["project"],
   );
-  assert.deepEqual(matchingEndpointBranchIds(endpoints, "postgres://u@ep-missing.eu.neon.tech/neondb"), []);
   assert.deepEqual(
-    matchingEndpointBranchIds(
-      [
-        { id: "ep-a", host: "ep-a.eu.neon.tech", branch_id: "br-a" },
-        { id: "ep-b", host: "ep-a.eu.neon.tech", branch_id: "br-b" },
-      ],
-      "postgres://u@ep-a.eu.neon.tech/neondb",
-    ),
-    ["br-a", "br-b"],
+    isolatedGateFailures({ identity: { ...identity, branchId: FORBIDDEN_BRANCH }, ledger: [...REQUIRED_LEDGER], schema }),
+    ["branch", "production-branch"],
   );
-});
-
-test("a scoped Neon key error names at most one project", () => {
-  assert.equal(
-    projectIdFromScopedKeyError({
-      message:
-        'not allowed to perform actions outside the project this key is scoped to; subject_project_id:"round-sunset-69114165"',
-    }),
-    "round-sunset-69114165",
+  assert.deepEqual(
+    isolatedGateFailures({ identity: { ...identity, endpointId: FORBIDDEN_ENDPOINT }, ledger: [...REQUIRED_LEDGER], schema }),
+    ["endpoint"],
   );
-  assert.equal(
-    projectIdFromScopedKeyError({
-      message: "not allowed to perform actions outside the project this key is scoped to",
-      details: { subject_project_id: "quiet-rain-1" },
-    }),
-    "quiet-rain-1",
+  assert.deepEqual(
+    isolatedGateFailures({ identity, ledger: [...REQUIRED_LEDGER, TARGET_MIGRATION], schema }),
+    ["ledger"],
   );
-  assert.equal(
-    projectIdFromScopedKeyError({
-      message: 'subject_project_id:"alpha-1" subject_project_id:"beta-2"',
-    }),
-    "",
-  );
-  assert.equal(projectIdFromScopedKeyError({ message: "not found" }), "");
+  assert.deepEqual(isolatedGateFailures({ identity, ledger: [...REQUIRED_LEDGER], schema: { ...schema, founding: false } }), ["schema"]);
+  assert.equal(ISOLATED_CONFIRMATION, "VERIFY-0034-ISOLATED");
+  assert.equal(ISOLATED_OWNER_ENV, "AETHER_0034_ISOLATED_OWNER_URL");
 });
 
 test("confirmation and an unexpected migration fail closed", () => {

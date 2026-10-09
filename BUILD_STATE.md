@@ -2,6 +2,12 @@
 
 This file describes **current reality**, not intended future state.
 
+## CP30.05E-2D-2C.1 — isolated verification prepared, not executed
+
+**0034 is not applied. The existing isolated branch is `br-late-paper-b15gkfj3` in project `quiet-sound-53513710`. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
+
+The verification-only workflow is `.github/workflows/cp3005e2d2c1-0034-isolated-verify.yml`. It has no Production migration step. It uses `AETHER_0034_ISOLATED_OWNER_URL` and the confirmation `VERIFY-0034-ISOLATED`. It does not read `AETHER_DATABASE_OWNER_URL` or `NEON_API_KEY`, and it does not create or delete a Neon branch. The combined Production apply workflow was not dispatched. This preparation did not open the isolated branch, because that owner connection was not available here.
+
 ## CP30.05E-2D-2C — classification and provisional terms acceptance authored, not applied
 
 **E-2D-2B.1 is PASS. E-2D-2C is in source only. 0034 is not authorised and is not applied. E-2D-2D NOT STARTED. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**

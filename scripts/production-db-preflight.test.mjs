@@ -346,5 +346,5 @@ test("spent single-use and generic production migrate workflows stay retired", (
   assert.equal(existsSync(join(workflows, "cp26fin-0028-production-migrate.yml")), false);
   assert.equal(existsSync(join(workflows, "cp26co2c-first-owner-bootstrap.yml")), false);
   const yaml = readdirSync(workflows).filter((name) => name.endsWith(".yml") || name.endsWith(".yaml")).sort();
-  assert.deepEqual(yaml, ["cp3005e2d2c1-0034-production-apply.yml", "production-database.yml"]);
+  assert.deepEqual(yaml, ["cp3005e2d2c1-0034-isolated-verify.yml", "cp3005e2d2c1-0034-production-apply.yml", "production-database.yml"]);
 });
