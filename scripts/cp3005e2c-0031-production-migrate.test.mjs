@@ -99,21 +99,24 @@ test("0031 digest is pinned and the controller ledger stays frozen at 0001-0030"
   assert.deepEqual(
     REQUIRED_LEDGER,
     ACCEPTED_LEDGER.filter(
-      (name) => name !== TARGET_MIGRATION && name !== "0032_cp3005e2c1_organisation_acceptance.sql",
+      (name) =>
+        name !== TARGET_MIGRATION &&
+        name !== "0032_cp3005e2c1_organisation_acceptance.sql" &&
+        name !== "0033_cp3005e2d2b_founding_organisation.sql",
     ),
   );
   assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), true);
-  assert.equal(ACCEPTED_LEDGER.at(-1), "0032_cp3005e2c1_organisation_acceptance.sql");
+  assert.equal(ACCEPTED_LEDGER.at(-1), "0033_cp3005e2d2b_founding_organisation.sql");
   assert.notDeepEqual(REQUIRED_LEDGER, [...ACCEPTED_LEDGER]);
   assert.equal(REQUIRED_LEDGER.at(-1), "0030_cp272_fix_prepare_booking_payment.sql");
   assert.equal(REQUIRED_LEDGER.includes(TARGET_MIGRATION), false);
   assert.doesNotMatch(src, /REQUIRED_LEDGER\s*=\s*\[\s*\.\.\.ACCEPTED_LEDGER/);
-  assert.deepEqual(AUTHORISED_PENDING, ["0033_cp3005e2d2b_founding_organisation.sql"]);
+  assert.deepEqual(AUTHORISED_PENDING, []);
   assert.equal(isAuthorisedPending(TARGET_MIGRATION), false);
   assert.equal(isAuthorisedPending("0031_later.sql"), false);
   assert.equal(isAuthorisedPending("0032_later.sql"), false);
-  assert.equal(isAuthorisedPending("0033_cp3005e2d2b_founding_organisation.sql"), true);
-  assert.equal(ACCEPTED_LEDGER.includes("0033_cp3005e2d2b_founding_organisation.sql"), false);
+  assert.equal(isAuthorisedPending("0033_cp3005e2d2b_founding_organisation.sql"), false);
+  assert.equal(ACCEPTED_LEDGER.includes("0033_cp3005e2d2b_founding_organisation.sql"), true);
   assert.deepEqual(
     readdirSync(join(root, "migrations")).filter((name) => name.startsWith("0033")).sort(),
     ["0033_cp3005e2d2b_founding_organisation.sql"],
@@ -127,7 +130,7 @@ test("0031 digest is pinned and the controller ledger stays frozen at 0001-0030"
   assert.doesNotMatch(src, /STRIPE_SECRET|sk_live|sk_test|api\.stripe\.com/);
   assert.equal(existsSync(join(root, ".github/workflows/cp3005e2c-0031-production-apply.yml")), false);
   const workflows = readdirSync(join(root, ".github/workflows")).sort();
-  assert.deepEqual(workflows, ["cp3005e2d2b1-0033-production-apply.yml", "production-database.yml"]);
+  assert.deepEqual(workflows, ["production-database.yml"]);
   const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
   assert.equal(pkg.scripts["db:migrate:0031"], undefined);
   assert.doesNotMatch(pkg.scripts.build, /0031|cp3005e2c/);

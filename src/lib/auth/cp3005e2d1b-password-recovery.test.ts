@@ -586,6 +586,6 @@ test("recovery surfaces stay identity-only and do not open onboarding, Owner, or
   );
   assert.equal(existsSync(join(root, "migrations/0033_cp3005e2d1b.sql")), false);
   const preflight = readFileSync(join(root, "scripts/production-db-preflight.mjs"), "utf8");
-  assert.match(preflight, /"0032_cp3005e2c1_organisation_acceptance.sql",\n\];/);
-  assert.match(preflight, /AUTHORISED_PENDING = \[\n  "0033_cp3005e2d2b_founding_organisation.sql",\n\];/);
+  assert.match(preflight, /"0033_cp3005e2d2b_founding_organisation.sql",\n\];/);
+  assert.match(preflight, /AUTHORISED_PENDING = \[\];/);
 });

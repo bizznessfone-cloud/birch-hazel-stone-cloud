@@ -418,7 +418,7 @@ test("canonical 0027 digest is pinned and the prerequisite digest chain matches"
   assert.equal(REQUIRED_LEDGER.at(-1), "0026_cp26co3_commercial_catalogue.sql");
   assert.equal(REQUIRED_LEDGER.includes(TARGET_MIGRATION), false);
   assert.equal(REQUIRED_LEDGER.length, 26);
-  assert.equal(ACCEPTED_LEDGER.at(-1), "0032_cp3005e2c1_organisation_acceptance.sql");
+  assert.equal(ACCEPTED_LEDGER.at(-1), "0033_cp3005e2d2b_founding_organisation.sql");
   assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), true);
   assert.deepEqual(ACCEPTED_LEDGER, [
     ...REQUIRED_LEDGER,
@@ -428,9 +428,10 @@ test("canonical 0027 digest is pinned and the prerequisite digest chain matches"
     "0030_cp272_fix_prepare_booking_payment.sql",
     "0031_cp3005e2c_organisation_type.sql",
     "0032_cp3005e2c1_organisation_acceptance.sql",
+    "0033_cp3005e2d2b_founding_organisation.sql",
   ]);
   assert.doesNotMatch(src, /REQUIRED_LEDGER\s*=\s*\[\s*\.\.\.ACCEPTED_LEDGER/);
-  assert.deepEqual(AUTHORISED_PENDING, ["0033_cp3005e2d2b_founding_organisation.sql"]);
+  assert.deepEqual(AUTHORISED_PENDING, []);
   assert.equal(isAuthorisedPending(TARGET_MIGRATION), false);
   for (const [name, expected] of Object.entries(REVIEWED_DIGESTS)) {
     const bytes = readFileSync(join(here, "../migrations", name));
@@ -914,8 +915,8 @@ test("apply failure rolls back and redacts secrets", async () => {
 
 test("Gate B accepts applied 0027 inside 0001-0028 and build does not invoke this controller", () => {
   assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), true);
-  assert.equal(ACCEPTED_LEDGER.at(-1), "0032_cp3005e2c1_organisation_acceptance.sql");
-  assert.deepEqual(AUTHORISED_PENDING, ["0033_cp3005e2d2b_founding_organisation.sql"]);
+  assert.equal(ACCEPTED_LEDGER.at(-1), "0033_cp3005e2d2b_founding_organisation.sql");
+  assert.deepEqual(AUTHORISED_PENDING, []);
   assert.equal(isAuthorisedPending(TARGET_MIGRATION), false);
   const current = evaluatePreflight({
     database: "neondb",
@@ -935,7 +936,7 @@ test("Gate B accepts applied 0027 inside 0001-0028 and build does not invoke thi
   assert.equal(generic.migrated, false);
   const genericSrc = readFileSync(join(here, "production-db-migrate.mjs"), "utf8");
   assert.doesNotMatch(genericSrc, /0028_cp26fin_property_licence_catalogue/);
-  assert.match(genericSrc, /0001–0032/);
+  assert.match(genericSrc, /0001–0033/);
   assert.doesNotMatch(pkg.scripts.build, /db:migrate/);
   assert.doesNotMatch(pkg.scripts.build, /cp26co42/);
   assert.equal(pkg.scripts["db:migrate:0027"], undefined);
@@ -950,7 +951,7 @@ test("0027 dispatch surface is retired", () => {
   assert.equal(existsSync(workflowPath), false);
   assert.equal(workflow, "");
   const workflows = readdirSync(join(here, "../.github/workflows")).sort();
-  assert.deepEqual(workflows, ["cp3005e2d2b1-0033-production-apply.yml", "production-database.yml"]);
+  assert.deepEqual(workflows, ["production-database.yml"]);
   for (const name of workflows) {
     const text = readFileSync(join(here, "../.github/workflows", name), "utf8");
     assert.equal(text.includes("cp26co42-0027-production-migrate.mjs"), false, name);

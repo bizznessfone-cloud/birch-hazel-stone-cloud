@@ -113,16 +113,17 @@ test("0030 digest is pinned, accepted, and the controller ledger stays frozen at
       (name) =>
         name !== TARGET_MIGRATION &&
         name !== "0031_cp3005e2c_organisation_type.sql" &&
-        name !== "0032_cp3005e2c1_organisation_acceptance.sql",
+        name !== "0032_cp3005e2c1_organisation_acceptance.sql" &&
+        name !== "0033_cp3005e2d2b_founding_organisation.sql",
     ),
   );
   assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), true);
-  assert.equal(ACCEPTED_LEDGER.at(-1), "0032_cp3005e2c1_organisation_acceptance.sql");
+  assert.equal(ACCEPTED_LEDGER.at(-1), "0033_cp3005e2d2b_founding_organisation.sql");
   assert.notDeepEqual(REQUIRED_LEDGER, [...ACCEPTED_LEDGER]);
   assert.equal(REQUIRED_LEDGER.at(-1), "0029_cp272_domain_a_checkout_claims.sql");
   assert.equal(REQUIRED_LEDGER.includes(TARGET_MIGRATION), false);
   assert.doesNotMatch(src, /REQUIRED_LEDGER\s*=\s*\[\s*\.\.\.ACCEPTED_LEDGER/);
-  assert.deepEqual(AUTHORISED_PENDING, ["0033_cp3005e2d2b_founding_organisation.sql"]);
+  assert.deepEqual(AUTHORISED_PENDING, []);
   assert.equal(isAuthorisedPending(TARGET_MIGRATION), false);
   assert.equal(isAuthorisedPending("0030_later.sql"), false);
   assert.equal(isAuthorisedPending("0031_later.sql"), false);
@@ -141,7 +142,7 @@ test("0030 digest is pinned, accepted, and the controller ledger stays frozen at
   assert.doesNotMatch(src, /db:migrate/);
   assert.equal(existsSync(join(root, ".github/workflows/cp272-0030-production-apply.yml")), false);
   const workflows = readdirSync(join(root, ".github/workflows")).sort();
-  assert.deepEqual(workflows, ["cp3005e2d2b1-0033-production-apply.yml", "production-database.yml"]);
+  assert.deepEqual(workflows, ["production-database.yml"]);
   const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
   assert.equal(pkg.scripts["db:migrate:0030"], undefined);
   assert.doesNotMatch(pkg.scripts.build, /0030|cp272-0030/);

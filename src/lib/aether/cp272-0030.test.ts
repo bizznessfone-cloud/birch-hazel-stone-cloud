@@ -74,8 +74,8 @@ test("0030 is accepted history and does not edit 0021 or Domain A", () => {
     createHash("sha256").update(SQL).digest("hex"),
     "9dec121ac28b8bcca5554576816eb8c764d50f56b6b97c9f0199e0b926e8643f",
   );
-  assert.match(preflight, /AUTHORISED_PENDING = \[\n  "0033_cp3005e2d2b_founding_organisation.sql",\n\];/);
-  assert.match(preflight, /"0032_cp3005e2c1_organisation_acceptance.sql",\n\];/);
+  assert.match(preflight, /AUTHORISED_PENDING = \[\];/);
+  assert.match(preflight, /"0033_cp3005e2d2b_founding_organisation.sql",\n\];/);
   assert.match(PRIOR, /returning id, booking_id, amount_minor, currency, status, stripe_checkout_session_id, stripe_checkout_url/);
   assert.match(SQL, /public\.sbg_booking_payments\.booking_id/);
   assert.match(SQL, /#variable_conflict use_column/);

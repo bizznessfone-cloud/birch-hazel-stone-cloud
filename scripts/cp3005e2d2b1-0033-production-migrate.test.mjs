@@ -99,16 +99,21 @@ function appliedFacts(overrides = {}) {
 
 test("0033 digest is pinned and the controller ledger stays frozen at 0001-0032", () => {
   assert.equal(createHash("sha256").update(sql).digest("hex"), TARGET_DIGEST);
-  assert.deepEqual(REQUIRED_LEDGER, ACCEPTED_LEDGER);
+  assert.deepEqual(
+    REQUIRED_LEDGER,
+    ACCEPTED_LEDGER.filter((name) => name !== TARGET_MIGRATION),
+  );
+  assert.equal(ACCEPTED_LEDGER.at(-1), TARGET_MIGRATION);
+  assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), true);
   assert.equal(REQUIRED_LEDGER.at(-1), "0032_cp3005e2c1_organisation_acceptance.sql");
   assert.equal(REQUIRED_LEDGER.includes(TARGET_MIGRATION), false);
   assert.doesNotMatch(src, /REQUIRED_LEDGER\s*=\s*\[\s*\.\.\.ACCEPTED_LEDGER/);
-  assert.equal(isAuthorisedPending(TARGET_MIGRATION), true);
+  assert.equal(isAuthorisedPending(TARGET_MIGRATION), false);
   assert.equal(isAuthorisedPending("0034_later.sql"), false);
   assert.doesNotMatch(src, /from "\.\/production-db-migrate\.mjs"/);
   assert.doesNotMatch(src, /process\.env\.DATABASE_URL/);
   assert.doesNotMatch(src, /STRIPE_SECRET|sk_live|sk_test|api\.stripe\.com/);
-  assert.equal(existsSync(join(root, ".github/workflows/cp3005e2d2b1-0033-production-apply.yml")), true);
+  assert.equal(existsSync(join(root, ".github/workflows/cp3005e2d2b1-0033-production-apply.yml")), false);
   const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
   assert.equal(pkg.scripts["db:migrate:0033"], undefined);
   assert.doesNotMatch(pkg.scripts.build, /0033|cp3005e2d2b1/);
@@ -237,7 +242,8 @@ test("the concurrency harness is marker-scoped and does not open a generic migra
   assert.doesNotMatch(race, /delete from hotels/i);
   assert.match(race, /created_by_user_id = any/);
   const workflows = readdirSync(join(root, ".github/workflows")).sort();
-  assert.deepEqual(workflows, ["cp3005e2d2b1-0033-production-apply.yml", "production-database.yml"]);
-  assert.equal(AUTHORISED_PENDING.includes(TARGET_MIGRATION), true);
-  assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), false);
+  assert.deepEqual(workflows, ["production-database.yml"]);
+  assert.deepEqual(AUTHORISED_PENDING, []);
+  assert.equal(AUTHORISED_PENDING.includes(TARGET_MIGRATION), false);
+  assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), true);
 });

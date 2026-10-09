@@ -2,9 +2,9 @@
 
 This file describes **current reality**, not intended future state.
 
-## CP30.05E-2D-2B — founding organisation primitive authored, not applied
+## CP30.05E-2D-2B.1 — founding organisation primitive applied and Neon-verified
 
-**E-2D-2A is ACCEPTED. E-2D-2B code is COMPLETE. 0033 is the sole authorised pending migration and is not applied yet. E-2D-2C NOT STARTED. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
+**E-2D-2A is ACCEPTED. E-2D-2B code is COMPLETE. 0033 is APPLIED and Neon-verified. E-2D-2C NOT STARTED. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
 
 Organisation and property are different things. The organisation is the business that operates SCAN BOOK GO. A property is an actual hotel or accommodation property that business serves. A transfer operator is not stored as a hotel. Example: organisation “Kos Transfers Limited”, properties “Portobello Royal”, “Atlantica Beach Resort”. A hotel organisation such as “Greco Blu Hotels” uses the same shape for its own hotels. One product, one organisation model, one property model.
 
@@ -12,7 +12,13 @@ Organisation and property are different things. The organisation is the business
 
 No hotel is created or attached. No billing row, allocation, acceptance, or Stripe call. `ensureHotelOrganisation` is unchanged and still creates an organisation from a hotel name at checkout. That remains the E-2D-2E boundary.
 
-Migration **0033** (`0033_cp3005e2d2b_founding_organisation.sql`, digest `8880dbf93aa416e393af621957e3170da6390a6e3aef792d68fe97b709c22875`) is authorised pending. Gate B accepted ledger stays **0001–0032** until the single-use controller applies it. `AUTHORISED_PENDING` names only that file. The generic migrator still does not apply SQL. Do not apply 0033 except through `scripts/cp3005e2d2b1-0033-production-migrate.mjs`.
+Migration **0033** (`0033_cp3005e2d2b_founding_organisation.sql`, digest `8880dbf93aa416e393af621957e3170da6390a6e3aef792d68fe97b709c22875`) is accepted history. Gate B ledger is **0001–0033**. `AUTHORISED_PENDING=[]`. It was applied (GHA [37893184406](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/37893184406), checkout `468cfd5`). Counts stayed organisation 1, member 1, classified 0, acceptance 0, licensed quantity 3, allocations 4. The function is `SECURITY DEFINER`, `search_path` `pg_catalog, public`, owner `neondb_owner`. `aether_app` can EXECUTE. `aether_runtime` and public cannot. `aether_app` still cannot INSERT, UPDATE, or DELETE `sbg_organisations` or `sbg_organisation_members`. Execute was proven with `has_function_privilege`, not `SET ROLE`. The temporary apply workflow is **RETIRED**. Do not rerun `scripts/cp3005e2d2b1-0033-production-migrate.mjs`. Its `REQUIRED_LEDGER` stays frozen at **0001–0032**. The generic migrator still does not apply SQL.
+
+Real Neon concurrency is GHA [37893386159](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/37893386159), checkout `8bd8870`. Three independent backends on the direct endpoint (not the pooler) had distinct pids 1117, 1116, and 1118. The same verification user and the same name produced one organisation and one membership (`role` member, `billing_authority` true, `organisation_type` NULL). The same user with two different names produced one organisation; the connection that already held `FOR UPDATE` stored its name, and the waiter did not rename it. A later call with a third name returned the same id and the same stored name. Two other verification users received two distinct organisations, both with `organisation_type` NULL. Lock waits were visible in `pg_stat_activity`. The first dispatch (same apply run 37893184406) saw one pooled backend three times and stopped before any insert. That is not the proof. PGLite `Promise.all` is not the concurrency evidence.
+
+Ordinary DELETE is rejected by `sbg_organisation_reject_delete`. Cleanup disabled only `sbg_organisations_no_delete` and `sbg_organisation_members_no_delete` inside one owner transaction, deleted only marker rows (organisation name prefix `E2D2B1 `, user id prefix `e2d2b1-`), re-enabled both triggers before commit, and then proved `tgenabled` and that the pre-insert snapshot matched. Four organisations and four users were removed. No hotel, billing, acceptance, or Stripe write. Commerce stayed **test**. `GET /` was 200 and `GET /api/ready` was exactly `{"ok":true}` before and after.
+
+Organisation and founding membership are one transactional unit in source: the function has no exception handler, so a membership failure rolls back the organisation insert. Destructive fault injection was not run on Production.
 
 V1 acceptance, later, is one versioned Terms of Service record. Privacy may be linked and is not a second acceptance record in that decision. Nothing was written to `sbg_organisation_acceptances`.
 

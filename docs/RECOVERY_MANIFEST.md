@@ -24,7 +24,7 @@ GitHub is authoritative for application source. Living status: **`BUILD_STATE.md
 | Product | SCAN / BOOK / GO |
 | Production | Vercel `scan-book-go` / last observed `dpl_FmUosqz2wy7aCT51rNjdanJnuviZ` READY |
 | Alias | `https://scan-book-go.vercel.app` |
-| Database | Production Neon migrated through **0032**; Gate B **0001–0032**; `AUTHORISED_PENDING=[]`; 0032 apply workflow **RETIRED**; no acceptance rows |
+| Database | Production Neon migrated through **0033**; Gate B **0001–0033**; `AUTHORISED_PENDING=[]`; 0033 applied (GHA 37893184406); Neon concurrency proof GHA 37893386159; 0033 apply workflow **RETIRED**; disposable marker rows removed; 0032 apply workflow **RETIRED**; no acceptance rows |
 | Owners | **1** active platform Owner (OPERATOR CONTROLLED / REDACTED); bootstrap workflow **RETIRED** |
 | Runtime | `DATABASE_URL` → `aether_app`; owner URL **ABSENT** from Vercel |
 | Auth | Better Auth Production configured; returning sign-in **proven CP26A.5** |

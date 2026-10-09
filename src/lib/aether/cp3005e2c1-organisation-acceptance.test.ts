@@ -51,7 +51,7 @@ test("0032 is evidence only and does not guess, grant, or collapse cardinality",
     createHash("sha256").update(SQL).digest("hex"),
     "c3412d2b6efc05786ea3edf1146da25853b88ac0df69b1ce215240be0c72ab48",
   );
-  assert.match(preflight, /"0032_cp3005e2c1_organisation_acceptance.sql",\n\];/);
+  assert.match(preflight, /"0033_cp3005e2d2b_founding_organisation.sql",\n\];/);
   assert.match(preflight, /"0032_cp3005e2c1_organisation_acceptance.sql",/);
   assert.doesNotMatch(preflight, /0034_/);
   const executable = SQL.replace(/--.*$/gm, "");

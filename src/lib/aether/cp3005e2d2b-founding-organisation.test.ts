@@ -96,15 +96,14 @@ async function counts(pg: PGlite, userId?: string) {
   };
 }
 
-test("0033 is authored, unapplied, and least privilege", () => {
+test("0033 is accepted history and least privilege", () => {
   assert.equal(createHash("sha256").update(SQL).digest("hex"), DIGEST);
-  assert.equal(ACCEPTED_LEDGER.includes(MIGRATION), false);
-  assert.equal(ACCEPTED_LEDGER.at(-1), "0032_cp3005e2c1_organisation_acceptance.sql");
-  assert.deepEqual(AUTHORISED_PENDING, ["0033_cp3005e2d2b_founding_organisation.sql"]);
-  assert.equal(isAuthorisedPending(MIGRATION), true);
+  assert.equal(ACCEPTED_LEDGER.includes(MIGRATION), true);
+  assert.equal(ACCEPTED_LEDGER.at(-1), "0033_cp3005e2d2b_founding_organisation.sql");
+  assert.deepEqual(AUTHORISED_PENDING, []);
+  assert.equal(isAuthorisedPending(MIGRATION), false);
   const preflight = read("scripts/production-db-preflight.mjs");
-  assert.match(preflight, /"0032_cp3005e2c1_organisation_acceptance.sql",\n\];/);
-  assert.match(preflight, /0033_cp3005e2d2b_founding_organisation\.sql/);
+  assert.match(preflight, /"0033_cp3005e2d2b_founding_organisation.sql",\n\];/);
   assert.doesNotMatch(preflight, /0034_/);
   const executable = SQL.replace(/--.*$/gm, "");
   assert.match(executable, /for update/);

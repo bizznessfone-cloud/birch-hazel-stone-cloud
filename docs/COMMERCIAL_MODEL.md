@@ -85,10 +85,14 @@ Onboarding progress, when built, is derived from durable server rows.
 E-2D-2B authors `sbg_ensure_founding_organisation` in
 `0033_cp3005e2d2b_founding_organisation.sql` (digest
 `8880dbf93aa416e393af621957e3170da6390a6e3aef792d68fe97b709c22875`). 0033 is
-not in the accepted ledger and is not authorised pending. It is not applied.
-It does not create a hotel. `ensureHotelOrganisation` is unchanged and remains
-the checkout-time creator until a later checkpoint retires that call.
-E-2D-2C has not started. 0033+ stays fail-closed for Production apply.
+accepted and applied (GHA 37893184406). The real Neon proof is GHA
+37893386159: three direct backends, one organisation for one founding user,
+no rename on a later name, and the disposable marker rows removed.
+`AUTHORISED_PENDING=[]`. It does not create a hotel. `ensureHotelOrganisation`
+is unchanged and remains the checkout-time creator until a later checkpoint
+retires that call. E-2D-2C has not started. 0034+ stays fail-closed for
+Production apply. The temporary 0033 workflow is retired. Do not rerun
+`scripts/cp3005e2d2b1-0033-production-migrate.mjs`.
 
 The classification is kept so later onboarding copy, terminology, defaults,
 acquisition, conversion, churn, pricing, and communications can use it.
@@ -124,7 +128,7 @@ Catalogue amounts are no longer undefined. The published Production price versio
 | CP26C.4 | **SUPERSEDED as previously scoped** — do not cut Checkout over to three tier Prices |
 | Next | **CP27.3**, not started. M5–M8 application remediation is in source. Checkout calls 0029. `SBG_DOMAIN_B_LIVE_CHECKOUT` is not enabled. Only **CP31** activates LIVE |
 | Commerce | **test** (`SBG_SAAS_COMMERCE=test`). Not live. Only **CP31** activates LIVE |
-| Ledger | Gate B accepted **0001–0032**; `AUTHORISED_PENDING=[]`; 0032 applied (GHA 37333642947); no acceptance rows; 0033+ fail-closed |
+| Ledger | Gate B accepted **0001–0033**; `AUTHORISED_PENDING=[]`; 0033 applied (GHA 37893184406); Neon concurrency proof GHA 37893386159; 0032 applied (GHA 37333642947); no acceptance rows; 0034+ fail-closed |
 | 0026 digest | `4ca1796a3cab62ff060ce12957c066ecf01cde2dfdf4ae320f0e40d881c8b446` unchanged |
 | Production prices | one version `b13f9445-d27a-4e7d-8128-a2238906ce7c` EUR 17900 month; one verified TEST mapping `price_1UKGWjFHnHXHuPOwO50TJS93`; no LIVE mapping |
 | LIVE locks | **false / false** |

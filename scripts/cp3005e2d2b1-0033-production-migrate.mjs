@@ -2,7 +2,9 @@
 /**
  * CP30.05E-2D-2B.1 — single-use production controller for 0033 only.
  *
- * Applies migrations/0033_cp3005e2d2b_founding_organisation.sql and nothing else.
+ * Applied once in Production (GHA 37893184406). Do not run this file again.
+ * The direct-endpoint concurrency proof is GHA 37893386159.
+ * The temporary dispatch workflow is retired. Do not recreate it.
  * Does not insert an organisation, a membership, a hotel, billing, allocation,
  * or an acceptance. Does not call Stripe. Does not change commerce.
  * Never uses DATABASE_URL. Never prints secrets.
