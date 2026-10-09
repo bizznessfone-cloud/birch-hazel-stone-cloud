@@ -111,7 +111,7 @@ test("0034 digest is pinned and the controller ledger stays frozen at 0001-0033"
   assert.doesNotMatch(src, /STRIPE_SECRET|sk_live|sk_test|api\.stripe\.com/);
   assert.equal(existsSync(join(root, ".github/workflows/cp3005e2d2c1-0034-production-apply.yml")), true);
   const workflow = readFileSync(join(root, ".github/workflows/cp3005e2d2c1-0034-production-apply.yml"), "utf8");
-  assert.match(workflow, /ref: ce341f43e187bfa01a9129c87b8d57771e937983/);
+  assert.match(workflow, /ref: 4082093537dc4a7af5ee3278213ed4959cebeaa8/);
   assert.match(workflow, /APPLY-0034/);
   assert.doesNotMatch(workflow, /production-db-migrate\.mjs/);
   assert.match(race, /BLOCKED — ISOLATED VERIFICATION UNAVAILABLE/);
