@@ -24,7 +24,8 @@ import {
   apply0034Transaction,
   evaluate0034Baseline,
 } from "./cp3005e2d2c1-0034-production-migrate.mjs";
-import { databaseHost, directOwnerUrl, EXPECTED_BRANCH, EXPECTED_PROJECT, FORBIDDEN_BRANCH, FORBIDDEN_ENDPOINT, hostIsProductionEndpoint, ISOLATED_CONFIRMATION, ISOLATED_OWNER_ENV, isolatedGateFailures, sameDatabaseHost } from "./cp3005e2d2c1-neon-concurrency.mjs";
+import { spawnSync } from "node:child_process";
+import { databaseHost, directOwnerUrl, EXPECTED_BRANCH, EXPECTED_PROJECT, FORBIDDEN_BRANCH, FORBIDDEN_ENDPOINT, hostIsProductionEndpoint, ISOLATED_CONFIRMATION, ISOLATED_OWNER_ENV, captureQuery, disposableMarkerOrgProblem, isDisposableMarkerUser, isolatedGateFailures, isolatedLedgerMode, sameDatabaseHost } from "./cp3005e2d2c1-neon-concurrency.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -169,10 +170,16 @@ test("the isolated gate accepts only the named quiet-sound branch", () => {
     isolatedGateFailures({ identity: { ...identity, endpointId: FORBIDDEN_ENDPOINT }, ledger: [...REQUIRED_LEDGER], schema }),
     ["endpoint"],
   );
+  assert.equal(isolatedLedgerMode([...REQUIRED_LEDGER]), "apply");
+  assert.equal(isolatedLedgerMode([...REQUIRED_LEDGER, TARGET_MIGRATION]), "verify-installed");
+  assert.deepEqual(isolatedGateFailures({ identity, ledger: [...REQUIRED_LEDGER, TARGET_MIGRATION], schema }), []);
   assert.deepEqual(
-    isolatedGateFailures({ identity, ledger: [...REQUIRED_LEDGER, TARGET_MIGRATION], schema }),
+    isolatedGateFailures({ identity, ledger: [...REQUIRED_LEDGER, TARGET_MIGRATION, "0035_later.sql"], schema }),
     ["ledger"],
   );
+  assert.equal(isolatedLedgerMode([...REQUIRED_LEDGER, TARGET_MIGRATION, TARGET_MIGRATION]), "rejected");
+  assert.equal(isolatedLedgerMode([TARGET_MIGRATION]), "rejected");
+  assert.equal(isolatedLedgerMode([...REQUIRED_LEDGER.slice(0, -1), TARGET_MIGRATION]), "rejected");
   assert.deepEqual(isolatedGateFailures({ identity, ledger: [...REQUIRED_LEDGER], schema: { ...schema, founding: false } }), ["schema"]);
   assert.equal(ISOLATED_CONFIRMATION, "VERIFY-0034-ISOLATED");
   assert.equal(ISOLATED_OWNER_ENV, "AETHER_0034_ISOLATED_OWNER_URL");
@@ -250,4 +257,78 @@ test("the transaction commits only when counts and zero acceptance rows hold", a
   assert.equal(rejected.verdict, POST_BLOCKED);
   assert.equal(rolled.at(-1), "ROLLBACK");
   assert.equal(rejected.committed, false);
+});
+
+test("a conflicting classification rejection is captured before Node can treat it as unhandled", async () => {
+  const unhandled = [];
+  const onUnhandled = (reason) => unhandled.push(String(reason?.message ?? reason));
+  process.on("unhandledRejection", onUnhandled);
+  try {
+    let rejectWaiter;
+    const inner = new Promise((resolve, reject) => {
+      rejectWaiter = () => reject(Object.assign(new Error("organisation type is already set"), { code: "42501" }));
+    });
+    const query = inner.catch((err) => {
+      throw err;
+    });
+    const captured = captureQuery(query);
+    await Promise.resolve();
+    rejectWaiter();
+    await new Promise((resolve) => setImmediate(resolve));
+    const settled = await captured;
+    assert.equal(settled.result, null);
+    assert.match(settled.error, /organisation type is already set/);
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.deepEqual(unhandled, []);
+    assert.match(sql, /if v_current is null or v_current is distinct from p_type then/);
+    assert.match(sql, /raise exception 'organisation type is already set'/);
+    assert.match(race, /captureQuery\(waiter\.query/);
+    assert.match(race, /test2_waiter_rejected/);
+    assert.match(race, /BLOCKED — CONFLICTING CLASSIFICATION OVERWROTE/);
+  } finally {
+    process.off("unhandledRejection", onUnhandled);
+  }
+});
+
+test("catching the waiter only after another turn is an unhandled rejection", () => {
+  const child = spawnSync(
+    process.execPath,
+    [
+      "--input-type=module",
+      "--eval",
+      `const unhandled = [];
+       process.on("unhandledRejection", (reason) => {
+         unhandled.push(String(reason?.message ?? reason));
+       });
+       const waiterPromise = Promise.reject(new Error("organisation type is already set"));
+       await new Promise((resolve) => setImmediate(resolve));
+       let waiterError = "";
+       try { await waiterPromise; } catch (err) { waiterError = String(err?.message ?? err); }
+       if (!/already set/.test(waiterError)) process.exit(2);
+       if (unhandled.length !== 1 || !/already set/.test(unhandled[0])) process.exit(3);`,
+    ],
+    { encoding: "utf8" },
+  );
+  assert.equal(child.status, 0, child.stderr || child.stdout);
+});
+
+test("only the failed run's marker users and their prefixed organisations are disposable", () => {
+  const user = {
+    id: "e2d2c1-11111111-1111-1111-1111-111111111111",
+    email: "e2d2c1-proof-e2d2c1-11111111-1111-1111-1111-111111111111@invalid.scanbookgo.test",
+    name: "E2D2C1 conflict",
+  };
+  assert.equal(isDisposableMarkerUser(user), true);
+  assert.equal(isDisposableMarkerUser({ ...user, email: "owner@scanbookgo.com" }), false);
+  assert.equal(isDisposableMarkerUser({ ...user, name: "Kos Transfers Limited" }), false);
+  assert.equal(isDisposableMarkerUser({ ...user, id: "real-user" }), false);
+  assert.equal(disposableMarkerOrgProblem({ name: "E2D2C1 Conflict", createdBy: user.id }, [user.id]), "");
+  assert.equal(
+    disposableMarkerOrgProblem({ name: "E2D2C1 Conflict", createdBy: "someone-else" }, [user.id]),
+    "org-creator-not-marker",
+  );
+  assert.equal(disposableMarkerOrgProblem({ name: "Portobello Royal", createdBy: user.id }, [user.id]), "org-not-marker");
+  assert.match(race, /removePriorMarkers/);
+  assert.match(race, /isolated_0034_apply_invoked/);
+  assert.match(race, /BLOCKED — INSTALLED 0034 WAS APPLIED AGAIN/);
 });

@@ -2,11 +2,11 @@
 
 This file describes **current reality**, not intended future state.
 
-## CP30.05E-2D-2C.1 — isolated verification prepared, not executed
+## CP30.05E-2D-2C.1 — isolated 0034 installed, concurrency harness failed closed
 
-**0034 is not applied. The existing isolated branch is `br-late-paper-b15gkfj3` in project `quiet-sound-53513710`. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
+**0034 is applied only on isolated branch `br-late-paper-b15gkfj3` (project `quiet-sound-53513710`, endpoint `ep-snowy-meadow-b1bgiqe2`). Production 0034 is not applied. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
 
-The verification-only workflow is `.github/workflows/cp3005e2d2c1-0034-isolated-verify.yml`. It has no Production migration step. It uses `AETHER_0034_ISOLATED_OWNER_URL` and the confirmation `VERIFY-0034-ISOLATED`. It does not read `AETHER_DATABASE_OWNER_URL` or `NEON_API_KEY`, and it does not create or delete a Neon branch. The combined Production apply workflow was not dispatched. This preparation did not open the isolated branch, because that owner connection was not available here.
+GHA [37958312702](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/37958312702) passed the identity gate at ledger 0001–0033 and recorded `GATE PASS — 0034 APPLIED AND VERIFIED`. Same-type classification held the organisation lock. The conflicting waiter then raised `organisation type is already set` (`42501`) from `sbg_classify_founding_organisation`. That rejection is the correct database result. Node 22 exited on it before the harness assertion, because the waiter promise was caught only after the holder commit. Cleanup did not run. The verification workflow was not dispatched again from this correction.
 
 ## CP30.05E-2D-2C — classification and provisional terms acceptance authored, not applied
 

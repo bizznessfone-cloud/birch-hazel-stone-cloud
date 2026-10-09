@@ -63,6 +63,18 @@ export function hostIsProductionEndpoint(value) {
   return label === FORBIDDEN_ENDPOINT || host.startsWith(`${FORBIDDEN_ENDPOINT}.`) || host.startsWith(`${FORBIDDEN_ENDPOINT}-`);
 }
 
+export function isolatedLedgerMode(ledger) {
+  const names = Array.isArray(ledger) ? ledger.map(String) : [];
+  const applied = names.filter((name) => name === TARGET_MIGRATION);
+  const historical = names.filter((name) => name !== TARGET_MIGRATION);
+  if (applied.length > 1 || historical.join("\n") !== REQUIRED_LEDGER.join("\n")) return "rejected";
+  if (applied.length === 1) {
+    if (names.join("\n") !== [...REQUIRED_LEDGER, TARGET_MIGRATION].join("\n")) return "rejected";
+    return "verify-installed";
+  }
+  return names.join("\n") === REQUIRED_LEDGER.join("\n") ? "apply" : "rejected";
+}
+
 export function isolatedGateFailures({ identity, ledger, schema }) {
   const failures = [];
   if (identity?.projectId !== EXPECTED_PROJECT) failures.push("project");
@@ -71,8 +83,7 @@ export function isolatedGateFailures({ identity, ledger, schema }) {
   if (!identity?.endpointId || identity.endpointId === FORBIDDEN_ENDPOINT) failures.push("endpoint");
   if (identity?.database !== "neondb") failures.push("database");
   if (identity?.currentUser !== "neondb_owner" || identity?.sessionUser !== "neondb_owner") failures.push("role");
-  const names = Array.isArray(ledger) ? ledger : [];
-  if (names.includes(TARGET_MIGRATION) || names.join("\n") !== REQUIRED_LEDGER.join("\n")) failures.push("ledger");
+  if (isolatedLedgerMode(ledger) === "rejected") failures.push("ledger");
   if (
     schema?.organisationType !== true ||
     schema?.acceptances !== true ||
@@ -83,6 +94,34 @@ export function isolatedGateFailures({ identity, ledger, schema }) {
     failures.push("schema");
   }
   return failures;
+}
+
+export function captureQuery(queryPromise) {
+  return queryPromise.then(
+    (value) => ({ result: value ?? null, error: "" }),
+    (err) => ({ result: null, error: String(err?.message ?? err) }),
+  );
+}
+
+export function isDisposableMarkerUser(row) {
+  const id = String(row?.id ?? "");
+  const email = String(row?.email ?? "");
+  const name = String(row?.name ?? "");
+  return (
+    id.startsWith(`${MARKER}-`) &&
+    email.startsWith(`${MARKER}-proof-`) &&
+    email.endsWith("@invalid.scanbookgo.test") &&
+    name.startsWith(NAME_PREFIX)
+  );
+}
+
+export function disposableMarkerOrgProblem(org, userIds) {
+  const name = String(org?.name ?? "");
+  const creator = String(org?.createdBy ?? "");
+  const owners = Array.isArray(userIds) ? userIds.map(String) : [];
+  if (!name.startsWith(NAME_PREFIX)) return "org-not-marker";
+  if (!owners.includes(creator)) return "org-creator-not-marker";
+  return "";
 }
 
 function say(line) {
@@ -194,37 +233,32 @@ async function waitForLock(observer, pid) {
 
 async function lockedCall({ holder, waiter, observer, orgId, holderSql, holderParams, waiterSql, waiterParams, waiterPid }) {
   await holder.query("BEGIN");
-  let waiterPromise;
+  let captured = null;
   try {
     await holder.query("select id from public.sbg_organisations where id = $1::uuid for update", [orgId]);
-    waiterPromise = waiter.query(waiterSql, waiterParams);
+    // The rejection handler must be attached before the holder commits.
+    // pg rethrows query errors, and Node 22 exits if that rejection is still unhandled.
+    captured = captureQuery(waiter.query(waiterSql, waiterParams));
     const blocked = await waitForLock(observer, waiterPid);
     if (!blocked.observed) {
       throw new Error("BLOCKED — WAITER DID NOT BLOCK ON THE ORGANISATION LOCK");
     }
     const held = await holder.query(holderSql, holderParams);
     await holder.query("COMMIT");
-    let waited = null;
-    let waiterError = "";
-    try {
-      waited = await waiterPromise;
-    } catch (err) {
-      waiterError = String(err?.message ?? err);
-    }
-    return { lockWaitObserved: true, held: held.rows[0] ?? null, waited: waited?.rows?.[0] ?? null, waiterError };
+    const waited = await captured;
+    return {
+      lockWaitObserved: true,
+      held: held.rows[0] ?? null,
+      waited: waited.result?.rows?.[0] ?? null,
+      waiterError: waited.error,
+    };
   } catch (err) {
     try {
       await holder.query("ROLLBACK");
     } catch {
       // keep the original error
     }
-    if (waiterPromise) {
-      try {
-        await waiterPromise;
-      } catch {
-        // waiter may fail after rollback
-      }
-    }
+    if (captured) await captured;
     throw err;
   }
 }
@@ -275,6 +309,47 @@ async function cleanup(db, userIds) {
     }
     return { ok: false, verdict: "BLOCKED — CLEANUP FAILED", error: redact(err?.message || err) };
   }
+}
+
+async function removePriorMarkers(db) {
+  const users = (
+    await db.query(
+      `select id, email, name
+         from public."user"
+        where id like $1
+          and email like $2
+          and name like $3
+        order by id`,
+      [`${MARKER}-%`, `${MARKER}-proof-%@invalid.scanbookgo.test`, `${NAME_PREFIX}%`],
+    )
+  ).rows.filter((row) => isDisposableMarkerUser(row));
+  const userIds = users.map((row) => String(row.id));
+  const orgs = (
+    await db.query(
+      `select name, created_by_user_id
+         from sbg_organisations
+        where name like $1
+           or created_by_user_id = any($2::text[])
+        order by name`,
+      [`${NAME_PREFIX}%`, userIds.length ? userIds : ["__sbg_no_marker_user__"]],
+    )
+  ).rows;
+  for (const org of orgs) {
+    const problem = disposableMarkerOrgProblem({ name: org.name, createdBy: org.created_by_user_id }, userIds);
+    if (problem) {
+      return {
+        ok: false,
+        users: users.length,
+        orgs: orgs.length,
+        verdict: `BLOCKED — MARKER FIXTURE NOT POSITIVELY IDENTIFIED ${problem}`,
+      };
+    }
+  }
+  if (!userIds.length) {
+    return { ok: true, users: 0, orgs: 0, removed: false };
+  }
+  const removed = await cleanup(db, userIds);
+  return { ...removed, users: userIds.length, orgs: orgs.length, removed: removed.ok === true };
 }
 
 async function connectReady(ownerUrl) {
@@ -405,6 +480,7 @@ async function main() {
     say(`role: ${gate.identity.currentUser}`);
     say(`ledger_last: ${gate.ledger.at(-1) ?? ""}`);
     say(`ledger_count: ${gate.ledger.length}`);
+    say(`ledger_mode: ${isolatedLedgerMode(gate.ledger)}`);
     if (failures.length) {
       say(`BLOCKED — ISOLATED IDENTITY ${failures.join(",")}`);
       process.exitCode = 1;
@@ -415,6 +491,7 @@ async function main() {
     say("production_endpoint_rejected: true");
 
     const sourceMigrations = (await readdir(join(rootDir, "migrations"))).filter((name) => name.endsWith(".sql"));
+    let applyInvoked = false;
     const applied = await runSingleUse0034({
       // Argument name required by the existing applier. This does not read or set the Production secret.
       env: { AETHER_DATABASE_OWNER_URL: branchUrl },
@@ -432,6 +509,7 @@ async function main() {
         }
       },
       mutate: async ({ sql, before }) => {
+        applyInvoked = true;
         const db = await connectReady(branchUrl);
         try {
           return await apply0034Transaction({
@@ -446,12 +524,19 @@ async function main() {
       },
     });
     say(applied.verdict);
+    say(`isolated_0034_apply_invoked: ${applyInvoked}`);
     if (!applied.ok) throw new Error(applied.verdict || "BLOCKED — BRANCH APPLY FAILED");
+    if (applied.alreadyApplied === true) {
+      if (applyInvoked) throw new Error("BLOCKED — INSTALLED 0034 WAS APPLIED AGAIN");
+    } else if (applied.migrated !== true) {
+      throw new Error("BLOCKED — 0034 WAS NEITHER APPLIED NOR VERIFIED");
+    }
 
     const holder = client(branchUrl);
     const waiter = client(branchUrl);
     const observer = client(branchUrl);
     const userIds = [];
+    let fixturesSettled = false;
     await Promise.all([holder.connect(), waiter.connect(), observer.connect()]);
     try {
       const pids = await Promise.all([
@@ -466,6 +551,10 @@ async function main() {
       if (new Set([pidA, pidB, pidC]).size !== 3) throw new Error("BLOCKED — CONNECTIONS ARE NOT INDEPENDENT");
       const installed = (await observer.query("select count(*)::int as n from _migrations where name = $1", [TARGET_MIGRATION])).rows[0];
       if (Number(installed.n) !== 1) throw new Error("BLOCKED — 0034 IS NOT INSTALLED ONCE ON THE BRANCH");
+      const prior = await removePriorMarkers(observer);
+      say(`prior_marker_users: ${prior.users}`);
+      say(`prior_marker_organisations: ${prior.orgs}`);
+      if (!prior.ok) throw new Error(prior.verdict);
       const before = await snapshot(observer);
 
       const sameUser = `${MARKER}-${randomUUID()}`;
@@ -717,6 +806,7 @@ async function main() {
       const removed = await cleanup(observer, userIds);
       say(`cleanup: ${removed.ok ? "PASS" : removed.verdict}`);
       if (!removed.ok) throw new Error(removed.verdict);
+      fixturesSettled = true;
       const after = await snapshot(observer);
       say(`cleanup_matches_preinsert: ${JSON.stringify(after) === JSON.stringify(before)}`);
       if (JSON.stringify(after) !== JSON.stringify(before)) throw new Error("BLOCKED — BRANCH SNAPSHOT CHANGED");
@@ -725,6 +815,18 @@ async function main() {
       say("branch_concurrency: PASS");
       say("isolated_branch_retained: true");
     } finally {
+      if (!fixturesSettled && userIds.length) {
+        try {
+          const removed = await cleanup(observer, userIds);
+          say(`cleanup_after_failure: ${removed.ok ? "PASS" : removed.verdict}`);
+          const triggers = await triggerState(observer);
+          if (!removed.ok || triggers.some((row) => !row.present || !row.enabled)) {
+            say("BLOCKED — FAILURE CLEANUP DID NOT RESTORE TRIGGERS");
+          }
+        } catch (err) {
+          say(redact(err?.message || err));
+        }
+      }
       await Promise.all([holder.end(), waiter.end(), observer.end()]);
     }
   } catch (err) {
