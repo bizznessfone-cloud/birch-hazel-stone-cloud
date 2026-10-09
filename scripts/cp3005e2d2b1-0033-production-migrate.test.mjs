@@ -108,7 +108,7 @@ test("0033 digest is pinned and the controller ledger stays frozen at 0001-0032"
   assert.doesNotMatch(src, /from "\.\/production-db-migrate\.mjs"/);
   assert.doesNotMatch(src, /process\.env\.DATABASE_URL/);
   assert.doesNotMatch(src, /STRIPE_SECRET|sk_live|sk_test|api\.stripe\.com/);
-  assert.equal(existsSync(join(root, ".github/workflows/cp3005e2d2b1-0033-production-apply.yml")), false);
+  assert.equal(existsSync(join(root, ".github/workflows/cp3005e2d2b1-0033-production-apply.yml")), true);
   const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
   assert.equal(pkg.scripts["db:migrate:0033"], undefined);
   assert.doesNotMatch(pkg.scripts.build, /0033|cp3005e2d2b1/);
@@ -229,7 +229,7 @@ test("the concurrency harness is marker-scoped and does not open a generic migra
   assert.doesNotMatch(race, /delete from hotels/i);
   assert.match(race, /created_by_user_id = any/);
   const workflows = readdirSync(join(root, ".github/workflows")).sort();
-  assert.deepEqual(workflows, ["production-database.yml"]);
+  assert.deepEqual(workflows, ["cp3005e2d2b1-0033-production-apply.yml", "production-database.yml"]);
   assert.equal(AUTHORISED_PENDING.includes(TARGET_MIGRATION), true);
   assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), false);
 });
