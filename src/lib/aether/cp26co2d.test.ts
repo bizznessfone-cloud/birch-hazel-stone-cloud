@@ -216,6 +216,7 @@ test("public and operator surfaces do not advertise the Owner control plane", ()
     "0031_cp3005e2c_organisation_type.sql",
     "0032_cp3005e2c1_organisation_acceptance.sql",
     "0033_cp3005e2d2b_founding_organisation.sql",
+    "0034_cp3005e2d2c_founding_classification_acceptance.sql",
   ]);
 });
 

@@ -76,22 +76,26 @@ organisation, not to each property or licence. `0032` is applied
 GHA 37333642947) and its workflow is retired. Production has no acceptance
 row. E-2D-1 password recovery is CLOSED / PASS. Cookie cache stays disabled.
 E-2D-2A is accepted. The business name is not the property name. Founding
-role stays `member` with `billing_authority` true. Organisation type stays
-unset until a later checkpoint. V1 legal acceptance, when recorded later, is
+role stays `member` with `billing_authority` true. Production organisation type
+stays unset. The source classification setter is migration 0034 and is not
+applied. V1 legal acceptance, when recorded later, is
 one versioned Terms of Service row; privacy may be linked and is not a second
 acceptance record in that decision. Going live stays an explicit later
 customer action after entitlement and allocation, not a Stripe webhook.
 Onboarding progress, when built, is derived from durable server rows.
-E-2D-2B authors `sbg_ensure_founding_organisation` in
-`0033_cp3005e2d2b_founding_organisation.sql` (digest
-`8880dbf93aa416e393af621957e3170da6390a6e3aef792d68fe97b709c22875`). 0033 is
-accepted and applied (GHA 37893184406). The real Neon proof is GHA
-37893386159: three direct backends, one organisation for one founding user,
-no rename on a later name, and the disposable marker rows removed.
-`AUTHORISED_PENDING=[]`. It does not create a hotel. `ensureHotelOrganisation`
-is unchanged and remains the checkout-time creator until a later checkpoint
-retires that call. E-2D-2C has not started. 0034+ stays fail-closed for
-Production apply. The temporary 0033 workflow is retired. Do not rerun
+E-2D-2B.1 applied `sbg_ensure_founding_organisation` (GHA 37893184406; Neon proof
+GHA 37893386159). E-2D-2C authors classification and a provisional Terms
+acceptance in `0034_cp3005e2d2c_founding_classification_acceptance.sql`
+(digest `3a80e2ec5ff9ab474c8dabf562fe8e3e37b8fcaa77ef7e8467bd0127afdc433c`).
+0034 is not in the accepted ledger and is not authorised pending. It is not
+applied. No Production organisation was classified and no acceptance row was
+written. `terms-v1` is a provisional technical token, not published legal
+Terms. Privacy is linked later and is not a second acceptance row. The
+existing evidence columns are organisation, accepting user, version, and
+`accepted_at`. They are not an IP address, a Terms snapshot, a checkbox, or a
+document hash. `ensureHotelOrganisation` is unchanged. E-2D-2D has not
+started. 0034+ stays fail-closed for Production apply. The temporary 0033
+workflow is retired. Do not rerun
 `scripts/cp3005e2d2b1-0033-production-migrate.mjs`.
 
 The classification is kept so later onboarding copy, terminology, defaults,

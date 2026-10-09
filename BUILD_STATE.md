@@ -2,6 +2,22 @@
 
 This file describes **current reality**, not intended future state.
 
+## CP30.05E-2D-2C — classification and provisional terms acceptance authored, not applied
+
+**E-2D-2B.1 is PASS. E-2D-2C is in source only. 0034 is not authorised and is not applied. E-2D-2D NOT STARTED. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
+
+Organisation and property stay different. The organisation is the business. A property is a real hotel or accommodation that business serves. A transfer operator is not a hotel. Classification is `sbg_organisations.organisation_type`, not membership role. The founding membership stays `role = member`, `billing_authority = true`.
+
+`sbg_classify_founding_organisation(text, text)` sets that type only for the caller’s unambiguous founding organisation: the one organisation they created, while they still have an active billing membership on it. NULL may become `hotel` or `transfer_operator`. The same value is idempotent. A different non-NULL value is rejected. The organisation row is locked with `FOR UPDATE` before the write. The client cannot name an organisation. A billing seat on someone else’s organisation is not classified.
+
+`sbg_record_founding_terms_acceptance(text)` inserts one row into the existing `sbg_organisation_acceptances` table after the type is set. The agreement token is the server-owned provisional value `terms-v1`. No Terms document is published or approved by this checkpoint. Privacy is not a second row. The same organisation, user, and version does not insert twice. The row stores organisation, accepting user, version token, and `accepted_at`. It does not store an IP address, the Terms text, a checkbox, or a document hash. A read does not insert a row. Signup and founding do not call this function.
+
+`sbg_read_founding_onboarding_state(text)` returns only that caller’s founding state: missing, ambiguous, or ready with type and whether `terms-v1` is accepted. Ambiguous and missing results do not reveal an organisation id. `aether_app` can execute the three caller functions and cannot execute the internal resolver. `aether_app` still has no SELECT, INSERT, UPDATE, or DELETE on `sbg_organisation_acceptances`.
+
+Migration **0034** (`0034_cp3005e2d2c_founding_classification_acceptance.sql`, digest `3a80e2ec5ff9ab474c8dabf562fe8e3e37b8fcaa77ef7e8467bd0127afdc433c`) is source only. Gate B accepted ledger stays **0001–0033**. `AUTHORISED_PENDING=[]`. A directory scan of this commit reports the file as unexpected pending and does not apply it. Do not apply 0034 from this checkpoint. No acceptance row was written. The existing Production organisation was not classified.
+
+`ensureHotelOrganisation` is unchanged. Homepage Get started is still `#start`. Commerce remains **test**. Better Auth stays 1.6.30. Cookie cache stays off.
+
 ## CP30.05E-2D-2B.1 — founding organisation primitive applied and Neon-verified
 
 **E-2D-2A is ACCEPTED. E-2D-2B code is COMPLETE. 0033 is APPLIED and Neon-verified. E-2D-2C NOT STARTED. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
