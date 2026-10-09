@@ -515,7 +515,12 @@ async function main() {
           await db.query("BEGIN READ ONLY");
           const facts = await inspect0034State(db, sourceMigrations);
           await db.query("ROLLBACK");
-          return facts;
+          return {
+            ...facts,
+            expectedProjectId: gate.identity.projectId,
+            expectedBranchId: gate.identity.branchId,
+            expectedEndpointId: gate.identity.endpointId,
+          };
         } finally {
           await db.end();
         }

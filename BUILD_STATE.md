@@ -2,13 +2,15 @@
 
 This file describes **current reality**, not intended future state.
 
-## CP30.05E-2D-2C.1 — isolated 0034 installed, owner cannot SET ROLE aether_app
+## CP30.05E-2D-2C.1 — isolated 0034 verified, Production apply prepared not executed
 
-**0034 is applied only on isolated branch `br-late-paper-b15gkfj3` (project `quiet-sound-53513710`, endpoint `ep-snowy-meadow-b1bgiqe2`). Production 0034 is not applied. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
+**0034 is applied only on isolated branch `br-late-paper-b15gkfj3` (project `quiet-sound-53513710`, endpoint `ep-snowy-meadow-b1bgiqe2`). Production branch `br-green-darkness-b1k7wkue` and endpoint `ep-withered-haze-b1fd9hse` do not have 0034. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED. Migration 0034 is not CP31.**
 
 GHA [37958312702](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/37958312702) passed the identity gate at ledger 0001–0033 and recorded `GATE PASS — 0034 APPLIED AND VERIFIED`. Same-type classification held the organisation lock. The conflicting waiter then raised `organisation type is already set` (`42501`) from `sbg_classify_founding_organisation`. That rejection is the correct database result. Node 22 exited on it before the harness assertion, because the waiter promise was caught only after the holder commit. Cleanup did not run.
 
 GHA [37961828006](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/37961828006) verified the installed 0034 without reapplying it. Concurrency, conflicting classification, terms acceptance, and the acceptance-table privilege checks passed. `SET LOCAL ROLE aether_app` then failed with `permission denied to set role "aether_app"` (`42501`). That is the 0014 rule: the owner is not a member of `aether_app`. No grant was added. The verification workflow was not dispatched again from this correction.
+
+GHA [37964615765](https://github.com/bizznessfone-cloud/birch-hazel-stone-cloud/actions/runs/37964615765) on `7509d881831ac23f5adcaff48366a3664936efcf` completed successfully. It proved the isolated ledger 0001–0034, the installed contract, three independent sessions, classification locking, conflicting-type rejection, idempotent retries, terms-v1 acceptance, unauthorised-member rejection, a read-only state check, no direct acceptance-table privileges, and that the owner cannot `SET ROLE aether_app`. Marker fixtures were removed and triggers stayed enabled. That run is the isolated evidence. The Production workflow no longer calls the Neon API or the isolated script. It has not been dispatched. Production SQL was not run.
 
 ## CP30.05E-2D-2C — classification and provisional terms acceptance authored, not applied
 

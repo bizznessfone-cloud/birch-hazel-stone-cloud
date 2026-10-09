@@ -15,7 +15,11 @@ import {
   CONFIRM_BLOCKED,
   CONTRACT_BLOCKED,
   DIGEST_BLOCKED,
+  NEON_BLOCKED,
   POST_BLOCKED,
+  PRODUCTION_BRANCH_ID,
+  PRODUCTION_ENDPOINT_ID,
+  PRODUCTION_PROJECT_ID,
   REQUIRED_CONFIRMATION,
   REQUIRED_LEDGER,
   TARGET_DIGEST,
@@ -23,6 +27,8 @@ import {
   UNEXPECTED_PLAN,
   apply0034Transaction,
   evaluate0034Baseline,
+  productionNeonFailures,
+  productionOwnerHostFailures,
 } from "./cp3005e2d2c1-0034-production-migrate.mjs";
 import { spawnSync } from "node:child_process";
 import { databaseHost, directOwnerUrl, EXPECTED_BRANCH, EXPECTED_PROJECT, FORBIDDEN_BRANCH, FORBIDDEN_ENDPOINT, hostIsProductionEndpoint, ISOLATED_CONFIRMATION, ISOLATED_OWNER_ENV, acceptancePrivilegeFailures, captureQuery, disposableMarkerOrgProblem, isDisposableMarkerUser, isolatedGateFailures, isolatedLedgerMode, sameDatabaseHost } from "./cp3005e2d2c1-neon-concurrency.mjs";
@@ -71,6 +77,9 @@ function facts(overrides = {}) {
     database: "neondb",
     currentUser: "neondb_owner",
     sessionUser: "neondb_owner",
+    projectId: PRODUCTION_PROJECT_ID,
+    branchId: PRODUCTION_BRANCH_ID,
+    endpointId: PRODUCTION_ENDPOINT_ID,
     confirmation: REQUIRED_CONFIRMATION,
     ownerUrl: "postgres://owner@localhost/neondb",
     ledger: [...REQUIRED_LEDGER],
@@ -112,9 +121,17 @@ test("0034 digest is pinned and the controller ledger stays frozen at 0001-0033"
   assert.doesNotMatch(src, /STRIPE_SECRET|sk_live|sk_test|api\.stripe\.com/);
   assert.equal(existsSync(join(root, ".github/workflows/cp3005e2d2c1-0034-production-apply.yml")), true);
   const workflow = readFileSync(join(root, ".github/workflows/cp3005e2d2c1-0034-production-apply.yml"), "utf8");
-  assert.match(workflow, /ref: 541deafff11b7fcebaeca8fb2abfe3e7f1a75b9f/);
+  assert.match(workflow, /ref: PENDING_REVIEWED_SHA/);
   assert.match(workflow, /APPLY-0034/);
+  assert.match(workflow, /AETHER_DATABASE_OWNER_URL/);
+  assert.match(workflow, /cp3005e2d2c1-0034-production-migrate\.mjs/);
+  assert.match(workflow, /37964615765/);
+  assert.doesNotMatch(workflow, /NEON_API_KEY/);
+  assert.doesNotMatch(workflow, /NEON_PROJECT_ID/);
+  assert.doesNotMatch(workflow, /neon-concurrency\.mjs/);
+  assert.doesNotMatch(workflow, /AETHER_0034_ISOLATED_OWNER_URL/);
   assert.doesNotMatch(workflow, /production-db-migrate\.mjs/);
+  assert.doesNotMatch(workflow, /stripe/i);
   assert.match(race, /BLOCKED — ISOLATED VERIFICATION UNAVAILABLE/);
   assert.match(race, /BEGIN READ ONLY/);
   assert.match(race, /quiet-sound-53513710/);
@@ -183,6 +200,30 @@ test("the isolated gate accepts only the named quiet-sound branch", () => {
   assert.deepEqual(isolatedGateFailures({ identity, ledger: [...REQUIRED_LEDGER], schema: { ...schema, founding: false } }), ["schema"]);
   assert.equal(ISOLATED_CONFIRMATION, "VERIFY-0034-ISOLATED");
   assert.equal(ISOLATED_OWNER_ENV, "AETHER_0034_ISOLATED_OWNER_URL");
+});
+
+test("the production controller rejects every database that is not the production endpoint", () => {
+  const host = `postgres://owner@${PRODUCTION_ENDPOINT_ID}-pooler.eu-central-1.aws.neon.tech/neondb`;
+  assert.deepEqual(productionOwnerHostFailures(host), []);
+  assert.deepEqual(
+    productionOwnerHostFailures("postgres://owner@ep-snowy-meadow-b1bgiqe2.eu-central-1.aws.neon.tech/neondb"),
+    ["endpoint-host"],
+  );
+  assert.deepEqual(productionOwnerHostFailures("not a url"), ["endpoint-host"]);
+  assert.deepEqual(productionNeonFailures(facts()), []);
+  const wrongProject = evaluate0034Baseline(facts({ projectId: "round-sunset-69114165" }), file);
+  assert.equal(wrongProject.verdict, NEON_BLOCKED);
+  assert.deepEqual(wrongProject.failures, ["project", "wrong-project"]);
+  const isolated = evaluate0034Baseline(
+    facts({ branchId: "br-late-paper-b15gkfj3", endpointId: "ep-snowy-meadow-b1bgiqe2" }),
+    file,
+  );
+  assert.equal(isolated.verdict, NEON_BLOCKED);
+  assert.deepEqual(isolated.failures, ["branch", "isolated-branch", "endpoint", "isolated-endpoint"]);
+  assert.equal(evaluate0034Baseline(facts({ projectId: "" }), file).verdict, NEON_BLOCKED);
+  assert.match(src, /current_setting\('neon\.project_id'/);
+  assert.match(src, /BLOCKED — PRODUCTION ENDPOINT HOST MISMATCH/);
+  assert.doesNotMatch(src, /NEON_API_KEY/);
 });
 
 test("confirmation and an unexpected migration fail closed", () => {

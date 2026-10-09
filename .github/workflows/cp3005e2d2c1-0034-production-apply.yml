@@ -1,6 +1,8 @@
 # TEMPORARY single-use CP30.05E-2D-2C.1 Production apply for migration 0034.
 # Delete this file immediately after one successful verified apply.
 # Not a permanent mutation surface. Does not call a payment provider or change DNS.
+# Does not deploy application code. Does not run the isolated verification again.
+# Isolated evidence is GitHub Actions run 37964615765. Do not retarget the checkout.
 name: CP30.05E-2D-2C.1 0034 single-use Production apply
 
 on:
@@ -45,7 +47,7 @@ jobs:
       - name: Checkout authorised commit
         uses: actions/checkout@v4
         with:
-          ref: 541deafff11b7fcebaeca8fb2abfe3e7f1a75b9f
+          ref: PENDING_REVIEWED_SHA
           persist-credentials: false
 
       - name: Setup Node
@@ -56,14 +58,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Prove classification on an isolated Neon branch
-        env:
-          AETHER_DATABASE_OWNER_URL: ${{ secrets.AETHER_DATABASE_OWNER_URL }}
-          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
-          NEON_PROJECT_ID: ${{ secrets.NEON_PROJECT_ID }}
-          CP3005E2D2C1_CONFIRMATION: ${{ inputs.confirmation }}
-        run: node scripts/cp3005e2d2c1-neon-concurrency.mjs
 
       - name: Apply migration 0034 only
         env:

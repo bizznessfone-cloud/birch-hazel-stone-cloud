@@ -86,6 +86,13 @@ export const PARTIAL_BLOCKED = "BLOCKED — 0034 PARTIAL / LEDGER SPLIT";
 export const CONTRACT_BLOCKED = "BLOCKED — 0034 CLASSIFICATION CONTRACT INVALID";
 export const IDENTITY_BLOCKED = "BLOCKED — DATABASE IDENTITY MISMATCH";
 export const OWNER_BLOCKED = "BLOCKED — OWNER IDENTITY MISMATCH";
+export const NEON_BLOCKED = "BLOCKED — PRODUCTION NEON IDENTITY MISMATCH";
+export const PRODUCTION_PROJECT_ID = "quiet-sound-53513710";
+export const PRODUCTION_BRANCH_ID = "br-green-darkness-b1k7wkue";
+export const PRODUCTION_ENDPOINT_ID = "ep-withered-haze-b1fd9hse";
+const ISOLATED_BRANCH_ID = "br-late-paper-b15gkfj3";
+const ISOLATED_ENDPOINT_ID = "ep-snowy-meadow-b1bgiqe2";
+const WRONG_PROJECT_ID = "round-sunset-69114165";
 
 const ALLOWED_LEDGER = new Set([...REQUIRED_LEDGER, TARGET_MIGRATION]);
 const SEARCH_PATH = "pg_catalog, public";
@@ -143,6 +150,35 @@ export function assertReviewedChecksums(checksums) {
 
 export function ownerUrlFromEnv(env) {
   return String(env?.AETHER_DATABASE_OWNER_URL ?? "").trim();
+}
+
+export function productionNeonFailures(facts) {
+  const expectedProject = String(facts?.expectedProjectId || PRODUCTION_PROJECT_ID);
+  const expectedBranch = String(facts?.expectedBranchId || PRODUCTION_BRANCH_ID);
+  const expectedEndpoint = String(facts?.expectedEndpointId || PRODUCTION_ENDPOINT_ID);
+  const projectId = String(facts?.projectId ?? "").trim();
+  const branchId = String(facts?.branchId ?? "").trim();
+  const endpointId = String(facts?.endpointId ?? "").trim();
+  const failures = [];
+  if (projectId !== expectedProject) failures.push("project");
+  if (projectId === WRONG_PROJECT_ID) failures.push("wrong-project");
+  if (branchId !== expectedBranch) failures.push("branch");
+  if (branchId === ISOLATED_BRANCH_ID && expectedBranch !== ISOLATED_BRANCH_ID) failures.push("isolated-branch");
+  if (endpointId !== expectedEndpoint) failures.push("endpoint");
+  if (endpointId === ISOLATED_ENDPOINT_ID && expectedEndpoint !== ISOLATED_ENDPOINT_ID) failures.push("isolated-endpoint");
+  return failures;
+}
+
+export function productionOwnerHostFailures(ownerUrl) {
+  let host = "";
+  try {
+    host = new URL(String(ownerUrl ?? "").replace(/-pooler\./g, ".")).hostname.toLowerCase();
+  } catch {
+    return ["endpoint-host"];
+  }
+  const label = host.split(".")[0] ?? "";
+  if (label !== PRODUCTION_ENDPOINT_ID) return ["endpoint-host"];
+  return [];
 }
 
 function blocked(verdict, extra = {}) {
@@ -244,6 +280,8 @@ export function evaluate0034Baseline(facts, file) {
   const platform = platformFailures(facts);
   if (platform.includes(IDENTITY_BLOCKED)) return blocked(IDENTITY_BLOCKED, { failures: platform });
   if (platform.includes(OWNER_BLOCKED)) return blocked(OWNER_BLOCKED, { failures: platform });
+  const neon = productionNeonFailures(facts);
+  if (neon.length) return blocked(NEON_BLOCKED, { failures: neon });
 
   const { pending, appliedCount, unexpectedApplied, missingHistorical, unexpectedPending } = ledgerState(facts);
   if (appliedCount > 1 || unexpectedApplied.length || missingHistorical.length || unexpectedPending.length) {
@@ -283,6 +321,16 @@ export function evaluate0034Aftermath(facts, before) {
   if (pending.length) failures.push("pending-remain");
   failures.push(...contractFailures(facts));
   failures.push(...platformFailures(facts));
+  failures.push(
+    ...productionNeonFailures({
+      projectId: facts?.projectId,
+      branchId: facts?.branchId,
+      endpointId: facts?.endpointId,
+      expectedProjectId: before?.expectedProjectId,
+      expectedBranchId: before?.expectedBranchId,
+      expectedEndpointId: before?.expectedEndpointId,
+    }),
+  );
   failures.push(...snapshotFailures(facts, before));
   if (Number(facts?.classifiedCount) !== 0) failures.push("classified-not-zero");
   if (Number(facts?.acceptanceCount) !== 0) failures.push("acceptance-not-zero");
@@ -380,6 +428,9 @@ function reportFacts(label, facts) {
   say(`database: ${facts?.database ?? ""}`);
   say(`current_user: ${facts?.currentUser ?? ""}`);
   say(`session_user: ${facts?.sessionUser ?? ""}`);
+  say(`neon_project: ${facts?.projectId ?? ""}`);
+  say(`neon_branch: ${facts?.branchId ?? ""}`);
+  say(`neon_endpoint: ${facts?.endpointId ?? ""}`);
   say("ledger:");
   for (const name of facts?.ledger ?? []) say(`  ${name}`);
   const pending = pendingMigrations(facts?.sourceMigrations ?? [], facts?.ledger ?? []).map((row) => row.name);
@@ -438,7 +489,14 @@ function blankFunction() {
 
 export async function inspect0034State(client, sourceMigrations) {
   const identity = (
-    await client.query("select current_database() as database, current_user, session_user")
+    await client.query(
+      `select current_database() as database,
+              current_user,
+              session_user,
+              current_setting('neon.project_id', true) as project_id,
+              current_setting('neon.branch_id', true) as branch_id,
+              current_setting('neon.endpoint_id', true) as endpoint_id`,
+    )
   ).rows[0];
   let ledger = [];
   let ledgerReadable = true;
@@ -567,6 +625,9 @@ export async function inspect0034State(client, sourceMigrations) {
     database: identity?.database,
     currentUser: identity?.current_user,
     sessionUser: identity?.session_user,
+    projectId: String(identity?.project_id ?? "").trim(),
+    branchId: String(identity?.branch_id ?? "").trim(),
+    endpointId: String(identity?.endpoint_id ?? "").trim(),
     ledger,
     ledgerReadable,
     sourceMigrations,
@@ -674,6 +735,10 @@ async function main() {
   }
   if (!ownerUrl) {
     fail(BLOCKED_OWNER_URL);
+    return;
+  }
+  if (productionOwnerHostFailures(ownerUrl).length) {
+    fail("BLOCKED — PRODUCTION ENDPOINT HOST MISMATCH");
     return;
   }
 
