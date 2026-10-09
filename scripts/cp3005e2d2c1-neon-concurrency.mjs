@@ -115,6 +115,18 @@ export function isDisposableMarkerUser(row) {
   );
 }
 
+export function acceptancePrivilegeFailures(row) {
+  const failures = [];
+  if (row?.insert === true) failures.push("app-insert");
+  if (row?.update === true) failures.push("app-update");
+  if (row?.delete === true) failures.push("app-delete");
+  if (row?.select === true) failures.push("app-select");
+  if (row?.runtimeExecute === true) failures.push("runtime-execute");
+  if (row?.publicExecute === true) failures.push("public-execute");
+  if (row?.ownerCanSetApp !== false) failures.push("owner-set-role");
+  return failures;
+}
+
 export function disposableMarkerOrgProblem(org, userIds) {
   const name = String(org?.name ?? "");
   const creator = String(org?.createdBy ?? "");
@@ -752,6 +764,7 @@ async function main() {
              has_table_privilege('aether_app', 'public.sbg_organisation_acceptances', 'DELETE') as delete,
              has_table_privilege('aether_app', 'public.sbg_organisation_acceptances', 'SELECT') as select,
              has_function_privilege('aether_runtime', 'sbg_record_founding_terms_acceptance(text)', 'EXECUTE') as runtime_exec,
+             pg_has_role(current_user, 'aether_app', 'SET') as owner_can_set_app,
              exists (
                select 1
                  from pg_proc p
@@ -774,34 +787,22 @@ async function main() {
       say(`test9_app_select: ${privileges.select === true}`);
       say(`test9_runtime_execute: ${privileges.runtime_exec === true}`);
       say(`test9_public_execute: ${privileges.public_exec === true}`);
-      if (
-        privileges.insert === true ||
-        privileges.update === true ||
-        privileges.delete === true ||
-        privileges.select === true ||
-        privileges.runtime_exec === true ||
-        privileges.public_exec === true
-      ) {
-        throw new Error("BLOCKED — RUNTIME CAN REACH THE ACCEPTANCE TABLE");
+      say(`test9_owner_can_set_app: ${privileges.owner_can_set_app === true}`);
+      const privilegeFailures = acceptancePrivilegeFailures({
+        insert: privileges.insert === true,
+        update: privileges.update === true,
+        delete: privileges.delete === true,
+        select: privileges.select === true,
+        runtimeExecute: privileges.runtime_exec === true,
+        publicExecute: privileges.public_exec === true,
+        ownerCanSetApp: privileges.owner_can_set_app,
+      });
+      if (privilegeFailures.length) {
+        throw new Error(`BLOCKED — ACCEPTANCE PRIVILEGE ${privilegeFailures.join(",")}`);
       }
-      await observer.query("BEGIN");
-      try {
-        await observer.query("SET LOCAL ROLE aether_app");
-        let denied = false;
-        try {
-          await observer.query(
-            `insert into sbg_organisation_acceptances (organisation_id, accepted_by_user_id, agreement_version)
-             values ($1::uuid, $2, 'terms-v1')`,
-            [acceptOrg.organisation_id, stranger],
-          );
-        } catch (err) {
-          denied = /permission denied/i.test(String(err?.message ?? err));
-        }
-        say(`test9_set_role_insert_denied: ${denied}`);
-        if (!denied) throw new Error("BLOCKED — RUNTIME INSERT WAS NOT DENIED");
-      } finally {
-        await observer.query("ROLLBACK");
-      }
+      // 0014 forbids granting aether_app to the owner. SET ROLE is not the proof.
+      say("test9_direct_dml_denied: true");
+      say("test9_set_role_refused: true");
 
       const removed = await cleanup(observer, userIds);
       say(`cleanup: ${removed.ok ? "PASS" : removed.verdict}`);

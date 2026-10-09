@@ -25,7 +25,7 @@ import {
   evaluate0034Baseline,
 } from "./cp3005e2d2c1-0034-production-migrate.mjs";
 import { spawnSync } from "node:child_process";
-import { databaseHost, directOwnerUrl, EXPECTED_BRANCH, EXPECTED_PROJECT, FORBIDDEN_BRANCH, FORBIDDEN_ENDPOINT, hostIsProductionEndpoint, ISOLATED_CONFIRMATION, ISOLATED_OWNER_ENV, captureQuery, disposableMarkerOrgProblem, isDisposableMarkerUser, isolatedGateFailures, isolatedLedgerMode, sameDatabaseHost } from "./cp3005e2d2c1-neon-concurrency.mjs";
+import { databaseHost, directOwnerUrl, EXPECTED_BRANCH, EXPECTED_PROJECT, FORBIDDEN_BRANCH, FORBIDDEN_ENDPOINT, hostIsProductionEndpoint, ISOLATED_CONFIRMATION, ISOLATED_OWNER_ENV, acceptancePrivilegeFailures, captureQuery, disposableMarkerOrgProblem, isDisposableMarkerUser, isolatedGateFailures, isolatedLedgerMode, sameDatabaseHost } from "./cp3005e2d2c1-neon-concurrency.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -331,4 +331,32 @@ test("only the failed run's marker users and their prefixed organisations are di
   assert.match(race, /removePriorMarkers/);
   assert.match(race, /isolated_0034_apply_invoked/);
   assert.match(race, /BLOCKED — INSTALLED 0034 WAS APPLIED AGAIN/);
+});
+
+test("owner cannot SET ROLE aether_app and runtime still has no acceptance DML", () => {
+  const denied = {
+    insert: false,
+    update: false,
+    delete: false,
+    select: false,
+    runtimeExecute: false,
+    publicExecute: false,
+    ownerCanSetApp: false,
+  };
+  assert.deepEqual(acceptancePrivilegeFailures(denied), []);
+  assert.deepEqual(acceptancePrivilegeFailures({ ...denied, insert: true }), ["app-insert"]);
+  assert.deepEqual(acceptancePrivilegeFailures({ ...denied, select: true }), ["app-select"]);
+  assert.deepEqual(acceptancePrivilegeFailures({ ...denied, runtimeExecute: true }), ["runtime-execute"]);
+  assert.deepEqual(acceptancePrivilegeFailures({ ...denied, publicExecute: true }), ["public-execute"]);
+  assert.deepEqual(acceptancePrivilegeFailures({ ...denied, ownerCanSetApp: true }), ["owner-set-role"]);
+  assert.deepEqual(acceptancePrivilegeFailures({ ...denied, ownerCanSetApp: null }), ["owner-set-role"]);
+  assert.deepEqual(
+    acceptancePrivilegeFailures({ ...denied, update: true, ownerCanSetApp: true }),
+    ["app-update", "owner-set-role"],
+  );
+  assert.doesNotMatch(race, /SET\s+(LOCAL\s+)?ROLE\s+aether_app/);
+  assert.match(race, /pg_has_role\(current_user, 'aether_app', 'SET'\)/);
+  assert.match(race, /has_table_privilege\('aether_app', 'public\.sbg_organisation_acceptances', 'INSERT'\)/);
+  const roleMigration = readFileSync(join(root, "migrations", "0014_cp13a_production_app_role.sql"), "utf8");
+  assert.match(roleMigration, /Do not grant this role to the connecting owner/);
 });
