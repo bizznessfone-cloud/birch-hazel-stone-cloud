@@ -479,8 +479,19 @@ async function main() {
       throw new Error("BLOCKED — PRODUCTION 0033 IS NOT INSTALLED");
     }
     const endpoints = await neonApi(apiKey, `/projects/${encodeURIComponent(projectId)}/endpoints`);
-    say(`neon_endpoints: ${(endpoints.endpoints ?? []).length}`);
-    const parents = matchingEndpointBranchIds(endpoints.endpoints ?? [], productionUrl);
+    const listed = endpoints.endpoints ?? [];
+    say(`neon_endpoints: ${listed.length}`);
+    const productionLabel = databaseHost(productionUrl).split(".")[0] ?? "";
+    say(`production_label: ${productionLabel}`);
+    for (const endpoint of listed) {
+      const hostLabel = String(endpoint?.host ?? "").toLowerCase().split(".")[0] ?? "";
+      say(`endpoint_keys: ${Object.keys(endpoint ?? {}).sort().join(",")}`);
+      say(`endpoint_id: ${String(endpoint?.id ?? "")}`);
+      say(`endpoint_host_label: ${hostLabel}`);
+      say(`endpoint_branch_field: ${String(endpoint?.branch_id ?? "")}`);
+      say(`endpoint_id_matches_production_label: ${String(endpoint?.id ?? "").toLowerCase() === productionLabel}`);
+    }
+    const parents = matchingEndpointBranchIds(listed, productionUrl);
     say(`production_endpoint_matches: ${parents.length}`);
     if (parents.length !== 1) throw new Error("BLOCKED — PRODUCTION ENDPOINT DID NOT MATCH ONE BRANCH");
     const parentBranchId = parents[0];
