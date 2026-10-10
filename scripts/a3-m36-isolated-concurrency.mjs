@@ -5,8 +5,10 @@
  * Requires 0036 already present on br-dawn-hat-b1b4uqhn. Uses only
  * AETHER_0036_ISOLATED_OWNER_URL. An optional AETHER_0036_ISOLATED_APP_URL
  * must be a distinct aether_app login on that same endpoint. There is no
- * Production fallback and no terms-v1 approval. Fixtures are synthetic and
- * removed in one cleanup transaction. A pass requires observed lock waits.
+ * Production fallback and no terms-v1 approval. Cleanup never disables a
+ * trigger or foreign key. Rows that those safeguards refuse to delete fail
+ * the gate with the table and the error. A missing app login is NOT TESTED,
+ * not a pass, and the overall result is not full verification.
  */
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
@@ -41,12 +43,13 @@ export const FIXTURE_UNAPPROVED = "a3m36-fixture-unapproved";
 export const FIXTURE_APP_DENIED = "a3m36-fixture-app-denied";
 export const FIXTURE_VERSIONS = [FIXTURE_EFFECTIVE, FIXTURE_SUPERSEDED, FIXTURE_APP_DENIED];
 export const PASS_VERDICT = "GATE PASS — 0036 ISOLATED CONCURRENCY VERIFIED";
+export const INCOMPLETE_VERDICT = "INCOMPLETE — RUNTIME ROLE SECURITY NOT TESTED";
 
-const DELETE_TRIGGERS = [
-  ["sbg_organisations", "sbg_organisations_no_delete"],
-  ["sbg_organisation_members", "sbg_organisation_members_no_delete"],
-  ["sbg_organisation_acceptances", "sbg_organisation_acceptances_immutable"],
-  ["sbg_organisation_acceptances", "sbg_organisation_acceptances_no_truncate"],
+const REQUIRED_TRIGGERS = [
+  "sbg_organisations_no_delete",
+  "sbg_organisation_members_no_delete",
+  "sbg_organisation_acceptances_immutable",
+  "sbg_organisation_acceptances_no_truncate",
 ];
 
 const IDENTITY_SQL = `select current_database() as database,
@@ -128,7 +131,7 @@ export function isolationVerdict({ leftId, rightId, leftCount, rightCount, leftN
 
 export function runtimeRoleVerdict({ catalogMatch, appConnection, live }) {
   if (catalogMatch !== true) return "BLOCKED — RUNTIME PRIVILEGE CATALOG";
-  if (appConnection === "absent") return "";
+  if (appConnection === "absent") return "NOT TESTED";
   if (!live?.sameIdentity || live.role !== "aether_app") return "BLOCKED — APP CONNECTION IDENTITY";
   if (live.selectAllowed !== false || live.insertAllowed !== false || live.updateAllowed !== false) {
     return "BLOCKED — APP CONNECTION READ OR WROTE APPROVALS";
@@ -136,6 +139,25 @@ export function runtimeRoleVerdict({ catalogMatch, appConnection, live }) {
   if (live.executeCreate !== true) return "BLOCKED — APP CONNECTION CANNOT EXECUTE CREATE";
   if (live.runtimeExecute !== false || live.publicExecute !== false) return "BLOCKED — RUNTIME ROLE CAN EXECUTE";
   return "";
+}
+
+export function overallVerdict({ concurrency, terms, runtime, cleanup }) {
+  const blocked = [concurrency, terms, runtime, cleanup].find((item) => String(item ?? "").startsWith("BLOCKED"));
+  if (blocked) return { exitCode: 1, full: false, verdict: blocked };
+  if (concurrency !== "PASS" || terms !== "PASS" || cleanup !== "PASS") {
+    return { exitCode: 1, full: false, verdict: "BLOCKED — CONCURRENCY SECTIONS DID NOT COMPLETE" };
+  }
+  if (runtime === "NOT TESTED") return { exitCode: 2, full: false, verdict: INCOMPLETE_VERDICT };
+  if (runtime !== "PASS") return { exitCode: 1, full: false, verdict: "BLOCKED — RUNTIME ROLE SECURITY INCOMPLETE" };
+  return { exitCode: 0, full: true, verdict: PASS_VERDICT };
+}
+
+export function cleanupFailure(step, err) {
+  const message = String(err?.message ?? err ?? "unknown").split("\n")[0].slice(0, 240);
+  const table = err?.table ? ` table ${err.table}` : "";
+  const constraint = err?.constraint ? ` constraint ${err.constraint}` : "";
+  const code = err?.code ? ` sqlstate ${err.code}` : "";
+  return `BLOCKED — CLEANUP STOPPED AT ${step}${table}${constraint}${code}: ${message}`;
 }
 
 export function concurrencyLedgerOk(names) {
@@ -246,40 +268,168 @@ async function waitForLock(observer, pid) {
   return { observed: false, sawPid };
 }
 
-async function triggerState(db) {
-  const names = DELETE_TRIGGERS.map(([, trigger]) => trigger);
+async function triggerGuard(db) {
   const rows = (await db.query(
-    `select tgname, tgenabled from pg_trigger where not tgisinternal and tgname = any($1::text[])`,
-    [names],
+    `select t.tgname, t.tgenabled
+       from pg_trigger t
+       join pg_class c on c.oid = t.tgrelid
+       join pg_namespace n on n.oid = c.relnamespace
+      where not t.tgisinternal
+        and n.nspname = 'public'
+        and t.tgname = any($1::text[])`,
+    [REQUIRED_TRIGGERS],
   )).rows;
-  return names.map((name) => {
-    const row = rows.find((item) => item.tgname === name);
-    return { name, enabled: row?.tgenabled === "O", present: Boolean(row) };
-  });
+  const missing = REQUIRED_TRIGGERS.filter((name) => !rows.some((row) => row.tgname === name && row.tgenabled === "O"));
+  if (missing.length) return { ok: false, verdict: `BLOCKED — REQUIRED TRIGGER NOT ENABLED ${missing.join(",")}` };
+  return { ok: true };
 }
 
-async function setDeleteTriggers(db, enabled) {
-  const verb = enabled ? "ENABLE" : "DISABLE";
-  for (const [table, trigger] of DELETE_TRIGGERS) {
-    await db.query(`alter table public.${table} ${verb} trigger ${trigger}`);
-  }
-}
-
-async function probeTriggerControl(db) {
-  const before = await triggerState(db);
-  if (before.some((row) => !row.present || !row.enabled)) return { ok: false, verdict: "BLOCKED — DELETE TRIGGERS NOT ENABLED" };
+async function runTransaction(db, step, statements) {
   await db.query("begin");
   try {
-    await setDeleteTriggers(db, false);
-    await setDeleteTriggers(db, true);
-    const inside = await triggerState(db);
-    await db.query("rollback");
-    if (inside.some((row) => !row.enabled)) return { ok: false, verdict: "BLOCKED — TRIGGER RE-ENABLE FAILED" };
+    for (const [sql, params] of statements) await db.query(sql, params);
+    await db.query("commit");
     return { ok: true };
   } catch (err) {
-    try { await db.query("rollback"); } catch { /* keep the original error */ }
-    return { ok: false, verdict: "BLOCKED — TRIGGER PROBE FAILED", error: redact(err?.message || err) };
+    try { await db.query("rollback"); } catch { /* the statement already aborted the transaction */ }
+    return { ok: false, verdict: cleanupFailure(step, err) };
   }
+}
+
+async function runStep(db, step, sql, params) {
+  return runTransaction(db, step, [[sql, params]]);
+}
+
+async function markerLeftovers(db, userIds) {
+  const row = (await db.query(
+    `select
+       (select count(*)::int from public."user" where id = any($1::text[])) as users,
+       (select count(*)::int from public.sbg_organisations where created_by_user_id = any($1::text[])) as orgs,
+       (select count(*)::int from public.hotels
+         where name like $3 and code like $4) as hotels,
+       (select count(*)::int from public.sbg_approved_property_agreement_versions
+         where agreement_version = any($2::text[])) as approvals`,
+    [userIds, FIXTURE_VERSIONS, `${NAME_PREFIX}%`, `${MARKER}-%`],
+  )).rows[0];
+  return {
+    users: Number(row.users),
+    orgs: Number(row.orgs),
+    hotels: Number(row.hotels),
+    approvals: Number(row.approvals),
+  };
+}
+
+async function cleanup(db, userIds) {
+  const ids = [...userIds];
+  const users = ids.length
+    ? (await db.query(`select id, name, email from public."user" where id = any($1::text[])`, [ids])).rows
+    : [];
+  if (users.some((row) => !isMarkerUser(row))) return { ok: false, verdict: "BLOCKED — REFUSING TO DELETE A NON-MARKER USER" };
+  const orgs = ids.length
+    ? (await db.query(
+      `select id::text as id, name, created_by_user_id from public.sbg_organisations where created_by_user_id = any($1::text[])`,
+      [ids],
+    )).rows
+    : [];
+  if (orgs.some((row) => !String(row.name).startsWith(NAME_PREFIX) || !ids.includes(String(row.created_by_user_id)))) {
+    return { ok: false, verdict: "BLOCKED — REFUSING TO DELETE A NON-MARKER ORGANISATION" };
+  }
+  const orgIds = orgs.map((row) => row.id);
+  const hotels = ids.length
+    ? (await db.query(
+      `select h.id::text as id, h.name, h.code
+         from public.hotels h
+         join public.app_hotel_accounts a on a.hotel_id = h.id
+        where a.user_id = any($1::text[])`,
+      [ids],
+    )).rows
+    : [];
+  if (hotels.some((row) => !String(row.name).startsWith(NAME_PREFIX) || !String(row.code).startsWith(`${MARKER}-`))) {
+    return { ok: false, verdict: "BLOCKED — REFUSING TO DELETE A NON-MARKER HOTEL" };
+  }
+  const hotelIds = hotels.map((row) => row.id);
+  const providers = hotelIds.length
+    ? (await db.query(
+      `select distinct a.provider_id::text as id
+         from public.hotel_provider_agreements a
+        where a.hotel_id = any($1::uuid[])
+          and not exists (
+            select 1 from public.hotel_provider_agreements other
+             where other.provider_id = a.provider_id
+               and not (other.hotel_id = any($1::uuid[]))
+          )`,
+      [hotelIds],
+    )).rows.map((row) => row.id)
+    : [];
+  const failures = [];
+  if (hotelIds.length) {
+    const hotelsDeleted = await runTransaction(db, "hotels", [
+      [`delete from public.hotel_provider_agreements where hotel_id = any($1::uuid[])`, [hotelIds]],
+      [`delete from public.app_hotel_accounts where hotel_id = any($1::uuid[]) or user_id = any($2::text[])`, [hotelIds, ids]],
+      [`delete from public.hotels where id = any($1::uuid[]) and name like $2 and code like $3`, [hotelIds, `${NAME_PREFIX}%`, `${MARKER}-%`]],
+    ]);
+    if (!hotelsDeleted.ok) failures.push(hotelsDeleted.verdict);
+  }
+  if (providers.length && failures.length === 0) {
+    const gone = await runStep(
+      db,
+      "providers",
+      `delete from public.providers p
+        where p.id = any($1::uuid[])
+          and not exists (select 1 from public.hotel_provider_agreements a where a.provider_id = p.id)`,
+      [providers],
+    );
+    if (!gone.ok) failures.push(gone.verdict);
+    else {
+      const leftProviders = Number((await db.query(
+        `select count(*)::int as n from public.providers where id = any($1::uuid[])`,
+        [providers],
+      )).rows[0].n);
+      if (leftProviders) failures.push(`BLOCKED — CLEANUP STOPPED AT providers: ${leftProviders} marker provider rows still referenced`);
+    }
+  }
+  const approvals = await runStep(
+    db,
+    "sbg_approved_property_agreement_versions",
+    `delete from public.sbg_approved_property_agreement_versions where agreement_version = any($1::text[])`,
+    [FIXTURE_VERSIONS],
+  );
+  if (!approvals.ok) failures.push(approvals.verdict);
+  const orgSteps = [
+    ["sbg_organisation_acceptances", `delete from public.sbg_organisation_acceptances where organisation_id = any($1::uuid[]) or accepted_by_user_id = any($2::text[])`, [orgIds.length ? orgIds : ["00000000-0000-0000-0000-000000000000"], ids]],
+    ["sbg_organisation_members", `delete from public.sbg_organisation_members where user_id = any($2::text[]) or organisation_id = any($1::uuid[])`, [orgIds.length ? orgIds : ["00000000-0000-0000-0000-000000000000"], ids]],
+    ["sbg_organisations", `delete from public.sbg_organisations where created_by_user_id = any($1::text[]) and name like $2`, [ids, `${NAME_PREFIX}%`]],
+    ["user", `delete from public."user" where id = any($1::text[])`, [ids]],
+  ];
+  if (ids.length && failures.length === 0) {
+    for (const [step, sql, params] of orgSteps) {
+      const result = await runStep(db, step, sql, params);
+      if (!result.ok) {
+        failures.push(result.verdict);
+        break;
+      }
+    }
+  }
+  if (failures.length) {
+    let left = { users: ids.length, orgs: orgIds.length, hotels: hotelIds.length, approvals: FIXTURE_VERSIONS.length };
+    try {
+      left = await markerLeftovers(db, ids);
+    } catch (err) {
+      return { ok: false, verdict: failures[0], error: cleanupFailure("marker leftover count", err) };
+    }
+    return {
+      ok: false,
+      verdict: `${failures[0]}; remaining users=${left.users} orgs=${left.orgs} hotels=${left.hotels} approvals=${left.approvals}`,
+    };
+  }
+  const left = await markerLeftovers(db, ids);
+  if (left.users || left.orgs || left.hotels || left.approvals) {
+    return {
+      ok: false,
+      verdict: `BLOCKED — CLEANUP DID NOT REMOVE MARKER ROWS remaining users=${left.users} orgs=${left.orgs} hotels=${left.hotels} approvals=${left.approvals}`,
+    };
+  }
+  return { ok: true };
 }
 
 async function snapshot(db) {
@@ -321,84 +471,6 @@ async function foundProperty(db, userId, code) {
 
 function code(label) {
   return `${MARKER}-${label}-${randomUUID().replace(/-/g, "").slice(0, 8)}`;
-}
-
-async function cleanup(db, userIds) {
-  const users = (await db.query(
-    `select id, name, email from public."user" where id = any($1::text[])`,
-    [userIds],
-  )).rows;
-  if (users.some((row) => !isMarkerUser(row))) return { ok: false, verdict: "BLOCKED — REFUSING TO DELETE A NON-MARKER USER" };
-  const orgs = (await db.query(
-    `select id::text as id, name from public.sbg_organisations where created_by_user_id = any($1::text[])`,
-    [userIds],
-  )).rows;
-  if (orgs.some((row) => !String(row.name).startsWith(NAME_PREFIX))) return { ok: false, verdict: "BLOCKED — REFUSING TO DELETE A NON-MARKER ORGANISATION" };
-  const hotels = (await db.query(
-    `select h.id::text as id, h.name, h.code
-       from public.hotels h
-       join public.app_hotel_accounts a on a.hotel_id = h.id
-      where a.user_id = any($1::text[])`,
-    [userIds],
-  )).rows;
-  if (hotels.some((row) => !String(row.name).startsWith(NAME_PREFIX) || !String(row.code).startsWith(`${MARKER}-`))) {
-    return { ok: false, verdict: "BLOCKED — REFUSING TO DELETE A NON-MARKER HOTEL" };
-  }
-  const hotelIds = hotels.map((row) => row.id);
-  const orgIds = orgs.map((row) => row.id);
-  const providers = hotelIds.length
-    ? (await db.query(
-      `select provider_id::text as id from public.hotel_provider_agreements where hotel_id = any($1::uuid[])`,
-      [hotelIds],
-    )).rows.map((row) => row.id)
-    : [];
-  await db.query("begin");
-  try {
-    await setDeleteTriggers(db, false);
-    if (hotelIds.length) {
-      await db.query(`delete from public.hotels where id = any($1::uuid[])`, [hotelIds]);
-    }
-    if (providers.length) {
-      await db.query(`delete from public.providers where id = any($1::uuid[])`, [providers]);
-    }
-    await db.query(
-      `delete from public.sbg_organisation_acceptances where organisation_id = any($1::uuid[]) or accepted_by_user_id = any($2::text[])`,
-      [orgIds.length ? orgIds : ["00000000-0000-0000-0000-000000000000"], userIds],
-    );
-    await db.query(
-      `delete from public.sbg_organisation_members where user_id = any($1::text[]) or organisation_id = any($2::uuid[])`,
-      [userIds, orgIds.length ? orgIds : ["00000000-0000-0000-0000-000000000000"]],
-    );
-    await db.query(
-      `delete from public.sbg_organisations where created_by_user_id = any($1::text[]) and name like $2`,
-      [userIds, `${NAME_PREFIX}%`],
-    );
-    await db.query(`delete from public."user" where id = any($1::text[])`, [userIds]);
-    await db.query(
-      `delete from public.sbg_approved_property_agreement_versions where agreement_version = any($1::text[])`,
-      [FIXTURE_VERSIONS],
-    );
-    await setDeleteTriggers(db, true);
-    const enabled = await triggerState(db);
-    if (enabled.some((row) => !row.present || !row.enabled)) {
-      await db.query("rollback");
-      return { ok: false, verdict: "BLOCKED — CLEANUP WOULD LEAVE A TRIGGER DISABLED" };
-    }
-    const leftUsers = Number((await db.query(`select count(*)::int as n from public."user" where id = any($1::text[])`, [userIds])).rows[0].n);
-    const leftApprovals = Number((await db.query(
-      `select count(*)::int as n from public.sbg_approved_property_agreement_versions where agreement_version = any($1::text[])`,
-      [FIXTURE_VERSIONS],
-    )).rows[0].n);
-    if (leftUsers || leftApprovals) {
-      await db.query("rollback");
-      return { ok: false, verdict: "BLOCKED — CLEANUP DID NOT REMOVE MARKER ROWS" };
-    }
-    await db.query("commit");
-    return { ok: true };
-  } catch (err) {
-    try { await db.query("rollback"); } catch { /* keep the original error */ }
-    return { ok: false, verdict: "BLOCKED — CLEANUP FAILED", error: redact(err?.message || err) };
-  }
 }
 
 async function held(holder, waiter, observer, userLock, waiterCall, holderCall, waiterPid) {
@@ -462,6 +534,53 @@ export async function runConcurrency({ env, connect = client, say = () => {} }) 
   const userIds = [];
   let opened = false;
   let app;
+  let concluded = false;
+  let before = null;
+  const sections = { concurrency: "NOT RUN", terms: "NOT RUN", runtime: "NOT TESTED" };
+  const stop = (section, verdict) => {
+    sections[section] = verdict;
+    const error = new Error(verdict);
+    error.sectioned = true;
+    throw error;
+  };
+  async function conclude() {
+    if (concluded) return finish(1);
+    concluded = true;
+    let cleanupVerdict = "NOT RUN";
+    if (opened) {
+      try { await observer.query("rollback"); } catch { /* no open transaction */ }
+      try {
+        const removed = await cleanup(observer, userIds);
+        cleanupVerdict = removed.ok ? "PASS" : removed.verdict;
+        if (removed.error) log(removed.error);
+        if (removed.ok) userIds.length = 0;
+        const guards = await triggerGuard(observer);
+        log(`triggers_still_enabled: ${guards.ok}`);
+        if (!guards.ok && cleanupVerdict === "PASS") cleanupVerdict = guards.verdict;
+        if (before && removed.ok) {
+          const after = await snapshot(observer);
+          const match = JSON.stringify(before) === JSON.stringify(after);
+          log(`counts_match: ${match}`);
+          if (!match && cleanupVerdict === "PASS") cleanupVerdict = "BLOCKED — BRANCH SNAPSHOT CHANGED";
+        }
+      } catch (err) {
+        cleanupVerdict = cleanupFailure("cleanup", err);
+      }
+    }
+    log(`cleanup: ${cleanupVerdict}`);
+    log(`postgresql_concurrency: ${sections.concurrency}`);
+    log(`agreement_version_enforcement: ${sections.terms}`);
+    log(`runtime_role_security: ${sections.runtime}`);
+    const overall = overallVerdict({
+      concurrency: sections.concurrency,
+      terms: sections.terms,
+      runtime: sections.runtime,
+      cleanup: cleanupVerdict,
+    });
+    log(`overall: ${overall.verdict}`);
+    if (overall.full) log(PASS_VERDICT);
+    return finish(overall.exitCode);
+  }
   try {
     await Promise.all([holder.connect(), waiter.connect(), observer.connect()]);
     opened = true;
@@ -542,13 +661,13 @@ export async function runConcurrency({ env, connect = client, say = () => {} }) 
     }
     log("isolated_identity: PASS");
 
-    const probe = await probeTriggerControl(observer);
-    log(`trigger_probe: ${probe.ok ? "PASS" : probe.verdict}`);
-    if (!probe.ok) {
-      if (probe.error) log(probe.error);
-      return finish(1);
+    const guards = await triggerGuard(observer);
+    log(`trigger_guard: ${guards.ok ? "enabled" : guards.verdict}`);
+    if (!guards.ok) {
+      sections.concurrency = guards.verdict;
+      return conclude();
     }
-    const before = await snapshot(observer);
+    before = await snapshot(observer);
     await observer.query("begin");
     await observer.query(
       `insert into public.sbg_approved_property_agreement_versions (agreement_version, effective)
@@ -583,7 +702,7 @@ export async function runConcurrency({ env, connect = client, say = () => {} }) 
     });
     log(`test_same_creator: ${sameVerdict || "PASS"}`);
     log(`test_same_creator_overlap: ${sameRace.blocked.observed === true}`);
-    if (sameVerdict) throw new Error(sameVerdict);
+    if (sameVerdict) stop("concurrency", sameVerdict);
 
     const propertyUser = `${MARKER}-${randomUUID()}`;
     userIds.push(propertyUser);
@@ -613,7 +732,7 @@ export async function runConcurrency({ env, connect = client, say = () => {} }) 
     });
     log(`test_property_pair: ${pairVerdict || "PASS"}`);
     log(`test_property_pair_overlap: ${pair.blocked.observed === true}`);
-    if (pairVerdict) throw new Error(pairVerdict);
+    if (pairVerdict) stop("concurrency", pairVerdict);
 
     const codeUser = `${MARKER}-${randomUUID()}`;
     userIds.push(codeUser);
@@ -641,7 +760,7 @@ export async function runConcurrency({ env, connect = client, say = () => {} }) 
     });
     log(`test_duplicate_code: ${duplicateVerdict || "PASS"}`);
     log(`test_duplicate_code_overlap: ${duplicate.blocked.observed === true}`);
-    if (duplicateVerdict) throw new Error(duplicateVerdict);
+    if (duplicateVerdict) stop("concurrency", duplicateVerdict);
 
     const failUser = `${MARKER}-${randomUUID()}`;
     userIds.push(failUser);
@@ -656,7 +775,7 @@ export async function runConcurrency({ env, connect = client, say = () => {} }) 
     const afterFail = await snapshot(observer);
     const failedVerdict = rollbackVerdict({ error: failed.error, before: beforeFail, after: afterFail });
     log(`test_failed_rollback: ${failedVerdict || "PASS"}`);
-    if (failedVerdict) throw new Error(failedVerdict);
+    if (failedVerdict) stop("concurrency", failedVerdict);
 
     const openUser = `${MARKER}-${randomUUID()}`;
     userIds.push(openUser);
@@ -671,7 +790,42 @@ export async function runConcurrency({ env, connect = client, say = () => {} }) 
     const afterOpen = await snapshot(observer);
     const openVerdict = uncommittedVerdict({ before: beforeOpen, after: afterOpen });
     log(`test_uncommitted_rollback: ${openVerdict || "PASS"}`);
-    if (openVerdict) throw new Error(openVerdict);
+    if (openVerdict) stop("concurrency", openVerdict);
+
+    const leftUser = `${MARKER}-${randomUUID()}`;
+    const rightUser = `${MARKER}-${randomUUID()}`;
+    userIds.push(leftUser, rightUser);
+    await insertUser(observer, leftUser, "Left");
+    await insertUser(observer, rightUser, "Right");
+    const [leftCreated, rightCreated] = await Promise.all([
+      holder.query(CREATE_SQL, [leftUser, `${NAME_PREFIX}Left`]),
+      waiter.query(CREATE_SQL, [rightUser, `${NAME_PREFIX}Right`]),
+    ]);
+    const leftId = leftCreated.rows[0].organisation_id;
+    const rightId = rightCreated.rows[0].organisation_id;
+    const second = await captureQuery(holder.query(CREATE_SQL, [leftUser, `${NAME_PREFIX}Left Again`]));
+    if (!/founding organisation already exists/i.test(second.error)) stop("concurrency", "BLOCKED — SIBLING CREATE WAS NOT REJECTED");
+    await observer.query(
+      `insert into public.sbg_organisation_members (organisation_id, user_id, role, billing_authority)
+       values ($1::uuid, $2, 'member', false)`,
+      [leftId, rightUser],
+    );
+    const leftCount = Number((await observer.query(`select count(*)::int as n from public.sbg_organisations where created_by_user_id = $1`, [leftUser])).rows[0].n);
+    const rightCount = Number((await observer.query(`select count(*)::int as n from public.sbg_organisations where created_by_user_id = $1`, [rightUser])).rows[0].n);
+    const leftName = (await observer.query(`select name from public.sbg_organisations where id = $1::uuid`, [leftId])).rows[0].name;
+    const rightName = (await observer.query(`select name from public.sbg_organisations where id = $1::uuid`, [rightId])).rows[0].name;
+    const isolatedVerdict = isolationVerdict({
+      leftId,
+      rightId,
+      leftCount,
+      rightCount,
+      leftName,
+      rightName,
+      memberInserted: true,
+    });
+    log(`test_isolation: ${isolatedVerdict || "PASS"}`);
+    if (isolatedVerdict) stop("concurrency", isolatedVerdict);
+    sections.concurrency = "PASS";
 
     const effectiveUser = `${MARKER}-${randomUUID()}`;
     const supersededUser = `${MARKER}-${randomUUID()}`;
@@ -717,41 +871,8 @@ export async function runConcurrency({ env, connect = client, say = () => {} }) 
       termsV1ApprovalRows: termsLeft,
     });
     log(`test_terms: ${termsResult || "PASS"}`);
-    if (termsResult) throw new Error(termsResult);
-
-    const leftUser = `${MARKER}-${randomUUID()}`;
-    const rightUser = `${MARKER}-${randomUUID()}`;
-    userIds.push(leftUser, rightUser);
-    await insertUser(observer, leftUser, "Left");
-    await insertUser(observer, rightUser, "Right");
-    const [leftCreated, rightCreated] = await Promise.all([
-      holder.query(CREATE_SQL, [leftUser, `${NAME_PREFIX}Left`]),
-      waiter.query(CREATE_SQL, [rightUser, `${NAME_PREFIX}Right`]),
-    ]);
-    const leftId = leftCreated.rows[0].organisation_id;
-    const rightId = rightCreated.rows[0].organisation_id;
-    const second = await captureQuery(holder.query(CREATE_SQL, [leftUser, `${NAME_PREFIX}Left Again`]));
-    if (!/founding organisation already exists/i.test(second.error)) throw new Error("BLOCKED — SIBLING CREATE WAS NOT REJECTED");
-    await observer.query(
-      `insert into public.sbg_organisation_members (organisation_id, user_id, role, billing_authority)
-       values ($1::uuid, $2, 'member', false)`,
-      [leftId, rightUser],
-    );
-    const leftCount = Number((await observer.query(`select count(*)::int as n from public.sbg_organisations where created_by_user_id = $1`, [leftUser])).rows[0].n);
-    const rightCount = Number((await observer.query(`select count(*)::int as n from public.sbg_organisations where created_by_user_id = $1`, [rightUser])).rows[0].n);
-    const leftName = (await observer.query(`select name from public.sbg_organisations where id = $1::uuid`, [leftId])).rows[0].name;
-    const rightName = (await observer.query(`select name from public.sbg_organisations where id = $1::uuid`, [rightId])).rows[0].name;
-    const isolatedVerdict = isolationVerdict({
-      leftId,
-      rightId,
-      leftCount,
-      rightCount,
-      leftName,
-      rightName,
-      memberInserted: true,
-    });
-    log(`test_isolation: ${isolatedVerdict || "PASS"}`);
-    if (isolatedVerdict) throw new Error(isolatedVerdict);
+    if (termsResult) stop("terms", termsResult);
+    sections.terms = "PASS";
 
     const privileges = (await observer.query(
       `select
@@ -815,39 +936,22 @@ export async function runConcurrency({ env, connect = client, say = () => {} }) 
       log(`runtime_role_live_session: ${sameIdentity ? "proven" : "rejected"}`);
     }
     const runtimeVerdict = runtimeRoleVerdict({ catalogMatch, appConnection: appUrl ? "present" : "absent", live });
-    log(`test_runtime_role: ${runtimeVerdict || "PASS"}`);
-    if (runtimeVerdict) throw new Error(runtimeVerdict);
-
-    const removed = await cleanup(observer, userIds);
-    log(`cleanup: ${removed.ok ? "PASS" : removed.verdict}`);
-    if (removed.error) log(removed.error);
-    if (!removed.ok) return finish(1);
-    userIds.length = 0;
-    const after = await snapshot(observer);
-    const triggers = await triggerState(observer);
-    log(`counts_match: ${JSON.stringify(before) === JSON.stringify(after)}`);
-    log(`triggers_enabled: ${triggers.every((row) => row.present && row.enabled)}`);
-    if (JSON.stringify(before) !== JSON.stringify(after) || triggers.some((row) => !row.present || !row.enabled)) {
-      log("BLOCKED — BRANCH SNAPSHOT OR TRIGGERS CHANGED");
-      return finish(1);
-    }
-    log(PASS_VERDICT);
-    return finish(0);
+    sections.runtime = runtimeVerdict || "PASS";
+    if (runtimeVerdict.startsWith("BLOCKED")) stop("runtime", runtimeVerdict);
+    return conclude();
   } catch (err) {
-    log(redact(err?.message || err));
-    if (opened) {
-      try { await observer.query("rollback"); } catch { /* no open transaction */ }
-    }
-    if (opened && userIds.length) {
-      try {
-        const removed = await cleanup(observer, userIds);
-        log(`cleanup_after_failure: ${removed.ok ? "PASS" : removed.verdict}`);
-        if (!removed.ok) return finish(1);
-      } catch (cleanupErr) {
-        log(redact(cleanupErr?.message || cleanupErr));
+    if (!err?.sectioned) {
+      const message = `BLOCKED — ${redact(err?.message || err)}`.slice(0, 300);
+      log(message);
+      if (sections.concurrency !== "PASS") {
+        if (!String(sections.concurrency).startsWith("BLOCKED")) sections.concurrency = message;
+      } else if (sections.terms !== "PASS") {
+        if (!String(sections.terms).startsWith("BLOCKED")) sections.terms = message;
+      } else if (!String(sections.runtime).startsWith("BLOCKED") && sections.runtime !== "PASS") {
+        sections.runtime = message;
       }
     }
-    return finish(1);
+    return conclude();
   } finally {
     await Promise.allSettled([holder.end(), waiter.end(), observer.end(), app?.end?.()].filter(Boolean));
   }

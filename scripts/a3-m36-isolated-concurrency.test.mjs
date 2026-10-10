@@ -19,6 +19,7 @@ import {
   isMarkerUser,
   isolationVerdict,
   overlapFailure,
+  overallVerdict,
   propertyPairVerdict,
   rollbackVerdict,
   runConcurrency,
@@ -26,6 +27,9 @@ import {
   sameCreatorVerdict,
   termsVerdict,
   uncommittedVerdict,
+  INCOMPLETE_VERDICT,
+  PASS_VERDICT,
+  cleanupFailure,
 } from "./a3-m36-isolated-concurrency.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -117,7 +121,8 @@ test("terms, isolation, runtime role, and ledger rules reject silent success", (
     rightName: "A3M36 Right",
     memberInserted: true,
   }), /NOT ISOLATED/);
-  assert.equal(runtimeRoleVerdict({ catalogMatch: true, appConnection: "absent", live: null }), "");
+  assert.equal(runtimeRoleVerdict({ catalogMatch: true, appConnection: "absent", live: null }), "NOT TESTED");
+  assert.match(runtimeRoleVerdict({ catalogMatch: false, appConnection: "absent", live: null }), /RUNTIME PRIVILEGE CATALOG/);
   assert.match(runtimeRoleVerdict({
     catalogMatch: true,
     appConnection: "present",
@@ -146,6 +151,30 @@ test("terms, isolation, runtime role, and ledger rules reject silent success", (
       publicExecute: false,
     },
   }), "");
+  const incomplete = overallVerdict({ concurrency: "PASS", terms: "PASS", runtime: "NOT TESTED", cleanup: "PASS" });
+  assert.equal(incomplete.exitCode, 2);
+  assert.equal(incomplete.full, false);
+  assert.equal(incomplete.verdict, INCOMPLETE_VERDICT);
+  assert.notEqual(incomplete.verdict, PASS_VERDICT);
+  const full = overallVerdict({ concurrency: "PASS", terms: "PASS", runtime: "PASS", cleanup: "PASS" });
+  assert.equal(full.exitCode, 0);
+  assert.equal(full.full, true);
+  assert.equal(full.verdict, PASS_VERDICT);
+  const blockedCleanup = overallVerdict({
+    concurrency: "PASS",
+    terms: "PASS",
+    runtime: "NOT TESTED",
+    cleanup: "BLOCKED — CLEANUP STOPPED AT sbg_organisation_acceptances",
+  });
+  assert.equal(blockedCleanup.exitCode, 1);
+  assert.equal(blockedCleanup.full, false);
+  assert.match(blockedCleanup.verdict, /CLEANUP STOPPED/);
+  assert.match(cleanupFailure("sbg_organisation_acceptances", {
+    message: "organisation acceptance evidence is immutable",
+    table: "sbg_organisation_acceptances",
+    constraint: "sbg_organisation_acceptances_immutable",
+    code: "P0001",
+  }), /BLOCKED — CLEANUP STOPPED AT sbg_organisation_acceptances table sbg_organisation_acceptances constraint sbg_organisation_acceptances_immutable sqlstate P0001/);
   assert.equal(concurrencyLedgerOk([...ACCEPTED_LEDGER, MIGRATION_36]), true);
   assert.equal(concurrencyLedgerOk([...ACCEPTED_LEDGER, MIGRATION_35, MIGRATION_36]), true);
   assert.equal(concurrencyLedgerOk(ACCEPTED_LEDGER), false);
@@ -172,10 +201,19 @@ test("the concurrency workflow is manual and does not install", () => {
   assert.doesNotMatch(workflow, /DATABASE_URL|AETHER_DATABASE_OWNER_URL|NEON_API_KEY|0026/);
   assert.match(src, /BLOCKED — TRANSACTIONS DID NOT OVERLAP/);
   assert.match(src, /wait_event_type/);
+  assert.match(src, /postgresql_concurrency:/);
+  assert.match(src, /agreement_version_enforcement:/);
+  assert.match(src, /runtime_role_security:/);
+  assert.match(src, /NOT TESTED/);
   assert.doesNotMatch(src, /runInstall\(/);
   assert.doesNotMatch(src, /process\.env\.DATABASE_URL/);
   assert.doesNotMatch(src, /process\.env\.AETHER_DATABASE_OWNER_URL/);
   assert.doesNotMatch(src, /process\.env\.NEON_API_KEY/);
+  assert.doesNotMatch(src, /disable trigger/i);
+  assert.doesNotMatch(src, /enable trigger/i);
+  assert.doesNotMatch(src, /setDeleteTriggers/);
+  assert.doesNotMatch(src, /alter table/i);
+  assert.match(src, /async function runStep/);
   assert.match(src, /terms-v1/);
   assert.doesNotMatch(src, /values \('terms-v1'/);
 });

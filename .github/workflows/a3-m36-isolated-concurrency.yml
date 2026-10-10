@@ -1,6 +1,8 @@
 # A3-M36 isolated concurrency gate. Manual dispatch only.
 # Does not install SQL. Does not use a Production credential.
-# Requires 0036 to already be present on the isolated branch.
+# Does not disable triggers. Requires 0036 to already be present.
+# A missing AETHER_0036_ISOLATED_APP_URL is runtime-role NOT TESTED.
+# That result is not a full pass.
 name: A3-M36 isolated concurrency
 
 on:
