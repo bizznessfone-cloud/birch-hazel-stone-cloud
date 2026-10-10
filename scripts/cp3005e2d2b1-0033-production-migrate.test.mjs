@@ -244,7 +244,7 @@ test("the concurrency harness is marker-scoped and does not open a generic migra
   assert.doesNotMatch(race, /delete from hotels/i);
   assert.match(race, /created_by_user_id = any/);
   const workflows = readdirSync(join(root, ".github/workflows")).sort();
-  assert.deepEqual(workflows, ["a3-m36-isolated-verification.yml", "cp3005e2d2c1-0034-isolated-verify.yml", "production-database.yml"]);
+  assert.deepEqual(workflows, ["a3-m36-isolated-concurrency.yml", "a3-m36-isolated-install.yml", "a3-m36-isolated-verification.yml", "cp3005e2d2c1-0034-isolated-verify.yml", "production-database.yml"]);
   assert.deepEqual(AUTHORISED_PENDING, []);
   assert.equal(AUTHORISED_PENDING.includes(TARGET_MIGRATION), false);
   assert.equal(ACCEPTED_LEDGER.includes(TARGET_MIGRATION), true);

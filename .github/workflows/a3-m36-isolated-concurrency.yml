@@ -1,0 +1,68 @@
+# A3-M36 isolated concurrency gate. Manual dispatch only.
+# Does not install SQL. Does not use a Production credential.
+# Requires 0036 to already be present on the isolated branch.
+name: A3-M36 isolated concurrency
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Exact confirmation CONCURRENCY-0036-ISOLATED
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: a3-m36-isolated-concurrency
+  cancel-in-progress: false
+
+jobs:
+  concurrency:
+    name: concurrency-0036-isolated
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Require the concurrency confirmation
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          if [ "$CONFIRMATION" != "CONCURRENCY-0036-ISOLATED" ]; then
+            echo "BLOCKED — CONFIRMATION PHRASE INVALID"
+            exit 1
+          fi
+          echo "confirmation: ACCEPTED"
+          echo "stage: concurrency-0036"
+
+      - name: Checkout selected commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Require isolated owner secret
+        env:
+          AETHER_0036_ISOLATED_OWNER_URL: ${{ secrets.AETHER_0036_ISOLATED_OWNER_URL }}
+        run: |
+          if [ -z "$AETHER_0036_ISOLATED_OWNER_URL" ]; then
+            echo "BLOCKED — AETHER_0036_ISOLATED_OWNER_URL is absent. No database was opened."
+            exit 1
+          fi
+          echo "AETHER_0036_ISOLATED_OWNER_URL: PRESENT"
+
+      - name: Prove overlapping transactions on the isolated branch
+        env:
+          AETHER_0036_ISOLATED_OWNER_URL: ${{ secrets.AETHER_0036_ISOLATED_OWNER_URL }}
+          AETHER_0036_ISOLATED_APP_URL: ${{ secrets.AETHER_0036_ISOLATED_APP_URL }}
+          A3M36_CONCURRENCY_CONFIRMATION: ${{ inputs.confirmation }}
+        run: node scripts/a3-m36-isolated-concurrency.mjs

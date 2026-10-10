@@ -11,9 +11,10 @@
  * DATABASE_URL, AETHER_DATABASE_OWNER_URL, or NEON_API_KEY.
  * Never prints a connection string, password, or token.
  *
- * Later install and concurrency stages are not implemented.
- * Enabling one requires a separate reviewed change to ENABLED_STAGE
- * and to the workflow choice list.
+ * This file stays the read-only preflight. It does not install SQL.
+ * Installation is a separate manual workflow and script.
+ * Concurrency verification is a separate manual workflow and script.
+ * Neither is started from this command.
  */
 import pg from "pg";
 import { resolve } from "node:path";

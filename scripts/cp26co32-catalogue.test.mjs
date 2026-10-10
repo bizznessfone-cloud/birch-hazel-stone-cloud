@@ -184,7 +184,7 @@ test("Gate B accepts 0001-0030 and the generic migrator still never applies SQL"
 
 test("generic migrator cannot apply 0026 and the spent dispatch surface is gone", () => {
   const workflows = readdirSync(join(root, ".github/workflows"));
-  assert.deepEqual(workflows.sort(), ["a3-m36-isolated-verification.yml", "cp3005e2d2c1-0034-isolated-verify.yml", "production-database.yml"]);
+  assert.deepEqual(workflows.sort(), ["a3-m36-isolated-concurrency.yml", "a3-m36-isolated-install.yml", "a3-m36-isolated-verification.yml", "cp3005e2d2c1-0034-isolated-verify.yml", "production-database.yml"]);
   for (const name of workflows) {
     const text = readFileSync(join(root, ".github/workflows", name), "utf8");
     assert.equal(text.includes("0026"), false, name);

@@ -952,7 +952,7 @@ test("0027 dispatch surface is retired", () => {
   assert.equal(existsSync(workflowPath), false);
   assert.equal(workflow, "");
   const workflows = readdirSync(join(here, "../.github/workflows")).sort();
-  assert.deepEqual(workflows, ["a3-m36-isolated-verification.yml", "cp3005e2d2c1-0034-isolated-verify.yml", "production-database.yml"]);
+  assert.deepEqual(workflows, ["a3-m36-isolated-concurrency.yml", "a3-m36-isolated-install.yml", "a3-m36-isolated-verification.yml", "cp3005e2d2c1-0034-isolated-verify.yml", "production-database.yml"]);
   for (const name of workflows) {
     const text = readFileSync(join(here, "../.github/workflows", name), "utf8");
     assert.equal(text.includes("cp26co42-0027-production-migrate.mjs"), false, name);

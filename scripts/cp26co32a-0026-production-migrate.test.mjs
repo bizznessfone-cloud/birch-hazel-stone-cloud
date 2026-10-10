@@ -748,7 +748,7 @@ test("Gate B accepts applied 0026 inside 0001-0028; build and the npm alias do n
 test("spent 0026 workflow is absent and no workflow dispatches the controller", () => {
   assert.equal(existsSync(workflowPath), false);
   const workflows = readdirSync(join(here, "../.github/workflows"));
-  assert.deepEqual(workflows.sort(), ["a3-m36-isolated-verification.yml", "cp3005e2d2c1-0034-isolated-verify.yml", "production-database.yml"]);
+  assert.deepEqual(workflows.sort(), ["a3-m36-isolated-concurrency.yml", "a3-m36-isolated-install.yml", "a3-m36-isolated-verification.yml", "cp3005e2d2c1-0034-isolated-verify.yml", "production-database.yml"]);
   for (const name of workflows) {
     const text = readFileSync(join(here, "../.github/workflows", name), "utf8");
     assert.equal(text.includes("cp26co32a-0026-production-migrate.mjs"), false, name);

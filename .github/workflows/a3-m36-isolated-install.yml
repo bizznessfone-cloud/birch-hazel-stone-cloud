@@ -1,0 +1,67 @@
+# A3-M36 isolated 0036 installation. Manual dispatch only.
+# Does not run on push. Does not use a Production credential.
+# Does not replay 0035 and does not insert a 0035 ledger row.
+name: A3-M36 isolated 0036 install
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Exact confirmation INSTALL-0036-ISOLATED
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: a3-m36-isolated-install
+  cancel-in-progress: false
+
+jobs:
+  install:
+    name: install-0036-isolated
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Require the install confirmation
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          if [ "$CONFIRMATION" != "INSTALL-0036-ISOLATED" ]; then
+            echo "BLOCKED — CONFIRMATION PHRASE INVALID"
+            exit 1
+          fi
+          echo "confirmation: ACCEPTED"
+          echo "stage: install-0036"
+
+      - name: Checkout selected commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Require isolated owner secret
+        env:
+          AETHER_0036_ISOLATED_OWNER_URL: ${{ secrets.AETHER_0036_ISOLATED_OWNER_URL }}
+        run: |
+          if [ -z "$AETHER_0036_ISOLATED_OWNER_URL" ]; then
+            echo "BLOCKED — AETHER_0036_ISOLATED_OWNER_URL is absent. No database was opened."
+            exit 1
+          fi
+          echo "AETHER_0036_ISOLATED_OWNER_URL: PRESENT"
+
+      - name: Install migration 0036 on the isolated branch
+        env:
+          AETHER_0036_ISOLATED_OWNER_URL: ${{ secrets.AETHER_0036_ISOLATED_OWNER_URL }}
+          A3M36_INSTALL_CONFIRMATION: ${{ inputs.confirmation }}
+        run: node scripts/a3-m36-isolated-install.mjs

@@ -714,7 +714,7 @@ test("0025 dispatch is retired; controller script remains; build does not invoke
   const yaml = readdirSync(join(here, "../.github/workflows"))
     .filter((name) => name.endsWith(".yml") || name.endsWith(".yaml"))
     .sort();
-  assert.deepEqual(yaml, ["a3-m36-isolated-verification.yml", "cp3005e2d2c1-0034-isolated-verify.yml", "production-database.yml"]);
+  assert.deepEqual(yaml, ["a3-m36-isolated-concurrency.yml", "a3-m36-isolated-install.yml", "a3-m36-isolated-verification.yml", "cp3005e2d2c1-0034-isolated-verify.yml", "production-database.yml"]);
   assert.doesNotMatch(pkg.scripts.build, /db:migrate/);
   assert.doesNotMatch(pkg.scripts.build, /cp26co2a-0025/);
   assert.equal(pkg.scripts["db:migrate:0025"], "node scripts/cp26co2a-0025-production-migrate.mjs");
