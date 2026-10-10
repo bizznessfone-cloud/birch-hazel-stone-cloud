@@ -126,8 +126,9 @@ test("0034 is accepted history and least privilege", () => {
   assert.doesNotMatch(fn, /agreementVersion:|acceptedAt:|organisationId:|hotelId:|billing_authority:/);
   assert.doesNotMatch(read("src/lib/aether/founding-organisation.ts"), /sbg_classify_founding_organisation|sbg_record_founding_terms_acceptance/);
   assert.doesNotMatch(read("src/lib/aether/founding-organisation-fns.ts"), /recordFoundingTermsAcceptance|classifyFoundingOrganisation/);
-  assert.match(read("src/lib/aether/saas-billing.server.ts"), /sbg_create_organisation_for_user/);
+  assert.doesNotMatch(read("src/lib/aether/saas-billing.server.ts"), /sbg_create_organisation_for_user/);
   assert.doesNotMatch(read("src/lib/aether/saas-billing.server.ts"), /sbg_classify_founding_organisation|sbg_record_founding_terms_acceptance/);
+  assert.match(read("src/lib/aether/saas-billing.server.ts"), /readFoundingOnboardingState/);
   for (const path of [
     "src/routes/index.tsx",
     "src/routes/login.tsx",

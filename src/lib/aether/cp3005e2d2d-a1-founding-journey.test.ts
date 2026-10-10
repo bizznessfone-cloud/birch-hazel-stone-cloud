@@ -320,8 +320,9 @@ test("A1 routes call founding create, classify, and read, and stop before later 
   const createAt = onboardingFns.indexOf("sbg_create_hotel_for_user");
   assert.ok(guardAt >= 0 && createAt > guardAt);
 
-  assert.match(billingServer, /sbg_create_organisation_for_user/);
-  assert.doesNotMatch(billingServer, /sbg_ensure_founding_organisation|sbg_classify_founding_organisation|sbg_record_founding_terms_acceptance/);
+  assert.doesNotMatch(billingServer, /sbg_create_organisation_for_user|sbg_ensure_founding_organisation|sbg_classify_founding_organisation|sbg_record_founding_terms_acceptance/);
+  assert.match(billingServer, /readFoundingOnboardingState/);
+  assert.match(billingServer, /sbg_attach_hotel_to_organisation/);
   assert.match(read("src/lib/aether/founding-onboarding-fns.ts"), /export const recordFoundingTermsAcceptanceFn/);
   assert.doesNotMatch(home, /\/app\/founding|authClient\.signUp/);
   assert.match(home, /href="#start"/);

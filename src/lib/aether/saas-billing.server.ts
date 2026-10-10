@@ -19,6 +19,7 @@ import {
   propertyHasDomainAEntitlement,
   usableLicensedQuantity,
 } from "./property-licence.ts";
+import { FoundingOnboardingError, readFoundingOnboardingState } from "./founding-onboarding.ts";
 
 export type OrganisationBillingRow = {
   stripe_customer_id: string | null;
@@ -29,7 +30,7 @@ export type OrganisationBillingRow = {
   licensed_quantity: number;
 };
 
-async function ownedHotel(db: Sql, userId: string, hotelId: string) {
+async function ownedHotel(db: Pick<Sql, "query">, userId: string, hotelId: string) {
   const rows = await db.query<{ id: string }>(
     "select hotel_id as id from app_hotel_accounts where user_id = $1 and hotel_id = $2::uuid",
     [userId, hotelId],
@@ -37,7 +38,7 @@ async function ownedHotel(db: Sql, userId: string, hotelId: string) {
   if (!rows[0]) throw new Error("Hotel not found.");
 }
 
-async function assertOrganisationBillingAuthority(db: Sql, userId: string, organisationId: string) {
+async function assertOrganisationBillingAuthority(db: Pick<Sql, "query">, userId: string, organisationId: string) {
   const rows = await db.query<{ ok: number }>(
     `select 1 as ok
        from sbg_organisation_members
@@ -144,34 +145,100 @@ export async function loadDomainABillingState(db: Sql, userId: string, hotelId: 
   };
 }
 
+export class HotelOrganisationError extends Error {
+  readonly code: "missing" | "ambiguous" | "not_hotel" | "unclassified" | "attached_elsewhere";
+
+  constructor(code: HotelOrganisationError["code"], message: string) {
+    super(message);
+    this.name = "HotelOrganisationError";
+    this.code = code;
+  }
+}
+
+const HOTEL_ORGANISATION_MESSAGES = {
+  missing:
+    "This property is not linked to a business yet. Name the business, choose Hotel / Accommodation, then try again. Nothing was created.",
+  ambiguous: "We could not confirm one business for this account. Nothing was changed.",
+  not_hotel:
+    "This business is an independent transfer operator, so this property was not linked. Nothing was changed.",
+  unclassified:
+    "This business is not confirmed as Hotel / Accommodation yet. Choose that type, then try again. Nothing was changed.",
+  attached_elsewhere: "This property is already linked to a different business. Nothing was changed.",
+} as const;
+
+async function hotelOrganisationId(db: Pick<Sql, "query">, hotelId: string): Promise<string | null> {
+  const hotelRows = await db.query<{ organisation_id: string | null }>(
+    "select organisation_id::text as organisation_id from hotels where id = $1::uuid",
+    [hotelId],
+  );
+  if (!hotelRows[0]) throw new Error("Hotel not found.");
+  return hotelRows[0].organisation_id;
+}
+
+/**
+ * Returns the organisation that already owns this hotel, or attaches an
+ * unattached hotel to the caller's single hotel founding organisation.
+ * Does not create, rename, classify, or move an organisation.
+ *
+ * sbg_attach_hotel_to_organisation locks the hotel and refuses a second
+ * organisation id. The runtime client has no multi-query transaction, and no
+ * installed function repeats the founding check inside that lock. A concurrent
+ * retry cannot move the hotel; it can only return the organisation stored first.
+ */
 export async function ensureHotelOrganisation(input: {
-  db: Sql;
+  db: Pick<Sql, "query">;
   userId: string;
   hotelId: string;
 }) {
   await ownedHotel(input.db, input.userId, input.hotelId);
-  const hotelRows = await input.db.query<{ organisation_id: string | null; name: string }>(
-    "select organisation_id::text as organisation_id, name from hotels where id = $1::uuid",
-    [input.hotelId],
-  );
-  const hotel = hotelRows[0];
-  if (!hotel) throw new Error("Hotel not found.");
-  if (hotel.organisation_id) {
-    await assertOrganisationBillingAuthority(input.db, input.userId, hotel.organisation_id);
-    return { organisationId: hotel.organisation_id };
+  const existing = await hotelOrganisationId(input.db, input.hotelId);
+  if (existing) {
+    await assertOrganisationBillingAuthority(input.db, input.userId, existing);
+    return { organisationId: existing };
   }
-  const created = await input.db.query<{ id: string }>(
-    "select sbg_create_organisation_for_user($1, $2)::text as id",
-    [input.userId, hotel.name],
-  );
-  const organisationId = created[0]?.id;
-  if (!organisationId) throw new Error("Organisation could not be created.");
-  await input.db.query("select sbg_attach_hotel_to_organisation($1, $2::uuid, $3::uuid)", [
-    input.userId,
-    organisationId,
-    input.hotelId,
-  ]);
-  return { organisationId };
+
+  let founding;
+  try {
+    founding = await readFoundingOnboardingState({ db: input.db, userId: input.userId });
+  } catch (error) {
+    if (error instanceof FoundingOnboardingError && (error.code === "unauthorized" || error.code === "not_found")) {
+      throw new Error("Hotel not found.");
+    }
+    throw error;
+  }
+  if (founding.status === "missing") {
+    throw new HotelOrganisationError("missing", HOTEL_ORGANISATION_MESSAGES.missing);
+  }
+  if (founding.status !== "ready") {
+    throw new HotelOrganisationError("ambiguous", HOTEL_ORGANISATION_MESSAGES.ambiguous);
+  }
+  if (founding.organisationType === null) {
+    throw new HotelOrganisationError("unclassified", HOTEL_ORGANISATION_MESSAGES.unclassified);
+  }
+  if (founding.organisationType !== "hotel") {
+    throw new HotelOrganisationError("not_hotel", HOTEL_ORGANISATION_MESSAGES.not_hotel);
+  }
+
+  await assertOrganisationBillingAuthority(input.db, input.userId, founding.organisationId);
+  try {
+    await input.db.query("select sbg_attach_hotel_to_organisation($1, $2::uuid, $3::uuid)", [
+      input.userId,
+      founding.organisationId,
+      input.hotelId,
+    ]);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (/hotel is already attached|hotel attachment failed/i.test(message)) {
+      const current = await hotelOrganisationId(input.db, input.hotelId);
+      if (current === founding.organisationId) {
+        await assertOrganisationBillingAuthority(input.db, input.userId, founding.organisationId);
+        return { organisationId: founding.organisationId };
+      }
+      throw new HotelOrganisationError("attached_elsewhere", HOTEL_ORGANISATION_MESSAGES.attached_elsewhere);
+    }
+    throw error;
+  }
+  return { organisationId: founding.organisationId };
 }
 
 export class DomainACheckoutClaimError extends Error {

@@ -2,13 +2,23 @@
 
 This file describes **current reality**, not intended future state.
 
+## CP30.05E-2D-2D A2 — hotel subscription no longer creates an organisation
+
+**A2 is in application source. No new migration. Production SQL was not run. The A1 Terms gate stays closed. First property creation stays blocked. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
+
+`ensureHotelOrganisation` no longer calls `sbg_create_organisation_for_user`. An already-attached hotel returns its current organisation after hotel access and billing authority are checked. It is not moved, renamed, or classified. An unattached hotel attaches only to the caller's single founding organisation when that organisation is classified `hotel` and the caller still has billing authority. Attachment uses `sbg_attach_hotel_to_organisation`, which locks the hotel and rejects a different organisation. The client cannot choose the organisation id. Missing, ambiguous, unclassified, and `transfer_operator` states fail closed. No Terms acceptance is written.
+
+An existing attached hotel keeps its billing path, including when the organisation is still unclassified. An unattached hotel is not given a new organisation. Recovery is one founding organisation classified as Hotel / Accommodation, then a retry. A2 does not create or classify that organisation, and it does not open the Terms screen. An ambiguous account is not repaired by creating another organisation.
+
+The runtime SQL client cannot hold one transaction across the founding read and the attach. No installed function repeats the founding-uniqueness check inside the hotel lock. Concurrent retries of this function cannot move the hotel. A direct call to `sbg_create_organisation_for_user` can still insert another organisation; this path no longer does that.
+
 ## CP30.05E-2D-2D A1 — founding organisation journey in application source
 
-**A1 is in application source. A2 has not started. No new migration. Production SQL was not run. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
+**A1 is in application source. A2 is in application source; see the section above. No new migration. Production SQL was not run. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
 
 Authenticated users with no hotel account enter `/app/founding`. They name the business through `sbg_ensure_founding_organisation`, then classify it as `hotel` or `transfer_operator` through `sbg_classify_founding_organisation`. Both types stop on a Terms-pending screen. That screen does not call `sbg_record_founding_terms_acceptance`. terms-v1 stays provisional and is not presented as accepted Terms.
 
-A user who already has a hotel account stays on `/app/hotels/$hotelId`. Their organisation is not created, classified, or otherwise mutated by this gate. If the hotel list cannot be read, the journey does not write. Ambiguous founding state with no hotel account fails closed and does not classify. Users with no hotel account are redirected away from `/app/onboarding` and `/app/billing`. `createOnboardingHotel` refuses the first property until a hotel account already exists. `ensureHotelOrganisation` is unchanged and is not called by the new journey. Homepage Get started is still `#start`. Commerce remains **test**.
+A user who already has a hotel account stays on `/app/hotels/$hotelId`. Their organisation is not created, classified, or otherwise mutated by this gate. If the hotel list cannot be read, the journey does not write. Ambiguous founding state with no hotel account fails closed and does not classify. Users with no hotel account are redirected away from `/app/onboarding` and `/app/billing`. `createOnboardingHotel` refuses the first property until a hotel account already exists. `ensureHotelOrganisation` no longer creates an organisation from a hotel name; see the section above. The founding journey still does not call it. Homepage Get started is still `#start`. Commerce remains **test**.
 
 ## CP30.05E-2D-2C.1 — 0034 applied on Production; apply workflow retired
 

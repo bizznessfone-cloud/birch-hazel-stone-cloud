@@ -119,8 +119,10 @@ test("0033 is accepted history and least privilege", () => {
   assert.doesNotMatch(executable, /organisation_type\s*=/i);
   assert.doesNotMatch(executable, /update\s+(public\.)?(sbg_|hotels)/i);
   assert.doesNotMatch(executable, /stripe|checkout|sk_live|sk_test/i);
-  assert.match(read("src/lib/aether/saas-billing.server.ts"), /sbg_create_organisation_for_user/);
+  assert.doesNotMatch(read("src/lib/aether/saas-billing.server.ts"), /sbg_create_organisation_for_user/);
   assert.doesNotMatch(read("src/lib/aether/saas-billing.server.ts"), /sbg_ensure_founding_organisation/);
+  assert.match(read("src/lib/aether/saas-billing.server.ts"), /readFoundingOnboardingState/);
+  assert.match(read("src/lib/aether/saas-billing.server.ts"), /sbg_attach_hotel_to_organisation/);
   const fn = read("src/lib/aether/founding-organisation-fns.ts");
   assert.match(fn, /authMiddleware/);
   assert.match(fn, /\.strict\(\)/);
