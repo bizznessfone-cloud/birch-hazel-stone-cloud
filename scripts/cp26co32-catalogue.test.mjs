@@ -80,6 +80,7 @@ test("0026 exists once and 0001-0025 are unchanged versus the source commit", ()
     "0032_cp3005e2c1_organisation_acceptance.sql",
     "0033_cp3005e2d2b_founding_organisation.sql",
     "0034_cp3005e2d2c_founding_classification_acceptance.sql",
+    "0035_cp3005e2d2d_founding_property.sql",
   ]);
   for (const name of changed) assert.ok(present.includes(name.slice("migrations/".length)), name);
   for (const [name, digest] of Object.entries(REVIEWED_DIGESTS)) {
@@ -120,10 +121,11 @@ test("Gate B accepts 0001-0030 and the generic migrator still never applies SQL"
   assert.equal(baseline.migrated, false);
 
   const live = evaluatePreflight(acceptedFacts());
-  assert.equal(live.ok, true);
-  assert.deepEqual(live.pending, []);
+  assert.equal(live.ok, false);
+  assert.equal(live.verdict, "BLOCKED — MIGRATION LEDGER INCONSISTENT");
+  assert.deepEqual(live.unexpectedPending, ["0035_cp3005e2d2d_founding_property.sql"]);
   const liveBaseline = evaluateMigrationBaseline(live);
-  assert.equal(liveBaseline.ok, true);
+  assert.equal(liveBaseline.ok, false);
   assert.equal(liveBaseline.migrated, false);
 
   const future35 = evaluatePreflight({
@@ -131,7 +133,10 @@ test("Gate B accepts 0001-0030 and the generic migrator still never applies SQL"
     sourceMigrations: [...sourceMigrations(), "0035_later.sql"],
   });
   assert.equal(future35.ok, false);
-  assert.deepEqual(future35.unexpectedPending, ["0035_later.sql"]);
+  assert.deepEqual(future35.unexpectedPending, [
+    "0035_cp3005e2d2d_founding_property.sql",
+    "0035_later.sql",
+  ]);
 
   const future = evaluatePreflight({
     ...acceptedFacts(),
@@ -167,9 +172,9 @@ test("Gate B accepts 0001-0030 and the generic migrator still never applies SQL"
     env: { AETHER_DATABASE_OWNER_URL: "postgres://owner@host/neondb" },
     loadFacts: async () => acceptedFacts(),
   });
-  assert.equal(liveGuarded.ok, true);
+  assert.equal(liveGuarded.ok, false);
   assert.equal(liveGuarded.migrated, false);
-  assert.equal(liveGuarded.verdict, LEDGER_CURRENT);
+  assert.equal(liveGuarded.verdict, "BLOCKED — MIGRATION LEDGER INCONSISTENT");
 });
 
 test("generic migrator cannot apply 0026 and the spent dispatch surface is gone", () => {

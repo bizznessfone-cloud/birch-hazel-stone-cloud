@@ -2,6 +2,16 @@
 
 This file describes **current reality**, not intended future state.
 
+## CP30.05E-2D-2D A3-M35 — founding property function, not applied
+
+**0035 is source only. It is not on the accepted ledger. AUTHORISED_PENDING stays empty. Production SQL was not run. No Production workflow was dispatched. The first-property screen is not enabled. A3-R is unchanged. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
+
+`migrations/0035_cp3005e2d2d_founding_property.sql` (digest `80d1d3ec68eebfba0bcfbe07ac3c3dd1ade11d7d0466be9264cf0f28d27def67`) defines `sbg_create_founding_property_for_user(text, text, text, text, text, text)`. The caller cannot pass an organisation id or a Terms version. The function locks the user, requires exactly one founding organisation, classification `hotel`, and current billing authority, then requires acceptance of a version listed in `sbg_approved_property_agreement_versions`. That table is created empty. `terms-v1` is rejected by a check constraint and by the function. There is no environment bypass. Until a later reviewed migration inserts a legally approved version, property creation fails closed before any hotel insert.
+
+When a disposable database contains a non-legal fixture version, the function calls `sbg_create_hotel_for_user` and `sbg_attach_hotel_to_organisation` in the same statement. A later failure rolls back the hotel, provider, agreement, and account. Another property code can attach to the same organisation. Existing hotels, subscriptions, allocations, and guest bookings are not modified. `sbg_create_organisation_for_user` now takes the same user-row lock, so it cannot insert a second organisation during this statement. After that transaction commits, a second organisation is still possible. This migration does not add a uniqueness constraint. PGLite cannot show a two-backend lock wait.
+
+Gate B preflight of this source tree is blocked on unexpected pending `0035_cp3005e2d2d_founding_property.sql`. The generic migrator still applies nothing. Do not apply 0035 until a separate review authorises it.
+
 ## CP30.05E-2D-2D A3-R — existing hotel organisation recovery
 
 **A3-R is in application source. No new migration. Production SQL was not run. The A1 Terms gate stays closed. No property is created. No Terms acceptance is written. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
