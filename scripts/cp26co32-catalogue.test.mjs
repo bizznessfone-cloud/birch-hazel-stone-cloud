@@ -81,6 +81,7 @@ test("0026 exists once and 0001-0025 are unchanged versus the source commit", ()
     "0033_cp3005e2d2b_founding_organisation.sql",
     "0034_cp3005e2d2c_founding_classification_acceptance.sql",
     "0035_cp3005e2d2d_founding_property.sql",
+    "0036_cp3005e2d2d_founding_integrity.sql",
   ]);
   for (const name of changed) assert.ok(present.includes(name.slice("migrations/".length)), name);
   for (const [name, digest] of Object.entries(REVIEWED_DIGESTS)) {
@@ -123,7 +124,10 @@ test("Gate B accepts 0001-0030 and the generic migrator still never applies SQL"
   const live = evaluatePreflight(acceptedFacts());
   assert.equal(live.ok, false);
   assert.equal(live.verdict, "BLOCKED — MIGRATION LEDGER INCONSISTENT");
-  assert.deepEqual(live.unexpectedPending, ["0035_cp3005e2d2d_founding_property.sql"]);
+  assert.deepEqual(live.unexpectedPending, [
+    "0035_cp3005e2d2d_founding_property.sql",
+    "0036_cp3005e2d2d_founding_integrity.sql",
+  ]);
   const liveBaseline = evaluateMigrationBaseline(live);
   assert.equal(liveBaseline.ok, false);
   assert.equal(liveBaseline.migrated, false);
@@ -136,6 +140,7 @@ test("Gate B accepts 0001-0030 and the generic migrator still never applies SQL"
   assert.deepEqual(future35.unexpectedPending, [
     "0035_cp3005e2d2d_founding_property.sql",
     "0035_later.sql",
+    "0036_cp3005e2d2d_founding_integrity.sql",
   ]);
 
   const future = evaluatePreflight({

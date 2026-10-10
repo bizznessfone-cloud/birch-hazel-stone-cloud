@@ -2,6 +2,14 @@
 
 This file describes **current reality**, not intended future state.
 
+## CP30.05E-2D-2D A3-M36 — founding uniqueness and effective terms, not applied
+
+**0036 is source only. It is not on the accepted ledger. AUTHORISED_PENDING stays empty. Production SQL was not run. The isolated 0035 branch was not changed. No workflow was dispatched. The first-property screen is not enabled. A3-R is unchanged. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
+
+`migrations/0036_cp3005e2d2d_founding_integrity.sql` (digest `fb300bb17c8e9758700cf2fd09aa355b0293b5cd84c692e2913835876ece18fc`) does not edit 0035. Before `sbg_organisations_one_founding_creator_uidx`, a preflight raises `founding organisation duplicates exist:` with the user id, count, and organisation ids. It does not merge, delete, rename, or reassign. If that preflight fails inside the applying transaction, the unique index is not created. One user can create one organisation. Multiple hotels on that organisation stay allowed. Membership of someone else's organisation stays allowed. `sbg_create_organisation_for_user` locks the user and raises `founding organisation already exists` instead of inserting or renaming a second organisation. `sbg_ensure_founding_organisation` still returns the existing organisation when billing authority remains.
+
+`sbg_approved_property_agreement_versions.effective` defaults to false. A partial unique index allows at most one true row. `sbg_create_founding_property_for_user` requires acceptance of that effective version. A superseded approval does not qualify. The table is not seeded. `terms-v1` stays prohibited. Historical acceptance rows are not updated. `aether_app` still cannot insert, update, select, or designate `effective`. There is no application or environment bypass. The 0035 file is unchanged, so a database with only 0035 can still gain a second organisation after commit and can still accept a superseded approved version. PGLite is one backend and does not prove a two-connection lock wait. Do not apply 0036 until a separate review authorises it. Gate B of this tree is blocked on unexpected pending 0035 and 0036.
+
 ## CP30.05E-2D-2D A3-M35 — founding property function, not applied
 
 **0035 is source only. It is not on the accepted ledger. AUTHORISED_PENDING stays empty. Production SQL was not run. No Production workflow was dispatched. The first-property screen is not enabled. A3-R is unchanged. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
