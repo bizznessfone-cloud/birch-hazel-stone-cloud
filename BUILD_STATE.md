@@ -2,6 +2,16 @@
 
 This file describes **current reality**, not intended future state.
 
+## CP30.05E-2D-2D A3-R — existing hotel organisation recovery
+
+**A3-R is in application source. No new migration. Production SQL was not run. The A1 Terms gate stays closed. No property is created. No Terms acceptance is written. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
+
+An authenticated user who already has `app_hotel_accounts` access to a hotel with no organisation sees a recovery notice inside `/app/hotels/$hotelId`. A hotel that is already attached does not show it, and that load does not read or change founding state. The notice is not a gate for every hotel customer. Users with no hotel account still stop on the A1 Terms-pending screen.
+
+A missing business asks for a name. The hotel name is only a suggestion. The name is saved only through `sbg_ensure_founding_organisation`. The customer must then explicitly choose Hotel / Accommodation. The server sends `hotel` to `sbg_classify_founding_organisation`. Nothing is classified automatically. An existing unclassified organisation is shown under its current name and is not replaced or renamed. A hotel-classified organisation is linked only by an explicit action through the A2 `ensureHotelOrganisation` path and `sbg_attach_hotel_to_organisation`. A `transfer_operator` business stops without a new organisation or a type change. Ambiguous founding or lost billing authority stops with a support message and no organisation selector. The client never sends an organisation id, membership, or billing flag.
+
+An already-attached hotel stays on its current organisation, including when that organisation is unclassified. Recovery does not create a hotel, provider, booking, acceptance, or Stripe claim. First-property creation and operator tenancy have not started.
+
 ## CP30.05E-2D-2D A2 — hotel subscription no longer creates an organisation
 
 **A2 is in application source. No new migration. Production SQL was not run. The A1 Terms gate stays closed. First property creation stays blocked. CP31 NOT STARTED. LIVE COMMERCE NOT ACTIVATED.**
