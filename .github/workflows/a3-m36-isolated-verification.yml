@@ -1,0 +1,80 @@
+# A3-M36 isolated Neon preflight. Manual dispatch only.
+# Read-only. Does not apply SQL and does not create fixtures.
+# Install and concurrency are not choices in this file.
+name: A3-M36 isolated preflight
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Exact confirmation PREFLIGHT-0036-ISOLATED
+        required: true
+        type: string
+      stage:
+        description: Only preflight is implemented.
+        required: true
+        type: choice
+        options:
+          - preflight
+        default: preflight
+
+permissions:
+  contents: read
+
+concurrency:
+  group: a3-m36-isolated-preflight
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    name: read-only-preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Require confirmation and the preflight stage
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+          STAGE: ${{ inputs.stage }}
+        run: |
+          if [ "$CONFIRMATION" != "PREFLIGHT-0036-ISOLATED" ]; then
+            echo "BLOCKED — CONFIRMATION PHRASE INVALID"
+            exit 1
+          fi
+          if [ "$STAGE" != "preflight" ]; then
+            echo "BLOCKED — STAGE NOT ENABLED"
+            exit 1
+          fi
+          echo "confirmation: ACCEPTED"
+          echo "stage: preflight"
+
+      - name: Checkout selected commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Require isolated owner secret
+        env:
+          AETHER_0036_ISOLATED_OWNER_URL: ${{ secrets.AETHER_0036_ISOLATED_OWNER_URL }}
+        run: |
+          if [ -z "$AETHER_0036_ISOLATED_OWNER_URL" ]; then
+            echo "BLOCKED — AETHER_0036_ISOLATED_OWNER_URL is absent. No database was opened."
+            exit 1
+          fi
+          echo "AETHER_0036_ISOLATED_OWNER_URL: PRESENT"
+
+      - name: Read-only isolated preflight
+        env:
+          AETHER_0036_ISOLATED_OWNER_URL: ${{ secrets.AETHER_0036_ISOLATED_OWNER_URL }}
+          A3M36_CONFIRMATION: ${{ inputs.confirmation }}
+          A3M36_STAGE: ${{ inputs.stage }}
+        run: node scripts/a3-m36-isolated-preflight.mjs
