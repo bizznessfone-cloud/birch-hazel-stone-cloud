@@ -5,9 +5,9 @@
  * Requires 0036 already present on br-dawn-hat-b1b4uqhn. Uses only
  * AETHER_0036_ISOLATED_OWNER_URL. An optional AETHER_0036_ISOLATED_APP_URL
  * must be a distinct aether_app login on that same endpoint. There is no
- * Production fallback and no terms-v1 approval. Cleanup never disables a
- * trigger or foreign key. Rows that those safeguards refuse to delete fail
- * the gate with the table and the error. A missing app login is NOT TESTED,
+ * Production fallback and no terms-v1 approval. Cleanup is one transaction.
+ * It never disables a trigger or foreign key. A refusal rolls the cleanup
+ * back and preserves the fixture rows. A missing app login is NOT TESTED,
  * not a pass, and the overall result is not full verification.
  */
 import { randomUUID } from "node:crypto";
@@ -31,26 +31,37 @@ import {
   MIGRATION_36,
 } from "./a3-m36-0035-equivalence.mjs";
 import { endpointPinFailures } from "./a3-m36-isolated-install.mjs";
+import {
+  FIXTURE_APP_DENIED,
+  FIXTURE_EFFECTIVE,
+  FIXTURE_SUPERSEDED,
+  FIXTURE_UNAPPROVED,
+  FIXTURE_VERSIONS,
+  MARKER,
+  NAME_PREFIX,
+  cleanupFailure,
+  cleanupFixtures,
+  isMarkerUser,
+  triggerGuard,
+} from "./a3-m36-isolated-cleanup.mjs";
+
+export {
+  FIXTURE_APP_DENIED,
+  FIXTURE_EFFECTIVE,
+  FIXTURE_SUPERSEDED,
+  FIXTURE_UNAPPROVED,
+  FIXTURE_VERSIONS,
+  MARKER,
+  NAME_PREFIX,
+  cleanupFailure,
+  isMarkerUser,
+};
 
 export const CONCURRENCY_CONFIRMATION = "CONCURRENCY-0036-ISOLATED";
 export const CONFIRMATION_ENV = "A3M36_CONCURRENCY_CONFIRMATION";
 export const APP_ENV = "AETHER_0036_ISOLATED_APP_URL";
-export const MARKER = "a3m36";
-export const NAME_PREFIX = "A3M36 ";
-export const FIXTURE_EFFECTIVE = "a3m36-fixture-effective";
-export const FIXTURE_SUPERSEDED = "a3m36-fixture-superseded";
-export const FIXTURE_UNAPPROVED = "a3m36-fixture-unapproved";
-export const FIXTURE_APP_DENIED = "a3m36-fixture-app-denied";
-export const FIXTURE_VERSIONS = [FIXTURE_EFFECTIVE, FIXTURE_SUPERSEDED, FIXTURE_APP_DENIED];
 export const PASS_VERDICT = "GATE PASS — 0036 ISOLATED CONCURRENCY VERIFIED";
 export const INCOMPLETE_VERDICT = "INCOMPLETE — RUNTIME ROLE SECURITY NOT TESTED";
-
-const REQUIRED_TRIGGERS = [
-  "sbg_organisations_no_delete",
-  "sbg_organisation_members_no_delete",
-  "sbg_organisation_acceptances_immutable",
-  "sbg_organisation_acceptances_no_truncate",
-];
 
 const IDENTITY_SQL = `select current_database() as database,
        current_user,
@@ -152,14 +163,6 @@ export function overallVerdict({ concurrency, terms, runtime, cleanup }) {
   return { exitCode: 0, full: true, verdict: PASS_VERDICT };
 }
 
-export function cleanupFailure(step, err) {
-  const message = String(err?.message ?? err ?? "unknown").split("\n")[0].slice(0, 240);
-  const table = err?.table ? ` table ${err.table}` : "";
-  const constraint = err?.constraint ? ` constraint ${err.constraint}` : "";
-  const code = err?.code ? ` sqlstate ${err.code}` : "";
-  return `BLOCKED — CLEANUP STOPPED AT ${step}${table}${constraint}${code}: ${message}`;
-}
-
 export function concurrencyLedgerOk(names) {
   const ledger = [...(names ?? [])].map(String);
   const unique = new Set(ledger);
@@ -202,16 +205,6 @@ export function appUrlFailures(value, ownerValue) {
     failures.push("same-as-owner");
   }
   return failures;
-}
-
-export function isMarkerUser(row) {
-  const id = String(row?.id ?? "");
-  const email = String(row?.email ?? "");
-  const name = String(row?.name ?? "");
-  return id.startsWith(`${MARKER}-`)
-    && email.startsWith(`${MARKER}-proof-`)
-    && email.endsWith("@invalid.scanbookgo.test")
-    && name.startsWith(NAME_PREFIX);
 }
 
 function sayLine(say, line) {
@@ -266,170 +259,6 @@ async function waitForLock(observer, pid) {
     await delay(40);
   }
   return { observed: false, sawPid };
-}
-
-async function triggerGuard(db) {
-  const rows = (await db.query(
-    `select t.tgname, t.tgenabled
-       from pg_trigger t
-       join pg_class c on c.oid = t.tgrelid
-       join pg_namespace n on n.oid = c.relnamespace
-      where not t.tgisinternal
-        and n.nspname = 'public'
-        and t.tgname = any($1::text[])`,
-    [REQUIRED_TRIGGERS],
-  )).rows;
-  const missing = REQUIRED_TRIGGERS.filter((name) => !rows.some((row) => row.tgname === name && row.tgenabled === "O"));
-  if (missing.length) return { ok: false, verdict: `BLOCKED — REQUIRED TRIGGER NOT ENABLED ${missing.join(",")}` };
-  return { ok: true };
-}
-
-async function runTransaction(db, step, statements) {
-  await db.query("begin");
-  try {
-    for (const [sql, params] of statements) await db.query(sql, params);
-    await db.query("commit");
-    return { ok: true };
-  } catch (err) {
-    try { await db.query("rollback"); } catch { /* the statement already aborted the transaction */ }
-    return { ok: false, verdict: cleanupFailure(step, err) };
-  }
-}
-
-async function runStep(db, step, sql, params) {
-  return runTransaction(db, step, [[sql, params]]);
-}
-
-async function markerLeftovers(db, userIds) {
-  const row = (await db.query(
-    `select
-       (select count(*)::int from public."user" where id = any($1::text[])) as users,
-       (select count(*)::int from public.sbg_organisations where created_by_user_id = any($1::text[])) as orgs,
-       (select count(*)::int from public.hotels
-         where name like $3 and code like $4) as hotels,
-       (select count(*)::int from public.sbg_approved_property_agreement_versions
-         where agreement_version = any($2::text[])) as approvals`,
-    [userIds, FIXTURE_VERSIONS, `${NAME_PREFIX}%`, `${MARKER}-%`],
-  )).rows[0];
-  return {
-    users: Number(row.users),
-    orgs: Number(row.orgs),
-    hotels: Number(row.hotels),
-    approvals: Number(row.approvals),
-  };
-}
-
-async function cleanup(db, userIds) {
-  const ids = [...userIds];
-  const users = ids.length
-    ? (await db.query(`select id, name, email from public."user" where id = any($1::text[])`, [ids])).rows
-    : [];
-  if (users.some((row) => !isMarkerUser(row))) return { ok: false, verdict: "BLOCKED — REFUSING TO DELETE A NON-MARKER USER" };
-  const orgs = ids.length
-    ? (await db.query(
-      `select id::text as id, name, created_by_user_id from public.sbg_organisations where created_by_user_id = any($1::text[])`,
-      [ids],
-    )).rows
-    : [];
-  if (orgs.some((row) => !String(row.name).startsWith(NAME_PREFIX) || !ids.includes(String(row.created_by_user_id)))) {
-    return { ok: false, verdict: "BLOCKED — REFUSING TO DELETE A NON-MARKER ORGANISATION" };
-  }
-  const orgIds = orgs.map((row) => row.id);
-  const hotels = ids.length
-    ? (await db.query(
-      `select h.id::text as id, h.name, h.code
-         from public.hotels h
-         join public.app_hotel_accounts a on a.hotel_id = h.id
-        where a.user_id = any($1::text[])`,
-      [ids],
-    )).rows
-    : [];
-  if (hotels.some((row) => !String(row.name).startsWith(NAME_PREFIX) || !String(row.code).startsWith(`${MARKER}-`))) {
-    return { ok: false, verdict: "BLOCKED — REFUSING TO DELETE A NON-MARKER HOTEL" };
-  }
-  const hotelIds = hotels.map((row) => row.id);
-  const providers = hotelIds.length
-    ? (await db.query(
-      `select distinct a.provider_id::text as id
-         from public.hotel_provider_agreements a
-        where a.hotel_id = any($1::uuid[])
-          and not exists (
-            select 1 from public.hotel_provider_agreements other
-             where other.provider_id = a.provider_id
-               and not (other.hotel_id = any($1::uuid[]))
-          )`,
-      [hotelIds],
-    )).rows.map((row) => row.id)
-    : [];
-  const failures = [];
-  if (hotelIds.length) {
-    const hotelsDeleted = await runTransaction(db, "hotels", [
-      [`delete from public.hotel_provider_agreements where hotel_id = any($1::uuid[])`, [hotelIds]],
-      [`delete from public.app_hotel_accounts where hotel_id = any($1::uuid[]) or user_id = any($2::text[])`, [hotelIds, ids]],
-      [`delete from public.hotels where id = any($1::uuid[]) and name like $2 and code like $3`, [hotelIds, `${NAME_PREFIX}%`, `${MARKER}-%`]],
-    ]);
-    if (!hotelsDeleted.ok) failures.push(hotelsDeleted.verdict);
-  }
-  if (providers.length && failures.length === 0) {
-    const gone = await runStep(
-      db,
-      "providers",
-      `delete from public.providers p
-        where p.id = any($1::uuid[])
-          and not exists (select 1 from public.hotel_provider_agreements a where a.provider_id = p.id)`,
-      [providers],
-    );
-    if (!gone.ok) failures.push(gone.verdict);
-    else {
-      const leftProviders = Number((await db.query(
-        `select count(*)::int as n from public.providers where id = any($1::uuid[])`,
-        [providers],
-      )).rows[0].n);
-      if (leftProviders) failures.push(`BLOCKED — CLEANUP STOPPED AT providers: ${leftProviders} marker provider rows still referenced`);
-    }
-  }
-  const approvals = await runStep(
-    db,
-    "sbg_approved_property_agreement_versions",
-    `delete from public.sbg_approved_property_agreement_versions where agreement_version = any($1::text[])`,
-    [FIXTURE_VERSIONS],
-  );
-  if (!approvals.ok) failures.push(approvals.verdict);
-  const orgSteps = [
-    ["sbg_organisation_acceptances", `delete from public.sbg_organisation_acceptances where organisation_id = any($1::uuid[]) or accepted_by_user_id = any($2::text[])`, [orgIds.length ? orgIds : ["00000000-0000-0000-0000-000000000000"], ids]],
-    ["sbg_organisation_members", `delete from public.sbg_organisation_members where user_id = any($2::text[]) or organisation_id = any($1::uuid[])`, [orgIds.length ? orgIds : ["00000000-0000-0000-0000-000000000000"], ids]],
-    ["sbg_organisations", `delete from public.sbg_organisations where created_by_user_id = any($1::text[]) and name like $2`, [ids, `${NAME_PREFIX}%`]],
-    ["user", `delete from public."user" where id = any($1::text[])`, [ids]],
-  ];
-  if (ids.length && failures.length === 0) {
-    for (const [step, sql, params] of orgSteps) {
-      const result = await runStep(db, step, sql, params);
-      if (!result.ok) {
-        failures.push(result.verdict);
-        break;
-      }
-    }
-  }
-  if (failures.length) {
-    let left = { users: ids.length, orgs: orgIds.length, hotels: hotelIds.length, approvals: FIXTURE_VERSIONS.length };
-    try {
-      left = await markerLeftovers(db, ids);
-    } catch (err) {
-      return { ok: false, verdict: failures[0], error: cleanupFailure("marker leftover count", err) };
-    }
-    return {
-      ok: false,
-      verdict: `${failures[0]}; remaining users=${left.users} orgs=${left.orgs} hotels=${left.hotels} approvals=${left.approvals}`,
-    };
-  }
-  const left = await markerLeftovers(db, ids);
-  if (left.users || left.orgs || left.hotels || left.approvals) {
-    return {
-      ok: false,
-      verdict: `BLOCKED — CLEANUP DID NOT REMOVE MARKER ROWS remaining users=${left.users} orgs=${left.orgs} hotels=${left.hotels} approvals=${left.approvals}`,
-    };
-  }
-  return { ok: true };
 }
 
 async function snapshot(db) {
@@ -550,9 +379,13 @@ export async function runConcurrency({ env, connect = client, say = () => {} }) 
     if (opened) {
       try { await observer.query("rollback"); } catch { /* no open transaction */ }
       try {
-        const removed = await cleanup(observer, userIds);
+        const removed = await cleanupFixtures(observer, { userIds, discover: false, approvals: before != null });
         cleanupVerdict = removed.ok ? "PASS" : removed.verdict;
-        if (removed.error) log(removed.error);
+        log(`cleanup_transaction: ${removed.transaction}`);
+        log(`data_preserved: ${removed.preserved}`);
+        for (const [table, count] of Object.entries(removed.identified)) log(`identified ${table}: ${count}`);
+        for (const [table, count] of Object.entries(removed.removed)) log(`removed ${table}: ${count}`);
+        for (const ref of removed.references ?? []) log(`unexpected_reference: ${ref.childTable}.${ref.childColumns?.[0]} -> ${ref.parentTable} rows=${ref.count}`);
         if (removed.ok) userIds.length = 0;
         const guards = await triggerGuard(observer);
         log(`triggers_still_enabled: ${guards.ok}`);

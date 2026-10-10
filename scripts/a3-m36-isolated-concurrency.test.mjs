@@ -213,7 +213,9 @@ test("the concurrency workflow is manual and does not install", () => {
   assert.doesNotMatch(src, /enable trigger/i);
   assert.doesNotMatch(src, /setDeleteTriggers/);
   assert.doesNotMatch(src, /alter table/i);
-  assert.match(src, /async function runStep/);
+  assert.match(src, /cleanupFixtures\(/);
+  assert.match(src, /data_preserved/);
+  assert.doesNotMatch(src, /async function runStep/);
   assert.match(src, /terms-v1/);
   assert.doesNotMatch(src, /values \('terms-v1'/);
 });

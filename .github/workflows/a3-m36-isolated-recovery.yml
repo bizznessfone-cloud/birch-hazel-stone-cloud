@@ -1,16 +1,14 @@
-# A3-M36 isolated concurrency gate. Manual dispatch only.
-# Does not install SQL. Does not use a Production credential.
-# Does not disable triggers. Cleanup is one transaction and rolls back on refusal.
-# Requires 0036 to already be present.
-# A missing AETHER_0036_ISOLATED_APP_URL is runtime-role NOT TESTED.
-# That result is not a full pass.
-name: A3-M36 isolated concurrency
+# A3-M36 isolated fixture recovery. Manual dispatch only.
+# Does not install SQL. Does not run the concurrency gate.
+# Does not use a Production credential. Does not disable triggers.
+# One cleanup transaction. A refusal preserves the fixture rows.
+name: A3-M36 isolated recovery
 
 on:
   workflow_dispatch:
     inputs:
       confirmation:
-        description: Exact confirmation CONCURRENCY-0036-ISOLATED
+        description: Exact confirmation RECOVER-0036-ISOLATED
         required: true
         type: string
 
@@ -18,25 +16,25 @@ permissions:
   contents: read
 
 concurrency:
-  group: a3-m36-isolated-concurrency
+  group: a3-m36-isolated-recovery
   cancel-in-progress: false
 
 jobs:
-  concurrency:
-    name: concurrency-0036-isolated
+  recovery:
+    name: recover-0036-isolated
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Require the concurrency confirmation
+      - name: Require the recovery confirmation
         env:
           CONFIRMATION: ${{ inputs.confirmation }}
         run: |
-          if [ "$CONFIRMATION" != "CONCURRENCY-0036-ISOLATED" ]; then
+          if [ "$CONFIRMATION" != "RECOVER-0036-ISOLATED" ]; then
             echo "BLOCKED — CONFIRMATION PHRASE INVALID"
             exit 1
           fi
           echo "confirmation: ACCEPTED"
-          echo "stage: concurrency-0036"
+          echo "stage: recover-0036"
 
       - name: Checkout selected commit
         uses: actions/checkout@v4
@@ -63,9 +61,8 @@ jobs:
           fi
           echo "AETHER_0036_ISOLATED_OWNER_URL: PRESENT"
 
-      - name: Prove overlapping transactions on the isolated branch
+      - name: Recover marker fixtures on the isolated branch
         env:
           AETHER_0036_ISOLATED_OWNER_URL: ${{ secrets.AETHER_0036_ISOLATED_OWNER_URL }}
-          AETHER_0036_ISOLATED_APP_URL: ${{ secrets.AETHER_0036_ISOLATED_APP_URL }}
-          A3M36_CONCURRENCY_CONFIRMATION: ${{ inputs.confirmation }}
-        run: node scripts/a3-m36-isolated-concurrency.mjs
+          A3M36_RECOVERY_CONFIRMATION: ${{ inputs.confirmation }}
+        run: node scripts/a3-m36-isolated-recovery.mjs

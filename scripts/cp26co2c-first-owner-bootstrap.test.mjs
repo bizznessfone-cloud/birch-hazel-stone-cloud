@@ -546,7 +546,7 @@ test("first-Owner dispatch surface is retired", () => {
     .filter((name) => name.endsWith(".yml") || name.endsWith(".yaml"))
     .sort();
   assert.equal(yaml.includes("cp26co2c-first-owner-bootstrap.yml"), false);
-  assert.deepEqual(yaml, ["a3-m36-isolated-concurrency.yml", "a3-m36-isolated-install.yml", "a3-m36-isolated-verification.yml", "cp3005e2d2c1-0034-isolated-verify.yml", "production-database.yml"]);
+  assert.deepEqual(yaml, ["a3-m36-isolated-concurrency.yml", "a3-m36-isolated-install.yml", "a3-m36-isolated-recovery.yml", "a3-m36-isolated-verification.yml", "cp3005e2d2c1-0034-isolated-verify.yml", "production-database.yml"]);
 });
 
 test("controller source never emits secrets, never uses DATABASE_URL, never grants", () => {
