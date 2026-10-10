@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useRouter } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
 import {
   createOnboardingDestination,
@@ -9,7 +9,11 @@ import {
 } from "@/lib/aether/onboarding-fns";
 
 export const Route = createFileRoute("/app/onboarding")({
-  loader: () => getOnboardingState(),
+  loader: async () => {
+    const result = await getOnboardingState();
+    if (result.ok && result.hotels.length === 0) throw redirect({ to: "/app/founding" });
+    return result;
+  },
   component: Onboarding,
 });
 

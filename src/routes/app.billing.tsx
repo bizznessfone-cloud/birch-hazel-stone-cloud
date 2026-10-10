@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import {
@@ -10,13 +10,20 @@ import {
   startStripeConnectFn,
 } from "@/lib/aether/stripe-fns";
 import { billingViewModel } from "@/lib/aether/saas-lifecycle";
+import { getOnboardingState } from "@/lib/aether/onboarding-fns";
 
 export const Route = createFileRoute("/app/billing")({
   validateSearch: z.object({ hotelId: z.string().uuid().catch("") }),
+  loader: async () => {
+    const hotels = await getOnboardingState();
+    if (hotels.ok && hotels.hotels.length === 0) throw redirect({ to: "/app/founding" });
+    return hotels;
+  },
   component: Billing,
 });
 
 function Billing() {
+  const access = Route.useLoaderData();
   const { hotelId } = Route.useSearch();
   const [state, setState] = useState<Awaited<ReturnType<typeof getBillingState>> | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -81,6 +88,10 @@ function Billing() {
     } finally {
       setBusy(false);
     }
+  }
+
+  if (!access.ok) {
+    return <p role="alert" className="text-sm text-danger">{access.message}</p>;
   }
 
   if (!hotelId) {

@@ -137,6 +137,9 @@ test("0033 is accepted history and least privilege", () => {
   ]) {
     assert.doesNotMatch(read(path), /ensureFoundingOrganisation|sbg_ensure_founding_organisation/, path);
   }
+  const foundingRoute = read("src/routes/app.founding.tsx");
+  assert.match(foundingRoute, /ensureFoundingOrganisationFn/);
+  assert.doesNotMatch(foundingRoute, /sbg_create_organisation_for_user|recordFoundingTermsAcceptance|ensureHotelOrganisation|stripe/i);
 });
 
 test("an unauthenticated wrapper call is rejected before SQL", async () => {

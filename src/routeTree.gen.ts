@@ -20,6 +20,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ApiReadyRouteImport } from './routes/api/ready'
 import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as AppBillingRouteImport } from './routes/app.billing'
+import { Route as AppFoundingRouteImport } from './routes/app.founding'
 import { Route as AppOnboardingRouteImport } from './routes/app.onboarding'
 import { Route as BookHotelCodeRouteImport } from './routes/book.$hotelCode'
 import { Route as ConfirmedTokenRouteImport } from './routes/confirmed.$token'
@@ -98,6 +99,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
 const AppBillingRoute = AppBillingRouteImport.update({
   id: '/billing',
   path: '/billing',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppFoundingRoute = AppFoundingRouteImport.update({
+  id: '/founding',
+  path: '/founding',
   getParentRoute: () => AppRoute,
 } as any)
 const AppOnboardingRoute = AppOnboardingRouteImport.update({
@@ -234,6 +240,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/api/ready': typeof ApiReadyRoute
   '/app/billing': typeof AppBillingRoute
+  '/app/founding': typeof AppFoundingRoute
   '/app/onboarding': typeof AppOnboardingRoute
   '/book/$hotelCode': typeof BookHotelCodeRoute
   '/confirmed/$token': typeof ConfirmedTokenRoute
@@ -268,6 +275,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/api/ready': typeof ApiReadyRoute
   '/app/billing': typeof AppBillingRoute
+  '/app/founding': typeof AppFoundingRoute
   '/app/onboarding': typeof AppOnboardingRoute
   '/book/$hotelCode': typeof BookHotelCodeRoute
   '/confirmed/$token': typeof ConfirmedTokenRoute
@@ -306,6 +314,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/api/ready': typeof ApiReadyRoute
   '/app/billing': typeof AppBillingRoute
+  '/app/founding': typeof AppFoundingRoute
   '/app/onboarding': typeof AppOnboardingRoute
   '/book/$hotelCode': typeof BookHotelCodeRoute
   '/confirmed/$token': typeof ConfirmedTokenRoute
@@ -345,6 +354,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/api/ready'
     | '/app/billing'
+    | '/app/founding'
     | '/app/onboarding'
     | '/book/$hotelCode'
     | '/confirmed/$token'
@@ -379,6 +389,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/api/ready'
     | '/app/billing'
+    | '/app/founding'
     | '/app/onboarding'
     | '/book/$hotelCode'
     | '/confirmed/$token'
@@ -416,6 +427,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/api/ready'
     | '/app/billing'
+    | '/app/founding'
     | '/app/onboarding'
     | '/book/$hotelCode'
     | '/confirmed/$token'
@@ -537,6 +549,13 @@ declare module '@tanstack/react-router' {
       path: '/billing'
       fullPath: '/app/billing'
       preLoaderRoute: typeof AppBillingRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/founding': {
+      id: '/app/founding'
+      path: '/founding'
+      fullPath: '/app/founding'
+      preLoaderRoute: typeof AppFoundingRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/onboarding': {
@@ -725,6 +744,7 @@ const AppHotelsHotelIdRouteWithChildren =
 
 interface AppRouteChildren {
   AppBillingRoute: typeof AppBillingRoute
+  AppFoundingRoute: typeof AppFoundingRoute
   AppOnboardingRoute: typeof AppOnboardingRoute
   AppIndexRoute: typeof AppIndexRoute
   AppHotelsHotelIdRoute: typeof AppHotelsHotelIdRouteWithChildren
@@ -732,6 +752,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppBillingRoute: AppBillingRoute,
+  AppFoundingRoute: AppFoundingRoute,
   AppOnboardingRoute: AppOnboardingRoute,
   AppIndexRoute: AppIndexRoute,
   AppHotelsHotelIdRoute: AppHotelsHotelIdRouteWithChildren,

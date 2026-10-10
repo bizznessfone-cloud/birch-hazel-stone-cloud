@@ -70,6 +70,17 @@ export const createOnboardingHotel = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     try {
       const db = await getSql();
+      const prior = await db.query<{ n: number }>(
+        "select count(*)::int as n from app_hotel_accounts where user_id = $1",
+        [context.userId],
+      );
+      if ((prior[0]?.n ?? 0) === 0) {
+        return {
+          ok: false as const,
+          code: "business_setup",
+          message: "Finish business setup before adding a property.",
+        };
+      }
       const rows = await db.query<{ hotel_id: string; provider_id: string }>(
         "select * from sbg_create_hotel_for_user($1, $2, $3, $4, $5, $6)",
         [context.userId, data.code, data.name, data.locality, data.ianaTimezone, data.currency.toUpperCase()],

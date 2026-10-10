@@ -276,5 +276,9 @@ test("identity creation does not provision, elevate, or enable reset delivery", 
   assert.equal(emailAndPasswordAuthOptions.autoSignIn, false);
   assert.doesNotMatch(home, /href="\/login"|to="\/login"|href="\/app"|href="\/owner"|href="\/ops"|href="\/book"/);
   assert.match(app, /if \(!session\.ok\) throw redirect\(\{ to: "\/login" \}\)/);
-  assert.match(readFileSync(join(root, "src/routes/app.index.tsx"), "utf8"), /to: "\/app\/onboarding"/);
+  const appIndex = readFileSync(join(root, "src/routes/app.index.tsx"), "utf8");
+  assert.match(appIndex, /to: "\/app\/hotels\/\$hotelId"/);
+  assert.match(appIndex, /to: "\/app\/founding"/);
+  assert.doesNotMatch(appIndex, /to: "\/app\/onboarding"/);
+  assert.doesNotMatch(appIndex, /sbg_create_organisation_for_user|sbg_create_hotel_for_user|sbg_ensure_founding_organisation/);
 });

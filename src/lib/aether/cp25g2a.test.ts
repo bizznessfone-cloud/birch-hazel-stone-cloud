@@ -29,6 +29,7 @@ test("CP25G.2A protected /app child routes still use server authorization", () =
 
   for (const path of [
     "src/routes/app.index.tsx",
+    "src/routes/app.founding.tsx",
     "src/routes/app.onboarding.tsx",
     "src/routes/app.hotels.$hotelId.tsx",
     "src/routes/app.hotels.$hotelId.preview.tsx",

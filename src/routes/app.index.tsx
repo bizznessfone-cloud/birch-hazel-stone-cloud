@@ -15,7 +15,7 @@ function AppHome() {
     const first = result.hotels[0]?.hotel;
     void navigate(first
       ? { to: "/app/hotels/$hotelId", params: { hotelId: first.id }, replace: true }
-      : { to: "/app/onboarding", replace: true });
+      : { to: "/app/founding", replace: true });
   }, [result, navigate]);
   if (!result.ok) return <p className="text-sm text-muted">{result.message}</p>;
   return <p className="text-sm text-muted">Opening your workspace…</p>;

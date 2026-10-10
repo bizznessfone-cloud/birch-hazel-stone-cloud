@@ -1,7 +1,8 @@
 /**
  * CP30.05E-2D-2C server wrappers.
  * Session user only. No organisation id, role, billing flag, agreement version,
- * timestamp, hotel id, or Stripe id. Not called by signup or founding.
+ * timestamp, hotel id, or Stripe id. Signup does not call these functions.
+ * A1 may classify and read. Acceptance stays unwired.
  * terms-v1 is provisional. Acceptance is an explicit call, never a page load.
  */
 import { createServerFn } from "@tanstack/react-start";
