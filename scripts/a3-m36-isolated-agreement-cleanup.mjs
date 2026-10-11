@@ -116,6 +116,61 @@ select id
  where id = $1
    for update`;
 
+const LOCK_ACCEPTANCES_SQL = `-- a3m36-agreement-lock-acceptances
+select id
+  from public.sbg_organisation_acceptances
+ where organisation_id = $1::uuid
+    or accepted_by_user_id = $2
+ order by id
+   for update`;
+
+const LOCK_MEMBERS_SQL = `-- a3m36-agreement-lock-members
+select id
+  from public.sbg_organisation_members
+ where organisation_id = $1::uuid
+    or user_id = $2
+ order by id
+   for update`;
+
+const LOCK_HOTELS_SQL = `-- a3m36-agreement-lock-hotels
+select id
+  from public.hotels
+ where organisation_id = $1::uuid
+ order by id
+   for update`;
+
+const LOCK_ACCOUNTS_SQL = `-- a3m36-agreement-lock-accounts
+select hotel_id
+  from public.app_hotel_accounts
+ where user_id = $1
+ order by hotel_id
+   for update`;
+
+const RECORD_SQL = `-- a3m36-agreement-records
+select
+  (select md5(coalesce(string_agg(
+      id::text || '|' || organisation_id::text || '|' || accepted_by_user_id || '|' || agreement_version || '|' || accepted_at::text,
+      E'\\n' order by id), ''))
+     from public.sbg_organisation_acceptances
+    where organisation_id = $1::uuid or accepted_by_user_id = $2) as acceptance_digest,
+  (select md5(id::text || '|' || created_by_user_id || '|' || name)
+     from public.sbg_organisations
+    where id = $1::uuid) as organisation_digest,
+  (select md5(id || '|' || coalesce(email, '') || '|' || coalesce(name, ''))
+     from public."user"
+    where id = $2) as user_digest,
+  (select md5(coalesce(string_agg(id::text || '|' || coalesce(organisation_id::text, '') || '|' || code || '|' || name, E'\\n' order by id), ''))
+     from public.hotels
+    where organisation_id = $1::uuid) as hotel_digest,
+  (select md5(coalesce(string_agg(user_id || '|' || hotel_id::text || '|' || created_at::text, E'\\n' order by hotel_id), ''))
+     from public.app_hotel_accounts
+    where user_id = $2) as account_digest,
+  (select md5(coalesce(string_agg(
+      id::text || '|' || organisation_id::text || '|' || user_id || '|' || role || '|' || billing_authority::text || '|' || coalesce(removed_at::text, ''),
+      E'\\n' order by id), ''))
+     from public.sbg_organisation_members
+    where organisation_id = $1::uuid or user_id = $2) as member_digest`;
+
 const SNAPSHOT_SQL = `-- a3m36-agreement-snapshot
 select
   (select count(*)::int from public.sbg_approved_property_agreement_versions) as approval_count,
@@ -211,6 +266,19 @@ function preservedFailures(before, after) {
   return failures;
 }
 
+const PROTECTED_DIGESTS = ["acceptance_digest", "organisation_digest", "user_digest", "hotel_digest", "account_digest", "member_digest"];
+
+export function protectedRecordFailures(before, after) {
+  const failures = [];
+  for (const key of PROTECTED_DIGESTS) {
+    const left = String(before?.[key] ?? "");
+    const right = String(after?.[key] ?? "");
+    if (!/^[a-f0-9]{32}$/.test(left)) failures.push(`missing-${key}`);
+    else if (left !== right) failures.push(`changed-${key}`);
+  }
+  return failures;
+}
+
 function lockConflict(err) {
   const code = String(err?.code ?? "");
   return code === "55P03" || code === "40P01" || code === "57014" || code === "40001";
@@ -294,10 +362,15 @@ export async function runAgreementCleanup({ env, connect = client, say = () => {
     await db.query(LOCK_ACCEPTANCE_SQL, [NOT_LEGAL]);
     await db.query(LOCK_ORGANISATION_SQL, [ORGANISATION_ID]);
     await db.query(LOCK_USER_SQL, [USER_ID]);
+    await db.query(LOCK_ACCEPTANCES_SQL, [ORGANISATION_ID, USER_ID]);
+    await db.query(LOCK_MEMBERS_SQL, [ORGANISATION_ID, USER_ID]);
+    await db.query(LOCK_HOTELS_SQL, [ORGANISATION_ID]);
+    await db.query(LOCK_ACCOUNTS_SQL, [USER_ID]);
     const shape = (await db.query(SHAPE_SQL)).rows[0] ?? {};
     const foreignKeys = (await db.query(FK_SQL)).rows;
     const triggers = (await db.query(TRIGGER_SQL, [REQUIRED_TRIGGERS])).rows;
     const before = (await db.query(SNAPSHOT_SQL, [NOT_LEGAL, ORGANISATION_ID, USER_ID])).rows[0] ?? {};
+    const beforeRecords = (await db.query(RECORD_SQL, [ORGANISATION_ID, USER_ID])).rows[0] ?? {};
     const disabled = REQUIRED_TRIGGERS.filter((name) => !triggers.some((row) => row.tgname === name && row.tgenabled === "O"));
     const gates = [];
     if (shape.effective_column !== true || shape.effective_index !== true || shape.requires_effective !== true) gates.push("schema-drift");
@@ -305,21 +378,22 @@ export async function runAgreementCleanup({ env, connect = client, say = () => {
     if (foreignKeys.length) gates.push("catalogue-foreign-key");
     if (disabled.length) gates.push("trigger-disabled");
     const shapeFailures = snapshotFailures(before);
+    const recordFailures = protectedRecordFailures(beforeRecords, beforeRecords);
     log(`precondition_approval_count: ${number(before.approval_count)}`);
     log(`precondition_effective_count: ${number(before.effective_count)}`);
-    log(`precondition_failures: ${[...gates, ...shapeFailures].join(",") || "none"}`);
-    if (shapeFailures.includes("approval-absent") && gates.length === 0 && shapeFailures.length === 1) {
+    log(`precondition_failures: ${[...gates, ...shapeFailures, ...recordFailures].join(",") || "none"}`);
+    if (shapeFailures.includes("approval-absent") && gates.length === 0 && recordFailures.length === 0 && shapeFailures.length === 1) {
       log("deleted_rows: 0 expected: 1");
       await rollback(db, log);
       writing = false;
       log(VERDICT_ABSENT);
       return finish(1);
     }
-    if (gates.length || shapeFailures.length) {
+    if (gates.length || shapeFailures.length || recordFailures.length) {
       log("deleted_rows: 0 expected: 1");
       await rollback(db, log);
       writing = false;
-      log(`BLOCKED — PRECONDITION ${[...gates, ...shapeFailures].join(",")}`);
+      log(`BLOCKED — PRECONDITION ${[...gates, ...shapeFailures, ...recordFailures].join(",")}`);
       return finish(1);
     }
 
@@ -333,15 +407,18 @@ export async function runAgreementCleanup({ env, connect = client, say = () => {
       return finish(1);
     }
     const after = (await db.query(SNAPSHOT_SQL, [NOT_LEGAL, ORGANISATION_ID, USER_ID])).rows[0] ?? {};
+    const afterRecords = (await db.query(RECORD_SQL, [ORGANISATION_ID, USER_ID])).rows[0] ?? {};
     const afterKeys = (await db.query(FK_SQL)).rows;
     const afterTriggers = (await db.query(TRIGGER_SQL, [REQUIRED_TRIGGERS])).rows;
     const afterDisabled = REQUIRED_TRIGGERS.filter((name) => !afterTriggers.some((row) => row.tgname === name && row.tgenabled === "O"));
-    const post = preservedFailures(before, after);
+    const post = [...preservedFailures(before, after), ...protectedRecordFailures(beforeRecords, afterRecords)];
     if (afterKeys.length) post.push("catalogue-foreign-key");
     if (afterDisabled.length) post.push("trigger-disabled");
-    log(`acceptance_preserved: ${post.some((item) => item.startsWith("acceptance")) ? "false" : "true"}`);
-    log(`organisation_preserved: ${number(after.organisations) === 1 ? "true" : "false"}`);
-    log(`user_preserved: ${number(after.users) === 1 ? "true" : "false"}`);
+    const acceptanceOk = !post.some((item) => item.startsWith("acceptance") || item.includes("acceptance_digest"));
+    log(`acceptance_preserved: ${acceptanceOk ? "true" : "false"}`);
+    log(`organisation_preserved: ${number(after.organisations) === 1 && !post.includes("changed-organisation_digest") ? "true" : "false"}`);
+    log(`user_preserved: ${number(after.users) === 1 && !post.includes("changed-user_digest") ? "true" : "false"}`);
+    log(`protected_records: ${post.some((item) => item.endsWith("_digest")) ? "mismatch" : "match"}`);
     log(`org_hotels: ${number(after.org_hotels)}`);
     log(`user_accounts: ${number(after.user_accounts)}`);
     log(`org_members: ${number(after.org_members)}`);

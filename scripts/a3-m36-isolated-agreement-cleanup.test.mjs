@@ -10,7 +10,7 @@ import { EXPECTED_BRANCH, EXPECTED_DATABASE, EXPECTED_PROJECT, EXPECTED_ROLE, FO
 import { EXPECTED_ENDPOINT } from "./a3-m36-0035-equivalence.mjs";
 import { REQUIRED_TRIGGERS } from "./a3-m36-isolated-cleanup.mjs";
 import { ACCEPTANCE_ID, NOT_LEGAL, ORGANISATION_ID, RECOVERY_BRANCH, USER_ID, VERIFIED_FACTS } from "./a3-m36-agreement-fixture-plan.mjs";
-import { CLEANUP_CONFIRMATION, DELETE_SQL, VERDICT_ABSENT, VERDICT_PASS, runAgreementCleanup, snapshotFailures } from "./a3-m36-isolated-agreement-cleanup.mjs";
+import { CLEANUP_CONFIRMATION, DELETE_SQL, VERDICT_ABSENT, VERDICT_PASS, protectedRecordFailures, runAgreementCleanup, snapshotFailures } from "./a3-m36-isolated-agreement-cleanup.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const src = readFileSync(join(root, "scripts/a3-m36-isolated-agreement-cleanup.mjs"), "utf8");
@@ -53,6 +53,15 @@ function snapshot(overrides = {}) {
   };
 }
 
+const DIGESTS = {
+  acceptance_digest: "a".repeat(32),
+  organisation_digest: "b".repeat(32),
+  user_digest: "c".repeat(32),
+  hotel_digest: "d".repeat(32),
+  account_digest: "e".repeat(32),
+  member_digest: "f".repeat(32),
+};
+
 function fakeDb(state = {}) {
   const queries = [];
   let removed = false;
@@ -86,6 +95,10 @@ function fakeDb(state = {}) {
         return { rows: REQUIRED_TRIGGERS.map((tgname) => ({ tgname, tgenabled: state.disabledTrigger === tgname ? "D" : "O" })) };
       }
       if (sql.includes("a3m36-agreement-lock")) return { rows: [], rowCount: 0 };
+      if (sql.includes("a3m36-agreement-records")) {
+        const row = { ...DIGESTS, ...(state.records ?? {}) };
+        return { rows: [removed ? { ...row, ...(state.afterRecords ?? {}) } : row] };
+      }
       if (sql.includes("a3m36-agreement-snapshot")) {
         const row = removed ? snapshot({ ...(state.after ?? {}), approval_count: state.afterCount ?? 0, approval_version: null, approval_effective: null, effective_count: state.afterEffective ?? 0 }) : snapshot(state.before);
         return { rows: [row] };
@@ -181,6 +194,7 @@ test("the matching inactive row commits once and a second run changes nothing", 
   assert.match(text, /user_preserved: true/);
   assert.match(text, /org_hotels: 3/);
   assert.match(text, /user_accounts: 3/);
+  assert.match(text, /protected_records: match/);
   assert.match(text, /transaction: committed/);
   assert.match(text, /approval_rows: 0/);
   assert.match(text, new RegExp(VERDICT_PASS));
@@ -195,7 +209,34 @@ test("the matching inactive row commits once and a second run changes nothing", 
   assert.equal(again.queries.some((sql) => sql === "commit"), false);
 });
 
-test("unexpected catalogue state rolls back before or after the delete", async () => {
+test("a swapped protected record rolls back even when the counts stay the same", async () => {
+  assert.deepEqual(protectedRecordFailures(DIGESTS, DIGESTS), []);
+  const swapped = "9".repeat(32);
+  const changes = [
+    ["hotel_digest", /changed-hotel_digest/],
+    ["account_digest", /changed-account_digest/],
+    ["member_digest", /changed-member_digest/],
+    ["acceptance_digest", /changed-acceptance_digest/],
+    ["organisation_digest", /changed-organisation_digest/],
+    ["user_digest", /changed-user_digest/],
+  ];
+  for (const [key, pattern] of changes) {
+    const db = fakeDb({ afterRecords: { [key]: swapped } });
+    const result = await runAgreementCleanup({ env: env(), connect: async () => db });
+    const text = result.lines.join("\n");
+    assert.equal(result.exitCode, 1, text);
+    assert.match(text, pattern, text);
+    assert.match(text, /protected_records: mismatch/);
+    assert.match(text, /transaction: rolled-back/);
+    assert.equal(db.queries.filter((sql) => sql === "commit").length, 0);
+  }
+  const missing = fakeDb({ records: { hotel_digest: "" } });
+  const blocked = await runAgreementCleanup({ env: env(), connect: async () => missing });
+  assert.match(blocked.lines.join("\n"), /missing-hotel_digest/);
+  assert.equal(missing.queries.some((sql) => sql.includes("a3m36-agreement-delete")), false);
+});
+
+test("triggers, catalogue foreign keys, delete counts, and postconditions each roll back", async () => {
   const cases = [
     [{ before: { approval_count: 2, approval_version: "other" } }, /approval-count/],
     [{ before: { approval_effective: true, effective_count: 1 } }, /approval-effective/],
