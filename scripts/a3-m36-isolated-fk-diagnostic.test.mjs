@@ -11,7 +11,7 @@ import { INSTALL_CONFIRMATION } from "./a3-m36-isolated-install.mjs";
 import { CONCURRENCY_CONFIRMATION } from "./a3-m36-isolated-concurrency.mjs";
 import { RECOVERY_CONFIRMATION } from "./a3-m36-isolated-recovery.mjs";
 import { CONFIRMATION as ISOLATED_PREFLIGHT, EXPECTED_BRANCH, EXPECTED_DATABASE, EXPECTED_PROJECT, EXPECTED_ROLE, FORBIDDEN_ENDPOINT } from "./a3-m36-isolated-preflight.mjs";
-import { EXPECTED_EDGES, mapCleanupCatalog } from "./a3-m36-isolated-cleanup.mjs";
+import { EXPECTED_EDGES, foreignKeyReview, mapCleanupCatalog, pgCatalogColumns } from "./a3-m36-isolated-cleanup.mjs";
 import { EXPECTED_DELETE, PREFLIGHT_CONFIRMATION, foreignKeyStatus } from "./a3-m36-isolated-recovery-preflight.mjs";
 import { DIAGNOSTIC_CONFIRMATION as CONSTRAINT_CONFIRMATION } from "./a3-m36-isolated-constraint-diagnostic.mjs";
 import {
@@ -140,12 +140,18 @@ test("the foreign-key diagnostic is manual, read-only, and does not recover", ()
   assert.doesNotMatch(src, /cleanupFixtures\(|runRecovery\(|runRecoveryPreflight\(|runConcurrency\(|runInstall\(/);
   assert.doesNotMatch(src, /\b(insert into|update |delete from|alter table|truncate )\b/i);
   assert.doesNotMatch(src, /as email\b|u\.email,|o\.name,/);
-  assert.match(cleanup, /childColumns: \[\.\.\.\(row\.child_columns/);
+  assert.match(cleanup, /pgCatalogColumns\(row\.child_columns\)/);
 });
 
-test("node-pg leaves name[] unparsed and the cleanup mapper spreads that literal", () => {
+test("node-pg leaves name[] unparsed and the shared mapper accepts strings and arrays", () => {
   assert.equal(getTypeParser(1003)("{organisation_id}"), "{organisation_id}");
   assert.deepEqual(getTypeParser(1009)("{organisation_id}"), ["organisation_id"]);
+  const fromString = pgCatalogColumns("{organisation_id}");
+  const fromArray = pgCatalogColumns(["organisation_id"]);
+  assert.deepEqual(fromString, { columns: ["organisation_id"], malformed: false });
+  assert.deepEqual(fromArray, { columns: ["organisation_id"], malformed: false });
+  assert.equal(pgCatalogColumns("{").malformed, true);
+  assert.deepEqual(pgCatalogColumns("{organisation_id,extra}").columns, ["organisation_id", "extra"]);
   const mapped = mapCleanupCatalog([{
     child_schema: "public",
     child_table: "hotels",
@@ -155,11 +161,10 @@ test("node-pg leaves name[] unparsed and the cleanup mapper spreads that literal
     child_columns: "{organisation_id}",
     parent_columns: "{id}",
   }]);
-  assert.equal(mapped[0].childColumns[0], "{");
-  assert.equal(mapped[0].parentColumns[0], "{");
-  assert.equal(foreignKeyStatus(mapped).ok, false);
-  assert.match(foreignKeyStatus(mapped).failures.join("\n"), /missing hotels→sbg_organisations\.organisation_id/);
-  const parsed = mapCleanupCatalog([{
+  assert.deepEqual(mapped[0].childColumns, ["organisation_id"]);
+  assert.deepEqual(mapped[0].parentColumns, ["id"]);
+  assert.equal(mapped[0].malformed, false);
+  const arrays = mapCleanupCatalog([{
     child_schema: "public",
     child_table: "hotels",
     parent_table: "sbg_organisations",
@@ -168,20 +173,42 @@ test("node-pg leaves name[] unparsed and the cleanup mapper spreads that literal
     child_columns: ["organisation_id"],
     parent_columns: ["id"],
   }]);
-  assert.equal(parsed[0].childColumns[0], "organisation_id");
+  assert.deepEqual(arrays[0].childColumns, ["organisation_id"]);
 });
 
-test("a name[] literal classifies as mapping when the scalar columns match", () => {
+test("parsed name[] rows match and a still-broken mapping stays a mapping error", () => {
   const scalar = groupFkColumns(scalarRows());
   const mapped = mapCleanupCatalog(driverRows((edge) => `{${edge.column}}`));
-  const result = classifyFkDiscrepancy({ scalar, driverMapped: mapped });
-  assert.equal(result.verdict, VERDICT_MAPPING);
-  assert.equal(result.findings.length, EXPECTED_EDGES.length);
-  assert.equal(result.findings.every((item) => item.cause === "mapping"), true);
-  assert.equal(foreignKeyStatus(mapped).failures.length, EXPECTED_EDGES.length);
   const arrays = mapCleanupCatalog(driverRows((edge) => [edge.column]));
+  assert.equal(foreignKeyStatus(mapped).ok, true);
   assert.equal(foreignKeyStatus(arrays).ok, true);
+  assert.equal(classifyFkDiscrepancy({ scalar, driverMapped: mapped }).verdict, VERDICT_MATCH);
   assert.equal(classifyFkDiscrepancy({ scalar, driverMapped: arrays }).verdict, VERDICT_MATCH);
+  const broken = mapped.map((row) => ({ ...row, childColumns: ["{"], parentColumns: ["{"] }));
+  assert.equal(classifyFkDiscrepancy({ scalar, driverMapped: broken }).verdict, VERDICT_MAPPING);
+  const unexpected = mapCleanupCatalog([{
+    child_schema: "public",
+    child_table: "sbg_organisation_billing",
+    parent_table: "sbg_organisations",
+    constraint_name: "sbg_organisation_billing_organisation_id_fkey",
+    delete_action: "r",
+    child_columns: "{organisation_id}",
+    parent_columns: "{id}",
+  }]);
+  const review = foreignKeyReview(unexpected, {
+    users: [],
+    orgs: [{ id: "11111111-1111-4111-8111-111111111111" }],
+    members: [],
+    acceptances: [],
+    hotels: [],
+    providers: [],
+    agreements: [],
+    accounts: [],
+    approvals: [],
+  });
+  assert.equal(review.unexpected.length, 1);
+  assert.equal(review.unexpected[0].childColumns[0], "organisation_id");
+  assert.equal(review.failures.some((item) => item.includes("COMPOSITE")), false);
 });
 
 test("an empty or renamed catalogue is not called a mapping error", () => {
@@ -221,6 +248,14 @@ test("a non-marker acceptance is shared and is not a deletion target", () => {
   assert.doesNotMatch(lines.join("\n"), /delete from/i);
 });
 
+test("an inactive fixture-not-legal approval still blocks the concurrency gate", () => {
+  const concurrency = readFileSync(join(root, "scripts/a3-m36-isolated-concurrency.mjs"), "utf8");
+  assert.match(concurrency, /Number\(approvals\.n\) !== 0 \|\| Number\(approvals\.effective_n\) !== 0/);
+  assert.match(concurrency, /APPROVAL TABLE IS NOT EMPTY/);
+  assert.match(concurrency, /and v\.effective/);
+  assert.doesNotMatch(concurrency, /fixture-not-legal/);
+});
+
 test("a rejected confirmation, production host, or recovery branch does not query the catalogue", async () => {
   let connects = 0;
   const connect = () => {
@@ -243,7 +278,7 @@ test("a rejected confirmation, production host, or recovery branch does not quer
   assert.equal(db.queries.some((sql) => sql.includes("a3m36-fk-columns")), false);
 });
 
-test("the live-shaped name[] catalogue reports mapping and the fixture dependency", async () => {
+test("the live-shaped name[] catalogue matches and still reports the fixture dependency", async () => {
   const extra = {
     constraint_name: "sbg_organisation_billing_organisation_id_fkey",
     validated: true,
@@ -271,13 +306,13 @@ test("the live-shaped name[] catalogue reports mapping and the fixture dependenc
   const text = result.lines.join("\n");
   assert.equal(result.exitCode, 0, text);
   assert.match(text, /isolated_identity: PASS/);
-  assert.match(text, /preflight_foreign_keys: fail/);
-  assert.match(text, /preflight_foreign_key_failure: missing hotels→sbg_organisations\.organisation_id/);
-  assert.match(text, /driver_foreign_key hotels_organisation_id_fkey shape=string value=\{organisation_id\} mapped_column=\{/);
+  assert.match(text, /preflight_foreign_keys: pass/);
+  assert.doesNotMatch(text, /preflight_foreign_key_failure:/);
+  assert.match(text, /driver_foreign_key hotels_organisation_id_fkey shape=string value=\{organisation_id\} mapped_column=organisation_id/);
   assert.match(text, /expected_foreign_key hotels_organisation_id_fkey child=public\.hotels\.organisation_id parent=public\.sbg_organisations\.id action=restrict validated=true/);
   assert.match(text, /additional_foreign_key sbg_organisation_billing_organisation_id_fkey/);
-  assert.match(text, /comparison hotels→sbg_organisations\.organisation_id cause=mapping/);
-  assert.match(text, /fk_cause: mapping/);
+  assert.match(text, /comparison hotels→sbg_organisations\.organisation_id cause=match/);
+  assert.match(text, /fk_cause: match/);
   assert.match(text, /fixture_not_legal_approval: present/);
   assert.match(text, /fixture_not_legal_effective: false/);
   assert.match(text, /fixture_not_legal_acceptance: id=aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa organisation=bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb user=user-real-1 marker_user=false marker_organisation=false/);
@@ -285,7 +320,7 @@ test("the live-shaped name[] catalogue reports mapping and the fixture dependenc
   assert.match(text, /user_accounts=1/);
   assert.match(text, /shared_with_non_fixture: true/);
   assert.match(text, /do not delete the acceptance, organisation, or user/);
-  assert.match(text, new RegExp(VERDICT_MAPPING));
+  assert.match(text, new RegExp(VERDICT_MATCH));
   assert.doesNotMatch(text, /@|secret|A3M36 /);
   assert.equal(db.queries.some((sql) => /\b(insert into|update |delete from|commit)\b/i.test(sql)), false);
   assert.equal(db.ended, true);

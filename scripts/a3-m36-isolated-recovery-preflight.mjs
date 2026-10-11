@@ -119,22 +119,32 @@ function edgeKey(row) {
 export function foreignKeyStatus(rows) {
   const failures = [];
   const seen = new Set();
+  for (const row of rows ?? []) {
+    if (row?.malformed) failures.push(`malformed ${row.constraint || row.childTable || "foreign-key"}`);
+  }
   for (const edge of EXPECTED_EDGES) {
     const key = `${edge.child}→${edge.parent}`;
-    const found = (rows ?? []).find((row) => row.childTable === edge.child
+    const matches = (rows ?? []).filter((row) => row.childTable === edge.child
       && row.parentTable === edge.parent
-      && row.childColumns?.[0] === edge.column
-      && row.parentColumns?.[0] === "id"
-      && row.childSchema === "public");
-    if (!found) {
+      && row.childSchema === "public"
+      && !row.malformed
+      && row.childColumns?.length === 1
+      && row.parentColumns?.length === 1
+      && row.childColumns[0] === edge.column
+      && row.parentColumns[0] === "id");
+    if (matches.length === 0) {
       failures.push(`missing ${key}.${edge.column}`);
       continue;
     }
+    if (matches.length > 1) {
+      failures.push(`duplicate ${key}.${edge.column}`);
+      continue;
+    }
     seen.add(key);
-    const action = String(found.deleteAction ?? "");
+    const action = String(matches[0].deleteAction ?? "");
     if (action !== EXPECTED_DELETE[key]) failures.push(`action ${key} ${action || "unknown"}`);
   }
-  return { ok: failures.length === 0, failures, seen: [...seen] };
+  return { ok: failures.length === 0, failures: [...new Set(failures)], seen: [...seen] };
 }
 
 function refusesFixture(plan) {

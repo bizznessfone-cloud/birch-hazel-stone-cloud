@@ -1,3 +1,5 @@
+import { getTypeParser } from "pg-types";
+
 /**
  * Fixture cleanup for the A3-M36 isolated branch.
  *
@@ -198,6 +200,10 @@ export function foreignKeyReview(catalog, graph) {
     const parentColumns = [...(row.parentColumns ?? [])];
     const parentIds = idsFor(graph, row.parentTable);
     if (!parentIds.length) continue;
+    if (row.malformed) {
+      failures.push(`BLOCKED — MALFORMED FOREIGN KEY ${row.constraint}`);
+      continue;
+    }
     if (childColumns.length !== 1 || parentColumns.length !== 1) {
       failures.push(`BLOCKED — COMPOSITE FOREIGN KEY ${row.constraint}`);
       continue;
@@ -511,16 +517,40 @@ function classifyPairs(rows, leftIds, rightIds, leftKey, rightKey, verdict) {
   return { rows: out, verdict: "" };
 }
 
+const parseTextArray = getTypeParser(1009);
+
+export function pgCatalogColumns(value) {
+  if (Array.isArray(value)) return { columns: value.map((item) => String(item)), malformed: false };
+  if (value == null || value === "") return { columns: [], malformed: false };
+  if (typeof value !== "string") return { columns: [], malformed: true };
+  const text = value.trim();
+  if (!text.startsWith("{") || !text.endsWith("}")) return { columns: [], malformed: true };
+  try {
+    const parsed = parseTextArray(text);
+    if (!Array.isArray(parsed) || parsed.some((item) => item == null || item === "")) {
+      return { columns: [], malformed: true };
+    }
+    return { columns: parsed.map((item) => String(item)), malformed: false };
+  } catch {
+    return { columns: [], malformed: true };
+  }
+}
+
 function mapCatalog(rows) {
-  return rows.map((row) => ({
-    childSchema: String(row.child_schema ?? ""),
-    childTable: String(row.child_table ?? ""),
-    parentTable: String(row.parent_table ?? ""),
-    constraint: String(row.constraint_name ?? ""),
-    deleteAction: String(row.delete_action ?? ""),
-    childColumns: [...(row.child_columns ?? [])].map(String),
-    parentColumns: [...(row.parent_columns ?? [])].map(String),
-  }));
+  return rows.map((row) => {
+    const child = pgCatalogColumns(row.child_columns);
+    const parent = pgCatalogColumns(row.parent_columns);
+    return {
+      childSchema: String(row.child_schema ?? ""),
+      childTable: String(row.child_table ?? ""),
+      parentTable: String(row.parent_table ?? ""),
+      constraint: String(row.constraint_name ?? ""),
+      deleteAction: String(row.delete_action ?? ""),
+      childColumns: child.columns,
+      parentColumns: parent.columns,
+      malformed: child.malformed || parent.malformed,
+    };
+  });
 }
 
 export function mapCleanupCatalog(rows) {

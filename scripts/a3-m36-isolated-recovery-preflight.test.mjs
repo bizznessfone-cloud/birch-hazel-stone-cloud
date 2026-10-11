@@ -13,16 +13,8 @@ import { CONCURRENCY_CONFIRMATION } from "./a3-m36-isolated-concurrency.mjs";
 import { RECOVERY_CONFIRMATION } from "./a3-m36-isolated-recovery.mjs";
 import { CONFIRMATION as ISOLATED_PREFLIGHT } from "./a3-m36-isolated-preflight.mjs";
 import { EXPECTED_BRANCH, EXPECTED_DATABASE, EXPECTED_PROJECT, EXPECTED_ROLE, FORBIDDEN_ENDPOINT } from "./a3-m36-isolated-preflight.mjs";
-import { EXPECTED_EDGES, FIXTURE_EFFECTIVE, REQUIRED_TRIGGERS } from "./a3-m36-isolated-cleanup.mjs";
-import {
-  EXPECTED_DELETE,
-  NOT_LEGAL,
-  PREFLIGHT_CONFIRMATION,
-  VERDICT_NOT_SAFE,
-  VERDICT_RECOVERY_ONLY,
-  VERDICT_SAFE,
-  runRecoveryPreflight,
-} from "./a3-m36-isolated-recovery-preflight.mjs";
+import { EXPECTED_EDGES, FIXTURE_EFFECTIVE, REQUIRED_TRIGGERS, mapCleanupCatalog } from "./a3-m36-isolated-cleanup.mjs";
+import { EXPECTED_DELETE, NOT_LEGAL, PREFLIGHT_CONFIRMATION, VERDICT_NOT_SAFE, VERDICT_RECOVERY_ONLY, VERDICT_SAFE, foreignKeyStatus, runRecoveryPreflight } from "./a3-m36-isolated-recovery-preflight.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const src = readFileSync(join(root, "scripts/a3-m36-isolated-recovery-preflight.mjs"), "utf8");
@@ -76,7 +68,7 @@ function fakeDb(state = {}) {
       if (sql.includes("a3m36-load-members")) return { rows: state.members ?? [] };
       if (sql.includes("a3m36-load-acceptances")) return { rows: state.acceptances ?? [] };
       if (sql.includes("a3m36-load-approvals")) return { rows: state.approvals ?? [] };
-      if (sql.includes("a3m36-foreign-keys")) return { rows: edges() };
+      if (sql.includes("a3m36-foreign-keys")) return { rows: state.foreignKeys ?? edges() };
       if (sql.includes("a3m36-residual")) return { rows: [{ n: 0 }] };
       if (sql.includes("a3m36-approval-catalogue")) return { rows: state.catalogue ?? [] };
       if (sql.includes("a3m36-acceptance-versions")) return { rows: state.acceptanceVersions ?? [] };
@@ -144,6 +136,45 @@ test("a rejected confirmation, production host, or forbidden credential does not
   const fallback = await runRecoveryPreflight({ env: env({ DATABASE_URL: OWNER_URL }), connect });
   assert.match(fallback.lines.join("\n"), /DATABASE_URL must not be set/);
   assert.equal(connects, 0);
+});
+
+test("raw name[] catalogue rows are recognised as the ten validated foreign keys", async () => {
+  const nameArrays = EXPECTED_EDGES.map((edge) => ({
+    child_schema: "public",
+    child_table: edge.child,
+    parent_table: edge.parent,
+    constraint_name: `${edge.child}_${edge.column}_fkey`,
+    delete_action: EXPECTED_DELETE[`${edge.child}→${edge.parent}`],
+    child_columns: `{${edge.column}}`,
+    parent_columns: "{id}",
+  }));
+  const db = fakeDb({ foreignKeys: nameArrays });
+  const result = await runRecoveryPreflight({ env: env(), connect: async () => db });
+  const text = result.lines.join("\n");
+  assert.equal(result.exitCode, 0, text);
+  assert.match(text, /foreign_keys: pass/);
+  assert.doesNotMatch(text, /foreign_key_failure:/);
+  assert.match(text, new RegExp(VERDICT_SAFE));
+  const missing = nameArrays.filter((row) => row.child_table !== "hotels");
+  const absent = await runRecoveryPreflight({ env: env(), connect: async () => fakeDb({ foreignKeys: missing }) });
+  assert.match(absent.lines.join("\n"), /foreign_keys: fail/);
+  assert.match(absent.lines.join("\n"), /missing hotels→sbg_organisations\.organisation_id/);
+  assert.match(absent.lines.join("\n"), new RegExp(VERDICT_NOT_SAFE));
+  const mapped = mapCleanupCatalog(nameArrays);
+  const hotel = mapped.find((row) => row.childTable === "hotels");
+  const duplicated = foreignKeyStatus([...mapped, hotel]);
+  assert.equal(duplicated.ok, false);
+  assert.match(duplicated.failures.join("\n"), /duplicate hotels→sbg_organisations\.organisation_id/);
+  const composite = foreignKeyStatus(mapCleanupCatalog(nameArrays.map((row) => row.child_table === "hotels"
+    ? { ...row, child_columns: "{organisation_id,extra}", parent_columns: "{id,id}" }
+    : row)));
+  assert.equal(composite.ok, false);
+  assert.match(composite.failures.join("\n"), /missing hotels→sbg_organisations\.organisation_id/);
+  const malformed = foreignKeyStatus(mapCleanupCatalog(nameArrays.map((row) => row.child_table === "hotels"
+    ? { ...row, child_columns: "{" }
+    : row)));
+  assert.equal(malformed.ok, false);
+  assert.match(malformed.failures.join("\n"), /malformed hotels_organisation_id_fkey/);
 });
 
 test("an empty catalogue is safe for recovery and concurrency", async () => {
