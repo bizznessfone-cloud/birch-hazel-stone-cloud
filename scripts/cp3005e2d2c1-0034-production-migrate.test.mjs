@@ -144,6 +144,7 @@ test("0034 digest is pinned and the controller ledger stays frozen at 0001-0033"
   assert.doesNotMatch(verify, /Apply migration 0034 only/);
   const workflows = readdirSync(join(root, ".github/workflows")).sort();
   assert.deepEqual(workflows, [
+    "a3-m36-isolated-agreement-cleanup.yml",
     "a3-m36-isolated-concurrency.yml",
     "a3-m36-isolated-constraint-diagnostic.yml",
     "a3-m36-isolated-fk-diagnostic.yml",
