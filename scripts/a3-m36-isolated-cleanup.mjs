@@ -158,8 +158,12 @@ export function identifiedCounts(graph) {
 
 export function graphFailures(graph) {
   const failures = [];
-  const userIds = new Set((graph?.users ?? []).map((row) => row.id));
-  const orgIds = new Set((graph?.orgs ?? []).map((row) => row.id));
+  const userList = (graph?.users ?? []).map((row) => row.id);
+  if (new Set(userList).size !== userList.length) failures.push("BLOCKED — DUPLICATE FIXTURE USER");
+  const orgList = (graph?.orgs ?? []).map((row) => row.id);
+  if (new Set(orgList).size !== orgList.length) failures.push("BLOCKED — DUPLICATE FIXTURE ORGANISATION");
+  const userIds = new Set(userList);
+  const orgIds = new Set(orgList);
   const hotelIds = new Set((graph?.hotels ?? []).map((row) => row.id));
   const providerIds = new Set((graph?.providers ?? []).map((row) => row.id));
   if ((graph?.users ?? []).some((row) => !isMarkerUser(row))) failures.push("BLOCKED — REFUSING TO DELETE A NON-MARKER USER");
@@ -572,6 +576,17 @@ const TRIGGER_PROTECTED = [
   "sbg_organisations",
 ];
 
+export function immutableFixtureVerdict(graph) {
+  const present = {
+    sbg_organisation_acceptances: (graph?.acceptances ?? []).length > 0,
+    sbg_organisation_members: (graph?.members ?? []).length > 0,
+    sbg_organisations: (graph?.orgs ?? []).length > 0,
+  };
+  const tables = TRIGGER_PROTECTED.filter((table) => present[table]);
+  if (!tables.length) return "";
+  return `BLOCKED — IMMUTABLE FIXTURE CANNOT BE REMOVED ${tables.join(",")}`;
+}
+
 function targetedCounts(graph) {
   const counts = {};
   for (const table of CLEANUP_ORDER) {
@@ -638,9 +653,20 @@ export async function planFixtureCleanup(db) {
       orderViolations,
     });
   }
-  const triggerProtected = TRIGGER_PROTECTED.filter((table) => targeted[table] > 0);
+  const triggerProtected = immutableFixtureVerdict(loaded.graph);
+  if (triggerProtected) {
+    return planResult({
+      prediction: "would-block",
+      guards,
+      graph: loaded.graph,
+      identified,
+      targeted,
+      failures: [triggerProtected],
+      orderViolations,
+    });
+  }
   return planResult({
-    prediction: triggerProtected.length ? "would-roll-back" : "would-commit",
+    prediction: "would-commit",
     guards,
     graph: loaded.graph,
     identified,
@@ -869,6 +895,8 @@ export async function cleanupFixtures(db, options = {}) {
     }
     const unexpected = await findUnexpected(db, loaded.graph);
     if (unexpected.failures.length) return blocked(unexpected.failures[0], loaded.graph, { references: unexpected.references });
+    const immutable = immutableFixtureVerdict(loaded.graph);
+    if (immutable) return blocked(immutable, loaded.graph);
     return await deleteGraph(db, loaded.graph);
   } catch (err) {
     try { await db.query("rollback"); } catch { /* no open cleanup transaction */ }

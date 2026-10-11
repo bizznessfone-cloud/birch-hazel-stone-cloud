@@ -41,6 +41,7 @@ import {
   NAME_PREFIX,
   cleanupFailure,
   cleanupFixtures,
+  immutableFixtureVerdict,
   isMarkerUser,
   triggerGuard,
 } from "./a3-m36-isolated-cleanup.mjs";
@@ -62,6 +63,11 @@ export const CONFIRMATION_ENV = "A3M36_CONCURRENCY_CONFIRMATION";
 export const APP_ENV = "AETHER_0036_ISOLATED_APP_URL";
 export const PASS_VERDICT = "GATE PASS — 0036 ISOLATED CONCURRENCY VERIFIED";
 export const INCOMPLETE_VERDICT = "INCOMPLETE — RUNTIME ROLE SECURITY NOT TESTED";
+export const IRREVERSIBLE_FIXTURE = immutableFixtureVerdict({
+  acceptances: [{}],
+  members: [{}],
+  orgs: [{}],
+});
 
 const IDENTITY_SQL = `select current_database() as database,
        current_user,
@@ -500,6 +506,13 @@ export async function runConcurrency({ env, connect = client, say = () => {} }) 
       sections.concurrency = guards.verdict;
       return conclude();
     }
+    // Organisation, membership, and acceptance rows cannot be deleted while
+    // their triggers stay enabled. Creating them on this shared branch would
+    // leave synthetic records behind, so the fixture is refused before any write.
+    log("fixture_reversible: false");
+    log(IRREVERSIBLE_FIXTURE);
+    sections.concurrency = IRREVERSIBLE_FIXTURE;
+    return conclude();
     before = await snapshot(observer);
     await observer.query("begin");
     await observer.query(

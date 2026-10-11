@@ -28,6 +28,7 @@ import {
   termsVerdict,
   uncommittedVerdict,
   INCOMPLETE_VERDICT,
+  IRREVERSIBLE_FIXTURE,
   PASS_VERDICT,
   cleanupFailure,
 } from "./a3-m36-isolated-concurrency.mjs";
@@ -156,6 +157,17 @@ test("terms, isolation, runtime role, and ledger rules reject silent success", (
   assert.equal(incomplete.full, false);
   assert.equal(incomplete.verdict, INCOMPLETE_VERDICT);
   assert.notEqual(incomplete.verdict, PASS_VERDICT);
+  const irreversible = overallVerdict({
+    concurrency: IRREVERSIBLE_FIXTURE,
+    terms: "NOT RUN",
+    runtime: "NOT TESTED",
+    cleanup: "PASS",
+  });
+  assert.equal(irreversible.exitCode, 1);
+  assert.equal(irreversible.full, false);
+  assert.match(irreversible.verdict, /IMMUTABLE FIXTURE CANNOT BE REMOVED/);
+  assert.notEqual(irreversible.verdict, PASS_VERDICT);
+  assert.notEqual(irreversible.verdict, INCOMPLETE_VERDICT);
   const full = overallVerdict({ concurrency: "PASS", terms: "PASS", runtime: "PASS", cleanup: "PASS" });
   assert.equal(full.exitCode, 0);
   assert.equal(full.full, true);
@@ -213,7 +225,10 @@ test("the concurrency workflow is manual and does not install", () => {
   assert.doesNotMatch(src, /enable trigger/i);
   assert.doesNotMatch(src, /setDeleteTriggers/);
   assert.doesNotMatch(src, /alter table/i);
-  assert.match(src, /cleanupFixtures\(/);
+  assert.match(src, /fixture_reversible: false/);
+  assert.ok(src.indexOf("fixture_reversible: false") < src.indexOf("insert into public.sbg_approved_property_agreement_versions"));
+  assert.match(src, /AETHER_0036_ISOLATED_APP_URL/);
+  assert.match(workflow, /secrets.AETHER_0036_ISOLATED_APP_URL/);
   assert.match(src, /data_preserved/);
   assert.doesNotMatch(src, /async function runStep/);
   assert.match(src, /terms-v1/);

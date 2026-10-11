@@ -64,7 +64,7 @@ function bookingEdge() {
   };
 }
 
-function fakeDb({ acceptanceError = false, bookingOnSecondCatalog = false, triggersEnabled = true } = {}) {
+function fakeDb({ acceptanceError = false, bookingOnSecondCatalog = false, triggersEnabled = true, omitImmutable = false } = {}) {
   const queries = [];
   let catalogs = 0;
   const db = {
@@ -77,15 +77,15 @@ function fakeDb({ acceptanceError = false, bookingOnSecondCatalog = false, trigg
         return { rows: REQUIRED_TRIGGERS.map((tgname) => ({ tgname, tgenabled: triggersEnabled ? "O" : "D" })) };
       }
       if (sql.includes("a3m36-load-users")) return { rows: [markerUser()] };
-      if (sql.includes("a3m36-load-orgs")) return { rows: [{ id: orgId, name: "A3M36 Holder", created_by_user_id: userId }] };
+      if (sql.includes("a3m36-load-orgs")) return { rows: omitImmutable ? [] : [{ id: orgId, name: "A3M36 Holder", created_by_user_id: userId }] };
       if (sql.includes("a3m36-load-hotels")) {
-        return { rows: [{ id: hotelId, name: "A3M36 Property", code: "a3m36-property", organisation_id: orgId, user_id: userId }] };
+        return { rows: [{ id: hotelId, name: "A3M36 Property", code: "a3m36-property", organisation_id: omitImmutable ? null : orgId, user_id: userId }] };
       }
       if (sql.includes("a3m36-load-providers")) return { rows: [{ id: providerId, name: "A3M36 Property Transfers", hotel_ids: [hotelId] }] };
       if (sql.includes("a3m36-load-agreements")) return { rows: [{ id: agreementId, hotel_id: hotelId, provider_id: providerId }] };
       if (sql.includes("a3m36-load-accounts")) return { rows: [{ user_id: userId, hotel_id: hotelId }] };
-      if (sql.includes("a3m36-load-members")) return { rows: [{ id: memberId, organisation_id: orgId, user_id: userId }] };
-      if (sql.includes("a3m36-load-acceptances")) return { rows: [{ id: acceptanceId, organisation_id: orgId, user_id: userId }] };
+      if (sql.includes("a3m36-load-members")) return { rows: omitImmutable ? [] : [{ id: memberId, organisation_id: orgId, user_id: userId }] };
+      if (sql.includes("a3m36-load-acceptances")) return { rows: omitImmutable ? [] : [{ id: acceptanceId, organisation_id: orgId, user_id: userId }] };
       if (sql.includes("a3m36-load-approvals")) return { rows: [{ agreement_version: FIXTURE_EFFECTIVE }] };
       if (sql.includes("a3m36-foreign-keys")) {
         catalogs += 1;
@@ -177,6 +177,17 @@ test("fixture selection refuses mixed, non-marker, and terms-v1 rows", () => {
     accounts: [],
     approvals: [{ agreement_version: "terms-v1" }],
   }).join("\n"), /NON-FIXTURE APPROVAL/);
+  assert.match(graphFailures({
+    users: [user, user],
+    orgs: [],
+    members: [],
+    acceptances: [],
+    hotels: [],
+    providers: [],
+    agreements: [],
+    accounts: [],
+    approvals: [],
+  }).join("\n"), /DUPLICATE FIXTURE USER/);
 });
 
 test("an unplanned reference or a missing expected foreign key blocks before deletion", () => {
@@ -206,36 +217,27 @@ test("an unplanned reference or a missing expected foreign key blocks before del
   assert.match(unexpectedReferenceVerdict([{ ...review.unexpected[0], count: 2 }]), /rows=2/);
 });
 
-test("a trigger refusal rolls back the whole cleanup and preserves the rows", async () => {
+test("an immutable fixture is refused before any delete", async () => {
   const db = fakeDb({ acceptanceError: true });
   const result = await cleanupFixtures(db, { userIds: [userId], approvals: true });
   assert.equal(result.ok, false);
   assert.equal(result.preserved, true);
-  assert.equal(result.transaction, "rolled-back");
+  assert.equal(result.transaction, "not-started");
+  assert.match(result.verdict, /IMMUTABLE FIXTURE CANNOT BE REMOVED/);
   assert.match(result.verdict, /sbg_organisation_acceptances/);
-  assert.match(result.verdict, /42501/);
-  assert.match(result.verdict, /organisation acceptance evidence is immutable/);
+  assert.match(result.verdict, /sbg_organisation_members/);
+  assert.match(result.verdict, /sbg_organisations/);
   assert.equal(result.removed.hotels, 0);
   assert.equal(result.removed.user, 0);
-  assert.equal(result.identified.hotels, 1);
   assert.equal(result.identified.sbg_organisation_acceptances, 1);
   const joined = db.queries.join("\n");
-  const begin = joined.indexOf("\nbegin");
-  const agreements = joined.indexOf("a3m36-delete hotel_provider_agreements");
-  const accounts = joined.indexOf("a3m36-delete app_hotel_accounts");
-  const hotels = joined.indexOf("a3m36-delete hotels");
-  const providers = joined.indexOf("a3m36-delete providers");
-  const approvals = joined.indexOf("a3m36-delete approvals");
-  const acceptances = joined.indexOf("a3m36-delete acceptances");
-  const rollback = joined.lastIndexOf("\nrollback");
-  assert.ok(begin < agreements && agreements < accounts && accounts < hotels && hotels < providers && providers < approvals && approvals < acceptances && acceptances < rollback);
-  assert.equal(joined.includes("a3m36-delete members"), false);
-  assert.equal(joined.includes("\ncommit"), false);
+  assert.doesNotMatch(joined, /\nbegin/);
+  assert.doesNotMatch(joined, /a3m36-delete/);
   assert.doesNotMatch(joined, /disable trigger/i);
 });
 
 test("a reference found after locking rolls back before any delete", async () => {
-  const db = fakeDb({ bookingOnSecondCatalog: true });
+  const db = fakeDb({ bookingOnSecondCatalog: true, omitImmutable: true });
   const result = await cleanupFixtures(db, { userIds: [userId], approvals: true });
   assert.equal(result.ok, false);
   assert.equal(result.preserved, true);

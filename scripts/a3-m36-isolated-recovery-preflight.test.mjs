@@ -238,7 +238,7 @@ test("marker organisation rows would be preserved because recovery rolls back", 
   const result = await runRecoveryPreflight({ env: env(), connect: async () => db });
   const text = result.lines.join("\n");
   assert.equal(result.exitCode, 0, text);
-  assert.match(text, /recovery_prediction: would-roll-back/);
+  assert.match(text, /recovery_prediction: would-block/);
   assert.match(text, new RegExp(`preserve user ${USER_ID}`));
   assert.match(text, new RegExp(`preserve sbg_organisations ${ORG_ID}`));
   assert.match(text, /preserve sbg_organisation_members /);
