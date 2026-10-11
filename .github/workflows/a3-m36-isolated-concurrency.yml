@@ -1,16 +1,24 @@
-# A3-M36 isolated concurrency gate. Manual dispatch only.
-# Does not install SQL. Does not use a Production credential.
-# Does not disable triggers. Cleanup is one transaction and rolls back on refusal.
-# Requires 0036 to already be present.
-# A missing AETHER_0036_ISOLATED_APP_URL is runtime-role NOT TESTED.
-# That result is not a full pass.
+# A3-M36 disposable concurrency gate. Manual dispatch only.
+# Does not install SQL. Does not use a Production or parent-branch credential.
+# Does not disable triggers. Does not delete immutable organisation,
+# membership, or acceptance rows. Does not delete the branch.
+# Requires 0036 to already be present on the disposable child.
+# A missing AETHER_0036_DISPOSABLE_APP_URL is runtime-role NOT TESTED.
 name: A3-M36 isolated concurrency
 
 on:
   workflow_dispatch:
     inputs:
       confirmation:
-        description: Exact confirmation CONCURRENCY-0036-ISOLATED
+        description: Exact confirmation CONCURRENCY-0036-DISPOSABLE
+        required: true
+        type: string
+      disposable_branch:
+        description: New disposable branch id, not a protected branch
+        required: true
+        type: string
+      disposable_endpoint:
+        description: Endpoint id of that disposable branch
         required: true
         type: string
 
@@ -18,25 +26,41 @@ permissions:
   contents: read
 
 concurrency:
-  group: a3-m36-isolated-concurrency
+  group: a3-m36-disposable-concurrency
   cancel-in-progress: false
 
 jobs:
   concurrency:
-    name: concurrency-0036-isolated
+    name: concurrency-0036-disposable
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Require the concurrency confirmation
+      - name: Require the disposable target
         env:
           CONFIRMATION: ${{ inputs.confirmation }}
+          BRANCH: ${{ inputs.disposable_branch }}
+          ENDPOINT: ${{ inputs.disposable_endpoint }}
         run: |
-          if [ "$CONFIRMATION" != "CONCURRENCY-0036-ISOLATED" ]; then
+          if [ "$CONFIRMATION" != "CONCURRENCY-0036-DISPOSABLE" ]; then
             echo "BLOCKED — CONFIRMATION PHRASE INVALID"
             exit 1
           fi
+          case "$BRANCH" in
+            br-dawn-hat-b1b4uqhn|br-green-darkness-b1k7wkue|br-proud-field-b1tymqgc)
+              echo "BLOCKED — PROTECTED BRANCH"
+              exit 1
+              ;;
+          esac
+          case "$ENDPOINT" in
+            ep-damp-dust-b1rdfp34|ep-withered-haze-b1fd9hse)
+              echo "BLOCKED — PROTECTED ENDPOINT"
+              exit 1
+              ;;
+          esac
           echo "confirmation: ACCEPTED"
-          echo "stage: concurrency-0036"
+          echo "disposable_branch: $BRANCH"
+          echo "disposable_endpoint: $ENDPOINT"
+          echo "stage: concurrency-0036-disposable"
 
       - name: Checkout selected commit
         uses: actions/checkout@v4
@@ -53,19 +77,21 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Require isolated owner secret
+      - name: Require disposable owner secret
         env:
-          AETHER_0036_ISOLATED_OWNER_URL: ${{ secrets.AETHER_0036_ISOLATED_OWNER_URL }}
+          AETHER_0036_DISPOSABLE_OWNER_URL: ${{ secrets.AETHER_0036_DISPOSABLE_OWNER_URL }}
         run: |
-          if [ -z "$AETHER_0036_ISOLATED_OWNER_URL" ]; then
-            echo "BLOCKED — AETHER_0036_ISOLATED_OWNER_URL is absent. No database was opened."
+          if [ -z "$AETHER_0036_DISPOSABLE_OWNER_URL" ]; then
+            echo "BLOCKED — AETHER_0036_DISPOSABLE_OWNER_URL is absent. No database was opened."
             exit 1
           fi
-          echo "AETHER_0036_ISOLATED_OWNER_URL: PRESENT"
+          echo "AETHER_0036_DISPOSABLE_OWNER_URL: PRESENT"
 
-      - name: Prove overlapping transactions on the isolated branch
+      - name: Prove overlapping transactions on the disposable branch
         env:
-          AETHER_0036_ISOLATED_OWNER_URL: ${{ secrets.AETHER_0036_ISOLATED_OWNER_URL }}
-          AETHER_0036_ISOLATED_APP_URL: ${{ secrets.AETHER_0036_ISOLATED_APP_URL }}
+          AETHER_0036_DISPOSABLE_OWNER_URL: ${{ secrets.AETHER_0036_DISPOSABLE_OWNER_URL }}
+          AETHER_0036_DISPOSABLE_APP_URL: ${{ secrets.AETHER_0036_DISPOSABLE_APP_URL }}
           A3M36_CONCURRENCY_CONFIRMATION: ${{ inputs.confirmation }}
+          A3M36_DISPOSABLE_BRANCH: ${{ inputs.disposable_branch }}
+          A3M36_DISPOSABLE_ENDPOINT: ${{ inputs.disposable_endpoint }}
         run: node scripts/a3-m36-isolated-concurrency.mjs

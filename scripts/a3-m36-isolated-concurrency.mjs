@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 /**
- * A3-M36 isolated concurrency gate. Manual. Does not install SQL.
+ * A3-M36 concurrency gate for one disposable Neon branch.
+ * Manual. Does not install SQL. Does not delete immutable organisation,
+ * membership, or acceptance rows. Does not open the parent isolated branch,
+ * the recovery branch, or Production.
  *
- * Requires 0036 already present on br-dawn-hat-b1b4uqhn. Uses only
- * AETHER_0036_ISOLATED_OWNER_URL. An optional AETHER_0036_ISOLATED_APP_URL
- * must be a distinct aether_app login on that same endpoint. There is no
- * Production fallback and no terms-v1 approval. Cleanup is one transaction.
- * It never disables a trigger or foreign key. A refusal rolls the cleanup
- * back and preserves the fixture rows. A missing app login is NOT TESTED,
- * not a pass, and the overall result is not full verification.
+ * Uses AETHER_0036_DISPOSABLE_OWNER_URL. An optional
+ * AETHER_0036_DISPOSABLE_APP_URL must be a distinct aether_app login on
+ * that same disposable endpoint. There is no parent or Production fallback.
+ * A missing app login is NOT TESTED, not a pass.
  */
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
@@ -19,18 +19,20 @@ import {
   EXPECTED_BRANCH,
   EXPECTED_DATABASE,
   EXPECTED_PROJECT,
+  EXPECTED_ROLE,
+  FORBIDDEN_BRANCH,
   FORBIDDEN_ENDPOINT,
   FORBIDDEN_ENV,
   ISOLATED_OWNER_ENV,
   directOwnerUrl,
-  identityFailures,
+  hostSafetyFailures,
 } from "./a3-m36-isolated-preflight.mjs";
 import {
   EXPECTED_ENDPOINT,
   MIGRATION_35,
   MIGRATION_36,
 } from "./a3-m36-0035-equivalence.mjs";
-import { endpointPinFailures } from "./a3-m36-isolated-install.mjs";
+import { RECOVERY_BRANCH } from "./a3-m36-agreement-fixture-plan.mjs";
 import {
   FIXTURE_APP_DENIED,
   FIXTURE_EFFECTIVE,
@@ -40,8 +42,6 @@ import {
   MARKER,
   NAME_PREFIX,
   cleanupFailure,
-  cleanupFixtures,
-  immutableFixtureVerdict,
   isMarkerUser,
   triggerGuard,
 } from "./a3-m36-isolated-cleanup.mjs";
@@ -58,16 +58,18 @@ export {
   isMarkerUser,
 };
 
-export const CONCURRENCY_CONFIRMATION = "CONCURRENCY-0036-ISOLATED";
+export const CONCURRENCY_CONFIRMATION = "CONCURRENCY-0036-DISPOSABLE";
 export const CONFIRMATION_ENV = "A3M36_CONCURRENCY_CONFIRMATION";
-export const APP_ENV = "AETHER_0036_ISOLATED_APP_URL";
-export const PASS_VERDICT = "GATE PASS — 0036 ISOLATED CONCURRENCY VERIFIED";
+export const DISPOSABLE_OWNER_ENV = "AETHER_0036_DISPOSABLE_OWNER_URL";
+export const DISPOSABLE_APP_ENV = "AETHER_0036_DISPOSABLE_APP_URL";
+export const DISPOSABLE_BRANCH_ENV = "A3M36_DISPOSABLE_BRANCH";
+export const DISPOSABLE_ENDPOINT_ENV = "A3M36_DISPOSABLE_ENDPOINT";
+export const PASS_VERDICT = "GATE PASS — 0036 DISPOSABLE CONCURRENCY VERIFIED";
 export const INCOMPLETE_VERDICT = "INCOMPLETE — RUNTIME ROLE SECURITY NOT TESTED";
-export const IRREVERSIBLE_FIXTURE = immutableFixtureVerdict({
-  acceptances: [{}],
-  members: [{}],
-  orgs: [{}],
-});
+export const RETAINED_CLEANUP = "RETAINED — IMMUTABLE FIXTURE NOT DELETED";
+export const PROTECTED_BRANCHES = [EXPECTED_BRANCH, FORBIDDEN_BRANCH, RECOVERY_BRANCH];
+export const PROTECTED_ENDPOINTS = [EXPECTED_ENDPOINT, FORBIDDEN_ENDPOINT];
+const BLOCKED_ENV = [...FORBIDDEN_ENV, ISOLATED_OWNER_ENV, "AETHER_0036_ISOLATED_APP_URL"];
 
 const IDENTITY_SQL = `select current_database() as database,
        current_user,
@@ -161,7 +163,7 @@ export function runtimeRoleVerdict({ catalogMatch, appConnection, live }) {
 export function overallVerdict({ concurrency, terms, runtime, cleanup }) {
   const blocked = [concurrency, terms, runtime, cleanup].find((item) => String(item ?? "").startsWith("BLOCKED"));
   if (blocked) return { exitCode: 1, full: false, verdict: blocked };
-  if (concurrency !== "PASS" || terms !== "PASS" || cleanup !== "PASS") {
+  if (concurrency !== "PASS" || terms !== "PASS" || cleanup !== RETAINED_CLEANUP) {
     return { exitCode: 1, full: false, verdict: "BLOCKED — CONCURRENCY SECTIONS DID NOT COMPLETE" };
   }
   if (runtime === "NOT TESTED") return { exitCode: 2, full: false, verdict: INCOMPLETE_VERDICT };
@@ -179,7 +181,50 @@ export function concurrencyLedgerOk(names) {
   return unique.has(MIGRATION_36);
 }
 
-export function appUrlFailures(value, ownerValue) {
+export function disposablePinFailures({ branch, endpoint }) {
+  const branchId = String(branch ?? "").trim();
+  const endpointId = String(endpoint ?? "").trim();
+  const failures = [];
+  if (!/^br-[a-z0-9-]{8,}$/.test(branchId)) failures.push("branch-shape");
+  if (!/^ep-[a-z0-9-]{8,}$/.test(endpointId)) failures.push("endpoint-shape");
+  if (PROTECTED_BRANCHES.includes(branchId)) failures.push("protected-branch");
+  if (PROTECTED_ENDPOINTS.includes(endpointId)) failures.push("protected-endpoint");
+  return failures;
+}
+
+export function disposableUrlFailures(value, endpointId) {
+  const failures = hostSafetyFailures(value);
+  let label = "";
+  try {
+    label = new URL(directOwnerUrl(value)).hostname.toLowerCase().split(".")[0] ?? "";
+  } catch {
+    label = "";
+  }
+  if (label !== String(endpointId ?? "").trim()) failures.push("endpoint-pin");
+  if (PROTECTED_ENDPOINTS.includes(label)) failures.push("protected-endpoint");
+  if (PROTECTED_BRANCHES.some((id) => String(value ?? "").includes(id))) failures.push("protected-branch-in-url");
+  return [...new Set(failures)];
+}
+
+export function disposableIdentityFailures(identity, hostname, expected) {
+  const branchId = String(identity?.branchId ?? "").trim();
+  const endpointId = String(identity?.endpointId ?? "").trim();
+  const label = String(hostname ?? "").toLowerCase().split(".")[0] ?? "";
+  const failures = [];
+  if (identity?.projectId !== EXPECTED_PROJECT) failures.push("project");
+  if (!branchId) failures.push("branch-unproven");
+  if (branchId !== expected?.branch) failures.push("branch");
+  if (PROTECTED_BRANCHES.includes(branchId)) failures.push("protected-branch");
+  if (!endpointId) failures.push("endpoint-unproven");
+  if (endpointId !== expected?.endpoint) failures.push("endpoint");
+  if (PROTECTED_ENDPOINTS.includes(endpointId)) failures.push("protected-endpoint");
+  if (identity?.database !== EXPECTED_DATABASE) failures.push("database");
+  if (identity?.currentUser !== EXPECTED_ROLE || identity?.sessionUser !== EXPECTED_ROLE) failures.push("role");
+  if (!endpointId || label !== endpointId) failures.push("endpoint-host-mismatch");
+  return [...new Set(failures)];
+}
+
+export function appUrlFailures(value, ownerValue, endpointId) {
   const raw = String(value ?? "").trim();
   if (!raw) return ["absent"];
   let url;
@@ -191,8 +236,8 @@ export function appUrlFailures(value, ownerValue) {
   const failures = [];
   if (url.protocol !== "postgres:" && url.protocol !== "postgresql:") failures.push("protocol");
   const label = url.hostname.toLowerCase().split(".")[0] ?? "";
-  if (label !== EXPECTED_ENDPOINT) failures.push("endpoint-pin");
-  if (label === FORBIDDEN_ENDPOINT || raw.includes(FORBIDDEN_ENDPOINT)) failures.push("production-endpoint");
+  if (label !== String(endpointId ?? "").trim()) failures.push("endpoint-pin");
+  if (PROTECTED_ENDPOINTS.includes(label) || raw.includes(FORBIDDEN_ENDPOINT) || raw.includes(EXPECTED_ENDPOINT)) failures.push("protected-endpoint");
   if (url.pathname !== `/${EXPECTED_DATABASE}`) failures.push("database");
   let user = "";
   try {
@@ -331,41 +376,53 @@ export async function runConcurrency({ env, connect = client, say = () => {} }) 
   const log = (line) => lines.push(sayLine(say, line));
   const finish = (exitCode) => ({ exitCode, lines });
   const confirmation = String(env?.[CONFIRMATION_ENV] ?? "");
-  const isolated = String(env?.[ISOLATED_OWNER_ENV] ?? "").trim();
-  const appUrl = String(env?.[APP_ENV] ?? "").trim();
+  const ownerUrl = String(env?.[DISPOSABLE_OWNER_ENV] ?? "").trim();
+  const appUrl = String(env?.[DISPOSABLE_APP_ENV] ?? "").trim();
+  const expected = {
+    branch: String(env?.[DISPOSABLE_BRANCH_ENV] ?? "").trim(),
+    endpoint: String(env?.[DISPOSABLE_ENDPOINT_ENV] ?? "").trim(),
+  };
   log(`confirmation: ${confirmation === CONCURRENCY_CONFIRMATION ? "ACCEPTED" : "INVALID"}`);
-  log(`${ISOLATED_OWNER_ENV}: ${isolated ? "PRESENT" : "ABSENT"}`);
-  log(`${APP_ENV}: ${appUrl ? "PRESENT" : "ABSENT"}`);
+  log(`${DISPOSABLE_OWNER_ENV}: ${ownerUrl ? "PRESENT" : "ABSENT"}`);
+  log(`${DISPOSABLE_APP_ENV}: ${appUrl ? "PRESENT" : "ABSENT"}`);
+  log(`disposable_branch: ${expected.branch || "ABSENT"}`);
+  log(`disposable_endpoint: ${expected.endpoint || "ABSENT"}`);
   log("install_stage: not-invoked");
   log("terms_v1_approval: refused");
+  log("immutable_delete: not-attempted");
   if (confirmation !== CONCURRENCY_CONFIRMATION) {
     log("BLOCKED — CONFIRMATION PHRASE INVALID");
     return finish(1);
   }
-  for (const name of FORBIDDEN_ENV) {
+  for (const name of BLOCKED_ENV) {
     if (String(env?.[name] ?? "").trim()) {
       log(`BLOCKED — ${name} must not be set`);
       return finish(1);
     }
   }
-  if (!isolated) {
-    log("BLOCKED — AETHER_0036_ISOLATED_OWNER_URL is absent. No database was opened.");
+  const pinFailures = disposablePinFailures(expected);
+  if (pinFailures.length) {
+    log(`BLOCKED — DISPOSABLE TARGET ${pinFailures.join(",")}`);
     return finish(1);
   }
-  const hostFailures = endpointPinFailures(isolated);
+  if (!ownerUrl) {
+    log("BLOCKED — AETHER_0036_DISPOSABLE_OWNER_URL is absent. No database was opened.");
+    return finish(1);
+  }
+  const hostFailures = disposableUrlFailures(ownerUrl, expected.endpoint);
   if (hostFailures.length) {
     log(`BLOCKED — CONNECTION ${hostFailures.join(",")}`);
     return finish(1);
   }
-  const appFailures = appUrlFailures(appUrl, isolated);
+  const appFailures = appUrl ? appUrlFailures(appUrl, ownerUrl, expected.endpoint) : [];
   if (appUrl && appFailures.length) {
     log(`BLOCKED — APP CONNECTION ${appFailures.join(",")}`);
     return finish(1);
   }
 
-  const holder = connect(isolated, "a3m36-isolated-concurrency");
-  const waiter = connect(isolated, "a3m36-isolated-concurrency-waiter");
-  const observer = connect(isolated, "a3m36-isolated-concurrency-observer");
+  const holder = connect(ownerUrl, "a3m36-disposable-concurrency");
+  const waiter = connect(ownerUrl, "a3m36-disposable-concurrency-waiter");
+  const observer = connect(ownerUrl, "a3m36-disposable-concurrency-observer");
   const userIds = [];
   let opened = false;
   let app;
@@ -384,27 +441,13 @@ export async function runConcurrency({ env, connect = client, say = () => {} }) 
     let cleanupVerdict = "NOT RUN";
     if (opened) {
       try { await observer.query("rollback"); } catch { /* no open transaction */ }
-      try {
-        const removed = await cleanupFixtures(observer, { userIds, discover: false, approvals: before != null });
-        cleanupVerdict = removed.ok ? "PASS" : removed.verdict;
-        log(`cleanup_transaction: ${removed.transaction}`);
-        log(`data_preserved: ${removed.preserved}`);
-        for (const [table, count] of Object.entries(removed.identified)) log(`identified ${table}: ${count}`);
-        for (const [table, count] of Object.entries(removed.removed)) log(`removed ${table}: ${count}`);
-        for (const ref of removed.references ?? []) log(`unexpected_reference: ${ref.childTable}.${ref.childColumns?.[0]} -> ${ref.parentTable} rows=${ref.count}`);
-        if (removed.ok) userIds.length = 0;
-        const guards = await triggerGuard(observer);
-        log(`triggers_still_enabled: ${guards.ok}`);
-        if (!guards.ok && cleanupVerdict === "PASS") cleanupVerdict = guards.verdict;
-        if (before && removed.ok) {
-          const after = await snapshot(observer);
-          const match = JSON.stringify(before) === JSON.stringify(after);
-          log(`counts_match: ${match}`);
-          if (!match && cleanupVerdict === "PASS") cleanupVerdict = "BLOCKED — BRANCH SNAPSHOT CHANGED";
-        }
-      } catch (err) {
-        cleanupVerdict = cleanupFailure("cleanup", err);
+      if (before) {
+        cleanupVerdict = RETAINED_CLEANUP;
+        log("fixture_residue: retained");
       }
+      const guards = await triggerGuard(observer);
+      log(`triggers_still_enabled: ${guards.ok}`);
+      if (!guards.ok) cleanupVerdict = guards.verdict;
     }
     log(`cleanup: ${cleanupVerdict}`);
     log(`postgresql_concurrency: ${sections.concurrency}`);
@@ -440,13 +483,12 @@ export async function runConcurrency({ env, connect = client, say = () => {} }) 
 
     await observer.query("begin read only");
     const identity = mapIdentity((await observer.query(IDENTITY_SQL)).rows[0]);
-    const hostname = new URL(directOwnerUrl(isolated)).hostname.toLowerCase();
-    const failures = identityFailures(identity, hostname);
-    if (identity.endpointId !== EXPECTED_ENDPOINT) failures.push("endpoint-pin");
+    const hostname = new URL(directOwnerUrl(ownerUrl)).hostname.toLowerCase();
+    const failures = disposableIdentityFailures(identity, hostname, expected);
     log(`neon_project: ${identity.projectId || "unproven"}`);
     log(`neon_branch: ${identity.branchId || "unproven"}`);
     log(`neon_endpoint: ${identity.endpointId || "unproven"}`);
-    if (failures.length || identity.projectId !== EXPECTED_PROJECT || identity.branchId !== EXPECTED_BRANCH) {
+    if (failures.length || identity.projectId !== EXPECTED_PROJECT || identity.branchId !== expected.branch || identity.endpointId !== expected.endpoint) {
       await observer.query("rollback");
       log(`BLOCKED — ISOLATED IDENTITY ${failures.join(",") || "mismatch"}`);
       return finish(1);
@@ -498,7 +540,7 @@ export async function runConcurrency({ env, connect = client, say = () => {} }) 
       log("BLOCKED — APPROVAL TABLE IS NOT EMPTY");
       return finish(1);
     }
-    log("isolated_identity: PASS");
+    log("disposable_identity: PASS");
 
     const guards = await triggerGuard(observer);
     log(`trigger_guard: ${guards.ok ? "enabled" : guards.verdict}`);
@@ -506,13 +548,6 @@ export async function runConcurrency({ env, connect = client, say = () => {} }) 
       sections.concurrency = guards.verdict;
       return conclude();
     }
-    // Organisation, membership, and acceptance rows cannot be deleted while
-    // their triggers stay enabled. Creating them on this shared branch would
-    // leave synthetic records behind, so the fixture is refused before any write.
-    log("fixture_reversible: false");
-    log(IRREVERSIBLE_FIXTURE);
-    sections.concurrency = IRREVERSIBLE_FIXTURE;
-    return conclude();
     before = await snapshot(observer);
     await observer.query("begin");
     await observer.query(
@@ -749,12 +784,12 @@ export async function runConcurrency({ env, connect = client, say = () => {} }) 
       const appIdentity = mapIdentity((await app.query(IDENTITY_SQL)).rows[0]);
       const appLabel = new URL(directOwnerUrl(appUrl)).hostname.toLowerCase().split(".")[0] ?? "";
       const sameIdentity = appIdentity.projectId === EXPECTED_PROJECT
-        && appIdentity.branchId === EXPECTED_BRANCH
-        && appIdentity.endpointId === EXPECTED_ENDPOINT
+        && appIdentity.branchId === expected.branch
+        && appIdentity.endpointId === expected.endpoint
         && appIdentity.database === EXPECTED_DATABASE
         && appIdentity.currentUser === "aether_app"
         && appIdentity.sessionUser === "aether_app"
-        && appLabel === EXPECTED_ENDPOINT;
+        && appLabel === expected.endpoint;
       const appUser = `${MARKER}-${randomUUID()}`;
       userIds.push(appUser);
       await insertUser(observer, appUser, "App");

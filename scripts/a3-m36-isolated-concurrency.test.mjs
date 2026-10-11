@@ -9,12 +9,21 @@ import { test } from "node:test";
 import { ACCEPTED_LEDGER } from "./production-db-preflight.mjs";
 import { MIGRATION_35, MIGRATION_36 } from "./a3-m36-0035-equivalence.mjs";
 import { INSTALL_CONFIRMATION } from "./a3-m36-isolated-install.mjs";
-import { EXPECTED_DATABASE, EXPECTED_ROLE, FORBIDDEN_ENDPOINT } from "./a3-m36-isolated-preflight.mjs";
+import { EXPECTED_DATABASE, EXPECTED_ROLE } from "./a3-m36-isolated-preflight.mjs";
 import {
   CONCURRENCY_CONFIRMATION,
   FIXTURE_EFFECTIVE,
+  INCOMPLETE_VERDICT,
+  PASS_VERDICT,
+  PROTECTED_BRANCHES,
+  PROTECTED_ENDPOINTS,
+  RETAINED_CLEANUP,
   appUrlFailures,
+  cleanupFailure,
   concurrencyLedgerOk,
+  disposableIdentityFailures,
+  disposablePinFailures,
+  disposableUrlFailures,
   duplicateCodeVerdict,
   isMarkerUser,
   isolationVerdict,
@@ -27,16 +36,13 @@ import {
   sameCreatorVerdict,
   termsVerdict,
   uncommittedVerdict,
-  INCOMPLETE_VERDICT,
-  IRREVERSIBLE_FIXTURE,
-  PASS_VERDICT,
-  cleanupFailure,
 } from "./a3-m36-isolated-concurrency.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const src = readFileSync(join(root, "scripts/a3-m36-isolated-concurrency.mjs"), "utf8");
 const workflow = readFileSync(join(root, ".github/workflows/a3-m36-isolated-concurrency.yml"), "utf8");
-const ENDPOINT = "ep-damp-dust-b1rdfp34";
+const ENDPOINT = "ep-disposable-review1";
+const BRANCH = "br-disposable-review1";
 const OWNER_URL = `postgres://${EXPECTED_ROLE}:secret@${ENDPOINT}.eu-central-1.aws.neon.tech/${EXPECTED_DATABASE}`;
 const APP_URL = `postgres://aether_app:secret@${ENDPOINT}.eu-central-1.aws.neon.tech/${EXPECTED_DATABASE}`;
 
@@ -152,23 +158,15 @@ test("terms, isolation, runtime role, and ledger rules reject silent success", (
       publicExecute: false,
     },
   }), "");
-  const incomplete = overallVerdict({ concurrency: "PASS", terms: "PASS", runtime: "NOT TESTED", cleanup: "PASS" });
+  const incomplete = overallVerdict({ concurrency: "PASS", terms: "PASS", runtime: "NOT TESTED", cleanup: RETAINED_CLEANUP });
   assert.equal(incomplete.exitCode, 2);
   assert.equal(incomplete.full, false);
   assert.equal(incomplete.verdict, INCOMPLETE_VERDICT);
   assert.notEqual(incomplete.verdict, PASS_VERDICT);
-  const irreversible = overallVerdict({
-    concurrency: IRREVERSIBLE_FIXTURE,
-    terms: "NOT RUN",
-    runtime: "NOT TESTED",
-    cleanup: "PASS",
-  });
-  assert.equal(irreversible.exitCode, 1);
-  assert.equal(irreversible.full, false);
-  assert.match(irreversible.verdict, /IMMUTABLE FIXTURE CANNOT BE REMOVED/);
-  assert.notEqual(irreversible.verdict, PASS_VERDICT);
-  assert.notEqual(irreversible.verdict, INCOMPLETE_VERDICT);
-  const full = overallVerdict({ concurrency: "PASS", terms: "PASS", runtime: "PASS", cleanup: "PASS" });
+  const deleted = overallVerdict({ concurrency: "PASS", terms: "PASS", runtime: "PASS", cleanup: "PASS" });
+  assert.equal(deleted.exitCode, 1);
+  assert.equal(deleted.full, false);
+  const full = overallVerdict({ concurrency: "PASS", terms: "PASS", runtime: "PASS", cleanup: RETAINED_CLEANUP });
   assert.equal(full.exitCode, 0);
   assert.equal(full.full, true);
   assert.equal(full.verdict, PASS_VERDICT);
@@ -196,21 +194,33 @@ test("terms, isolation, runtime role, and ledger rules reject silent success", (
   assert.notEqual(FIXTURE_EFFECTIVE, "terms-v1");
 });
 
-test("the app connection cannot fall back to the owner or Production", () => {
-  assert.deepEqual(appUrlFailures("", OWNER_URL), ["absent"]);
-  assert.deepEqual(appUrlFailures(APP_URL, OWNER_URL), []);
-  assert.ok(appUrlFailures(OWNER_URL, OWNER_URL).includes("role"));
-  assert.ok(appUrlFailures(`postgres://aether_app:secret@${FORBIDDEN_ENDPOINT}.eu.neon.tech/neondb`, OWNER_URL).includes("production-endpoint"));
+test("the app connection cannot fall back to the owner or a protected branch", () => {
+  assert.deepEqual(appUrlFailures("", OWNER_URL, ENDPOINT), ["absent"]);
+  assert.deepEqual(appUrlFailures(APP_URL, OWNER_URL, ENDPOINT), []);
+  assert.ok(appUrlFailures(OWNER_URL, OWNER_URL, ENDPOINT).includes("role"));
+  assert.ok(appUrlFailures(`postgres://aether_app:secret@${PROTECTED_ENDPOINTS[1]}.eu.neon.tech/neondb`, OWNER_URL, ENDPOINT).includes("protected-endpoint"));
+  assert.ok(disposablePinFailures({ branch: PROTECTED_BRANCHES[0], endpoint: ENDPOINT }).includes("protected-branch"));
+  assert.ok(disposablePinFailures({ branch: BRANCH, endpoint: PROTECTED_ENDPOINTS[0] }).includes("protected-endpoint"));
+  assert.deepEqual(disposablePinFailures({ branch: BRANCH, endpoint: ENDPOINT }), []);
+  assert.ok(disposableUrlFailures(OWNER_URL, "ep-other-endpoint").includes("endpoint-pin"));
+  assert.deepEqual(disposableIdentityFailures({
+    projectId: "quiet-sound-53513710",
+    branchId: BRANCH,
+    endpointId: ENDPOINT,
+    database: "neondb",
+    currentUser: "neondb_owner",
+    sessionUser: "neondb_owner",
+  }, `${ENDPOINT}.eu-central-1.aws.neon.tech`, { branch: BRANCH, endpoint: ENDPOINT }), []);
   assert.equal(CONCURRENCY_CONFIRMATION === INSTALL_CONFIRMATION, false);
 });
 
 test("the concurrency workflow is manual and does not install", () => {
   assert.match(workflow, /workflow_dispatch:/);
   assert.doesNotMatch(workflow, /^\s*(push|pull_request|schedule|workflow_call|workflow_run):/m);
-  assert.match(workflow, /CONCURRENCY-0036-ISOLATED/);
+  assert.match(workflow, /CONCURRENCY-0036-DISPOSABLE/);
   assert.match(workflow, /node scripts\/a3-m36-isolated-concurrency\.mjs/);
   assert.doesNotMatch(workflow, /a3-m36-isolated-install/);
-  assert.doesNotMatch(workflow, /DATABASE_URL|AETHER_DATABASE_OWNER_URL|NEON_API_KEY|0026/);
+  assert.doesNotMatch(workflow, /AETHER_0036_ISOLATED_OWNER_URL|DATABASE_URL|AETHER_DATABASE_OWNER_URL|NEON_API_KEY|0026/);
   assert.match(src, /BLOCKED — TRANSACTIONS DID NOT OVERLAP/);
   assert.match(src, /wait_event_type/);
   assert.match(src, /postgresql_concurrency:/);
@@ -225,11 +235,10 @@ test("the concurrency workflow is manual and does not install", () => {
   assert.doesNotMatch(src, /enable trigger/i);
   assert.doesNotMatch(src, /setDeleteTriggers/);
   assert.doesNotMatch(src, /alter table/i);
-  assert.match(src, /fixture_reversible: false/);
-  assert.ok(src.indexOf("fixture_reversible: false") < src.indexOf("insert into public.sbg_approved_property_agreement_versions"));
-  assert.match(src, /AETHER_0036_ISOLATED_APP_URL/);
-  assert.match(workflow, /secrets.AETHER_0036_ISOLATED_APP_URL/);
-  assert.match(src, /data_preserved/);
+  assert.doesNotMatch(src, /cleanupFixtures\(/);
+  assert.match(src, /immutable_delete: not-attempted/);
+  assert.match(src, /AETHER_0036_DISPOSABLE_APP_URL/);
+  assert.match(workflow, /secrets.AETHER_0036_DISPOSABLE_APP_URL/);
   assert.doesNotMatch(src, /async function runStep/);
   assert.match(src, /terms-v1/);
   assert.doesNotMatch(src, /values \('terms-v1'/);
@@ -241,19 +250,37 @@ test("rejected confirmation and a production host do not connect", async () => {
     connects += 1;
     throw new Error("connect");
   };
-  const phrase = await runConcurrency({ env: { A3M36_CONCURRENCY_CONFIRMATION: INSTALL_CONFIRMATION, AETHER_0036_ISOLATED_OWNER_URL: OWNER_URL }, connect });
+  const phrase = await runConcurrency({ env: { A3M36_CONCURRENCY_CONFIRMATION: INSTALL_CONFIRMATION, AETHER_0036_DISPOSABLE_OWNER_URL: OWNER_URL, A3M36_DISPOSABLE_BRANCH: BRANCH, A3M36_DISPOSABLE_ENDPOINT: ENDPOINT }, connect });
   assert.equal(phrase.exitCode, 1);
   assert.match(phrase.lines.join("\n"), /CONFIRMATION PHRASE INVALID/);
   const host = await runConcurrency({
     env: {
       A3M36_CONCURRENCY_CONFIRMATION: CONCURRENCY_CONFIRMATION,
-      AETHER_0036_ISOLATED_OWNER_URL: `postgres://${EXPECTED_ROLE}:secret@${FORBIDDEN_ENDPOINT}.eu.neon.tech/neondb`,
+      AETHER_0036_DISPOSABLE_OWNER_URL: `postgres://${EXPECTED_ROLE}:secret@ep-withered-haze-b1fd9hse.eu.neon.tech/neondb`,
+      A3M36_DISPOSABLE_BRANCH: BRANCH,
+      A3M36_DISPOSABLE_ENDPOINT: "ep-withered-haze-b1fd9hse",
     },
     connect,
   });
-  assert.match(host.lines.join("\n"), /production-endpoint/);
+  assert.match(host.lines.join("\n"), /protected-endpoint/);
+  const parent = await runConcurrency({
+    env: {
+      A3M36_CONCURRENCY_CONFIRMATION: CONCURRENCY_CONFIRMATION,
+      AETHER_0036_DISPOSABLE_OWNER_URL: OWNER_URL,
+      A3M36_DISPOSABLE_BRANCH: "br-dawn-hat-b1b4uqhn",
+      A3M36_DISPOSABLE_ENDPOINT: ENDPOINT,
+    },
+    connect,
+  });
+  assert.match(parent.lines.join("\n"), /protected-branch/);
   const fallback = await runConcurrency({
-    env: { A3M36_CONCURRENCY_CONFIRMATION: CONCURRENCY_CONFIRMATION, AETHER_0036_ISOLATED_OWNER_URL: OWNER_URL, DATABASE_URL: OWNER_URL },
+    env: {
+      A3M36_CONCURRENCY_CONFIRMATION: CONCURRENCY_CONFIRMATION,
+      AETHER_0036_DISPOSABLE_OWNER_URL: OWNER_URL,
+      A3M36_DISPOSABLE_BRANCH: BRANCH,
+      A3M36_DISPOSABLE_ENDPOINT: ENDPOINT,
+      DATABASE_URL: OWNER_URL,
+    },
     connect,
   });
   assert.match(fallback.lines.join("\n"), /DATABASE_URL must not be set/);
