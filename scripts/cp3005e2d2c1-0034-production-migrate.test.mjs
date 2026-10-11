@@ -146,6 +146,7 @@ test("0034 digest is pinned and the controller ledger stays frozen at 0001-0033"
   assert.deepEqual(workflows, [
     "a3-m36-isolated-concurrency.yml",
     "a3-m36-isolated-constraint-diagnostic.yml",
+    "a3-m36-isolated-fk-diagnostic.yml",
     "a3-m36-isolated-install.yml",
     "a3-m36-isolated-recovery-preflight.yml",
     "a3-m36-isolated-recovery.yml",

@@ -523,13 +523,17 @@ function mapCatalog(rows) {
   }));
 }
 
-async function cleanupForeignKeyRows(db, parents) {
-  return mapCatalog((await db.query(FK_SQL, [parents])).rows);
+export function mapCleanupCatalog(rows) {
+  return mapCatalog(rows);
+}
+
+export async function cleanupForeignKeyDriverRows(db) {
+  const parents = [...new Set(EXPECTED_EDGES.map((edge) => edge.parent))];
+  return (await db.query(FK_SQL, [parents])).rows;
 }
 
 export async function cleanupForeignKeys(db) {
-  const parents = [...new Set(EXPECTED_EDGES.map((edge) => edge.parent))];
-  return cleanupForeignKeyRows(db, parents);
+  return mapCleanupCatalog(await cleanupForeignKeyDriverRows(db));
 }
 
 const TRIGGER_PROTECTED = [
