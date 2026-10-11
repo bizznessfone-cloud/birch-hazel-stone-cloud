@@ -1,0 +1,67 @@
+# A3-M36 isolated fixture-recovery preflight. Manual dispatch only.
+# Read-only. Does not delete, update, or install SQL.
+# Does not run recovery or concurrency. Does not use a Production credential.
+name: A3-M36 isolated recovery preflight
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Exact confirmation PREFLIGHT-0036-RECOVERY
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: a3-m36-isolated-recovery-preflight
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    name: preflight-0036-recovery
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Require the preflight confirmation
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          if [ "$CONFIRMATION" != "PREFLIGHT-0036-RECOVERY" ]; then
+            echo "BLOCKED — CONFIRMATION PHRASE INVALID"
+            exit 1
+          fi
+          echo "confirmation: ACCEPTED"
+          echo "stage: preflight-recovery"
+
+      - name: Checkout selected commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Require isolated owner secret
+        env:
+          AETHER_0036_ISOLATED_OWNER_URL: ${{ secrets.AETHER_0036_ISOLATED_OWNER_URL }}
+        run: |
+          if [ -z "$AETHER_0036_ISOLATED_OWNER_URL" ]; then
+            echo "BLOCKED — AETHER_0036_ISOLATED_OWNER_URL is absent. No database was opened."
+            exit 1
+          fi
+          echo "AETHER_0036_ISOLATED_OWNER_URL: PRESENT"
+
+      - name: Read the fixture-recovery plan on the isolated branch
+        env:
+          AETHER_0036_ISOLATED_OWNER_URL: ${{ secrets.AETHER_0036_ISOLATED_OWNER_URL }}
+          A3M36_RECOVERY_PREFLIGHT_CONFIRMATION: ${{ inputs.confirmation }}
+        run: node scripts/a3-m36-isolated-recovery-preflight.mjs

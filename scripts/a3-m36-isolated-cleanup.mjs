@@ -523,6 +523,98 @@ function mapCatalog(rows) {
   }));
 }
 
+async function cleanupForeignKeyRows(db, parents) {
+  return mapCatalog((await db.query(FK_SQL, [parents])).rows);
+}
+
+export async function cleanupForeignKeys(db) {
+  const parents = [...new Set(EXPECTED_EDGES.map((edge) => edge.parent))];
+  return cleanupForeignKeyRows(db, parents);
+}
+
+const TRIGGER_PROTECTED = [
+  "sbg_organisation_acceptances",
+  "sbg_organisation_members",
+  "sbg_organisations",
+];
+
+function targetedCounts(graph) {
+  const counts = {};
+  for (const table of CLEANUP_ORDER) {
+    const step = deleteStep(table, graph);
+    counts[table] = step ? step.expect : 0;
+  }
+  return counts;
+}
+
+function planResult(fields) {
+  const graph = fields.graph ?? emptyGraph();
+  const identified = fields.identified ?? identifiedCounts(graph);
+  return {
+    prediction: fields.prediction,
+    guards: fields.guards ?? { ok: false, verdict: "" },
+    graph,
+    identified,
+    targeted: fields.targeted ?? targetedCounts(graph),
+    failures: fields.failures ?? [],
+    references: fields.references ?? [],
+    orderViolations: fields.orderViolations ?? [],
+    triggerProtected: TRIGGER_PROTECTED.filter((table) => (fields.targeted ?? targetedCounts(graph))[table] > 0),
+  };
+}
+
+export async function planFixtureCleanup(db) {
+  const orderViolations = dependencyViolations();
+  const guards = await triggerGuard(db);
+  if (!guards.ok) return planResult({ prediction: "would-block", guards, failures: [guards.verdict], orderViolations });
+  const loaded = await loadFixtureGraph(db, { discover: true, approvals: true });
+  if (loaded.verdict) {
+    return planResult({ prediction: "would-block", guards, graph: loaded.graph, failures: [loaded.verdict], orderViolations });
+  }
+  const failures = graphFailures(loaded.graph);
+  if (failures.length) {
+    return planResult({ prediction: "would-block", guards, graph: loaded.graph, failures, orderViolations });
+  }
+  const identified = identifiedCounts(loaded.graph);
+  const targeted = targetedCounts(loaded.graph);
+  if (!Object.values(identified).some((count) => count > 0)) {
+    return planResult({ prediction: "clean", guards, graph: loaded.graph, identified, targeted, orderViolations });
+  }
+  if (orderViolations.length) {
+    return planResult({
+      prediction: "would-block",
+      guards,
+      graph: loaded.graph,
+      identified,
+      targeted,
+      failures: orderViolations.map((item) => `BLOCKED — DELETE ORDER ${item}`),
+      orderViolations,
+    });
+  }
+  const unexpected = await findUnexpected(db, loaded.graph);
+  if (unexpected.failures.length) {
+    return planResult({
+      prediction: "would-block",
+      guards,
+      graph: loaded.graph,
+      identified,
+      targeted,
+      failures: unexpected.failures,
+      references: unexpected.references,
+      orderViolations,
+    });
+  }
+  const triggerProtected = TRIGGER_PROTECTED.filter((table) => targeted[table] > 0);
+  return planResult({
+    prediction: triggerProtected.length ? "would-roll-back" : "would-commit",
+    guards,
+    graph: loaded.graph,
+    identified,
+    targeted,
+    orderViolations,
+  });
+}
+
 async function findUnexpected(db, graph) {
   const parents = [...new Set(CLEANUP_ORDER)].filter((table) => idsFor(graph, table).length);
   if (!parents.length) return { failures: [], references: [] };

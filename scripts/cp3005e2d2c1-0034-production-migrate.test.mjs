@@ -147,6 +147,7 @@ test("0034 digest is pinned and the controller ledger stays frozen at 0001-0033"
     "a3-m36-isolated-concurrency.yml",
     "a3-m36-isolated-constraint-diagnostic.yml",
     "a3-m36-isolated-install.yml",
+    "a3-m36-isolated-recovery-preflight.yml",
     "a3-m36-isolated-recovery.yml",
     "a3-m36-isolated-verification.yml",
     "cp3005e2d2c1-0034-isolated-verify.yml",
