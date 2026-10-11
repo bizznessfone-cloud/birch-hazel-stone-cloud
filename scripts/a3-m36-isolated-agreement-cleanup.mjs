@@ -146,30 +146,38 @@ select hotel_id
  order by hotel_id
    for update`;
 
-const RECORD_SQL = `-- a3m36-agreement-records
+export const RECORD_SQL = `-- a3m36-agreement-records
 select
-  (select md5(coalesce(string_agg(
-      id::text || '|' || organisation_id::text || '|' || accepted_by_user_id || '|' || agreement_version || '|' || accepted_at::text,
-      E'\\n' order by id), ''))
-     from public.sbg_organisation_acceptances
-    where organisation_id = $1::uuid or accepted_by_user_id = $2) as acceptance_digest,
-  (select md5(id::text || '|' || created_by_user_id || '|' || name)
-     from public.sbg_organisations
-    where id = $1::uuid) as organisation_digest,
-  (select md5(id || '|' || coalesce(email, '') || '|' || coalesce(name, ''))
-     from public."user"
-    where id = $2) as user_digest,
-  (select md5(coalesce(string_agg(id::text || '|' || coalesce(organisation_id::text, '') || '|' || code || '|' || name, E'\\n' order by id), ''))
-     from public.hotels
-    where organisation_id = $1::uuid) as hotel_digest,
-  (select md5(coalesce(string_agg(user_id || '|' || hotel_id::text || '|' || created_at::text, E'\\n' order by hotel_id), ''))
-     from public.app_hotel_accounts
-    where user_id = $2) as account_digest,
-  (select md5(coalesce(string_agg(
-      id::text || '|' || organisation_id::text || '|' || user_id || '|' || role || '|' || billing_authority::text || '|' || coalesce(removed_at::text, ''),
-      E'\\n' order by id), ''))
-     from public.sbg_organisation_members
-    where organisation_id = $1::uuid or user_id = $2) as member_digest`;
+  md5(coalesce((
+    select jsonb_agg(to_jsonb(a) order by a.id)
+      from public.sbg_organisation_acceptances a
+     where a.organisation_id = $1::uuid or a.accepted_by_user_id = $2
+  )::text, '[]')) as acceptance_digest,
+  md5(coalesce((
+    select to_jsonb(o)
+      from public.sbg_organisations o
+     where o.id = $1::uuid
+  )::text, 'null')) as organisation_digest,
+  md5(coalesce((
+    select to_jsonb(u)
+      from public."user" u
+     where u.id = $2
+  )::text, 'null')) as user_digest,
+  md5(coalesce((
+    select jsonb_agg(to_jsonb(h) order by h.id)
+      from public.hotels h
+     where h.organisation_id = $1::uuid
+  )::text, '[]')) as hotel_digest,
+  md5(coalesce((
+    select jsonb_agg(to_jsonb(c) order by c.hotel_id, c.user_id)
+      from public.app_hotel_accounts c
+     where c.user_id = $2
+  )::text, '[]')) as account_digest,
+  md5(coalesce((
+    select jsonb_agg(to_jsonb(m) order by m.id)
+      from public.sbg_organisation_members m
+     where m.organisation_id = $1::uuid or m.user_id = $2
+  )::text, '[]')) as member_digest`;
 
 const SNAPSHOT_SQL = `-- a3m36-agreement-snapshot
 select

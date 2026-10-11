@@ -10,7 +10,8 @@ import { EXPECTED_BRANCH, EXPECTED_DATABASE, EXPECTED_PROJECT, EXPECTED_ROLE, FO
 import { EXPECTED_ENDPOINT } from "./a3-m36-0035-equivalence.mjs";
 import { REQUIRED_TRIGGERS } from "./a3-m36-isolated-cleanup.mjs";
 import { ACCEPTANCE_ID, NOT_LEGAL, ORGANISATION_ID, RECOVERY_BRANCH, USER_ID, VERIFIED_FACTS } from "./a3-m36-agreement-fixture-plan.mjs";
-import { CLEANUP_CONFIRMATION, DELETE_SQL, VERDICT_ABSENT, VERDICT_PASS, protectedRecordFailures, runAgreementCleanup, snapshotFailures } from "./a3-m36-isolated-agreement-cleanup.mjs";
+import { CLEANUP_CONFIRMATION, DELETE_SQL, RECORD_SQL, VERDICT_ABSENT, VERDICT_PASS, protectedRecordFailures, runAgreementCleanup, snapshotFailures } from "./a3-m36-isolated-agreement-cleanup.mjs";
+import { PGlite } from "@electric-sql/pglite";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const src = readFileSync(join(root, "scripts/a3-m36-isolated-agreement-cleanup.mjs"), "utf8");
@@ -136,6 +137,13 @@ test("the agreement cleanup is manual and deletes only the inactive catalogue ro
   assert.match(DELETE_SQL, /agreement_version = \$1/);
   assert.match(DELETE_SQL, /effective = false/);
   assert.equal(src.match(/delete from/gi).length, 1);
+  assert.equal(RECORD_SQL.match(/to_jsonb\(/g).length, 6);
+  assert.match(RECORD_SQL, /jsonb_agg\(to_jsonb\(a\) order by a\.id\)/);
+  assert.match(RECORD_SQL, /jsonb_agg\(to_jsonb\(h\) order by h\.id\)/);
+  assert.match(RECORD_SQL, /jsonb_agg\(to_jsonb\(c\) order by c\.hotel_id, c\.user_id\)/);
+  assert.match(RECORD_SQL, /jsonb_agg\(to_jsonb\(m\) order by m\.id\)/);
+  assert.doesNotMatch(RECORD_SQL, /\|\|/);
+  assert.doesNotMatch(src, /log\(`[^`]*(beforeRecords|afterRecords|email|accepted_at)/);
   assert.doesNotMatch(src, /session_replication_role|alter table|truncate |disable trigger/i);
   assert.match(concurrency, /APPROVAL TABLE IS NOT EMPTY/);
   assert.equal(snapshotFailures(snapshot()).length, 0);
@@ -207,6 +215,72 @@ test("the matching inactive row commits once and a second run changes nothing", 
   assert.match(repeatText, /transaction: rolled-back/);
   assert.equal(again.queries.some((sql) => sql.includes("a3m36-agreement-delete")), false);
   assert.equal(again.queries.some((sql) => sql === "commit"), false);
+});
+
+test("complete-row digests detect an untracked column, a null change, and a count-stable replacement", async () => {
+  const db = new PGlite();
+  const org = "11111111-1111-4111-8111-111111111111";
+  const user = "protected-user";
+  const hotel = "22222222-2222-4222-8222-222222222222";
+  const replacement = "33333333-3333-4333-8333-333333333333";
+  await db.exec(`
+    create table sbg_organisation_acceptances (
+      id uuid primary key, organisation_id uuid, accepted_by_user_id text,
+      agreement_version text, accepted_at timestamptz, note text
+    );
+    create table sbg_organisations (
+      id uuid primary key, created_by_user_id text, name text, note text
+    );
+    create table "user" (
+      id text primary key, name text, email text, image text
+    );
+    create table hotels (
+      id uuid primary key, organisation_id uuid, code text, name text, note text
+    );
+    create table app_hotel_accounts (
+      user_id text, hotel_id uuid, created_at timestamptz, note text,
+      primary key (user_id, hotel_id)
+    );
+    create table sbg_organisation_members (
+      id uuid primary key, organisation_id uuid, user_id text, role text,
+      billing_authority boolean, removed_at timestamptz, note text
+    );
+  `);
+  await db.query("insert into sbg_organisations (id, created_by_user_id, name, note) values ($1::uuid, $2, 'Org', null)", [org, user]);
+  await db.query(`insert into "user" (id, name, email, image) values ($1, 'Holder', 'holder@example.com', null)`, [user]);
+  await db.query(
+    `insert into sbg_organisation_acceptances (id, organisation_id, accepted_by_user_id, agreement_version, accepted_at, note)
+     values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'::uuid, $1::uuid, $2, 'fixture-not-legal', '2026-10-10T00:00:00Z', null)`,
+    [org, user],
+  );
+  await db.query("insert into hotels (id, organisation_id, code, name, note) values ($1::uuid, $2::uuid, 'one', 'Hotel', null)", [hotel, org]);
+  await db.query("insert into app_hotel_accounts (user_id, hotel_id, created_at, note) values ($1, $2::uuid, '2026-10-10T00:00:00Z', null)", [user, hotel]);
+  await db.query(
+    `insert into sbg_organisation_members (id, organisation_id, user_id, role, billing_authority, removed_at, note)
+     values ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'::uuid, $1::uuid, $2, 'owner', true, null, null)`,
+    [org, user],
+  );
+  const read = async () => (await db.query(RECORD_SQL, [org, user])).rows[0];
+  const before = await read();
+  assert.deepEqual(protectedRecordFailures(before, await read()), []);
+  await db.query("update hotels set note = 'untracked' where id = $1::uuid", [hotel]);
+  const untracked = await read();
+  assert.match(protectedRecordFailures(before, untracked).join(","), /changed-hotel_digest/);
+  await db.query("update hotels set note = null where id = $1::uuid", [hotel]);
+  await db.query(`update "user" set image = 'set' where id = $1`, [user]);
+  const nullChanged = await read();
+  assert.match(protectedRecordFailures(before, nullChanged).join(","), /changed-user_digest/);
+  await db.query(`update "user" set image = null where id = $1`, [user]);
+  await db.query("delete from app_hotel_accounts where hotel_id = $1::uuid", [hotel]);
+  await db.query("delete from hotels where id = $1::uuid", [hotel]);
+  await db.query("insert into hotels (id, organisation_id, code, name, note) values ($1::uuid, $2::uuid, 'one', 'Hotel', null)", [replacement, org]);
+  await db.query("insert into app_hotel_accounts (user_id, hotel_id, created_at, note) values ($1, $2::uuid, '2026-10-10T00:00:00Z', null)", [user, replacement]);
+  const hotelCount = Number((await db.query("select count(*)::int as n from hotels")).rows[0].n);
+  assert.equal(hotelCount, 1);
+  const replaced = await read();
+  assert.match(protectedRecordFailures(before, replaced).join(","), /changed-hotel_digest/);
+  assert.match(protectedRecordFailures(before, replaced).join(","), /changed-account_digest/);
+  await db.close();
 });
 
 test("a swapped protected record rolls back even when the counts stay the same", async () => {
