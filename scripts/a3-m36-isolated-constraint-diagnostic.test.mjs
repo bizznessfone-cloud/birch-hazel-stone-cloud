@@ -133,7 +133,11 @@ test("the diagnostic is manual, read-only, and does not weaken the three 0035 ch
   assert.match(CONSTRAINT_SQL, /pg_get_constraintdef/);
   assert.doesNotMatch(src, /\b(insert into|update |delete from|alter table|create table|create unique|drop )\b/i);
   assert.doesNotMatch(src, /runInstall\(|runConcurrency\(|cleanupFixtures\(/);
-  assert.match(equivalence, /if \(constraints\.length !== 3\) failures\.push\("constraint-count"\)/);
+  assert.match(equivalence, /constraint-primary-key/);
+  assert.match(equivalence, /constraint-token/);
+  assert.match(equivalence, /constraint-provisional/);
+  assert.match(equivalence, /isPostgres18AutomaticNotNull/);
+  assert.doesNotMatch(equivalence, /constraints\.length !== 3/);
   assert.equal(AUTOMATIC_NOT_NULL_NAME.length, 63);
   assert.ok(expected);
 });

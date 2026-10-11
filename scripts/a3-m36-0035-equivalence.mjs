@@ -97,6 +97,46 @@ const PRIVILEGE_EXPECTATION = {
   app_delete: false,
 };
 
+export const AUTOMATIC_NOT_NULL_NAME = "sbg_approved_property_agreement_vers_agreement_version_not_null";
+export const AUTOMATIC_NOT_NULL_DEFINITION = "NOT NULL agreement_version";
+
+const MANDATORY_CONSTRAINTS = [
+  "sbg_approved_property_agreement_versions_pkey",
+  "sbg_approved_property_agreement_versions_token",
+  "sbg_approved_property_agreement_versions_not_provisional",
+];
+
+export function postgres18Server(serverVersionNum) {
+  const version = Number(serverVersionNum);
+  return Number.isFinite(version) && version >= 180000 && version < 190000;
+}
+
+export function automaticNotNullShape(row) {
+  const type = String(row?.type ?? "").trim();
+  const definition = normSpace(row?.definition ?? row?.def);
+  const columns = String(row?.columns ?? "");
+  return type === "n"
+    && row?.validated === true
+    && columns === "agreement_version"
+    && definition === AUTOMATIC_NOT_NULL_DEFINITION;
+}
+
+export function isPostgres18AutomaticNotNull(row, serverVersionNum) {
+  return postgres18Server(serverVersionNum)
+    && String(row?.name ?? "") === AUTOMATIC_NOT_NULL_NAME
+    && automaticNotNullShape(row);
+}
+
+export function constraintCountAccepted(constraints, serverVersionNum) {
+  const rows = Array.isArray(constraints) ? constraints : [];
+  const names = rows.map((row) => String(row?.name ?? ""));
+  if (names.some((name, index) => names.indexOf(name) !== index)) return false;
+  if (!MANDATORY_CONSTRAINTS.every((name) => names.includes(name))) return false;
+  const extras = rows.filter((row) => !MANDATORY_CONSTRAINTS.includes(String(row?.name ?? "")));
+  if (extras.length === 0) return rows.length === 3;
+  return extras.length === 1 && rows.length === 4 && isPostgres18AutomaticNotNull(extras[0], serverVersionNum);
+}
+
 export function assess0035Equivalence(sql35, sql33, catalog) {
   const expected = expectedFromSources(sql35, sql33);
   const failures = [];
@@ -136,17 +176,39 @@ export function assess0035Equivalence(sql35, sql33, catalog) {
     failures.push("columns");
   }
   const constraints = Array.isArray(catalog?.constraints) ? catalog.constraints : [];
-  const byName = new Map(constraints.map((row) => [String(row.name), String(row.def ?? "")]));
-  if (constraints.length !== 3) failures.push("constraint-count");
-  if (!String(byName.get("sbg_approved_property_agreement_versions_pkey") ?? "").includes("PRIMARY KEY")
-    || !String(byName.get("sbg_approved_property_agreement_versions_pkey") ?? "").includes("agreement_version")) {
+  const names = constraints.map((row) => String(row?.name ?? ""));
+  const duplicate = names.some((name, index) => names.indexOf(name) !== index);
+  const byName = new Map(constraints.map((row) => [String(row?.name ?? ""), row]));
+  const definitionOf = (name) => normSpace(byName.get(name)?.def ?? byName.get(name)?.definition);
+  if (!definitionOf("sbg_approved_property_agreement_versions_pkey").includes("PRIMARY KEY")
+    || !definitionOf("sbg_approved_property_agreement_versions_pkey").includes("agreement_version")) {
     failures.push("constraint-primary-key");
   }
-  if (!String(byName.get("sbg_approved_property_agreement_versions_token") ?? "").includes("^[a-z0-9][a-z0-9._/-]{0,120}$")) {
+  if (!definitionOf("sbg_approved_property_agreement_versions_token").includes("^[a-z0-9][a-z0-9._/-]{0,120}$")) {
     failures.push("constraint-token");
   }
-  if (!String(byName.get("sbg_approved_property_agreement_versions_not_provisional") ?? "").includes("terms-v1")) {
+  if (!definitionOf("sbg_approved_property_agreement_versions_not_provisional").includes("terms-v1")) {
     failures.push("constraint-provisional");
+  }
+  if (!constraintCountAccepted(constraints, catalog?.serverVersionNum)) {
+    const mandatoryPresent = MANDATORY_CONSTRAINTS.every((name) => names.includes(name));
+    const extras = constraints.filter((row) => !MANDATORY_CONSTRAINTS.includes(String(row?.name ?? "")));
+    const extra = extras[0];
+    const notNullCandidate = extras.length === 1 && (
+      String(extra?.name ?? "") === AUTOMATIC_NOT_NULL_NAME || automaticNotNullShape(extra)
+    );
+    if (duplicate || !mandatoryPresent || extras.length !== 1) {
+      failures.push("constraint-count");
+    } else if (!notNullCandidate) {
+      failures.push("constraint-count");
+    } else if (!postgres18Server(catalog?.serverVersionNum)) {
+      failures.push("constraint-server-version");
+      if (String(extra?.name ?? "") !== AUTOMATIC_NOT_NULL_NAME || !automaticNotNullShape(extra)) {
+        failures.push("constraint-not-null");
+      }
+    } else {
+      failures.push("constraint-not-null");
+    }
   }
   if (String(catalog?.tableComment ?? "") !== expected.tableComment || !expected.tableComment) failures.push("comment-table");
   const privileges = catalog?.privileges ?? {};

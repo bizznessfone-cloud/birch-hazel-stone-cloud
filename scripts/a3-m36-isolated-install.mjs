@@ -80,7 +80,17 @@ const FUNCTION_SQL = `select p.proname,
      'sbg_ensure_founding_organisation'
    )`;
 
-const CONSTRAINT_SQL = `select c.conname as name, pg_get_constraintdef(c.oid) as def
+const CONSTRAINT_SQL = `select c.conname as name,
+       c.contype as type,
+       c.convalidated as validated,
+       (
+         select string_agg(att.attname, ',' order by u.ord)
+           from unnest(c.conkey) with ordinality as u(attnum, ord)
+           join pg_attribute att
+             on att.attrelid = c.conrelid
+            and att.attnum = u.attnum
+       ) as columns,
+       pg_catalog.pg_get_constraintdef(c.oid, true) as def
   from pg_constraint c
   join pg_class r on r.oid = c.conrelid
   join pg_namespace n on n.oid = r.relnamespace
@@ -142,6 +152,7 @@ const COUNT_SQL = `select
        (select count(*)::int from public.hotels) as hotels`;
 
 const LEDGER_SQL = `select name from public._migrations order by name`;
+const VERSION_SQL = `select current_setting('server_version_num') as server_version_num`;
 const MARKER_SQL = `select p.proname,
        position('founding organisation already exists' in p.prosrc) > 0 as rejects_second,
        position('and v.effective' in p.prosrc) > 0 as requires_effective
@@ -167,7 +178,7 @@ function mapIdentity(row) {
   };
 }
 
-function mapCatalog(functions, constraints, columns, comment, privileges, objects) {
+function mapCatalog(functions, constraints, columns, comment, privileges, objects, serverVersionNum) {
   const mapped = {};
   for (const row of functions ?? []) {
     mapped[row.proname] = {
@@ -182,7 +193,13 @@ function mapCatalog(functions, constraints, columns, comment, privileges, object
   }
   return {
     functions: mapped,
-    constraints: (constraints ?? []).map((row) => ({ name: row.name, def: row.def })),
+    constraints: (constraints ?? []).map((row) => ({
+      name: row.name,
+      def: row.def,
+      type: row.type == null ? "" : String(row.type).trim(),
+      validated: row.validated === true,
+      columns: row.columns == null ? "" : String(row.columns),
+    })),
     columns: (columns ?? []).map((row) => ({
       name: row.name,
       dataType: row.data_type,
@@ -193,6 +210,7 @@ function mapCatalog(functions, constraints, columns, comment, privileges, object
     creatorIndex: objects?.creator_index === true,
     effectiveColumn: objects?.effective_column === true,
     effectiveIndex: objects?.effective_index === true,
+    serverVersionNum: serverVersionNum == null ? "" : String(serverVersionNum),
   };
 }
 
@@ -231,6 +249,7 @@ async function readState(db) {
   const comment = (await db.query(COMMENT_SQL)).rows[0]?.comment ?? "";
   const privileges = (await db.query(PRIVILEGE_SQL)).rows[0] ?? {};
   const objects = (await db.query(OBJECT_SQL)).rows[0] ?? {};
+  const serverVersionNum = (await db.query(VERSION_SQL)).rows[0]?.server_version_num;
   const duplicates = Number((await db.query(DUPLICATE_SQL)).rows[0]?.n ?? 0);
   const counts = (await db.query(COUNT_SQL)).rows[0] ?? {};
   const ledger = (await db.query(LEDGER_SQL)).rows.map((row) => String(row.name));
@@ -238,7 +257,7 @@ async function readState(db) {
   const creator = markers.find((row) => row.proname === "sbg_create_organisation_for_user");
   const property = markers.find((row) => row.proname === "sbg_create_founding_property_for_user");
   return {
-    catalog: mapCatalog(functions, constraints, columns, comment, privileges, objects),
+    catalog: mapCatalog(functions, constraints, columns, comment, privileges, objects, serverVersionNum),
     duplicates,
     counts: { organisations: Number(counts.organisations ?? 0), hotels: Number(counts.hotels ?? 0) },
     ledger,

@@ -14,6 +14,8 @@ import {
   MIGRATION_36,
   assess0035Equivalence,
   expectedFromSources,
+  AUTOMATIC_NOT_NULL_DEFINITION,
+  AUTOMATIC_NOT_NULL_NAME,
   installDecision,
   ledgerDisposition,
   sha256,
@@ -26,6 +28,7 @@ import {
   runInstall,
 } from "./a3-m36-isolated-install.mjs";
 import { CONFIRMATION as PREFLIGHT_CONFIRMATION, EXPECTED_BRANCH, EXPECTED_DATABASE, EXPECTED_PROJECT, EXPECTED_ROLE } from "./a3-m36-isolated-preflight.mjs";
+import { classifyApprovalConstraints, expectedConstraintsFrom0035, VERDICT_AUTOMATIC } from "./a3-m36-isolated-constraint-diagnostic.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const sql35 = readFileSync(join(root, "migrations", MIGRATION_35), "utf8");
@@ -132,11 +135,13 @@ function fakeDb(state) {
       if (sql.includes("pg_get_function_identity_arguments")) return { rows: functionRows() };
       if (sql.includes("pg_get_constraintdef")) {
         return { rows: [
-          { name: "sbg_approved_property_agreement_versions_not_provisional", def: "CHECK ((agreement_version <> 'terms-v1'::text))" },
-          { name: "sbg_approved_property_agreement_versions_pkey", def: "PRIMARY KEY (agreement_version)" },
-          { name: "sbg_approved_property_agreement_versions_token", def: "CHECK ((agreement_version ~ '^[a-z0-9][a-z0-9._/-]{0,120}$'::text))" },
+          { name: AUTOMATIC_NOT_NULL_NAME, type: "n", validated: true, columns: "agreement_version", def: AUTOMATIC_NOT_NULL_DEFINITION },
+          { name: "sbg_approved_property_agreement_versions_not_provisional", type: "c", validated: true, columns: "agreement_version", def: "CHECK (agreement_version <> 'terms-v1'::text)" },
+          { name: "sbg_approved_property_agreement_versions_pkey", type: "p", validated: true, columns: "agreement_version", def: "PRIMARY KEY (agreement_version)" },
+          { name: "sbg_approved_property_agreement_versions_token", type: "c", validated: true, columns: "agreement_version", def: "CHECK (agreement_version ~ '^[a-z0-9][a-z0-9._/-]{0,120}$'::text)" },
         ] };
       }
+      if (sql.includes("server_version_num")) return { rows: [{ server_version_num: "180006" }] };
       if (sql.includes("ordinal_position")) {
         return { rows: [{ name: "agreement_version", data_type: "text", is_nullable: "NO" }] };
       }
@@ -176,14 +181,8 @@ function env(overrides = {}) {
   };
 }
 
-test("reviewed 0035 objects match the source files and a drift blocks", () => {
-  assert.equal(sha256(sql36), DIGEST_36);
-  assert.equal(expected.digest35, sha256(sql35));
-  assert.ok(expected.createBody.includes("for update"));
-  assert.equal(expected.createBody.includes("founding organisation already exists"), false);
-  assert.ok(expected.propertyBody.includes("terms are not approved for property creation"));
-  assert.equal(expected.propertyBody.includes("v.effective"), false);
-  const catalog = {
+function reviewedCatalog() {
+  return {
     functions: Object.fromEntries(functionRows().map((row) => [row.proname, {
       args: row.args,
       result: row.result,
@@ -195,21 +194,127 @@ test("reviewed 0035 objects match the source files and a drift blocks", () => {
     }])),
     columns: [{ name: "agreement_version", dataType: "text", nullable: false }],
     constraints: [
-      { name: "sbg_approved_property_agreement_versions_pkey", def: "PRIMARY KEY (agreement_version)" },
-      { name: "sbg_approved_property_agreement_versions_token", def: "CHECK ((agreement_version ~ '^[a-z0-9][a-z0-9._/-]{0,120}$'::text))" },
-      { name: "sbg_approved_property_agreement_versions_not_provisional", def: "CHECK ((agreement_version <> 'terms-v1'::text))" },
+      { name: "sbg_approved_property_agreement_versions_pkey", type: "p", validated: true, columns: "agreement_version", def: "PRIMARY KEY (agreement_version)" },
+      { name: "sbg_approved_property_agreement_versions_token", type: "c", validated: true, columns: "agreement_version", def: "CHECK ((agreement_version ~ '^[a-z0-9][a-z0-9._/-]{0,120}$'::text))" },
+      { name: "sbg_approved_property_agreement_versions_not_provisional", type: "c", validated: true, columns: "agreement_version", def: "CHECK ((agreement_version <> 'terms-v1'::text))" },
+      { name: AUTOMATIC_NOT_NULL_NAME, type: "n", validated: true, columns: "agreement_version", def: AUTOMATIC_NOT_NULL_DEFINITION },
     ],
     tableComment: expected.tableComment,
     privileges: privileges(),
     creatorIndex: false,
     effectiveColumn: false,
     effectiveIndex: false,
+    serverVersionNum: "180006",
   };
+}
+
+test("reviewed 0035 objects match the source files and a drift blocks", () => {
+  assert.equal(sha256(sql36), DIGEST_36);
+  assert.equal(expected.digest35, sha256(sql35));
+  assert.ok(expected.createBody.includes("for update"));
+  assert.equal(expected.createBody.includes("founding organisation already exists"), false);
+  assert.ok(expected.propertyBody.includes("terms are not approved for property creation"));
+  assert.equal(expected.propertyBody.includes("v.effective"), false);
+  const catalog = reviewedCatalog();
   assert.equal(assess0035Equivalence(sql35, sql33, catalog).ok, true);
   catalog.functions.sbg_create_organisation_for_user.prosrc += "\n-- drifted";
   const drifted = assess0035Equivalence(sql35, sql33, catalog);
   assert.equal(drifted.ok, false);
   assert.ok(drifted.failures.includes("function-create"));
+});
+
+test("postgresql 18 may add only the verified not-null constraint", () => {
+  const accepted = assess0035Equivalence(sql35, sql33, reviewedCatalog());
+  assert.equal(accepted.ok, true);
+  assert.deepEqual(accepted.failures, []);
+  const numeric = reviewedCatalog();
+  numeric.serverVersionNum = 180006;
+  assert.equal(assess0035Equivalence(sql35, sql33, numeric).ok, true);
+  const classified = classifyApprovalConstraints(reviewedCatalog().constraints.map((row) => ({
+    name: row.name,
+    type: row.type,
+    validated: row.validated,
+    columns: row.columns,
+    definition: row.def,
+    is_local: true,
+  })), { serverVersionNum: "180006", expected: expectedConstraintsFrom0035(sql35) });
+  assert.equal(classified.verdict, VERDICT_AUTOMATIC);
+  assert.equal(classified.wouldFailConstraintCount, false);
+
+  const three = reviewedCatalog();
+  three.constraints = three.constraints.filter((row) => row.name !== AUTOMATIC_NOT_NULL_NAME);
+  delete three.serverVersionNum;
+  const withoutExtra = assess0035Equivalence(sql35, sql33, three);
+  assert.equal(withoutExtra.ok, true, withoutExtra.failures.join(","));
+
+  const reject = (mutate, failure) => {
+    const catalog = reviewedCatalog();
+    mutate(catalog);
+    const result = assess0035Equivalence(sql35, sql33, catalog);
+    assert.equal(result.ok, false, `${failure}: ${result.failures.join(",")}`);
+    assert.ok(result.failures.includes(failure), `${failure} missing from ${result.failures.join(",")}`);
+    if (failure === "constraint-server-version") {
+      assert.equal(result.failures.includes("constraint-not-null"), false, result.failures.join(","));
+      assert.equal(result.failures.includes("constraint-count"), false, result.failures.join(","));
+    }
+    if (failure === "constraint-not-null" || failure === "constraint-count" || failure === "constraint-server-version") {
+      for (const mandatory of ["constraint-primary-key", "constraint-token", "constraint-provisional"]) {
+        assert.equal(result.failures.includes(mandatory), false, result.failures.join(","));
+      }
+    }
+  };
+  reject((catalog) => {
+    catalog.constraints.push({ name: "sbg_approved_property_agreement_versions_extra", type: "u", validated: true, columns: "agreement_version", def: "UNIQUE (agreement_version)" });
+  }, "constraint-count");
+  reject((catalog) => {
+    const row = catalog.constraints.find((item) => item.name === AUTOMATIC_NOT_NULL_NAME);
+    row.name = "agreement_version_not_null";
+  }, "constraint-not-null");
+  reject((catalog) => {
+    catalog.constraints = catalog.constraints.filter((row) => row.name !== "sbg_approved_property_agreement_versions_token");
+  }, "constraint-token");
+  const missingToken = reviewedCatalog();
+  missingToken.constraints = missingToken.constraints.filter((row) => row.name !== "sbg_approved_property_agreement_versions_token");
+  const missingTokenResult = assess0035Equivalence(sql35, sql33, missingToken);
+  assert.equal(missingTokenResult.failures.includes("constraint-primary-key"), false);
+  assert.equal(missingTokenResult.failures.includes("constraint-provisional"), false);
+  assert.equal(missingTokenResult.failures.includes("constraint-count"), true);
+  reject((catalog) => {
+    catalog.serverVersionNum = "170007";
+  }, "constraint-server-version");
+  reject((catalog) => {
+    catalog.serverVersionNum = "190000";
+  }, "constraint-server-version");
+  reject((catalog) => {
+    delete catalog.serverVersionNum;
+  }, "constraint-server-version");
+  reject((catalog) => {
+    catalog.constraints.find((row) => row.name === AUTOMATIC_NOT_NULL_NAME).validated = false;
+  }, "constraint-not-null");
+  reject((catalog) => {
+    catalog.constraints.find((row) => row.name === AUTOMATIC_NOT_NULL_NAME).columns = "effective";
+  }, "constraint-not-null");
+  reject((catalog) => {
+    catalog.constraints.find((row) => row.name === AUTOMATIC_NOT_NULL_NAME).type = "c";
+  }, "constraint-not-null");
+  reject((catalog) => {
+    catalog.constraints.find((row) => row.name === AUTOMATIC_NOT_NULL_NAME).def = "NOT NULL effective";
+  }, "constraint-not-null");
+  reject((catalog) => {
+    catalog.constraints.push({ ...catalog.constraints.find((row) => row.name === AUTOMATIC_NOT_NULL_NAME) });
+  }, "constraint-count");
+  reject((catalog) => {
+    catalog.constraints.find((row) => row.name === "sbg_approved_property_agreement_versions_pkey").def = "UNIQUE (agreement_version)";
+  }, "constraint-primary-key");
+  reject((catalog) => {
+    catalog.constraints.find((row) => row.name === "sbg_approved_property_agreement_versions_not_provisional").def = "CHECK (agreement_version <> 'other')";
+  }, "constraint-provisional");
+  const token = reviewedCatalog();
+  token.constraints.find((row) => row.name === "sbg_approved_property_agreement_versions_token").def = "CHECK (agreement_version <> '')";
+  const tokenResult = assess0035Equivalence(sql35, sql33, token);
+  assert.ok(tokenResult.failures.includes("constraint-token"));
+  assert.equal(tokenResult.failures.includes("constraint-primary-key"), false);
+  assert.equal(tokenResult.failures.includes("constraint-provisional"), false);
 });
 
 test("ledger handling never backfills 0035", () => {
@@ -304,6 +409,8 @@ test("equivalent unledgered 0035 installs only 0036 in one transaction", async (
   const text = result.lines.join("\n");
   assert.equal(result.exitCode, 0, text);
   assert.match(text, /0035_equivalence: pass/);
+  assert.equal(db.queries.some((query) => query.text.includes("server_version_num")), true);
+  assert.equal(db.queries.some((query) => query.text.includes("pg_get_constraintdef") && query.text.includes("convalidated")), true);
   assert.match(text, /ledger_disposition: 0035-unledgered/);
   assert.match(text, /ledger_0035_insert: refused/);
   assert.match(text, /generic_migrator_safe: false/);

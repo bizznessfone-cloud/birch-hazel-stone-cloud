@@ -2,12 +2,12 @@
 /**
  * A3-M36 read-only constraint diagnostic for one isolated Neon branch.
  *
- * The 0036 installer blocked with 0035_equivalence_failures: constraint-count.
- * assess0035Equivalence requires exactly three pg_constraint rows. Migration
- * 0035 declares a primary key and two checks. PostgreSQL 18 also records the
- * primary-key column's NOT NULL as contype n. This command prints every live
- * constraint and says whether that extra row is the generated not-null
- * constraint. It does not change the equivalence verifier.
+ * The 0036 installer blocked with 0035_equivalence_failures: constraint-count
+ * before the verifier accepted the PostgreSQL 18 not-null catalog row.
+ * Migration 0035 declares a primary key and two checks. PostgreSQL 18 also
+ * records the primary-key column's NOT NULL as contype n. This command
+ * prints every live constraint. The same not-null predicate is used by the
+ * installer. It does not apply SQL.
  *
  * Manual. One credential: AETHER_0036_ISOLATED_OWNER_URL. Identity is proven
  * from neon.project_id, neon.branch_id, and neon.endpoint_id before the
@@ -29,7 +29,7 @@ import {
   directOwnerUrl,
   identityFailures,
 } from "./a3-m36-isolated-preflight.mjs";
-import { DIGEST_35, EXPECTED_ENDPOINT, MIGRATION_35, normSpace, sha256 } from "./a3-m36-0035-equivalence.mjs";
+import { DIGEST_35, EXPECTED_ENDPOINT, MIGRATION_35, AUTOMATIC_NOT_NULL_DEFINITION, AUTOMATIC_NOT_NULL_NAME, automaticNotNullShape, constraintCountAccepted, isPostgres18AutomaticNotNull, normSpace, postgres18Server, sha256 } from "./a3-m36-0035-equivalence.mjs";
 import { endpointPinFailures } from "./a3-m36-isolated-install.mjs";
 
 export const DIAGNOSTIC_CONFIRMATION = "DIAGNOSE-0036-CONSTRAINTS";
@@ -38,8 +38,7 @@ export const VERDICT_AUTOMATIC = "CONSTRAINT DIAGNOSTIC — AUTOMATIC NOT NULL O
 export const VERDICT_THREE = "CONSTRAINT DIAGNOSTIC — THREE MANDATORY ONLY";
 export const VERDICT_UNEXPECTED = "CONSTRAINT DIAGNOSTIC — UNEXPECTED CONSTRAINT";
 export const VERDICT_MISSING = "CONSTRAINT DIAGNOSTIC — MANDATORY CONSTRAINT MISSING";
-export const AUTOMATIC_NOT_NULL_NAME = "sbg_approved_property_agreement_vers_agreement_version_not_null";
-export const AUTOMATIC_NOT_NULL_DEFINITION = "NOT NULL agreement_version";
+export { AUTOMATIC_NOT_NULL_NAME, AUTOMATIC_NOT_NULL_DEFINITION };
 export const RECOMMENDATION_AUTOMATIC = "The only extra constraint is the validated PostgreSQL 18 not-null catalog row on agreement_version. A later verifier change may exclude that single contype n row from the count. Keep the primary-key, token, and terms-v1 checks required by name and definition. Do not replace the count check with a minimum of three. This diagnostic does not change the verifier.";
 
 const TOKEN = "^[a-z0-9][a-z0-9._/-]{0,120}$";
@@ -177,14 +176,15 @@ export function classifyApprovalConstraints(rows, options = {}) {
     const spec = mandatorySpec.find((item) => item?.name === name);
     let rowClass = "unexpected";
     let definitionOk = false;
+    const shaped = { ...row, definition };
     if (spec) {
       rowClass = `mandatory-${spec.key}`;
       definitionOk = spec.matches(definition);
-    } else if (type === "n" && validated && columns === "agreement_version" && definition === AUTOMATIC_NOT_NULL_DEFINITION) {
-      if (Number.isFinite(version) && version >= 180000 && name === AUTOMATIC_NOT_NULL_NAME) {
+    } else if (automaticNotNullShape(shaped)) {
+      if (isPostgres18AutomaticNotNull(shaped, version)) {
         rowClass = "automatic-not-null";
         definitionOk = true;
-      } else if (Number.isFinite(version) && version >= 180000) {
+      } else if (postgres18Server(version)) {
         rowClass = "not-null-name-differs";
       } else {
         rowClass = "unexpected-not-null";
@@ -241,7 +241,7 @@ export function classifyApprovalConstraints(rows, options = {}) {
     extras,
     mandatoryOk,
     count: classified.length,
-    wouldFailConstraintCount: classified.length !== 3,
+    wouldFailConstraintCount: !constraintCountAccepted(list, version),
     recommendVerifierChange: verdict === VERDICT_AUTOMATIC,
     verdict,
     reason,
