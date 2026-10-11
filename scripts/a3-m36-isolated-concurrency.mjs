@@ -439,28 +439,37 @@ export async function runConcurrency({ env, connect = client, say = () => {} }) 
     if (concluded) return finish(1);
     concluded = true;
     let cleanupVerdict = "NOT RUN";
-    if (opened) {
-      try { await observer.query("rollback"); } catch { /* no open transaction */ }
-      if (before) {
-        cleanupVerdict = RETAINED_CLEANUP;
-        log("fixture_residue: retained");
+    let overall = { exitCode: 1, full: false, verdict: "BLOCKED — CONCURRENCY SECTIONS DID NOT COMPLETE" };
+    try {
+      if (opened) {
+        try { await observer.query("rollback"); } catch { /* no open transaction */ }
+        if (before) {
+          cleanupVerdict = RETAINED_CLEANUP;
+          log("fixture_residue: retained");
+        }
+        try {
+          const guards = await triggerGuard(observer);
+          log(`triggers_still_enabled: ${guards.ok}`);
+          if (!guards.ok) cleanupVerdict = guards.verdict;
+        } catch (err) {
+          cleanupVerdict = `BLOCKED — TRIGGER GUARD ${String(err?.message ?? err).split("\n")[0].slice(0, 160)}`;
+          log("triggers_still_enabled: false");
+        }
       }
-      const guards = await triggerGuard(observer);
-      log(`triggers_still_enabled: ${guards.ok}`);
-      if (!guards.ok) cleanupVerdict = guards.verdict;
+    } finally {
+      log(`cleanup: ${cleanupVerdict}`);
+      log(`postgresql_concurrency: ${sections.concurrency}`);
+      log(`agreement_version_enforcement: ${sections.terms}`);
+      log(`runtime_role_security: ${sections.runtime}`);
+      overall = overallVerdict({
+        concurrency: sections.concurrency,
+        terms: sections.terms,
+        runtime: sections.runtime,
+        cleanup: cleanupVerdict,
+      });
+      log(`overall: ${overall.verdict}`);
+      if (overall.full) log(PASS_VERDICT);
     }
-    log(`cleanup: ${cleanupVerdict}`);
-    log(`postgresql_concurrency: ${sections.concurrency}`);
-    log(`agreement_version_enforcement: ${sections.terms}`);
-    log(`runtime_role_security: ${sections.runtime}`);
-    const overall = overallVerdict({
-      concurrency: sections.concurrency,
-      terms: sections.terms,
-      runtime: sections.runtime,
-      cleanup: cleanupVerdict,
-    });
-    log(`overall: ${overall.verdict}`);
-    if (overall.full) log(PASS_VERDICT);
     return finish(overall.exitCode);
   }
   try {
@@ -477,8 +486,9 @@ export async function runConcurrency({ env, connect = client, say = () => {} }) 
     const distinctPids = new Set([pidA, pidB, pidC]).size === 3;
     log(`backend_pids_distinct: ${distinctPids}`);
     if (!distinctPids) {
-      log("BLOCKED — CONNECTIONS ARE NOT INDEPENDENT");
-      return finish(1);
+      sections.concurrency = "BLOCKED — CONNECTIONS ARE NOT INDEPENDENT";
+      log(sections.concurrency);
+      return await conclude();
     }
 
     await observer.query("begin read only");
@@ -491,7 +501,8 @@ export async function runConcurrency({ env, connect = client, say = () => {} }) 
     if (failures.length || identity.projectId !== EXPECTED_PROJECT || identity.branchId !== expected.branch || identity.endpointId !== expected.endpoint) {
       await observer.query("rollback");
       log(`BLOCKED — ISOLATED IDENTITY ${failures.join(",") || "mismatch"}`);
-      return finish(1);
+      sections.concurrency = "BLOCKED — ISOLATED IDENTITY";
+      return await conclude();
     }
     const ledger = (await observer.query("select name from public._migrations order by name")).rows.map((row) => String(row.name));
     const objects = (await observer.query(
@@ -530,15 +541,18 @@ export async function runConcurrency({ env, connect = client, say = () => {} }) 
     log(`approval_rows: ${Number(approvals.n)}`);
     if (!installed) {
       log("BLOCKED — 0036 IS NOT INSTALLED");
-      return finish(1);
+      sections.concurrency = "BLOCKED — 0036 IS NOT INSTALLED";
+      return await conclude();
     }
     if (duplicates > 0) {
       log("BLOCKED — DUPLICATE FOUNDING CREATORS");
-      return finish(1);
+      sections.concurrency = "BLOCKED — DUPLICATE FOUNDING CREATORS";
+      return await conclude();
     }
     if (Number(approvals.n) !== 0 || Number(approvals.effective_n) !== 0) {
       log("BLOCKED — APPROVAL TABLE IS NOT EMPTY");
-      return finish(1);
+      sections.concurrency = "BLOCKED — APPROVAL TABLE IS NOT EMPTY";
+      return await conclude();
     }
     log("disposable_identity: PASS");
 
@@ -546,7 +560,7 @@ export async function runConcurrency({ env, connect = client, say = () => {} }) 
     log(`trigger_guard: ${guards.ok ? "enabled" : guards.verdict}`);
     if (!guards.ok) {
       sections.concurrency = guards.verdict;
-      return conclude();
+      return await conclude();
     }
     before = await snapshot(observer);
     await observer.query("begin");
@@ -819,7 +833,7 @@ export async function runConcurrency({ env, connect = client, say = () => {} }) 
     const runtimeVerdict = runtimeRoleVerdict({ catalogMatch, appConnection: appUrl ? "present" : "absent", live });
     sections.runtime = runtimeVerdict || "PASS";
     if (runtimeVerdict.startsWith("BLOCKED")) stop("runtime", runtimeVerdict);
-    return conclude();
+    return await conclude();
   } catch (err) {
     if (!err?.sectioned) {
       const message = `BLOCKED — ${redact(err?.message || err)}`.slice(0, 300);
@@ -832,7 +846,7 @@ export async function runConcurrency({ env, connect = client, say = () => {} }) 
         sections.runtime = message;
       }
     }
-    return conclude();
+    return await conclude();
   } finally {
     await Promise.allSettled([holder.end(), waiter.end(), observer.end(), app?.end?.()].filter(Boolean));
   }

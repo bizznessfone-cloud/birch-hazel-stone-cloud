@@ -10,6 +10,7 @@ import { ACCEPTED_LEDGER } from "./production-db-preflight.mjs";
 import { MIGRATION_35, MIGRATION_36 } from "./a3-m36-0035-equivalence.mjs";
 import { INSTALL_CONFIRMATION } from "./a3-m36-isolated-install.mjs";
 import { EXPECTED_DATABASE, EXPECTED_ROLE } from "./a3-m36-isolated-preflight.mjs";
+import { REQUIRED_TRIGGERS } from "./a3-m36-isolated-cleanup.mjs";
 import {
   CONCURRENCY_CONFIRMATION,
   FIXTURE_EFFECTIVE,
@@ -239,7 +240,8 @@ test("the concurrency workflow is manual and does not install", () => {
   assert.match(src, /immutable_delete: not-attempted/);
   assert.match(src, /AETHER_0036_DISPOSABLE_APP_URL/);
   assert.match(workflow, /secrets.AETHER_0036_DISPOSABLE_APP_URL/);
-  assert.doesNotMatch(src, /async function runStep/);
+  assert.match(src, /return await conclude\(\)/);
+  assert.doesNotMatch(src, /return conclude\(\)/);
   assert.match(src, /terms-v1/);
   assert.doesNotMatch(src, /values \('terms-v1'/);
 });
@@ -286,4 +288,225 @@ test("rejected confirmation and a production host do not connect", async () => {
   assert.match(fallback.lines.join("\n"), /DATABASE_URL must not be set/);
   assert.equal(connects, 0);
   assert.doesNotMatch(`${phrase.lines.join("\n")}\n${host.lines.join("\n")}`, /secret/);
+});
+
+function disposableEnv() {
+  return {
+    A3M36_CONCURRENCY_CONFIRMATION: CONCURRENCY_CONFIRMATION,
+    AETHER_0036_DISPOSABLE_OWNER_URL: OWNER_URL,
+    A3M36_DISPOSABLE_BRANCH: BRANCH,
+    A3M36_DISPOSABLE_ENDPOINT: ENDPOINT,
+  };
+}
+
+function harness({ failFinalGuard = false } = {}) {
+  const events = [];
+  let nextPid = 10;
+  let lockHeld = false;
+  let orgN = 0;
+  let hotels = 0;
+  let providers = 0;
+  let approvals = 0;
+  let guardCalls = 0;
+  const orgs = new Map();
+  const names = new Map();
+  const accepted = new Map();
+  const codes = new Set();
+  const ok = (rows = [], rowCount = 0) => ({ rows, rowCount });
+  function connect() {
+    const pid = ++nextPid;
+    let ended = false;
+    let inTx = false;
+    let pendingHotels = 0;
+    let pendingProviders = 0;
+    return {
+      async connect() {},
+      async end() {
+        ended = true;
+        events.push(`end:${pid}`);
+      },
+      async query(sql, params = []) {
+        if (ended) {
+          events.push("query-after-end");
+          throw new Error("Client was closed and is not queryable");
+        }
+        const text = String(sql);
+        if (text === "begin" || text === "begin read only") {
+          inTx = true;
+          return ok();
+        }
+        if (text === "commit") {
+          hotels += pendingHotels;
+          providers += pendingProviders;
+          pendingHotels = 0;
+          pendingProviders = 0;
+          inTx = false;
+          lockHeld = false;
+          return ok();
+        }
+        if (text === "rollback") {
+          pendingHotels = 0;
+          pendingProviders = 0;
+          inTx = false;
+          lockHeld = false;
+          return ok();
+        }
+        if (text.includes("for update")) {
+          lockHeld = true;
+          return ok([{ id: params[0] }]);
+        }
+        if (lockHeld && !inTx && (text.includes("sbg_create_organisation_for_user") || text.includes("sbg_create_founding_property_for_user"))) {
+          await new Promise((resolve) => {
+            const timer = setInterval(() => {
+              if (!lockHeld) {
+                clearInterval(timer);
+                resolve();
+              }
+            }, 5);
+          });
+        }
+        if (text.includes("pg_backend_pid")) return ok([{ pid }]);
+        if (text.includes("pg_stat_activity")) return ok([{ wait_event_type: "Lock" }]);
+        if (text.includes("neon.project_id")) {
+          return ok([{
+            database: "neondb",
+            current_user: "neondb_owner",
+            session_user: "neondb_owner",
+            project_id: "quiet-sound-53513710",
+            branch_id: BRANCH,
+            endpoint_id: ENDPOINT,
+          }]);
+        }
+        if (text.includes("from public._migrations")) return ok([...ACCEPTED_LEDGER, MIGRATION_35, MIGRATION_36].map((name) => ({ name })));
+        if (text.includes("creator_index")) return ok([{ creator_index: true, effective_column: true, effective_index: true }]);
+        if (text.includes("proname")) {
+          return ok([
+            { proname: "sbg_create_organisation_for_user", rejects_second: true, requires_effective: false },
+            { proname: "sbg_create_founding_property_for_user", rejects_second: false, requires_effective: true },
+          ]);
+        }
+        if (text.includes("having count(*) > 1")) return ok([{ n: 0 }]);
+        if (text.includes("agreement_version = 'terms-v1'")) return ok([{ n: 0 }]);
+        if (text.includes("effective_n")) return ok([{ n: approvals, effective_n: approvals ? 1 : 0 }]);
+        if (text.includes("a3m36-trigger-guard")) {
+          guardCalls += 1;
+          events.push("trigger-guard");
+          if (failFinalGuard && guardCalls > 1) throw new Error("finalisation query failed");
+          return ok(REQUIRED_TRIGGERS.map((tgname) => ({ tgname, tgenabled: "O" })));
+        }
+        if (text.includes("as organisations")) {
+          return ok([{
+            organisations: orgs.size,
+            hotels,
+            providers,
+            users: 1,
+            members: orgs.size,
+            acceptances: 1,
+            approvals,
+            bookings: 0,
+          }]);
+        }
+        if (text.includes('insert into public."user"')) return ok([], 1);
+        if (text.includes("insert into public.sbg_approved_property_agreement_versions")) {
+          if (params[0] === "terms-v1") throw new Error("violates check constraint sbg_approved_property_agreement_versions_not_provisional");
+          approvals += 2;
+          return ok([], 2);
+        }
+        if (text.includes("has_function_privilege")) {
+          return ok([{
+            app_creator: true,
+            runtime_creator: false,
+            public_creator: false,
+            app_property: true,
+            runtime_property: false,
+            app_select: false,
+            app_insert: false,
+            app_update: false,
+          }]);
+        }
+        if (text.includes("sbg_create_organisation_for_user")) {
+          const user = params[0];
+          if (orgs.has(user)) throw new Error("founding organisation already exists");
+          orgN += 1;
+          const organisationId = `00000000-0000-4000-8000-${String(orgN).padStart(12, "0")}`;
+          orgs.set(user, organisationId);
+          names.set(organisationId, params[1]);
+          return ok([{ organisation_id: organisationId }]);
+        }
+        if (text.includes("sbg_ensure_founding_organisation") || text.includes("sbg_classify_founding_organisation")) {
+          return ok([{ organisation_id: orgs.get(params[0]) }]);
+        }
+        if (text.includes("insert into public.sbg_organisation_acceptances")) {
+          const versions = accepted.get(params[1]) ?? new Set();
+          versions.add(params[2]);
+          accepted.set(params[1], versions);
+          return ok([], 1);
+        }
+        if (text.includes("sbg_create_founding_property_for_user")) {
+          const versions = accepted.get(params[0]) ?? new Set();
+          if (!versions.has("a3m36-fixture-effective")) throw new Error("terms are not approved for property creation");
+          if (codes.has(params[1])) throw new Error("hotel code already exists");
+          codes.add(params[1]);
+          if (inTx) {
+            pendingHotels += 1;
+            pendingProviders += 1;
+          } else {
+            hotels += 1;
+            providers += 1;
+          }
+          const suffix = String(codes.size).padStart(12, "0");
+          return ok([{ hotel_id: `11111111-1111-4111-8111-${suffix}`, provider_id: `22222222-2222-4222-8222-${suffix}` }]);
+        }
+        if (text.includes("sbg_organisations where created_by_user_id")) return ok([{ n: orgs.has(params[0]) ? 1 : 0 }]);
+        if (text.includes("sbg_organisation_members where user_id")) return ok([{ n: 1 }]);
+        if (text.includes("from public.hotels where id = any")) return ok((params[0] ?? []).map(() => ({ id: orgs.get([...orgs.keys()].at(-1)) })));
+        if (text.includes("select name from public.sbg_organisations")) return ok([{ name: names.get(params[0]) }]);
+        if (text.includes("insert into public.sbg_organisation_members")) return ok([], 1);
+        throw new Error(`unexpected sql ${text.split("\n")[0].slice(0, 180)}`);
+      },
+    };
+  }
+  return { connect, events };
+}
+
+function reportLines(text) {
+  for (const line of ["postgresql_concurrency:", "agreement_version_enforcement:", "runtime_role_security:", "triggers_still_enabled:", "overall:"]) {
+    assert.match(text, new RegExp(line));
+  }
+}
+
+test("finalisation records the report before any connection is closed", async () => {
+  const db = harness();
+  const result = await runConcurrency({ env: disposableEnv(), connect: db.connect });
+  const text = result.lines.join("\n");
+  assert.equal(result.exitCode, 2, text);
+  assert.match(text, /test_same_creator: PASS/);
+  assert.match(text, /test_property_pair: PASS/);
+  assert.match(text, /test_duplicate_code: PASS/);
+  assert.match(text, /test_failed_rollback: PASS/);
+  assert.match(text, /test_uncommitted_rollback: PASS/);
+  assert.match(text, /test_isolation: PASS/);
+  assert.match(text, /test_terms: PASS/);
+  assert.match(text, /triggers_still_enabled: true/);
+  assert.match(text, new RegExp(INCOMPLETE_VERDICT));
+  reportLines(text);
+  assert.equal(db.events.includes("query-after-end"), false);
+  const guardAt = db.events.lastIndexOf("trigger-guard");
+  const endAt = db.events.findIndex((event) => event.startsWith("end:"));
+  assert.ok(guardAt >= 0 && endAt > guardAt);
+});
+
+test("a final trigger-guard failure still reports every section and closes afterwards", async () => {
+  const db = harness({ failFinalGuard: true });
+  const result = await runConcurrency({ env: disposableEnv(), connect: db.connect });
+  const text = result.lines.join("\n");
+  assert.equal(result.exitCode, 1, text);
+  assert.match(text, /triggers_still_enabled: false/);
+  assert.match(text, /BLOCKED — TRIGGER GUARD finalisation query failed/);
+  assert.match(text, /test_terms: PASS/);
+  reportLines(text);
+  assert.equal(db.events.includes("query-after-end"), false);
+  const guardAt = db.events.lastIndexOf("trigger-guard");
+  const endAt = db.events.findIndex((event) => event.startsWith("end:"));
+  assert.ok(guardAt >= 0 && endAt > guardAt);
 });
