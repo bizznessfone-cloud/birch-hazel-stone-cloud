@@ -31,14 +31,17 @@ export function validateTarget(env) {
   if (env.SBG_ADMISSION_BRANCH_ID !== EXPECTED.branch) failures.push("branch");
   if (env.SBG_ADMISSION_ENDPOINT_ID !== EXPECTED.endpoint) failures.push("endpoint");
   if (!env.AETHER_DATABASE_OWNER_URL) return [...failures, "missing-owner-url"];
+  if (env.DATABASE_URL || env.NEON_API_KEY) failures.push("forbidden-ambient-database-credentials");
   try {
     const u = new URL(env.AETHER_DATABASE_OWNER_URL);
     if (u.protocol !== "postgresql:" && u.protocol !== "postgres:") failures.push("protocol");
-    if (u.username !== EXPECTED.role) failures.push("role");
+    if (decodeURIComponent(u.username) !== EXPECTED.role) failures.push("role");
+    if (u.password.length === 0) failures.push("missing-owner-password");
     if (decodeURIComponent(u.pathname.slice(1)) !== EXPECTED.database) failures.push("database");
     if (u.hostname.toLowerCase() !== EXPECTED.endpoint + ".c-5.eu-central-1.aws.neon.tech") failures.push("direct-endpoint-host");
     if (u.hostname.includes("-pooler")) failures.push("pooled-endpoint");
     if (u.searchParams.get("sslmode") !== "require") failures.push("ssl-required");
+    if (u.searchParams.has("options") || u.searchParams.has("service")) failures.push("unexpected-connection-options");
   } catch { failures.push("invalid-owner-url"); }
   return failures;
 }
@@ -60,6 +63,7 @@ export function validateState(state) {
   if (state.neon_endpoint_id !== EXPECTED.endpoint) errors.push("live-endpoint-identity");
   if (state.current_user !== EXPECTED.role || state.session_user !== EXPECTED.role) errors.push("owner-identity");
   if (Number(state.duplicate_creator_groups) !== 0) errors.push("duplicate-creators");
+  if (Number(state.agreement_acceptance_count) !== 0) errors.push("unexpected-acceptances");
   if (Number(state.approved_table_exists) !== 0) errors.push("approved-table-preexists");
   if (Number(state.creator_index_exists) !== 0) errors.push("creator-index-preexists");
   if (Number(state.effective_index_exists) !== 0) errors.push("effective-index-preexists");
@@ -103,6 +107,7 @@ export async function runPreflight({env=process.env, connect}={}) {
       current_setting('neon.branch_id', true) AS neon_branch_id,
       current_setting('neon.endpoint_id', true) AS neon_endpoint_id,
       (SELECT count(*) FROM (SELECT created_by_user_id FROM public.sbg_organisations GROUP BY created_by_user_id HAVING count(*) > 1) d) AS duplicate_creator_groups,
+      (SELECT count(*) FROM public.sbg_organisation_acceptances)::int AS agreement_acceptance_count,
       (to_regclass('public.sbg_approved_property_agreement_versions') IS NOT NULL)::int AS approved_table_exists,
       (to_regclass('public.sbg_organisations_one_founding_creator_uidx') IS NOT NULL)::int AS creator_index_exists,
       (to_regclass('public.sbg_approved_property_agreement_versions_one_effective_uidx') IS NOT NULL)::int AS effective_index_exists,
