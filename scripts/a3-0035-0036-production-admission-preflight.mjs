@@ -55,6 +55,8 @@ export function validateLedger(names) {
   return failures;
 }
 
+const isZero = value => value === 0 || value === "0";
+
 export function validateState(state) {
   const errors = [];
   if (state.current_database !== EXPECTED.database) errors.push("database-identity");
@@ -62,13 +64,13 @@ export function validateState(state) {
   if (state.neon_branch_id !== EXPECTED.branch) errors.push("live-branch-identity");
   if (state.neon_endpoint_id !== EXPECTED.endpoint) errors.push("live-endpoint-identity");
   if (state.current_user !== EXPECTED.role || state.session_user !== EXPECTED.role) errors.push("owner-identity");
-  if (Number(state.duplicate_creator_groups) !== 0) errors.push("duplicate-creators");
-  if (Number(state.agreement_acceptance_count) !== 0) errors.push("unexpected-acceptances");
-  if (Number(state.approved_table_exists) !== 0) errors.push("approved-table-preexists");
-  if (Number(state.creator_index_exists) !== 0) errors.push("creator-index-preexists");
-  if (Number(state.effective_index_exists) !== 0) errors.push("effective-index-preexists");
-  if (Number(state.effective_column_exists) !== 0) errors.push("effective-column-preexists");
-  if (Number(state.property_function_exists) !== 0) errors.push("property-function-preexists");
+  if (!isZero(state.duplicate_creator_groups)) errors.push("duplicate-creators");
+  if (!isZero(state.agreement_acceptance_count)) errors.push("unexpected-acceptances");
+  if (!isZero(state.approved_table_exists)) errors.push("approved-table-preexists");
+  if (!isZero(state.creator_index_exists)) errors.push("creator-index-preexists");
+  if (!isZero(state.effective_index_exists)) errors.push("effective-index-preexists");
+  if (!isZero(state.effective_column_exists)) errors.push("effective-column-preexists");
+  if (!isZero(state.property_function_exists)) errors.push("property-function-preexists");
   return errors;
 }
 
