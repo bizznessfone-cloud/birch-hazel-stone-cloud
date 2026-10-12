@@ -114,7 +114,7 @@ export async function runPreflight({env=process.env, connect}={}) {
       (to_regclass('public.sbg_organisations_one_founding_creator_uidx') IS NOT NULL)::int AS creator_index_exists,
       (to_regclass('public.sbg_approved_property_agreement_versions_one_effective_uidx') IS NOT NULL)::int AS effective_index_exists,
       (EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'sbg_approved_property_agreement_versions' AND column_name = 'effective'))::int AS effective_column_exists,
-      (to_regprocedure('public.sbg_create_founding_property_for_user(text,text,text,text,text,text)') IS NOT NULL)::int AS property_function_exists`)).rows[0];
+      (EXISTS (SELECT 1 FROM pg_catalog.pg_proc p JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = 'sbg_create_founding_property_for_user'))::int AS property_function_exists`)).rows[0];
     const ledger = (await client.query("SELECT name FROM public._migrations ORDER BY name")).rows.map(r=>r.name);
     const issues = [...validateState(state), ...validateLedger(ledger)];
     await client.query("ROLLBACK");
