@@ -1,0 +1,35 @@
+name: A3 combined disposable rollback rehearsal
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  disposable-rehearsal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: a3-disposable-rehearsal
+    env:
+      A3_REHEARSAL_CONFIRMATION: REHEARSE-0035-0036-DISPOSABLE
+      A3_REHEARSAL_OWNER_URL: ${{ secrets.A3_REHEARSAL_OWNER_URL }}
+      DATABASE_URL: ""
+      AETHER_DATABASE_OWNER_URL: ""
+      NEON_API_KEY: ""
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: bizznessfone-cloud/birch-hazel-stone-cloud
+          ref: 438d23e8f3082dcadaa36d9cc2ab3428d54b686c
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Verify disposable secret exists
+        run: |
+          if [ -z "$A3_REHEARSAL_OWNER_URL" ]; then
+            echo 'BLOCKED: A3_REHEARSAL_OWNER_URL not configured'
+            exit 2
+          fi
+      - name: Run combined 0035/0036 rollback-only rehearsal
+        run: node scripts/a3-0035-0036-disposable-rollback-rehearsal.mjs
