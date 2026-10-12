@@ -128,3 +128,11 @@ test("preflight fails before connecting when the production target is wrong",asy
   assert.ok(result.failures.includes("branch"));
   assert.equal(attempted,false);
 });
+
+test("null counters rejected",()=>{
+  const state={current_database:EXPECTED.database,neon_project_id:EXPECTED.project,neon_branch_id:EXPECTED.branch,neon_endpoint_id:EXPECTED.endpoint,current_user:EXPECTED.role,session_user:EXPECTED.role,duplicate_creator_groups:"0",agreement_acceptance_count:"0",approved_table_exists:0,creator_index_exists:0,effective_index_exists:0,effective_column_exists:0,property_function_exists:0};
+  assert.deepEqual(validateState(state),[]);
+  assert.ok(validateState({...state,agreement_acceptance_count:null}).includes("unexpected-acceptances"));
+  assert.ok(validateState({...state,duplicate_creator_groups:null}).includes("duplicate-creators"));
+  assert.ok(validateState({...state,creator_index_exists:undefined}).includes("creator-index-preexists"));
+});
