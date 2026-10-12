@@ -1,0 +1,46 @@
+name: A3 disposable committed-state rehearsal (manual only)
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Type COMMIT-0035-0036-DISPOSABLE-ONLY'
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: a3-0035-0036-disposable-commit
+  cancel-in-progress: false
+jobs:
+  committed-disposable:
+    if: ${{ inputs.confirmation == 'COMMIT-0035-0036-DISPOSABLE-ONLY' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: a3-disposable-commit-rehearsal
+    env:
+      A3_COMMIT_REHEARSAL_CONFIRMATION: ${{ inputs.confirmation }}
+      A3_COMMIT_REHEARSAL_OWNER_URL: ${{ secrets.A3_COMMIT_REHEARSAL_OWNER_URL }}
+      DATABASE_URL: ""
+      AETHER_DATABASE_OWNER_URL: ""
+      A3_REHEARSAL_OWNER_URL: ""
+      NEON_API_KEY: ""
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: review/a3-m36-closeout-0035-0036-admission
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Offline controller tests (must pass first)
+        run: node --test scripts/a3-0035-0036-disposable-commit-rehearsal.test.mjs
+      - name: Verify dedicated secret is configured
+        run: |
+          if [ -z "$A3_COMMIT_REHEARSAL_OWNER_URL" ]; then
+            echo 'BLOCKED: dedicated disposable branch secret not configured'
+            exit 2
+          fi
+      - name: Run 0035/0036 committed-state rehearsal on pinned disposable branch
+        run: node scripts/a3-0035-0036-disposable-commit-rehearsal.mjs
