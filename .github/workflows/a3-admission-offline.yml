@@ -21,4 +21,4 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci --ignore-scripts
-      - run: node --test scripts/a3-0035-0036-production-admission-preflight.test.mjs
+      - run: node --test scripts/a3-0035-0036-production-admission-preflight.test.mjs scripts/a3-0035-0036-disposable-rollback-rehearsal.test.mjs
