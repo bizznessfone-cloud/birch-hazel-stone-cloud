@@ -49,3 +49,50 @@ test("pre-commit database error triggers rollback",async()=>{
  assert.ok(queries.includes("ROLLBACK"));
  assert.ok(!queries.includes("COMMIT"));
 });
+
+test("failed COMMIT is ambiguous and never retried",async()=>{
+ const queries=[];
+ const state={database:"neondb",role:"neondb_owner",session_role:"neondb_owner",project:TARGET.project,branch:TARGET.branch,endpoint:TARGET.endpoint};
+ const client={
+  async query(sql){
+   queries.push(sql);
+   if(sql.includes("SELECT current_database()"))return {rows:[state]};
+   if(sql.includes("SELECT name FROM public._migrations"))return {rows:(await import("./production-db-preflight.mjs")).ACCEPTED_LEDGER.map(name=>({name}))};
+   if(sql.includes("AS duplicates"))return {rows:[{duplicates:0,acceptances:0,approval_exists:false}]};
+   if(sql.includes("AS ledger_count"))return {rows:[{ledger_count:36,approval_exists:true,creator_index_exists:true,effective_index_exists:true,approved_versions:0}]};
+   if(sql==="COMMIT")throw Error("connection dropped after COMMIT sent");
+   return {rows:[]};
+  },
+  async end(){queries.push("CLOSE");},
+ };
+ const result=await runCommitRehearsal({env:good,connect:async()=>client});
+ assert.equal(result.verdict,"ESCALATE");
+ assert.ok(result.failures.includes("commit-or-verification-ambiguous"));
+ assert.equal(queries.filter(q=>q==="COMMIT").length,1);
+ assert.equal(queries.filter(q=>q==="ROLLBACK").length,0);
+});
+test("persisted-state mismatch escalates after successful COMMIT",async()=>{
+ const calls=[];
+ let sessions=0;
+ const connect=async()=>{
+  const session=++sessions;
+  return {
+   async query(sql){
+    calls.push([session,sql]);
+    if(sql.includes("SELECT current_database()"))return {rows:[{database:"neondb",role:"neondb_owner",session_role:"neondb_owner",project:TARGET.project,branch:TARGET.branch,endpoint:TARGET.endpoint}]};
+    if(sql.includes("SELECT name FROM public._migrations"))return {rows:(await import("./production-db-preflight.mjs")).ACCEPTED_LEDGER.map(name=>({name}))};
+    if(sql.includes("AS duplicates"))return {rows:[{duplicates:0,acceptances:0,approval_exists:false}]};
+    if(sql.includes("AS ledger_count"))return {rows:session===1?[{ledger_count:36,approval_exists:true,creator_index_exists:true,effective_index_exists:true,approved_versions:0}]:[{ledger_count:34,creator_index_exists:false,effective_index_exists:false,approved_versions:0}]};
+    if(sql.includes("SELECT current_setting('neon.branch_id'"))return {rows:[{branch:TARGET.branch,endpoint:TARGET.endpoint}]};
+    return {rows:[]};
+   },
+   async end(){calls.push([session,"CLOSE"]);},
+  };
+ };
+ const result=await runCommitRehearsal({env:good,connect});
+ assert.equal(result.verdict,"ESCALATE");
+ assert.ok(result.failures.includes("persisted-state-verification"));
+ assert.equal(calls.filter(([,q])=>q==="COMMIT").length,1);
+ assert.equal(calls.filter(([,q])=>q==="ROLLBACK").length,1);
+ assert.equal(sessions,2);
+});
