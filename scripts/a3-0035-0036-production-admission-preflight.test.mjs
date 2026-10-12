@@ -1,7 +1,7 @@
 import test from "node:test";
 import {ACCEPTED_LEDGER} from "./production-db-preflight.mjs";
 import assert from "node:assert/strict";
-import {EXPECTED,validateTarget,validateLedger,validateState} from "./a3-0035-0036-production-admission-preflight.mjs";
+import {EXPECTED,validateTarget,validateLedger,validateState,checkSource,runPreflight} from "./a3-0035-0036-production-admission-preflight.mjs";
 
 const env={
   SBG_ADMISSION_PROJECT_ID:EXPECTED.project,
@@ -41,4 +41,53 @@ test("ambient runtime credentials and connection options rejected",()=>{
 test("unexpected Terms acceptance blocks baseline",()=>{
   const state={current_database:"neondb",neon_project_id:EXPECTED.project,neon_branch_id:EXPECTED.branch,neon_endpoint_id:EXPECTED.endpoint,current_user:"neondb_owner",session_user:"neondb_owner",duplicate_creator_groups:0,agreement_acceptance_count:1,approved_table_exists:0,creator_index_exists:0,effective_index_exists:0,effective_column_exists:0,property_function_exists:0};
   assert.ok(validateState(state).includes("unexpected-acceptances"));
+});
+
+test("pinned migration files pass immutable SHA-256 verification",async()=>{
+  assert.deepEqual(await checkSource(),[]);
+});
+test("tampered migration content is rejected without connecting",async()=>{
+  const bad=await checkSource(async()=>Buffer.from("tampered migration"));
+  assert.equal(bad.length,2);
+});
+test("read-only preflight rolls back and closes client on drift",async()=>{
+  const calls=[];
+  const state={
+    current_database:EXPECTED.database,neon_project_id:EXPECTED.project,
+    neon_branch_id:EXPECTED.branch,neon_endpoint_id:EXPECTED.endpoint,
+    current_user:EXPECTED.role,session_user:EXPECTED.role,
+    duplicate_creator_groups:1,agreement_acceptance_count:0,
+    approved_table_exists:0,creator_index_exists:0,
+    effective_index_exists:0,effective_column_exists:0,property_function_exists:0,
+  };
+  const client={
+    async query(sql){
+      calls.push(sql);
+      if(sql.includes("SELECT current_database()"))return {rows:[state]};
+      if(sql.includes("SELECT name FROM public._migrations"))return {rows:ACCEPTED_LEDGER.map(name=>({name}))};
+      return {rows:[]};
+    },
+    async end(){calls.push("CLOSED");},
+  };
+  const result=await runPreflight({env,connect:async()=>client});
+  assert.equal(result.verdict,"BLOCKED");
+  assert.ok(result.failures.includes("duplicate-creators"));
+  assert.equal(calls[0],"BEGIN READ ONLY");
+  assert.ok(calls.includes("ROLLBACK"));
+  assert.equal(calls.at(-1),"CLOSED");
+  assert.equal(calls.some(sql=>/\b(COMMIT|INSERT|UPDATE|DELETE|ALTER|CREATE|DROP)\b/i.test(sql)),false);
+});
+test("read-only preflight rolls back even on query failure",async()=>{
+  const calls=[];
+  const client={
+    async query(sql){
+      calls.push(sql);
+      if(sql.includes("SELECT current_database()"))throw new Error("simulated read failure");
+      return {rows:[]};
+    },
+    async end(){calls.push("CLOSED");},
+  };
+  await assert.rejects(runPreflight({env,connect:async()=>client}),/simulated read failure/);
+  assert.ok(calls.includes("ROLLBACK"));
+  assert.equal(calls.at(-1),"CLOSED");
 });
