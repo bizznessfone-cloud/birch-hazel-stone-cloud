@@ -88,9 +88,11 @@ export async function runPreflight({env=process.env, connect}={}) {
     query_timeout: 10000,
     ssl: {rejectUnauthorized:true},
   });
+  let transactionOpen = false;
   try {
     if (!connect) await client.connect();
     await client.query("BEGIN READ ONLY");
+    transactionOpen = true;
     await client.query("SET LOCAL statement_timeout = '10s'");
     const state = (await client.query(`SELECT current_database() AS current_database, current_user AS current_user,
       session_user AS session_user,
@@ -98,13 +100,15 @@ export async function runPreflight({env=process.env, connect}={}) {
       (to_regclass('public.sbg_approved_property_agreement_versions') IS NOT NULL)::int AS approved_table_exists,
       (to_regclass('public.sbg_organisations_one_founding_creator_uidx') IS NOT NULL)::int AS creator_index_exists,
       (to_regclass('public.sbg_approved_property_agreement_versions_one_effective_uidx') IS NOT NULL)::int AS effective_index_exists,
-      EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'sbg_approved_property_agreement_versions' AND column_name = 'effective')::int AS effective_column_exists,
+      (EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'sbg_approved_property_agreement_versions' AND column_name = 'effective'))::int AS effective_column_exists,
       (to_regprocedure('public.sbg_create_founding_property_for_user(text,text,text,text,text,text)') IS NOT NULL)::int AS property_function_exists`)).rows[0];
     const ledger = (await client.query("SELECT name FROM public._migrations ORDER BY name")).rows.map(r=>r.name);
     const issues = [...validateState(state), ...validateLedger(ledger)];
     await client.query("ROLLBACK");
+    transactionOpen = false;
     return {verdict:issues.length ? "BLOCKED" : "PREFLIGHT PASS — APPLY NOT AUTHORISED", failures:issues, ledgerCount:ledger.length};
   } finally {
+    if (transactionOpen) { try { await client.query("ROLLBACK"); } catch { /* read-only rollback best effort */ } }
     await client.end();
   }
 }
