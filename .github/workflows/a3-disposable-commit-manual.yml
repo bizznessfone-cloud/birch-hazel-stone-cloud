@@ -27,7 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: review/a3-m36-closeout-0035-0036-admission
+          ref: c598fff34bc660ff22c8f79ed0ac14c9fdec9b97
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
