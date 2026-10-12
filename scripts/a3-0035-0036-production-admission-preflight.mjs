@@ -9,6 +9,7 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
+import { ACCEPTED_LEDGER } from "./production-db-preflight.mjs";
 
 export const EXPECTED = Object.freeze({
   project: "quiet-sound-53513710",
@@ -44,9 +45,9 @@ export function validateTarget(env) {
 
 export function validateLedger(names) {
   const ledger = [...names].sort();
-  const expected = Array.from({length:34}, (_,i)=>String(i+1).padStart(4,"0")+"_");
-  if (ledger.length !== 34 || new Set(ledger).size !== 34) return ["ledger-cardinality"];
-  const failures = expected.flatMap((prefix,i)=>ledger[i]?.startsWith(prefix) ? [] : ["ledger-"+prefix]);
+  const expected = [...ACCEPTED_LEDGER].sort();
+  if (ledger.length !== expected.length || new Set(ledger).size !== expected.length) return ["ledger-cardinality"];
+  const failures = expected.flatMap((name,i)=>ledger[i] === name ? [] : ["ledger-mismatch-"+String(i+1).padStart(4,"0")]);
   if (ledger.some(n=>n.startsWith("0035_") || n.startsWith("0036_"))) failures.push("already-applied");
   return failures;
 }
@@ -59,6 +60,8 @@ export function validateState(state) {
   if (Number(state.approved_table_exists) !== 0) errors.push("approved-table-preexists");
   if (Number(state.creator_index_exists) !== 0) errors.push("creator-index-preexists");
   if (Number(state.effective_index_exists) !== 0) errors.push("effective-index-preexists");
+  if (Number(state.effective_column_exists) !== 0) errors.push("effective-column-preexists");
+  if (Number(state.property_function_exists) !== 0) errors.push("property-function-preexists");
   return errors;
 }
 
@@ -88,12 +91,15 @@ export async function runPreflight({env=process.env, connect}={}) {
   try {
     if (!connect) await client.connect();
     await client.query("BEGIN READ ONLY");
+    await client.query("SET LOCAL statement_timeout = '10s'");
     const state = (await client.query(`SELECT current_database() AS current_database, current_user AS current_user,
       session_user AS session_user,
       (SELECT count(*) FROM (SELECT created_by_user_id FROM public.sbg_organisations GROUP BY created_by_user_id HAVING count(*) > 1) d) AS duplicate_creator_groups,
       (to_regclass('public.sbg_approved_property_agreement_versions') IS NOT NULL)::int AS approved_table_exists,
       (to_regclass('public.sbg_organisations_one_founding_creator_uidx') IS NOT NULL)::int AS creator_index_exists,
-      (to_regclass('public.sbg_approved_property_agreement_versions_one_effective_uidx') IS NOT NULL)::int AS effective_index_exists`)).rows[0];
+      (to_regclass('public.sbg_approved_property_agreement_versions_one_effective_uidx') IS NOT NULL)::int AS effective_index_exists,
+      EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'sbg_approved_property_agreement_versions' AND column_name = 'effective')::int AS effective_column_exists,
+      (to_regprocedure('public.sbg_create_founding_property_for_user(text,text,text,text,text,text)') IS NOT NULL)::int AS property_function_exists`)).rows[0];
     const ledger = (await client.query("SELECT name FROM public._migrations ORDER BY name")).rows.map(r=>r.name);
     const issues = [...validateState(state), ...validateLedger(ledger)];
     await client.query("ROLLBACK");
