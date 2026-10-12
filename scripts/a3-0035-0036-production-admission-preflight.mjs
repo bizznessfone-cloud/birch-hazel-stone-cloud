@@ -55,6 +55,9 @@ export function validateLedger(names) {
 export function validateState(state) {
   const errors = [];
   if (state.current_database !== EXPECTED.database) errors.push("database-identity");
+  if (state.neon_project_id !== EXPECTED.project) errors.push("live-project-identity");
+  if (state.neon_branch_id !== EXPECTED.branch) errors.push("live-branch-identity");
+  if (state.neon_endpoint_id !== EXPECTED.endpoint) errors.push("live-endpoint-identity");
   if (state.current_user !== EXPECTED.role || state.session_user !== EXPECTED.role) errors.push("owner-identity");
   if (Number(state.duplicate_creator_groups) !== 0) errors.push("duplicate-creators");
   if (Number(state.approved_table_exists) !== 0) errors.push("approved-table-preexists");
@@ -96,6 +99,9 @@ export async function runPreflight({env=process.env, connect}={}) {
     await client.query("SET LOCAL statement_timeout = '10s'");
     const state = (await client.query(`SELECT current_database() AS current_database, current_user AS current_user,
       session_user AS session_user,
+      current_setting('neon.project_id', true) AS neon_project_id,
+      current_setting('neon.branch_id', true) AS neon_branch_id,
+      current_setting('neon.endpoint_id', true) AS neon_endpoint_id,
       (SELECT count(*) FROM (SELECT created_by_user_id FROM public.sbg_organisations GROUP BY created_by_user_id HAVING count(*) > 1) d) AS duplicate_creator_groups,
       (to_regclass('public.sbg_approved_property_agreement_versions') IS NOT NULL)::int AS approved_table_exists,
       (to_regclass('public.sbg_organisations_one_founding_creator_uidx') IS NOT NULL)::int AS creator_index_exists,
