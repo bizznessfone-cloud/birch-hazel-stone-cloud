@@ -91,3 +91,40 @@ test("read-only preflight rolls back even on query failure",async()=>{
   assert.ok(calls.includes("ROLLBACK"));
   assert.equal(calls.at(-1),"CLOSED");
 });
+
+test("fully matching read-only baseline returns advisory pass without authorisation",async()=>{
+  const calls=[];
+  const state={
+    current_database:EXPECTED.database,neon_project_id:EXPECTED.project,
+    neon_branch_id:EXPECTED.branch,neon_endpoint_id:EXPECTED.endpoint,
+    current_user:EXPECTED.role,session_user:EXPECTED.role,
+    duplicate_creator_groups:0,agreement_acceptance_count:0,
+    approved_table_exists:0,creator_index_exists:0,
+    effective_index_exists:0,effective_column_exists:0,property_function_exists:0,
+  };
+  const client={
+    async query(sql){
+      calls.push(sql);
+      if(sql.includes("SELECT current_database()"))return {rows:[state]};
+      if(sql.includes("SELECT name FROM public._migrations"))return {rows:ACCEPTED_LEDGER.map(name=>({name}))};
+      return {rows:[]};
+    },
+    async end(){calls.push("CLOSED");},
+  };
+  const result=await runPreflight({env,connect:async()=>client});
+  assert.equal(result.verdict,"PREFLIGHT PASS — APPLY NOT AUTHORISED");
+  assert.deepEqual(result.failures,[]);
+  assert.equal(result.ledgerCount,34);
+  assert.equal(calls.filter(sql=>sql==="ROLLBACK").length,1);
+  assert.equal(calls.at(-1),"CLOSED");
+});
+test("preflight fails before connecting when the production target is wrong",async()=>{
+  let attempted=false;
+  const result=await runPreflight({
+    env:{...env,SBG_ADMISSION_BRANCH_ID:"br-proud-field-b1tymqgc"},
+    connect:async()=>{attempted=true;throw Error("must not connect");},
+  });
+  assert.equal(result.verdict,"BLOCKED");
+  assert.ok(result.failures.includes("branch"));
+  assert.equal(attempted,false);
+});
