@@ -14,6 +14,8 @@ jobs:
       DATABASE_URL: ""
       AETHER_DATABASE_OWNER_URL: ""
       NEON_API_KEY: ""
+      A3_REHEARSAL_OWNER_URL: ""
+      A3_COMMIT_REHEARSAL_OWNER_URL: ""
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -21,4 +23,4 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci --ignore-scripts
-      - run: node --test scripts/a3-0035-0036-production-admission-preflight.test.mjs scripts/a3-0035-0036-disposable-rollback-rehearsal.test.mjs
+      - run: node --test scripts/a3-0035-0036-production-admission-preflight.test.mjs scripts/a3-0035-0036-disposable-rollback-rehearsal.test.mjs scripts/a3-0035-0036-disposable-commit-rehearsal.test.mjs
