@@ -24,9 +24,11 @@ test("ledger fails closed for missing or future migrations",()=>{
   assert.ok(validateLedger(Array.from({length:35},(_,i)=>String(i+1).padStart(4,"0")+"_x.sql")).length);
 });
 test("duplicate creators and preexisting migration objects rejected",()=>{
-  const state={current_database:"neondb",current_user:"neondb_owner",session_user:"neondb_owner",duplicate_creator_groups:"0",approved_table_exists:0,creator_index_exists:0,effective_index_exists:0,effective_column_exists:0,property_function_exists:0};
+  const state={current_database:"neondb",neon_project_id:EXPECTED.project,neon_branch_id:EXPECTED.branch,neon_endpoint_id:EXPECTED.endpoint,current_user:"neondb_owner",session_user:"neondb_owner",duplicate_creator_groups:"0",approved_table_exists:0,creator_index_exists:0,effective_index_exists:0,effective_column_exists:0,property_function_exists:0};
   assert.deepEqual(validateState(state),[]);
   assert.ok(validateState({...state,duplicate_creator_groups:"1"}).includes("duplicate-creators"));
   assert.ok(validateState({...state,approved_table_exists:1}).includes("approved-table-preexists"));
   assert.ok(validateState({...state,property_function_exists:1}).includes("property-function-preexists"));
+  assert.ok(validateState({...state,neon_branch_id:"br-wrong"}).includes("live-branch-identity"));
+  assert.ok(validateState({...state,neon_project_id:"round-sunset-69114165"}).includes("live-project-identity"));
 });
