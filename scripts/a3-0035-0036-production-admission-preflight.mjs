@@ -74,6 +74,35 @@ export function validateState(state) {
   return errors;
 }
 
+
+export function validatePrivileges(p) {
+  const failures = [];
+  const falseOnly = ["rolsuper", "rolcreatedb", "rolcreaterole", "rolbypassrls", "database_create", "schema_create", "ledger_write", "organisations_write", "acceptances_write", "security_definer_execute"];
+  for (const field of falseOnly) if (p?.[field] !== false) failures.push("privilege-" + field);
+  if (p?.rolcanlogin !== true) failures.push("privilege-login");
+  if (p?.rolinherit !== false) failures.push("privilege-inherit");
+  if (!isZero(p?.membership_count)) failures.push("privilege-memberships");
+  if (p?.database_connect !== true || p?.schema_usage !== true || p?.ledger_read !== true || p?.organisations_read !== true || p?.acceptances_read !== true) failures.push("privilege-required-read");
+  return failures;
+}
+
+const privilegeQuery = `SELECT r.rolsuper, r.rolcreatedb, r.rolcreaterole, r.rolbypassrls,
+  r.rolcanlogin, r.rolinherit,
+  (SELECT count(*)::int FROM pg_catalog.pg_auth_members m WHERE m.member = r.oid) AS membership_count,
+  has_database_privilege(current_user, current_database(), 'CONNECT') AS database_connect,
+  has_database_privilege(current_user, current_database(), 'CREATE') AS database_create,
+  has_schema_privilege(current_user, 'public', 'USAGE') AS schema_usage,
+  has_schema_privilege(current_user, 'public', 'CREATE') AS schema_create,
+  has_table_privilege(current_user, 'public._migrations', 'SELECT') AS ledger_read,
+  has_table_privilege(current_user, 'public.sbg_organisations', 'SELECT') AS organisations_read,
+  has_table_privilege(current_user, 'public.sbg_organisation_acceptances', 'SELECT') AS acceptances_read,
+  has_table_privilege(current_user, 'public._migrations', 'INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') AS ledger_write,
+  has_table_privilege(current_user, 'public.sbg_organisations', 'INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') AS organisations_write,
+  has_table_privilege(current_user, 'public.sbg_organisation_acceptances', 'INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') AS acceptances_write,
+  EXISTS (SELECT 1 FROM pg_catalog.pg_proc p JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.prosecdef AND has_function_privilege(current_user, p.oid, 'EXECUTE')) AS security_definer_execute
+FROM pg_catalog.pg_roles r WHERE r.rolname = current_user`;
+
 export async function checkSource(read = readFile) {
   const files = [
     [EXPECTED.migration35, EXPECTED.digest35],
@@ -116,7 +145,8 @@ export async function runPreflight({env=process.env, connect}={}) {
       (EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'sbg_approved_property_agreement_versions' AND column_name = 'effective'))::int AS effective_column_exists,
       (EXISTS (SELECT 1 FROM pg_catalog.pg_proc p JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = 'sbg_create_founding_property_for_user'))::int AS property_function_exists`)).rows[0];
     const ledger = (await client.query("SELECT name FROM public._migrations ORDER BY name")).rows.map(r=>r.name);
-    const issues = [...validateState(state), ...validateLedger(ledger)];
+    const privilegeRows = (await client.query(privilegeQuery)).rows;
+    const issues = [...validateState(state), ...validateLedger(ledger), ...validatePrivileges(privilegeRows.length === 1 ? privilegeRows[0] : null)];
     await client.query("ROLLBACK");
     transactionOpen = false;
     return {verdict:issues.length ? "BLOCKED" : "PREFLIGHT PASS — APPLY NOT AUTHORISED", failures:issues, ledgerCount:ledger.length};
