@@ -54,3 +54,11 @@ Date: 2026-10-12. Status: **A3-M36 CERTIFIED; PRODUCTION APPLY NOT AUTHORISED**.
 - The inspected SQL matches the privilege and trigger inspection now in the inert executor draft. The results validate the SQL against an isolated real PostgreSQL schema; they do **not** constitute execution of the draft controller or production approval.
 - Offline GitHub Actions runs for commit `e3e43b2e1f2ee941ed1d5adfe87fa11bfaa588f9` all passed: `38440701651`, `38440693363`, `38440693404`.
 - Production application remains unauthorised; executor hard-stop remains mandatory. Next: independent review of complete controller and isolated end-to-end rehearsal before separate approval.
+
+## 2026-10-13 subsequent regression and disposable-state evidence
+- Review commits `6f1b288`, `bd6ab8d`, and `2cde20c` added transaction/fresh-session checks of index uniqueness, validity and readiness, plus an offline successful-commit controller test. An intermediate CI failure identified and corrected a duplicate-index-identity validation defect.
+- Final offline CI for `2cde20cb8189a0c3e9f87efe7a8978c1d6e91323`: **PASS** in all three workflows: disposable controller `38441913448`, admission tests `38441906765`, admission controller `38441906716`.
+- Read-only SQL on disposable Neon branch `br-square-queen-b13qgjqq` confirmed both required indexes `indisunique=true`, `indisvalid=true`, `indisready=true`; approved-agreement `effective` column is nonnullable boolean default false.
+- Separate disposable SQL returned migration ledger 36, both 0035/0036 ledger entries, zero approved versions, zero acceptances and zero duplicate founding creators.
+- **Scope of evidence:** offline successful-path controller test uses simulated connections; real Neon observations inspect previously applied disposable state. Neither constitutes a fresh live end-to-end execution of the revised production executor. The unconditional executor hard stop is still present.
+- **Remaining gate:** independent review and a fresh disposable-only full transaction rehearsal, then a consolidated readiness decision. Independent, single-use production authorisation remains absent. Do not merge, apply to production or activate CP31.
