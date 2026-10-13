@@ -27,16 +27,19 @@ const digest = b => createHash("sha256").update(b).digest("hex");
 export function validateEnvironment(env) {
   const failures = [];
   if (env.A3_PRODUCTION_APPLY_CONFIRMATION !== "APPLY-0035-0036-PRODUCTION-EXPLICIT-AUTHORISATION") failures.push("confirmation");
-  if (env.DATABASE_URL || env.AETHER_DATABASE_OWNER_URL || env.A3_REHEARSAL_OWNER_URL || env.NEON_API_KEY) failures.push("ambient-credentials");
+  if (env.DATABASE_URL || env.AETHER_DATABASE_OWNER_URL || env.A3_REHEARSAL_OWNER_URL || env.A3_COMMIT_REHEARSAL_OWNER_URL || env.NEON_API_KEY) failures.push("ambient-credentials");
   let url;
   try { url = new URL(env.A3_PRODUCTION_APPLY_OWNER_URL); }
   catch { return [...failures, "owner-url"]; }
   if (!["postgres:", "postgresql:"].includes(url.protocol)) failures.push("protocol");
   if (decodeURIComponent(url.username) !== TARGET.role) failures.push("role");
   if (!url.password) failures.push("password");
-  if (env.A3_PRODUCTION_APPROVAL_RECORD !== "PENDING-SEPARATE-APPROVAL") failures.push("approval-record");
+  if (env.A3_PRODUCTION_APPROVAL_RECORD !== "APPROVED-0035-0036-PRODUCTION") failures.push("approval-record");
+  // DRAFT hard-stop: cannot connect, transact or apply under any supplied credentials.
+  failures.push("executor-not-certified-or-authorised");
   if (decodeURIComponent(url.pathname.slice(1)) !== TARGET.database) failures.push("database");
   if (url.hostname !== TARGET.endpoint + ".c-5.eu-central-1.aws.neon.tech") failures.push("endpoint");
+  if (env.SBG_ADMISSION_PROJECT_ID !== TARGET.project || env.SBG_ADMISSION_BRANCH_ID !== TARGET.branch || env.SBG_ADMISSION_ENDPOINT_ID !== TARGET.endpoint) failures.push("target-pin");
   if (url.searchParams.get("sslmode") !== "require" || [...url.searchParams.keys()].some(k => k !== "sslmode")) failures.push("connection-options");
   return failures;
 }
