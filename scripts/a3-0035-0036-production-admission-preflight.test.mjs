@@ -167,12 +167,21 @@ test("owner identity rejected after connection",()=>{const state={current_databa
 
 
 // Production executor DRAFT regression: deliberately cannot execute.
-test("production executor draft rejects every invocation before connection", async () => {
+const draftEnv = () => ({
+  SBG_ADMISSION_PROJECT_ID: "quiet-sound-53513710",
+  SBG_ADMISSION_BRANCH_ID: "br-green-darkness-b1k7wkue",
+  SBG_ADMISSION_ENDPOINT_ID: "ep-withered-haze-b1fd9hse",
+  A3_PRODUCTION_APPLY_CONFIRMATION: "APPLY-0035-0036-PRODUCTION-EXPLICIT-AUTHORISATION",
+  A3_PRODUCTION_APPROVAL_RECORD: "APPROVED-0035-0036-PRODUCTION",
+  A3_PRODUCTION_APPLY_OWNER_URL: "postgresql://neondb_owner:fixture-only@ep-withered-haze-b1fd9hse.c-5.eu-central-1.aws.neon.tech/neondb?sslmode=require",
+});
+
+test("production executor draft rejects even fully shaped inputs before connection", async () => {
   const {runProductionAdmissionDraft} = await import("./a3-0035-0036-production-admission-executor.DRAFT.mjs");
   let connected = false;
   let readSql = false;
   const result = await runProductionAdmissionDraft({
-    env: {},
+    env: draftEnv(),
     connect: async () => { connected = true; throw Error("unexpected connection"); },
     read: async () => { readSql = true; throw Error("unexpected SQL read"); },
   });
@@ -182,9 +191,9 @@ test("production executor draft rejects every invocation before connection", asy
   assert.ok(result.failures.includes("executor-not-certified-or-authorised"));
 });
 
-test("production executor draft rejects pending approval", async () => {
+test("production executor draft rejects pending approval with otherwise valid inputs", async () => {
   const {validateEnvironment} = await import("./a3-0035-0036-production-admission-executor.DRAFT.mjs");
-  const failures = validateEnvironment({A3_PRODUCTION_APPROVAL_RECORD:"PENDING-SEPARATE-APPROVAL"});
+  const failures = validateEnvironment({...draftEnv(), A3_PRODUCTION_APPROVAL_RECORD:"PENDING-SEPARATE-APPROVAL"});
   assert.ok(failures.includes("approval-record"));
   assert.ok(failures.includes("executor-not-certified-or-authorised"));
 });
