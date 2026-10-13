@@ -30,7 +30,7 @@ jobs:
       - name: Checkout immutable reviewed A3 source
         uses: actions/checkout@v4
         with:
-          ref: 6462f2415e30f674abbcd1ebb909e7e771df94b3
+          ref: 0f20e901cbadd21a997cf8c2955bcecfeecb7cab
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
