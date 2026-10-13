@@ -1,7 +1,20 @@
 import test from "node:test";
 import {ACCEPTED_LEDGER} from "./production-db-preflight.mjs";
 import assert from "node:assert/strict";
-import {EXPECTED,validateTarget,validateLedger,validateState,checkSource,runPreflight} from "./a3-0035-0036-production-admission-preflight.mjs";
+import {EXPECTED,validateTarget,validateLedger,validateState,validatePrivileges,checkSource,runPreflight} from "./a3-0035-0036-production-admission-preflight.mjs";
+
+
+const safePrivileges = Object.freeze({rolsuper:false,rolcreatedb:false,rolcreaterole:false,rolbypassrls:false,rolcanlogin:true,rolinherit:false,membership_count:0,database_connect:true,database_create:false,schema_usage:true,schema_create:false,ledger_read:true,organisations_read:true,acceptances_read:true,ledger_write:false,organisations_write:false,acceptances_write:false,security_definer_execute:false});
+test("role permission matrix fails closed on administrative, inherited, and write capabilities",()=>{
+  assert.deepEqual(validatePrivileges(safePrivileges),[]);
+  for(const field of ["rolsuper","rolcreatedb","rolcreaterole","rolbypassrls","database_create","schema_create","ledger_write","organisations_write","acceptances_write","security_definer_execute"]){
+    assert.ok(validatePrivileges({...safePrivileges,[field]:true}).includes("privilege-"+field),field);
+  }
+  assert.ok(validatePrivileges({...safePrivileges,membership_count:1}).includes("privilege-memberships"));
+  assert.ok(validatePrivileges({...safePrivileges,rolinherit:true}).includes("privilege-inherit"));
+  assert.ok(validatePrivileges({...safePrivileges,ledger_read:false}).includes("privilege-required-read"));
+  assert.ok(validatePrivileges(null).length > 0);
+});
 
 const env={
   SBG_ADMISSION_PROJECT_ID:EXPECTED.project,
@@ -65,6 +78,7 @@ test("read-only preflight rolls back and closes client on drift",async()=>{
       calls.push(sql);
       if(sql.includes("SELECT current_database()"))return {rows:[state]};
       if(sql.includes("SELECT name FROM public._migrations"))return {rows:ACCEPTED_LEDGER.map(name=>({name}))};
+      if(sql.includes("FROM pg_catalog.pg_roles r WHERE r.rolname = current_user"))return {rows:[safePrivileges]};
       return {rows:[]};
     },
     async end(){calls.push("CLOSED");},
@@ -107,6 +121,7 @@ test("fully matching read-only baseline returns advisory pass without authorisat
       calls.push(sql);
       if(sql.includes("SELECT current_database()"))return {rows:[state]};
       if(sql.includes("SELECT name FROM public._migrations"))return {rows:ACCEPTED_LEDGER.map(name=>({name}))};
+      if(sql.includes("FROM pg_catalog.pg_roles r WHERE r.rolname = current_user"))return {rows:[safePrivileges]};
       return {rows:[]};
     },
     async end(){calls.push("CLOSED");},
@@ -118,6 +133,16 @@ test("fully matching read-only baseline returns advisory pass without authorisat
   assert.equal(calls.filter(sql=>sql==="ROLLBACK").length,1);
   assert.equal(calls.at(-1),"CLOSED");
 });
+test("live preflight rejects privileged role even when the ledger and identity match",async()=>{
+  const state={current_database:EXPECTED.database,neon_project_id:EXPECTED.project,neon_branch_id:EXPECTED.branch,neon_endpoint_id:EXPECTED.endpoint,current_user:EXPECTED.role,session_user:EXPECTED.role,duplicate_creator_groups:0,agreement_acceptance_count:0,approved_table_exists:0,creator_index_exists:0,effective_index_exists:0,effective_column_exists:0,property_function_exists:0};
+  const calls=[];
+  const client={async query(sql){calls.push(sql);if(sql.includes("SELECT current_database()"))return {rows:[state]};if(sql.includes("SELECT name FROM public._migrations"))return {rows:ACCEPTED_LEDGER.map(name=>({name}))};if(sql.includes("FROM pg_catalog.pg_roles r WHERE r.rolname = current_user"))return {rows:[{...safePrivileges,rolcreaterole:true}]};return {rows:[]};},async end(){calls.push("CLOSED");}};
+  const result=await runPreflight({env,connect:async()=>client});
+  assert.equal(result.verdict,"BLOCKED");
+  assert.ok(result.failures.includes("privilege-rolcreaterole"));
+  assert.equal(calls.at(-1),"CLOSED");
+});
+
 test("preflight fails before connecting when the production target is wrong",async()=>{
   let attempted=false;
   const result=await runPreflight({
