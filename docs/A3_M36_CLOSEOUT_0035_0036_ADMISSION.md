@@ -47,3 +47,10 @@ Date: 2026-10-12. Status: **A3-M36 CERTIFIED; PRODUCTION APPLY NOT AUTHORISED**.
 - **Commit ambiguity is intentionally escalated:** never automatically rerun after a COMMIT error or failed fresh-session verification. Require independent read-only inspection.
 - **Test execution is outstanding:** attempts to create a dedicated draft test file through the connected GitHub write tool were blocked; no new draft-specific CI run or isolated rehearsal has occurred. Existing disposable rehearsal evidence does not certify this production draft.
 - **Next admission decision:** only after the above controls, unit tests and isolated dry run are independently reviewed. No migration apply, legal Terms seed, customer acceptance, PR merge, or CP31 activation is authorised.
+
+## 2026-10-13 disposable PostgreSQL permission verification
+- Target explicitly selected: Neon project `quiet-sound-53513710`, disposable branch `br-square-queen-b13qgjqq`, database `neondb`; **not** production branch `br-green-darkness-b1k7wkue`.
+- Read-only SQL inspection returned: ledger_count=36, security_definer_count=3, app_executable_count=3, public_executable_count=0, app_agreement_write=false, disabled_relevant_triggers=0.
+- The inspected SQL matches the privilege and trigger inspection now in the inert executor draft. The results validate the SQL against an isolated real PostgreSQL schema; they do **not** constitute execution of the draft controller or production approval.
+- Offline GitHub Actions runs for commit `e3e43b2e1f2ee941ed1d5adfe87fa11bfaa588f9` all passed: `38440701651`, `38440693363`, `38440693404`.
+- Production application remains unauthorised; executor hard-stop remains mandatory. Next: independent review of complete controller and isolated end-to-end rehearsal before separate approval.
