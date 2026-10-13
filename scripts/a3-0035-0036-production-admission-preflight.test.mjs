@@ -7,13 +7,13 @@ const env={
   SBG_ADMISSION_PROJECT_ID:EXPECTED.project,
   SBG_ADMISSION_BRANCH_ID:EXPECTED.branch,
   SBG_ADMISSION_ENDPOINT_ID:EXPECTED.endpoint,
-  AETHER_DATABASE_OWNER_URL:`postgresql://neondb_owner:example@${EXPECTED.endpoint}.c-5.eu-central-1.aws.neon.tech/neondb?sslmode=require`,
+  A3_PREFLIGHT_READONLY_URL:`postgresql://sbg_a3_preflight_ro:example@${EXPECTED.endpoint}.c-5.eu-central-1.aws.neon.tech/neondb?sslmode=require`,
 };
-test("direct pinned owner endpoint accepted",()=>assert.deepEqual(validateTarget(env),[]));
-test("missing secret rejected",()=>assert.ok(validateTarget({...env,AETHER_DATABASE_OWNER_URL:""}).includes("missing-owner-url")));
+test("direct pinned read-only endpoint accepted",()=>assert.deepEqual(validateTarget(env),[]));
+test("missing secret rejected",()=>assert.ok(validateTarget({...env,A3_PREFLIGHT_READONLY_URL:""}).includes("missing-readonly-url")));
 test("wrong project rejected",()=>assert.ok(validateTarget({...env,SBG_ADMISSION_PROJECT_ID:"round-sunset-69114165"}).includes("project")));
-test("pooled endpoint rejected",()=>assert.ok(validateTarget({...env,AETHER_DATABASE_OWNER_URL:env.AETHER_DATABASE_OWNER_URL.replace(".c-5.","-pooler.c-5.")}).includes("pooled-endpoint")));
-test("wrong owner rejected",()=>assert.ok(validateTarget({...env,AETHER_DATABASE_OWNER_URL:env.AETHER_DATABASE_OWNER_URL.replace("neondb_owner","aether_app")}).includes("role")));
+test("pooled endpoint rejected",()=>assert.ok(validateTarget({...env,A3_PREFLIGHT_READONLY_URL:env.A3_PREFLIGHT_READONLY_URL.replace(".c-5.","-pooler.c-5.")}).includes("pooled-endpoint")));
+test("privileged owner rejected",()=>assert.ok(validateTarget({...env,A3_PREFLIGHT_READONLY_URL:env.A3_PREFLIGHT_READONLY_URL.replace("sbg_a3_preflight_ro","neondb_owner")}).includes("role")));
 test("ledger exactly matches frozen 0001–0034",()=>{
   assert.deepEqual(validateLedger(ACCEPTED_LEDGER),[]);
   const altered=[...ACCEPTED_LEDGER]; altered[0]="0001_wrong.sql";
@@ -24,7 +24,7 @@ test("ledger fails closed for missing or future migrations",()=>{
   assert.ok(validateLedger(Array.from({length:35},(_,i)=>String(i+1).padStart(4,"0")+"_x.sql")).length);
 });
 test("duplicate creators and preexisting migration objects rejected",()=>{
-  const state={current_database:"neondb",neon_project_id:EXPECTED.project,neon_branch_id:EXPECTED.branch,neon_endpoint_id:EXPECTED.endpoint,current_user:"neondb_owner",session_user:"neondb_owner",duplicate_creator_groups:"0",agreement_acceptance_count:0,approved_table_exists:0,creator_index_exists:0,effective_index_exists:0,effective_column_exists:0,property_function_exists:0};
+  const state={current_database:"neondb",neon_project_id:EXPECTED.project,neon_branch_id:EXPECTED.branch,neon_endpoint_id:EXPECTED.endpoint,current_user:"sbg_a3_preflight_ro",session_user:"sbg_a3_preflight_ro",duplicate_creator_groups:"0",agreement_acceptance_count:0,approved_table_exists:0,creator_index_exists:0,effective_index_exists:0,effective_column_exists:0,property_function_exists:0};
   assert.deepEqual(validateState(state),[]);
   assert.ok(validateState({...state,duplicate_creator_groups:"1"}).includes("duplicate-creators"));
   assert.ok(validateState({...state,approved_table_exists:1}).includes("approved-table-preexists"));
@@ -36,10 +36,10 @@ test("duplicate creators and preexisting migration objects rejected",()=>{
 test("ambient runtime credentials and connection options rejected",()=>{
   assert.ok(validateTarget({...env,DATABASE_URL:"postgres://not-used"}).includes("forbidden-ambient-database-credentials"));
   assert.ok(validateTarget({...env,NEON_API_KEY:"not-used"}).includes("forbidden-ambient-database-credentials"));
-  assert.ok(validateTarget({...env,AETHER_DATABASE_OWNER_URL:env.AETHER_DATABASE_OWNER_URL+"&options=-csearch_path%3Dpublic"}).includes("unexpected-connection-options"));
+  assert.ok(validateTarget({...env,A3_PREFLIGHT_READONLY_URL:env.A3_PREFLIGHT_READONLY_URL+"&options=-csearch_path%3Dpublic"}).includes("unexpected-connection-options"));
 });
 test("unexpected Terms acceptance blocks baseline",()=>{
-  const state={current_database:"neondb",neon_project_id:EXPECTED.project,neon_branch_id:EXPECTED.branch,neon_endpoint_id:EXPECTED.endpoint,current_user:"neondb_owner",session_user:"neondb_owner",duplicate_creator_groups:0,agreement_acceptance_count:1,approved_table_exists:0,creator_index_exists:0,effective_index_exists:0,effective_column_exists:0,property_function_exists:0};
+  const state={current_database:"neondb",neon_project_id:EXPECTED.project,neon_branch_id:EXPECTED.branch,neon_endpoint_id:EXPECTED.endpoint,current_user:"sbg_a3_preflight_ro",session_user:"sbg_a3_preflight_ro",duplicate_creator_groups:0,agreement_acceptance_count:1,approved_table_exists:0,creator_index_exists:0,effective_index_exists:0,effective_column_exists:0,property_function_exists:0};
   assert.ok(validateState(state).includes("unexpected-acceptances"));
 });
 
@@ -136,3 +136,6 @@ test("null counters rejected",()=>{
   assert.ok(validateState({...state,duplicate_creator_groups:null}).includes("duplicate-creators"));
   assert.ok(validateState({...state,creator_index_exists:undefined}).includes("creator-index-preexists"));
 });
+
+test("application runtime credential rejected",()=>assert.ok(validateTarget({...env,A3_PREFLIGHT_READONLY_URL:env.A3_PREFLIGHT_READONLY_URL.replace("sbg_a3_preflight_ro","aether_app")}).includes("role")));
+test("owner identity rejected after connection",()=>{const state={current_database:EXPECTED.database,neon_project_id:EXPECTED.project,neon_branch_id:EXPECTED.branch,neon_endpoint_id:EXPECTED.endpoint,current_user:"neondb_owner",session_user:"neondb_owner",duplicate_creator_groups:0,agreement_acceptance_count:0,approved_table_exists:0,creator_index_exists:0,effective_index_exists:0,effective_column_exists:0,property_function_exists:0};assert.ok(validateState(state).includes("readonly-role-identity"));});
