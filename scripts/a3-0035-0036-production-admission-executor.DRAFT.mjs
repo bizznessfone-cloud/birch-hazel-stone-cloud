@@ -26,7 +26,7 @@ const indexIntegrityQuery = "SELECT indexrelid::regclass::text AS index_name, in
 const effectiveColumnQuery = "SELECT data_type, is_nullable, column_default FROM information_schema.columns WHERE table_schema='public' AND table_name='sbg_approved_property_agreement_versions' AND column_name='effective'";
 export function validIntegrity(indexRows, columnRows) {
   const names = new Set(["sbg_organisations_one_founding_creator_uidx", "sbg_approved_property_agreement_versions_one_effective_uidx"]);
-  return indexRows.length === 2 && indexRows.every(row => names.has(row.index_name) && row.indisunique === true && row.indisvalid === true && row.indisready === true)
+  return indexRows.length === 2 && new Set(indexRows.map(row => row.index_name)).size === 2 && indexRows.every(row => names.has(row.index_name) && row.indisunique === true && row.indisvalid === true && row.indisready === true)
     && columnRows.length === 1 && columnRows[0].data_type === "boolean" && columnRows[0].is_nullable === "NO" && columnRows[0].column_default === "false";
 }
 const digest = b => createHash("sha256").update(b).digest("hex");
