@@ -22,11 +22,11 @@ const migrations = [
   ["0035_cp3005e2d2d_founding_property.sql", "80d1d3ec68eebfba0bcfbe07ac3c3dd1ade11d7d0466be9264cf0f28d27def67"],
   ["0036_cp3005e2d2d_founding_integrity.sql", "fb300bb17c8e9758700cf2fd09aa355b0293b5cd84c692e2913835876ece18fc"],
 ];
-const indexIntegrityQuery = "SELECT indexrelid::regclass::text AS index_name, indisunique, indisvalid, indisready FROM pg_index WHERE indexrelid IN ('public.sbg_organisations_one_founding_creator_uidx'::regclass, 'public.sbg_approved_property_agreement_versions_one_effective_uidx'::regclass)";
+const indexIntegrityQuery = "SELECT indexrelid::regclass::text AS index_name, indisunique, indisvalid, indisready, pg_get_indexdef(indexrelid,1,true) AS first_key, pg_get_expr(indpred,indrelid) AS predicate FROM pg_index WHERE indexrelid IN ('public.sbg_organisations_one_founding_creator_uidx'::regclass, 'public.sbg_approved_property_agreement_versions_one_effective_uidx'::regclass)";
 const effectiveColumnQuery = "SELECT data_type, is_nullable, column_default FROM information_schema.columns WHERE table_schema='public' AND table_name='sbg_approved_property_agreement_versions' AND column_name='effective'";
 export function validIntegrity(indexRows, columnRows) {
   const names = new Set(["sbg_organisations_one_founding_creator_uidx", "sbg_approved_property_agreement_versions_one_effective_uidx"]);
-  return indexRows.length === 2 && new Set(indexRows.map(row => row.index_name)).size === 2 && indexRows.every(row => names.has(row.index_name) && row.indisunique === true && row.indisvalid === true && row.indisready === true)
+  return indexRows.length === 2 && new Set(indexRows.map(row => row.index_name)).size === 2 && indexRows.every(row => names.has(row.index_name) && row.indisunique === true && row.indisvalid === true && row.indisready === true && (row.index_name === 'sbg_organisations_one_founding_creator_uidx' ? row.first_key === 'created_by_user_id' && row.predicate === null : row.first_key === 'effective' && row.predicate === 'effective'))
     && columnRows.length === 1 && columnRows[0].data_type === "boolean" && columnRows[0].is_nullable === "NO" && columnRows[0].column_default === "false";
 }
 const digest = b => createHash("sha256").update(b).digest("hex");
