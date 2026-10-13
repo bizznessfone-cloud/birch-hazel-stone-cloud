@@ -197,3 +197,29 @@ test("production executor draft rejects pending approval with otherwise valid in
   assert.ok(failures.includes("approval-record"));
   assert.ok(failures.includes("executor-not-certified-or-authorised"));
 });
+
+test("production executor draft refuses incorrect pinned target and pooled URL", async () => {
+  const {validateEnvironment} = await import("./a3-0035-0036-production-admission-executor.DRAFT.mjs");
+  const wrongTarget = validateEnvironment({...draftEnv(), SBG_ADMISSION_BRANCH_ID:"wrong-branch"});
+  assert.ok(wrongTarget.includes("target-pin"));
+  const pooled = draftEnv();
+  pooled.A3_PRODUCTION_APPLY_OWNER_URL = pooled.A3_PRODUCTION_APPLY_OWNER_URL.replace("ep-withered-haze-b1fd9hse.", "ep-withered-haze-b1fd9hse-pooler.");
+  assert.ok(validateEnvironment(pooled).includes("endpoint"));
+});
+
+test("production executor draft refuses ambient privileged credentials", async () => {
+  const {validateEnvironment} = await import("./a3-0035-0036-production-admission-executor.DRAFT.mjs");
+  for (const key of ["DATABASE_URL", "AETHER_DATABASE_OWNER_URL", "A3_COMMIT_REHEARSAL_OWNER_URL", "NEON_API_KEY"]) {
+    assert.ok(validateEnvironment({...draftEnv(), [key]:"fixture-present"}).includes("ambient-credentials"),key);
+  }
+});
+
+test("production executor draft refuses unexpected owner role or database", async () => {
+  const {validateEnvironment} = await import("./a3-0035-0036-production-admission-executor.DRAFT.mjs");
+  const wrongRole = draftEnv();
+  wrongRole.A3_PRODUCTION_APPLY_OWNER_URL = wrongRole.A3_PRODUCTION_APPLY_OWNER_URL.replace("neondb_owner:", "aether_app:");
+  assert.ok(validateEnvironment(wrongRole).includes("role"));
+  const wrongDb = draftEnv();
+  wrongDb.A3_PRODUCTION_APPLY_OWNER_URL = wrongDb.A3_PRODUCTION_APPLY_OWNER_URL.replace("/neondb?", "/otherdb?");
+  assert.ok(validateEnvironment(wrongDb).includes("database"));
+});
