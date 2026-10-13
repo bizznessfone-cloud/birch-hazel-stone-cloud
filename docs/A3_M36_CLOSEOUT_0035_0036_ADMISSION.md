@@ -38,3 +38,12 @@ Date: 2026-10-12. Status: **A3-M36 CERTIFIED; PRODUCTION APPLY NOT AUTHORISED**.
 
 ## Decision
 **CONDITIONAL ADMISSION — NOT READY TO APPLY.** The isolated concurrency test is certified and the read-only production preflight passes. A dedicated controller, code review, isolated dry run, legal-agreement decision, and explicit separate production execution authorisation remain outstanding. Production migrations **0035 and 0036 remain unapplied**.
+
+## 2026-10-13 executor draft review — NOT CERTIFIED
+- Draft: `scripts/a3-0035-0036-production-admission-executor.DRAFT.mjs` (review branch only). Its unconditional `executor-not-certified-or-authorised` failure is a deliberate hard stop; **do not remove it as part of ordinary testing**.
+- **Approval is not yet sufficient:** a static environment string is not an independently verified, single-use human authorisation record. Require a distinct, auditable production approval and immutable source commit before any executable controller is considered.
+- **Post-commit verification is incomplete:** existing draft checks ledger count and two indexes but does not comprehensively verify exact migration names, enabled triggers, effective agreement constraints, function privileges or `aether_app` write restrictions. Fail closed on any missing check.
+- **Role/target validation requires further hardening:** URL hostname, project/branch/endpoint environment labels and session identity must be cross-checked with a direct non-pooled endpoint; no inherited owner/runtime credentials or implicit fallbacks.
+- **Commit ambiguity is intentionally escalated:** never automatically rerun after a COMMIT error or failed fresh-session verification. Require independent read-only inspection.
+- **Test execution is outstanding:** attempts to create a dedicated draft test file through the connected GitHub write tool were blocked; no new draft-specific CI run or isolated rehearsal has occurred. Existing disposable rehearsal evidence does not certify this production draft.
+- **Next admission decision:** only after the above controls, unit tests and isolated dry run are independently reviewed. No migration apply, legal Terms seed, customer acceptance, PR merge, or CP31 activation is authorised.
