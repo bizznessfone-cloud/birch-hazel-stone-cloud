@@ -223,3 +223,21 @@ test("production executor draft refuses unexpected owner role or database", asyn
   wrongDb.A3_PRODUCTION_APPLY_OWNER_URL = wrongDb.A3_PRODUCTION_APPLY_OWNER_URL.replace("/neondb?", "/otherdb?");
   assert.ok(validateEnvironment(wrongDb).includes("database"));
 });
+
+test("draft index integrity predicate rejects invalid, missing, or duplicate indexes", async () => {
+  const {validIntegrity} = await import("./a3-0035-0036-production-admission-executor.DRAFT.mjs");
+  const rows = [
+    {index_name:"sbg_organisations_one_founding_creator_uidx",indisunique:true,indisvalid:true,indisready:true},
+    {index_name:"sbg_approved_property_agreement_versions_one_effective_uidx",indisunique:true,indisvalid:true,indisready:true},
+  ];
+  const column = [{data_type:"boolean",is_nullable:"NO",column_default:"false"}];
+  assert.equal(validIntegrity(rows,column),true);
+  assert.equal(validIntegrity(rows.slice(0,1),column),false);
+  assert.equal(validIntegrity([rows[0],rows[0]],column),false);
+  for (const key of ["indisunique","indisvalid","indisready"]) {
+    assert.equal(validIntegrity([{...rows[0],[key]:false},rows[1]],column),false,key);
+  }
+  assert.equal(validIntegrity(rows,[{...column[0],is_nullable:"YES"}]),false);
+  assert.equal(validIntegrity(rows,[{...column[0],column_default:"true"}]),false);
+  assert.equal(validIntegrity(rows,[]),false);
+});
