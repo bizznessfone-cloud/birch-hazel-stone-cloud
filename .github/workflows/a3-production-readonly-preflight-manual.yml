@@ -1,0 +1,49 @@
+name: A3 production admission READ-ONLY preflight (manual only)
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Type READONLY-A3-PRODUCTION-PREFLIGHT-NO-APPLY'
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: a3-production-readonly-preflight
+  cancel-in-progress: false
+jobs:
+  read-only-preflight:
+    if: ${{ inputs.confirmation == 'READONLY-A3-PRODUCTION-PREFLIGHT-NO-APPLY' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: a3-production-readonly-preflight
+    env:
+      SBG_ADMISSION_PROJECT_ID: quiet-sound-53513710
+      SBG_ADMISSION_BRANCH_ID: br-green-darkness-b1k7wkue
+      SBG_ADMISSION_ENDPOINT_ID: ep-withered-haze-b1fd9hse
+      A3_PREFLIGHT_READONLY_URL: ${{ secrets.A3_PRODUCTION_PREFLIGHT_READONLY_URL }}
+      DATABASE_URL: ""
+      NEON_API_KEY: ""
+      A3_REHEARSAL_OWNER_URL: ""
+      A3_COMMIT_REHEARSAL_OWNER_URL: ""
+    steps:
+      - name: Checkout immutable reviewed A3 source
+        uses: actions/checkout@v4
+        with:
+          ref: 0f20e901cbadd21a997cf8c2955bcecfeecb7cab
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Run offline preflight tests first
+        run: node --test scripts/a3-0035-0036-production-admission-preflight.test.mjs
+      - name: Verify dedicated credential is present (never print it)
+        run: |
+          if [ -z "$A3_PREFLIGHT_READONLY_URL" ]; then
+            echo 'BLOCKED: dedicated read-only preflight secret missing'
+            exit 2
+          fi
+      - name: Run read-only production admission preflight (no migration)
+        run: node scripts/a3-0035-0036-production-admission-preflight.mjs
