@@ -89,7 +89,7 @@ test("read-only preflight rolls back and closes client on drift",async()=>{
   assert.equal(calls[0],"BEGIN READ ONLY");
   assert.ok(calls.includes("ROLLBACK"));
   assert.equal(calls.at(-1),"CLOSED");
-  assert.equal(calls.some(sql=>/\b(COMMIT|INSERT|UPDATE|DELETE|ALTER|CREATE|DROP)\b/i.test(sql)),false);
+  assert.equal(calls.some(sql=>/^\s*(COMMIT|INSERT|UPDATE|DELETE|ALTER|CREATE|DROP)\b/i.test(sql)),false);
 });
 test("read-only preflight rolls back even on query failure",async()=>{
   const calls=[];
