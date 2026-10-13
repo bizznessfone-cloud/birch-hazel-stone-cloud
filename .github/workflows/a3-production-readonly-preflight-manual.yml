@@ -21,7 +21,7 @@ jobs:
       SBG_ADMISSION_PROJECT_ID: quiet-sound-53513710
       SBG_ADMISSION_BRANCH_ID: br-green-darkness-b1k7wkue
       SBG_ADMISSION_ENDPOINT_ID: ep-withered-haze-b1fd9hse
-      AETHER_DATABASE_OWNER_URL: ${{ secrets.A3_PRODUCTION_PREFLIGHT_OWNER_URL }}
+      A3_PREFLIGHT_READONLY_URL: ${{ secrets.A3_PRODUCTION_PREFLIGHT_READONLY_URL }}
       DATABASE_URL: ""
       NEON_API_KEY: ""
       A3_REHEARSAL_OWNER_URL: ""
@@ -30,7 +30,7 @@ jobs:
       - name: Checkout immutable reviewed A3 source
         uses: actions/checkout@v4
         with:
-          ref: 35a0d0fae10436defd49e74069a52b6b1c3d2ea5
+          ref: REVIEWED_SHA_TO_BE_PINNED_AFTER_OFFLINE_TESTS
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
@@ -41,7 +41,7 @@ jobs:
         run: node --test scripts/a3-0035-0036-production-admission-preflight.test.mjs
       - name: Verify dedicated credential is present (never print it)
         run: |
-          if [ -z "$AETHER_DATABASE_OWNER_URL" ]; then
+          if [ -z "$A3_PREFLIGHT_READONLY_URL" ]; then
             echo 'BLOCKED: dedicated read-only preflight secret missing'
             exit 2
           fi
