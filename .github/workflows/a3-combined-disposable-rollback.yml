@@ -17,18 +17,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: review/a3-m36-closeout-0035-0036-admission
+          repository: bizznessfone-cloud/birch-hazel-stone-cloud
+          ref: 438d23e8f3082dcadaa36d9cc2ab3428d54b686c
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: npm
       - run: npm ci --ignore-scripts
-      - name: Verify branch-scoped secret is configured
+      - name: Verify disposable secret exists
         run: |
           if [ -z "$A3_REHEARSAL_OWNER_URL" ]; then
             echo 'BLOCKED: A3_REHEARSAL_OWNER_URL not configured'
             exit 2
           fi
-      - name: Run combined 0035/0036 in a rollback-only transaction
+      - name: Run combined 0035/0036 rollback-only rehearsal
         run: node scripts/a3-0035-0036-disposable-rollback-rehearsal.mjs
