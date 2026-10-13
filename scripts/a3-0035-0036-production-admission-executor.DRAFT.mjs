@@ -79,6 +79,16 @@ export async function runProductionAdmissionDraft({ env = process.env, connect, 
       await db.query(sources[i]);
       await db.query("INSERT INTO public._migrations(name) VALUES ($1)", [migrations[i][0]]);
     }
+    const migrationNames = (await db.query("SELECT name FROM public._migrations ORDER BY name")).rows.map(r => r.name);
+    const expectedNames = [...ACCEPTED_LEDGER, ...migrations.map(([name]) => name)];
+    if (migrationNames.length !== expectedNames.length || new Set(migrationNames).size !== expectedNames.length || migrationNames.some(n => !expectedNames.includes(n))) return { verdict: "BLOCKED", failures: ["transaction-ledger-names"] };
+    const security = (await db.query(`SELECT
+      (SELECT count(*)::int FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname IN ('sbg_create_organisation_for_user','sbg_ensure_founding_organisation','sbg_create_founding_property_for_user') AND p.prosecdef) AS security_definer_count,
+      (SELECT count(*)::int FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname IN ('sbg_create_organisation_for_user','sbg_ensure_founding_organisation','sbg_create_founding_property_for_user') AND has_function_privilege('aether_app',p.oid,'EXECUTE')) AS app_executable_count,
+      (SELECT count(*)::int FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname IN ('sbg_create_organisation_for_user','sbg_ensure_founding_organisation','sbg_create_founding_property_for_user') AND has_function_privilege('PUBLIC',p.oid,'EXECUTE')) AS public_executable_count,
+      has_table_privilege('aether_app','public.sbg_approved_property_agreement_versions','INSERT,UPDATE,DELETE,TRUNCATE') AS app_agreement_write,
+      (SELECT count(*)::int FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname IN ('sbg_organisations','sbg_organisation_acceptances') AND NOT t.tgisinternal AND t.tgenabled='D') AS disabled_relevant_triggers`)).rows[0];
+    if (!security || security.security_definer_count !== 3 || security.app_executable_count !== 3 || security.public_executable_count !== 0 || security.app_agreement_write !== false || security.disabled_relevant_triggers !== 0) return { verdict: "BLOCKED", failures: ["transaction-privileges-or-triggers"] };
     const post = (await db.query("SELECT (SELECT count(*) FROM public._migrations)::int AS ledger_count, (to_regclass('public.sbg_approved_property_agreement_versions') IS NOT NULL) AS approval_exists, (to_regclass('public.sbg_organisations_one_founding_creator_uidx') IS NOT NULL) AS creator_index_exists, (to_regclass('public.sbg_approved_property_agreement_versions_one_effective_uidx') IS NOT NULL) AS effective_index_exists, (SELECT count(*) FROM public.sbg_approved_property_agreement_versions)::int AS approved_versions")).rows[0];
     if (!post || post.ledger_count !== 36 || !post.approval_exists || !post.creator_index_exists || !post.effective_index_exists || post.approved_versions !== 0) return { verdict: "BLOCKED", failures: ["transaction-postcondition"] };
     commitAttempted = true;
