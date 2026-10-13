@@ -96,3 +96,31 @@ test("persisted-state mismatch escalates after successful COMMIT",async()=>{
  assert.equal(calls.filter(([,q])=>q==="ROLLBACK").length,1);
  assert.equal(sessions,2);
 });
+
+test("disposable commit controller verifies successful commit from a second session",async()=>{
+ const calls=[];
+ let sessions=0;
+ const accepted=(await import("./production-db-preflight.mjs")).ACCEPTED_LEDGER;
+ const connect=async()=>{
+  const session=++sessions;
+  return {
+   async query(sql){
+    calls.push([session,sql]);
+    if(sql.includes("SELECT current_database()"))return {rows:[{database:"neondb",role:"neondb_owner",session_role:"neondb_owner",project:TARGET.project,branch:TARGET.branch,endpoint:TARGET.endpoint}]};
+    if(sql.includes("SELECT name FROM public._migrations"))return {rows:accepted.map(name=>({name}))};
+    if(sql.includes("AS duplicates"))return {rows:[{duplicates:0,acceptances:0,approval_exists:false}]};
+    if(sql.includes("AS ledger_count"))return {rows:[{ledger_count:36,approval_exists:true,creator_index_exists:true,effective_index_exists:true,approved_versions:0}]};
+    if(sql.includes("SELECT current_setting('neon.branch_id'"))return {rows:[{branch:TARGET.branch,endpoint:TARGET.endpoint}]};
+    return {rows:[]};
+   },
+   async end(){calls.push([session,"CLOSE"]);},
+  };
+ };
+ const result=await runCommitRehearsal({env:good,connect});
+ assert.equal(result.verdict,"PASS — DISPOSABLE COMMIT VERIFIED");
+ assert.equal(result.productionModified,false);
+ assert.equal(sessions,2);
+ assert.equal(calls.filter(([,q])=>q==="COMMIT").length,1);
+ assert.equal(calls.filter(([,q])=>q==="ROLLBACK").length,1);
+ assert.ok(calls.some(([session,q])=>session===2 && q.includes("AS ledger_count")));
+});
