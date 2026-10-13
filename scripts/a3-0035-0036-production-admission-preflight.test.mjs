@@ -164,3 +164,27 @@ test("null counters rejected",()=>{
 
 test("application runtime credential rejected",()=>assert.ok(validateTarget({...env,A3_PREFLIGHT_READONLY_URL:env.A3_PREFLIGHT_READONLY_URL.replace("sbg_a3_preflight_ro","aether_app")}).includes("role")));
 test("owner identity rejected after connection",()=>{const state={current_database:EXPECTED.database,neon_project_id:EXPECTED.project,neon_branch_id:EXPECTED.branch,neon_endpoint_id:EXPECTED.endpoint,current_user:"neondb_owner",session_user:"neondb_owner",duplicate_creator_groups:0,agreement_acceptance_count:0,approved_table_exists:0,creator_index_exists:0,effective_index_exists:0,effective_column_exists:0,property_function_exists:0};assert.ok(validateState(state).includes("readonly-role-identity"));});
+
+
+// Production executor DRAFT regression: deliberately cannot execute.
+test("production executor draft rejects every invocation before connection", async () => {
+  const {runProductionAdmissionDraft} = await import("./a3-0035-0036-production-admission-executor.DRAFT.mjs");
+  let connected = false;
+  let readSql = false;
+  const result = await runProductionAdmissionDraft({
+    env: {},
+    connect: async () => { connected = true; throw Error("unexpected connection"); },
+    read: async () => { readSql = true; throw Error("unexpected SQL read"); },
+  });
+  assert.equal(result.verdict, "BLOCKED");
+  assert.equal(connected, false);
+  assert.equal(readSql, false);
+  assert.ok(result.failures.includes("executor-not-certified-or-authorised"));
+});
+
+test("production executor draft rejects pending approval", async () => {
+  const {validateEnvironment} = await import("./a3-0035-0036-production-admission-executor.DRAFT.mjs");
+  const failures = validateEnvironment({A3_PRODUCTION_APPROVAL_RECORD:"PENDING-SEPARATE-APPROVAL"});
+  assert.ok(failures.includes("approval-record"));
+  assert.ok(failures.includes("executor-not-certified-or-authorised"));
+});
