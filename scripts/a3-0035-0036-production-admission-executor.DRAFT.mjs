@@ -22,6 +22,13 @@ const migrations = [
   ["0035_cp3005e2d2d_founding_property.sql", "80d1d3ec68eebfba0bcfbe07ac3c3dd1ade11d7d0466be9264cf0f28d27def67"],
   ["0036_cp3005e2d2d_founding_integrity.sql", "fb300bb17c8e9758700cf2fd09aa355b0293b5cd84c692e2913835876ece18fc"],
 ];
+const indexIntegrityQuery = "SELECT indexrelid::regclass::text AS index_name, indisunique, indisvalid, indisready FROM pg_index WHERE indexrelid IN ('public.sbg_organisations_one_founding_creator_uidx'::regclass, 'public.sbg_approved_property_agreement_versions_one_effective_uidx'::regclass)";
+const effectiveColumnQuery = "SELECT data_type, is_nullable, column_default FROM information_schema.columns WHERE table_schema='public' AND table_name='sbg_approved_property_agreement_versions' AND column_name='effective'";
+function validIntegrity(indexRows, columnRows) {
+  const names = new Set(["sbg_organisations_one_founding_creator_uidx", "sbg_approved_property_agreement_versions_one_effective_uidx"]);
+  return indexRows.length === 2 && indexRows.every(row => names.has(row.index_name) && row.indisunique === true && row.indisvalid === true && row.indisready === true)
+    && columnRows.length === 1 && columnRows[0].data_type === "boolean" && columnRows[0].is_nullable === "NO" && columnRows[0].column_default === "false";
+}
 const digest = b => createHash("sha256").update(b).digest("hex");
 
 export function validateEnvironment(env) {
@@ -79,6 +86,7 @@ export async function runProductionAdmissionDraft({ env = process.env, connect, 
       await db.query(sources[i]);
       await db.query("INSERT INTO public._migrations(name) VALUES ($1)", [migrations[i][0]]);
     }
+    if (!validIntegrity((await db.query(indexIntegrityQuery)).rows, (await db.query(effectiveColumnQuery)).rows)) return { verdict: "BLOCKED", failures: ["transaction-index-integrity"] };
     const migrationNames = (await db.query("SELECT name FROM public._migrations ORDER BY name")).rows.map(r => r.name);
     const expectedNames = [...ACCEPTED_LEDGER, ...migrations.map(([name]) => name)];
     if (migrationNames.length !== expectedNames.length || new Set(migrationNames).size !== expectedNames.length || migrationNames.some(n => !expectedNames.includes(n))) return { verdict: "BLOCKED", failures: ["transaction-ledger-names"] };
@@ -100,6 +108,7 @@ export async function runProductionAdmissionDraft({ env = process.env, connect, 
     try {
       if (!connect) await check.connect();
       await check.query("BEGIN READ ONLY");
+      const persistedIntegrityValid = validIntegrity((await check.query(indexIntegrityQuery)).rows, (await check.query(effectiveColumnQuery)).rows);
       const persistedNames = (await check.query("SELECT name FROM public._migrations ORDER BY name")).rows.map(r => r.name);
       const expectedPersistedNames = [...ACCEPTED_LEDGER, ...migrations.map(([name]) => name)];
       const persistedLedgerValid = persistedNames.length === expectedPersistedNames.length && new Set(persistedNames).size === expectedPersistedNames.length && persistedNames.every(n => expectedPersistedNames.includes(n));
@@ -113,7 +122,7 @@ export async function runProductionAdmissionDraft({ env = process.env, connect, 
       const identity = (await check.query("SELECT current_setting('neon.branch_id',true) AS branch, current_setting('neon.endpoint_id',true) AS endpoint")).rows[0];
       const verified = (await check.query("SELECT (SELECT count(*) FROM public._migrations)::int AS ledger_count, (SELECT count(*) FROM public.sbg_approved_property_agreement_versions)::int AS approved_versions, (to_regclass('public.sbg_organisations_one_founding_creator_uidx') IS NOT NULL) AS creator_index_exists, (to_regclass('public.sbg_approved_property_agreement_versions_one_effective_uidx') IS NOT NULL) AS effective_index_exists")).rows[0];
       await check.query("ROLLBACK");
-      if (!persistedLedgerValid || !persistedSecurityValid || !identity || identity.branch !== TARGET.branch || identity.endpoint !== TARGET.endpoint || !verified || verified.ledger_count !== 36 || verified.approved_versions !== 0 || !verified.creator_index_exists || !verified.effective_index_exists) return { verdict: "ESCALATE", failures: ["persisted-state-verification"] };
+      if (!persistedIntegrityValid || !persistedLedgerValid || !persistedSecurityValid || !identity || identity.branch !== TARGET.branch || identity.endpoint !== TARGET.endpoint || !verified || verified.ledger_count !== 36 || verified.approved_versions !== 0 || !verified.creator_index_exists || !verified.effective_index_exists) return { verdict: "ESCALATE", failures: ["persisted-state-verification"] };
       return { verdict: "PASS — PRODUCTION COMMIT VERIFIED", migrationCount: 36, productionModified: true };
     } finally { await check.end(); }
   } catch {
