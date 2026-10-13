@@ -227,8 +227,8 @@ test("production executor draft refuses unexpected owner role or database", asyn
 test("draft index integrity predicate rejects invalid, missing, or duplicate indexes", async () => {
   const {validIntegrity} = await import("./a3-0035-0036-production-admission-executor.DRAFT.mjs");
   const rows = [
-    {index_name:"sbg_organisations_one_founding_creator_uidx",indisunique:true,indisvalid:true,indisready:true},
-    {index_name:"sbg_approved_property_agreement_versions_one_effective_uidx",indisunique:true,indisvalid:true,indisready:true},
+    {index_name:"sbg_organisations_one_founding_creator_uidx",indisunique:true,indisvalid:true,indisready:true,first_key:"created_by_user_id",predicate:null},
+    {index_name:"sbg_approved_property_agreement_versions_one_effective_uidx",indisunique:true,indisvalid:true,indisready:true,first_key:"effective",predicate:"effective"},
   ];
   const column = [{data_type:"boolean",is_nullable:"NO",column_default:"false"}];
   assert.equal(validIntegrity(rows,column),true);
@@ -240,4 +240,6 @@ test("draft index integrity predicate rejects invalid, missing, or duplicate ind
   assert.equal(validIntegrity(rows,[{...column[0],is_nullable:"YES"}]),false);
   assert.equal(validIntegrity(rows,[{...column[0],column_default:"true"}]),false);
   assert.equal(validIntegrity(rows,[]),false);
+  assert.equal(validIntegrity([{...rows[0],first_key:"id"},rows[1]],column),false);
+  assert.equal(validIntegrity([rows[0],{...rows[1],predicate:null}],column),false);
 });
