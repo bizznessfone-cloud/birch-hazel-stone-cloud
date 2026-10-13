@@ -16,7 +16,7 @@ export const EXPECTED = Object.freeze({
   branch: "br-green-darkness-b1k7wkue",
   endpoint: "ep-withered-haze-b1fd9hse",
   database: "neondb",
-  role: "neondb_owner",
+  role: "sbg_a3_preflight_ro",
   migration35: "0035_cp3005e2d2d_founding_property.sql",
   migration36: "0036_cp3005e2d2d_founding_integrity.sql",
   digest35: "80d1d3ec68eebfba0bcfbe07ac3c3dd1ade11d7d0466be9264cf0f28d27def67",
@@ -30,19 +30,19 @@ export function validateTarget(env) {
   if (env.SBG_ADMISSION_PROJECT_ID !== EXPECTED.project) failures.push("project");
   if (env.SBG_ADMISSION_BRANCH_ID !== EXPECTED.branch) failures.push("branch");
   if (env.SBG_ADMISSION_ENDPOINT_ID !== EXPECTED.endpoint) failures.push("endpoint");
-  if (!env.AETHER_DATABASE_OWNER_URL) return [...failures, "missing-owner-url"];
+  if (!env.A3_PREFLIGHT_READONLY_URL) return [...failures, "missing-readonly-url"];
   if (env.DATABASE_URL || env.NEON_API_KEY) failures.push("forbidden-ambient-database-credentials");
   try {
-    const u = new URL(env.AETHER_DATABASE_OWNER_URL);
+    const u = new URL(env.A3_PREFLIGHT_READONLY_URL);
     if (u.protocol !== "postgresql:" && u.protocol !== "postgres:") failures.push("protocol");
     if (decodeURIComponent(u.username) !== EXPECTED.role) failures.push("role");
-    if (u.password.length === 0) failures.push("missing-owner-password");
+    if (u.password.length === 0) failures.push("missing-readonly-password");
     if (decodeURIComponent(u.pathname.slice(1)) !== EXPECTED.database) failures.push("database");
     if (u.hostname.toLowerCase() !== EXPECTED.endpoint + ".c-5.eu-central-1.aws.neon.tech") failures.push("direct-endpoint-host");
     if (u.hostname.includes("-pooler")) failures.push("pooled-endpoint");
     if (u.searchParams.get("sslmode") !== "require") failures.push("ssl-required");
     if (u.searchParams.has("options") || u.searchParams.has("service")) failures.push("unexpected-connection-options");
-  } catch { failures.push("invalid-owner-url"); }
+  } catch { failures.push("invalid-readonly-url"); }
   return failures;
 }
 
@@ -63,7 +63,7 @@ export function validateState(state) {
   if (state.neon_project_id !== EXPECTED.project) errors.push("live-project-identity");
   if (state.neon_branch_id !== EXPECTED.branch) errors.push("live-branch-identity");
   if (state.neon_endpoint_id !== EXPECTED.endpoint) errors.push("live-endpoint-identity");
-  if (state.current_user !== EXPECTED.role || state.session_user !== EXPECTED.role) errors.push("owner-identity");
+  if (state.current_user !== EXPECTED.role || state.session_user !== EXPECTED.role) errors.push("readonly-role-identity");
   if (!isZero(state.duplicate_creator_groups)) errors.push("duplicate-creators");
   if (!isZero(state.agreement_acceptance_count)) errors.push("unexpected-acceptances");
   if (!isZero(state.approved_table_exists)) errors.push("approved-table-preexists");
@@ -90,8 +90,8 @@ export async function checkSource(read = readFile) {
 export async function runPreflight({env=process.env, connect}={}) {
   const failures = [...validateTarget(env), ...await checkSource()];
   if (failures.length) return {verdict:"BLOCKED", failures};
-  const client = connect ? await connect(env.AETHER_DATABASE_OWNER_URL) : new pg.Client({
-    connectionString: env.AETHER_DATABASE_OWNER_URL,
+  const client = connect ? await connect(env.A3_PREFLIGHT_READONLY_URL) : new pg.Client({
+    connectionString: env.A3_PREFLIGHT_READONLY_URL,
     connectionTimeoutMillis: 5000,
     statement_timeout: 10000,
     query_timeout: 10000,
