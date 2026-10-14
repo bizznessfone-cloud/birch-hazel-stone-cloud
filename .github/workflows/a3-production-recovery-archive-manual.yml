@@ -70,7 +70,7 @@ jobs:
           openssl enc -aes-256-cbc -pbkdf2 -iter 250000 -salt -in production.dump -out production.dump.enc -pass env:ARCHIVE_KEY
           rm -f production.dump production.toc
           sha256sum production.dump.enc > production.dump.enc.sha256
-          printf 'project=quiet-sound-53513710\nbranch=br-green-darkness-b1k7wkue\ndatabase=neondb\n' > manifest.txt
+          printf '%s\\n' 'project=quiet-sound-53513710' 'branch=br-green-darkness-b1k7wkue' 'database=neondb' > manifest.txt
           date -u +'%Y-%m-%dT%H:%M:%SZ' >> manifest.txt
       - name: Upload encrypted archive and verification evidence
         uses: actions/upload-artifact@v4
