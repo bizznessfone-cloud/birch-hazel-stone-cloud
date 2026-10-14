@@ -1,0 +1,47 @@
+name: A3 fresh disposable Neon commit rehearsal (manual only)
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Type COMMIT-0035-0036-FRESH-DISPOSABLE-ONLY'
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: a3-fresh-0035-0036-disposable-commit
+  cancel-in-progress: false
+jobs:
+  committed-disposable:
+    if: ${{ inputs.confirmation == 'COMMIT-0035-0036-FRESH-DISPOSABLE-ONLY' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: a3-disposable-commit-rehearsal
+    env:
+      A3_FRESH_REHEARSAL_CONFIRMATION: ${{ inputs.confirmation }}
+      A3_FRESH_REHEARSAL_OWNER_URL: ${{ secrets.A3_FRESH_REHEARSAL_OWNER_URL }}
+      DATABASE_URL: ""
+      AETHER_DATABASE_OWNER_URL: ""
+      A3_REHEARSAL_OWNER_URL: ""
+      A3_COMMIT_REHEARSAL_OWNER_URL: ""
+      NEON_API_KEY: ""
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 5da28ab8f6af738bff89217a74e37baa59ea66cd
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Offline rehearsal regression tests
+        run: node --test scripts/a3-0035-0036-fresh-disposable-rehearsal.test.mjs
+      - name: Verify dedicated disposable secret exists
+        run: |
+          if [ -z "$A3_FRESH_REHEARSAL_OWNER_URL" ]; then
+            echo 'BLOCKED: fresh disposable branch secret not configured'
+            exit 2
+          fi
+      - name: Execute pinned fresh disposable 0035/0036 transaction
+        run: node scripts/a3-0035-0036-fresh-disposable-rehearsal.mjs
