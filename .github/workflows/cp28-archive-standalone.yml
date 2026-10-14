@@ -1,0 +1,77 @@
+name: CP28 archive and isolated restore
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type ARCHIVE-CP28"
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  cp28:
+    if: ${{ inputs.confirm == 'ARCHIVE-CP28' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      ARCHIVE_URL: ${{ secrets.CP28_ARCHIVE_DATABASE_URL }}
+      ARCHIVE_KEY: ${{ secrets.CP28_ARCHIVE_PASSPHRASE }}
+    steps:
+      - name: Fail closed on missing secrets or incorrect database
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$ARCHIVE_URL" || { echo "Missing CP28_ARCHIVE_DATABASE_URL"; exit 1; }
+          test -n "$ARCHIVE_KEY" || { echo "Missing CP28_ARCHIVE_PASSPHRASE"; exit 1; }
+          python3 - <<'PY'
+          import os,urllib.parse,sys
+          u=urllib.parse.urlsplit(os.environ["ARCHIVE_URL"])
+          expected="ep-cool-hat-b1c0q4qc.c-5.eu-central-1.aws.neon.tech"
+          if u.scheme not in ("postgresql","postgres") or u.hostname!=expected or u.path!="/neondb":
+              sys.exit("BLOCKED: connection does not match CP28 unpooled endpoint")
+          PY
+      - name: Export and inspect PostgreSQL 18 backup
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p "$RUNNER_TEMP/cp28"
+          docker run --rm --network host -e DATABASE_URL="$ARCHIVE_URL" -v "$RUNNER_TEMP/cp28:/archive" postgres:18 \
+            bash -ec 'pg_dump -d "$DATABASE_URL" -Fc --no-owner --no-acl -f /archive/cp28.dump && pg_restore -l /archive/cp28.dump >/archive/cp28.toc'
+          cd "$RUNNER_TEMP/cp28"
+          sha256sum cp28.dump > cp28.dump.sha256
+      - name: Restore into isolated local PostgreSQL 18
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d --name cp28-restore -e POSTGRES_PASSWORD=local-temporary -e POSTGRES_DB=restore_test postgres:18 >/dev/null
+          trap 'docker rm -f cp28-restore >/dev/null 2>&1 || true' EXIT
+          for i in $(seq 1 40); do
+            docker exec cp28-restore pg_isready -U postgres -d restore_test >/dev/null 2>&1 && break
+            sleep 1
+          done
+          docker exec cp28-restore pg_isready -U postgres -d restore_test
+          docker cp "$RUNNER_TEMP/cp28/cp28.dump" cp28-restore:/tmp/cp28.dump
+          docker exec cp28-restore pg_restore -U postgres -d restore_test --no-owner --no-acl --exit-on-error /tmp/cp28.dump
+          docker exec cp28-restore psql -U postgres -d restore_test -v ON_ERROR_STOP=1 -Atqc \
+            "SELECT 'bookings=' || count(*) FROM public.bookings" > "$RUNNER_TEMP/cp28/restore-verification.txt"
+          docker exec cp28-restore psql -U postgres -d restore_test -v ON_ERROR_STOP=1 -Atqc \
+            "SELECT 'hotels=' || count(*) FROM public.hotels" >> "$RUNNER_TEMP/cp28/restore-verification.txt"
+          echo "isolated_restore=PASS" >> "$RUNNER_TEMP/cp28/restore-verification.txt"
+      - name: Encrypt and remove plaintext
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/cp28"
+          openssl enc -aes-256-cbc -pbkdf2 -iter 250000 -salt -in cp28.dump -out cp28.dump.enc -pass env:ARCHIVE_KEY
+          rm -f cp28.dump
+          sha256sum cp28.dump.enc > cp28.dump.enc.sha256
+          printf 'project=quiet-sound-53513710\nbranch=br-icy-shadow-b1fh96gk\ndatabase=neondb\n' > manifest.txt
+          date -u +'%Y-%m-%dT%H:%M:%SZ' >> manifest.txt
+      - name: Upload encrypted backup and verification
+        uses: actions/upload-artifact@v4
+        with:
+          name: SBG-CP28-ENCRYPTED-ARCHIVE
+          path: ${{ runner.temp }}/cp28/
+          retention-days: 7
+          if-no-files-found: error
