@@ -61,6 +61,10 @@ jobs:
             "SELECT 'hotels=' || count(*) FROM public.hotels" >> "$RUNNER_TEMP/a3-backup/restore-verification.txt"
           docker exec a3-local-restore psql -U postgres -d restore_test -v ON_ERROR_STOP=1 -Atqc \
             "SELECT 'bookings=' || count(*) FROM public.bookings" >> "$RUNNER_TEMP/a3-backup/restore-verification.txt"
+          actual="$(docker exec a3-local-restore psql -U postgres -d restore_test -v ON_ERROR_STOP=1 -Atqc 'SELECT count(*) FROM public._migrations')"
+          test "$actual" = "34" || { echo "BLOCKED: restored migration ledger does not equal 34"; exit 1; }
+          docker exec a3-local-restore psql -U postgres -d restore_test -v ON_ERROR_STOP=1 -Atqc \
+            "SELECT CASE WHEN count(*) = 0 THEN 'PASS' ELSE 'BLOCKED' END FROM public._migrations WHERE name LIKE '0035_%' OR name LIKE '0036_%'" | grep -qx PASS
           echo 'isolated_restore=PASS' >> "$RUNNER_TEMP/a3-backup/restore-verification.txt"
       - name: Encrypt archive and remove plaintext before upload
         shell: bash
