@@ -72,7 +72,9 @@ jobs:
           set -euo pipefail
           cd "$RUNNER_TEMP/a3-backup"
           openssl enc -aes-256-cbc -pbkdf2 -iter 250000 -salt -in production.dump -out production.dump.enc -pass env:ARCHIVE_KEY
-          rm -f production.dump production.toc
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 250000 -in production.dump.enc -out production.verify.dump -pass env:ARCHIVE_KEY
+          cmp -s production.dump production.verify.dump || { echo "BLOCKED: encrypted archive round-trip mismatch"; exit 1; }
+          rm -f production.dump production.verify.dump production.toc
           sha256sum production.dump.enc > production.dump.enc.sha256
           printf '%s\\n' 'project=quiet-sound-53513710' 'branch=br-green-darkness-b1k7wkue' 'database=neondb' > manifest.txt
           date -u +'%Y-%m-%dT%H:%M:%SZ' >> manifest.txt
