@@ -32,7 +32,7 @@ jobs:
               sys.exit("BLOCKED: unexpected connection options")
           PY
           docker run --rm --network host -e ARCHIVE_URL="$ARCHIVE_URL" postgres:18 \
-            bash -ec 'test "$(psql "$ARCHIVE_URL" -Atqc "SELECT current_setting(\x27neon.branch_id\x27,true)")" = "br-green-darkness-b1k7wkue" || { echo "BLOCKED: live branch mismatch"; exit 1; }'
+            bash -ec 'test "$(psql "$ARCHIVE_URL" -Atqc "SELECT current_setting(chr(110)||chr(101)||chr(111)||chr(110)||chr(46)||chr(98)||chr(114)||chr(97)||chr(110)||chr(99)||chr(104)||chr(95)||chr(105)||chr(100),true)")" = "br-green-darkness-b1k7wkue" || { echo "BLOCKED: live branch mismatch"; exit 1; }'
       - name: Export PostgreSQL 18 production backup
         shell: bash
         run: |
