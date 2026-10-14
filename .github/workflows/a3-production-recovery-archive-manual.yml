@@ -1,0 +1,87 @@
+name: A3 production recovery archive (manual only)
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type ARCHIVE-A3-PRODUCTION"
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  archive:
+    if: ${{ inputs.confirm == 'ARCHIVE-A3-PRODUCTION' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ARCHIVE_URL: ${{ secrets.A3_PRODUCTION_BACKUP_DATABASE_URL }}
+      ARCHIVE_KEY: ${{ secrets.A3_PRODUCTION_BACKUP_PASSPHRASE }}
+    steps:
+      - name: Validate dedicated secrets and exact production identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$ARCHIVE_URL" && test -n "$ARCHIVE_KEY" || { echo "BLOCKED: missing dedicated backup secrets"; exit 1; }
+          python3 - <<'PY'
+          import os, urllib.parse, sys
+          u=urllib.parse.urlsplit(os.environ["ARCHIVE_URL"])
+          expected="ep-withered-haze-b1fd9hse.c-5.eu-central-1.aws.neon.tech"
+          if u.scheme not in ("postgresql","postgres") or u.hostname!=expected or u.path!="/neondb" or u.username!="neondb_owner" or not u.password:
+              sys.exit("BLOCKED: URL does not match pinned unpooled production endpoint and owner")
+          if urllib.parse.parse_qs(u.query)!={"sslmode":["require"]}:
+              sys.exit("BLOCKED: unexpected connection options")
+          PY
+          docker run --rm --network host -e ARCHIVE_URL="$ARCHIVE_URL" postgres:18 \
+            bash -ec 'test "$(psql "$ARCHIVE_URL" -Atqc "SELECT current_setting(chr(110)||chr(101)||chr(111)||chr(110)||chr(46)||chr(98)||chr(114)||chr(97)||chr(110)||chr(99)||chr(104)||chr(95)||chr(105)||chr(100),true)")" = "br-green-darkness-b1k7wkue" || { echo "BLOCKED: live branch mismatch"; exit 1; }'
+      - name: Export PostgreSQL 18 production backup
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p "$RUNNER_TEMP/a3-backup"
+          docker run --rm --network host -e ARCHIVE_URL="$ARCHIVE_URL" -v "$RUNNER_TEMP/a3-backup:/archive" postgres:18 \
+            bash -ec 'pg_dump -d "$ARCHIVE_URL" -Fc --no-owner --no-acl -f /archive/production.dump && pg_restore -l /archive/production.dump >/archive/production.toc'
+          sha256sum "$RUNNER_TEMP/a3-backup/production.dump" > "$RUNNER_TEMP/a3-backup/plaintext.sha256"
+      - name: Verify isolated PostgreSQL 18 restore
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d --name a3-local-restore -e POSTGRES_PASSWORD=local-temporary -e POSTGRES_DB=restore_test postgres:18 >/dev/null
+          trap 'docker rm -f a3-local-restore >/dev/null 2>&1 || true' EXIT
+          for i in $(seq 1 40); do
+            docker exec a3-local-restore pg_isready -U postgres -d restore_test >/dev/null 2>&1 && break
+            sleep 1
+          done
+          docker exec a3-local-restore pg_isready -U postgres -d restore_test
+          docker cp "$RUNNER_TEMP/a3-backup/production.dump" a3-local-restore:/tmp/production.dump
+          docker exec a3-local-restore pg_restore -U postgres -d restore_test --no-owner --no-acl --exit-on-error /tmp/production.dump
+          docker exec a3-local-restore psql -U postgres -d restore_test -v ON_ERROR_STOP=1 -Atqc \
+            "SELECT 'migrations=' || count(*) FROM public._migrations" > "$RUNNER_TEMP/a3-backup/restore-verification.txt"
+          docker exec a3-local-restore psql -U postgres -d restore_test -v ON_ERROR_STOP=1 -Atqc \
+            "SELECT 'hotels=' || count(*) FROM public.hotels" >> "$RUNNER_TEMP/a3-backup/restore-verification.txt"
+          docker exec a3-local-restore psql -U postgres -d restore_test -v ON_ERROR_STOP=1 -Atqc \
+            "SELECT 'bookings=' || count(*) FROM public.bookings" >> "$RUNNER_TEMP/a3-backup/restore-verification.txt"
+          actual="$(docker exec a3-local-restore psql -U postgres -d restore_test -v ON_ERROR_STOP=1 -Atqc 'SELECT count(*) FROM public._migrations')"
+          test "$actual" = "34" || { echo "BLOCKED: restored migration ledger does not equal 34"; exit 1; }
+          docker exec a3-local-restore psql -U postgres -d restore_test -v ON_ERROR_STOP=1 -Atqc \
+            "SELECT CASE WHEN count(*) = 0 THEN 'PASS' ELSE 'BLOCKED' END FROM public._migrations WHERE name LIKE '0035_%' OR name LIKE '0036_%'" | grep -qx PASS
+          echo 'isolated_restore=PASS' >> "$RUNNER_TEMP/a3-backup/restore-verification.txt"
+      - name: Encrypt archive and remove plaintext before upload
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/a3-backup"
+          openssl enc -aes-256-cbc -pbkdf2 -iter 250000 -salt -in production.dump -out production.dump.enc -pass env:ARCHIVE_KEY
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 250000 -in production.dump.enc -out production.verify.dump -pass env:ARCHIVE_KEY
+          cmp -s production.dump production.verify.dump || { echo "BLOCKED: encrypted archive round-trip mismatch"; exit 1; }
+          rm -f production.dump production.verify.dump production.toc
+          sha256sum production.dump.enc > production.dump.enc.sha256
+          printf '%s\\n' 'project=quiet-sound-53513710' 'branch=br-green-darkness-b1k7wkue' 'database=neondb' > manifest.txt
+          date -u +'%Y-%m-%dT%H:%M:%SZ' >> manifest.txt
+      - name: Upload encrypted archive and verification evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: SBG-A3-PRODUCTION-ENCRYPTED-BACKUP
+          path: ${{ runner.temp }}/a3-backup/
+          retention-days: 7
+          if-no-files-found: error
