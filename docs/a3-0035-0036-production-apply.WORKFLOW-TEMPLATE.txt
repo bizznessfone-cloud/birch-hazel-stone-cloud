@@ -1,0 +1,55 @@
+# INERT TEMPLATE: intentionally NOT in .github/workflows and NOT executable by Actions.
+# To activate after separate user authorisation:
+# 1. Verify GitHub environment a3-production-0035-0036 has required human reviewers,
+#    prevents self-review, and restricts deployment to main.
+# 2. Provision dedicated A3_PRODUCTION_APPLY_OWNER_URL environment secret.
+# 3. Pin REVIEWED_SHA to the separately reviewed exact commit, not a moving branch.
+# 4. Add this as a workflow on main only through a separately approved change.
+# 5. Obtain a second, explicit authorisation for the actual production dispatch.
+name: A3 0035-0036 production admission APPROVAL REQUIRED
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: "Type APPLY-0035-0036-PRODUCTION-EXPLICIT-AUTHORISATION"
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: a3-0035-0036-production-single-use
+  cancel-in-progress: false
+jobs:
+  admission:
+    if: ${{ inputs.confirmation == 'APPLY-0035-0036-PRODUCTION-EXPLICIT-AUTHORISATION' && github.ref == 'refs/heads/main' }}
+    environment: a3-production-0035-0036
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      A3_PRODUCTION_APPLY_CONFIRMATION: ${{ inputs.confirmation }}
+      A3_PRODUCTION_APPROVAL_RECORD: APPROVED-0035-0036-PRODUCTION
+      A3_PRODUCTION_APPLY_OWNER_URL: ${{ secrets.A3_PRODUCTION_APPLY_OWNER_URL }}
+      SBG_ADMISSION_PROJECT_ID: quiet-sound-53513710
+      SBG_ADMISSION_BRANCH_ID: br-green-darkness-b1k7wkue
+      SBG_ADMISSION_ENDPOINT_ID: ep-withered-haze-b1fd9hse
+      DATABASE_URL: ''
+      AETHER_DATABASE_OWNER_URL: ''
+      A3_REHEARSAL_OWNER_URL: ''
+      A3_COMMIT_REHEARSAL_OWNER_URL: ''
+      NEON_API_KEY: ''
+    steps:
+      - name: Checkout independently reviewed immutable source
+        uses: actions/checkout@v4
+        with:
+          # Replace with independently approved immutable SHA BEFORE activation.
+          ref: REVIEWED_SHA_REQUIRED
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Run offline safety tests
+        run: node --test scripts/a3-0035-0036-production-admission-executor.DRAFT.test.mjs scripts/a3-0035-0036-production-admission.STAGED.test.mjs
+      - name: Apply exactly 0035 and 0036 (only after human environment approval)
+        run: node scripts/a3-0035-0036-production-admission-entry.STAGED.mjs
