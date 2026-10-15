@@ -23,3 +23,8 @@ test("propagates database agreement denial; never falls back to older creator", 
   const db = { query: async () => { throw Error("terms are not approved for property creation"); } };
   await assert.rejects(createFoundingProperty({ db: db as never, userId: "session-user", property }), /terms are not approved/);
 });
+
+test('rejects missing database result', async () => {
+  const db = { query: async () => [] };
+  await assert.rejects(createFoundingProperty({ db: db as never, userId: 'session-user', property }), /not created/);
+});
