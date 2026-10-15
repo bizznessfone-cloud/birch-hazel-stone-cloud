@@ -95,3 +95,20 @@ test("wrong live database identity blocks before migration execution", async () 
   assert.ok(!statements.some(sql => sql.includes("INSERT INTO public._migrations")));
   assert.ok(statements.includes("ROLLBACK"));
 });
+
+test("inactive activation template is source-pinned, portable and credentials scoped to execution", async () => {
+  const template = await readFile(new URL("../docs/a3-0035-0036-production-apply.WORKFLOW-TEMPLATE.txt", import.meta.url), "utf8");
+  assert.ok(template.includes("A3_APPROVED_SOURCE_SHA"));
+  assert.ok(template.includes('test "$GITHUB_SHA" = "$EXPECTED_SHA"'));
+  assert.ok(template.includes('test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"'));
+  assert.ok(template.includes("ref: ${{ github.sha }}"));
+  assert.ok(template.includes("node --test scripts/a3-0035-0036-minimal-activation.test.mjs"));
+  assert.ok(template.includes("node scripts/a3-0035-0036-production-admission-entry.STAGED.mjs"));
+  assert.ok(!template.includes("REVIEWED_SHA_REQUIRED"));
+  assert.ok(!template.includes("production-admission-executor.DRAFT.test.mjs"));
+  assert.ok(!template.includes("production-admission.STAGED.test.mjs"));
+  const secret = "A3_PRODUCTION_APPLY_OWNER_URL: ${{ secrets.A3_PRODUCTION_APPLY_OWNER_URL }}";
+  assert.equal(template.split(secret).length - 1, 1);
+  assert.ok(template.indexOf(secret) > template.indexOf("Verify checkout and offline safety tests"));
+  assert.ok(!template.includes("pull_request:\\n"));
+});
