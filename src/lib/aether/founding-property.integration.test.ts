@@ -66,7 +66,25 @@ test("founding-property service enforces effective test agreement in isolated da
     );
     assert.equal(hotels.rows[0]?.organisation_id, orgId);
     await assert.rejects(
-      createFoundingProperty({ db: db as never, userId: "nonexistent-user", property: { ...property, code: "sbg-gate2-b" } }),
+      createFoundingProperty({ db: db as never, userId: OWNER_USER.id, property }),
+    );
+    const count = await pg.query<{ count: number }>(
+      "select count(*)::int as count from hotels where code = $1",
+      [property.code],
+    );
+    assert.equal(count.rows[0]?.count, 1, "duplicate submission must not create another hotel");
+    const second = await createFoundingProperty({
+      db: db as never, userId: OWNER_USER.id,
+      property: { ...property, name: "Harbour House", code: "sbg-gate2-b" },
+    });
+    assert.notEqual(second.hotelId, result.hotelId);
+    const secondHotel = await pg.query<{ organisation_id: string }>(
+      "select organisation_id::text as organisation_id from hotels where id = $1::uuid",
+      [second.hotelId],
+    );
+    assert.equal(secondHotel.rows[0]?.organisation_id, orgId);
+    await assert.rejects(
+      createFoundingProperty({ db: db as never, userId: "nonexistent-user", property: { ...property, code: "sbg-gate2-c" } }),
       /account not found/i,
     );
   } finally {
