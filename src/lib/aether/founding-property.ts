@@ -22,7 +22,7 @@ export async function createFoundingProperty(input: {
   }
   if (!/^[A-Z]{3}$/.test(input.property.currency)) throw new Error("Invalid currency");
   const rows = await input.db.query<{ hotel_id: string; provider_id: string }>(
-    "select hotel_id, provider_id from sbg_create_founding_property_for_user($1, $2, $3, $4, $5, $6)",
+    "select hotel_id::text as hotel_id, provider_id::text as provider_id from sbg_create_founding_property_for_user($1, $2, $3, $4, $5, $6)",
     [input.userId, input.property.code.trim(), input.property.name.trim(),
       input.property.locality.trim(), input.property.ianaTimezone, input.property.currency],
   );
