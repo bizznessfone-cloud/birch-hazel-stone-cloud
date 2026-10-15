@@ -1,0 +1,21 @@
+name: A3 production draft offline safety
+on:
+  push:
+    branches: [review/a3-m36-closeout-0035-0036-admission]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: node --test scripts/a3-0035-0036-production-admission-executor.DRAFT.test.mjs

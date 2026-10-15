@@ -1,0 +1,72 @@
+# INERT TEMPLATE: intentionally NOT in .github/workflows and NOT executable by Actions.
+# To activate after separate user authorisation:
+# 1. GitHub environment a3-production-0035-0036 exists and is restricted to main.
+#    Single-owner repository: Required reviewers is intentionally DISABLED and
+#    Prevent self-review is disabled. There is NO independent GitHub approval gate.
+#    Keep administrator bypass disabled. A manual confirmation string is NOT
+#    independent authorisation; require a separate explicit user decision before
+#    workflow activation AND again before dispatch. No production credentials yet.
+# 2. Provision dedicated A3_PRODUCTION_APPLY_OWNER_URL environment secret.
+# 3. Pin an immutable source SHA using a protected environment variable
+#    A3_APPROVED_SOURCE_SHA configured ONLY after the final workflow commit is reviewed.
+#    The workflow must execute the dispatched main commit and compare it with
+#    the independently recorded SHA. Do not accept the expected SHA as dispatch input.
+#    Missing or mismatched SHA must fail before any credential-consuming step.
+# 4. Add this as a workflow on main only through a separately approved change.
+# 5. Obtain a second, explicit authorisation for the actual production dispatch.
+name: A3 0035-0036 production admission APPROVAL REQUIRED
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: "Type APPLY-0035-0036-PRODUCTION-EXPLICIT-AUTHORISATION"
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: a3-0035-0036-production-single-use
+  cancel-in-progress: false
+jobs:
+  admission:
+    if: ${{ inputs.confirmation == 'APPLY-0035-0036-PRODUCTION-EXPLICIT-AUTHORISATION' && github.ref == 'refs/heads/main' }}
+    environment: a3-production-0035-0036
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      A3_PRODUCTION_APPLY_CONFIRMATION: ${{ inputs.confirmation }}
+      A3_PRODUCTION_APPROVAL_RECORD: APPROVED-0035-0036-PRODUCTION
+      A3_PRODUCTION_APPLY_OWNER_URL: ${{ secrets.A3_PRODUCTION_APPLY_OWNER_URL }}
+      SBG_ADMISSION_PROJECT_ID: quiet-sound-53513710
+      SBG_ADMISSION_BRANCH_ID: br-green-darkness-b1k7wkue
+      SBG_ADMISSION_ENDPOINT_ID: ep-withered-haze-b1fd9hse
+      DATABASE_URL: ''
+      AETHER_DATABASE_OWNER_URL: ''
+      A3_REHEARSAL_OWNER_URL: ''
+      A3_COMMIT_REHEARSAL_OWNER_URL: ''
+      NEON_API_KEY: ''
+    steps:
+      - name: Enforce approved dispatch revision before checkout
+        env:
+          EXPECTED_SHA: ${{ vars.A3_APPROVED_SOURCE_SHA }}
+        run: |
+          test -n "$EXPECTED_SHA"
+          test "$GITHUB_SHA" = "$EXPECTED_SHA"
+      - name: Checkout authorised dispatch revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Verify checked-out source revision
+        env:
+          EXPECTED_SHA: ${{ vars.A3_APPROVED_SOURCE_SHA }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+      - name: Run offline safety tests
+        run: node --test scripts/a3-0035-0036-production-admission-executor.DRAFT.test.mjs scripts/a3-0035-0036-production-admission.STAGED.test.mjs
+      - name: Apply exactly 0035 and 0036 (only after human environment approval)
+        run: node scripts/a3-0035-0036-production-admission-entry.STAGED.mjs
