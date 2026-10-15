@@ -51,7 +51,10 @@ test("production workflow template remains inert and requires approval and immut
   assert.ok(template.includes("environment: a3-production-0035-0036"));
   assert.ok(template.includes("github.ref == 'refs/heads/main'"));
   assert.ok(template.includes("workflow_dispatch:"));
-  assert.ok(template.includes("EXPECTED_SHA: ${{ vars.A3_APPROVED_SOURCE_SHA }}"));\n  assert.ok(template.includes("ref: ${{ github.sha }}"));\n  assert.ok(template.includes('test "$GITHUB_SHA" = "$EXPECTED_SHA"'));\n  assert.ok(template.includes('test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"'));
+  assert.ok(template.includes("EXPECTED_SHA: ${{ vars.A3_APPROVED_SOURCE_SHA }}"));
+  assert.ok(template.includes("ref: ${{ github.sha }}"));
+  assert.ok(template.includes('test "$GITHUB_SHA" = "$EXPECTED_SHA"'));
+  assert.ok(template.includes('test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"'));
   assert.ok(template.includes("secrets.A3_PRODUCTION_APPLY_OWNER_URL"));
   assert.ok(template.includes("a3-0035-0036-production-admission-entry.STAGED.mjs"));
   assert.ok(!template.includes("pull_request:\\n"));
