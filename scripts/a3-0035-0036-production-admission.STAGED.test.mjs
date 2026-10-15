@@ -45,3 +45,14 @@ test("staged module is not a command-line executable and workflow is fail-closed
   assert.ok(!workflow.includes("A3_PRODUCTION_APPLY_OWNER_URL"));
   assert.ok(!workflow.includes("runProductionAdmission("));
 });
+
+test("production workflow template remains inert and requires approval and immutable source", async () => {
+  const template=await readFile(new URL("../docs/a3-0035-0036-production-apply.WORKFLOW-TEMPLATE.txt",import.meta.url),"utf8");
+  assert.ok(template.includes("environment: a3-production-0035-0036"));
+  assert.ok(template.includes("github.ref == 'refs/heads/main'"));
+  assert.ok(template.includes("workflow_dispatch:"));
+  assert.ok(template.includes("ref: REVIEWED_SHA_REQUIRED"));
+  assert.ok(template.includes("secrets.A3_PRODUCTION_APPLY_OWNER_URL"));
+  assert.ok(template.includes("a3-0035-0036-production-admission-entry.STAGED.mjs"));
+  assert.ok(!template.includes("pull_request:\\n"));
+});
