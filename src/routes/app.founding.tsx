@@ -180,7 +180,7 @@ function TermsPending({ organisationType, eligibility }: { organisationType: Fou
   return (
     <div className="mx-auto max-w-lg space-y-8">
       <Status
-        title={TERMS_PENDING_TITLE}
+        title={eligibility.eligible ? "Agreement verified" : TERMS_PENDING_TITLE}
         body={eligibility.eligible ? "Your approved agreement has been verified. Property registration will be available after setup is activated." : "Your business setup is saved. An approved agreement is required before registering your first property."}
         detail={`Business type: ${label}.`}
         progress={3}
