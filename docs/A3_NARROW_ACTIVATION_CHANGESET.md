@@ -22,17 +22,17 @@ Existing `main` dependencies to verify at activation: `scripts/production-db-pre
 ## Fail-closed activation requirements
 
 - Do not copy template into `.github/workflows/` until separately authorised.
-- Replace `REVIEWED_SHA_REQUIRED` with a fully qualified, immutable, explicitly approved **main** commit SHA.
-- The dispatch commit SHA **and** checked-out SHA must match that approved SHA. If GitHub Actions cannot satisfy that pinning in a separately committed workflow, redesign the pinning mechanism before activation; do not weaken it.
+- After the final activation workflow commit is on `main` and independently reviewed, record its full SHA in the restricted environment variable `A3_APPROVED_SOURCE_SHA`. Do not accept an expected SHA from workflow dispatch input.
+- Require the dispatch commit SHA **and** checked-out SHA to equal `A3_APPROVED_SOURCE_SHA`. Missing or mismatched value fails closed. The variable must not be edited as part of dispatch.
 - Require manual `workflow_dispatch`, exact confirmation, `main` restriction, GitHub environment and single-run concurrency.
 - No scheduled/push/PR production-write triggers. No general-purpose `DATABASE_URL` fallback.
 - Re-run offline tests on the exact activation commit; review all workflow permissions and credential exposure.
 - Validate production backup availability and restore plan immediately before execution; previous backup expires 2026-10-21.
 - Obtain **two separate explicit decisions**: (a) activate workflow and credentials; (b) dispatch production migrations 0035/0036. Neither has been granted.
 
-## Important workflow-template design defect to resolve
+## Immutable source pinning resolution (staged, unactivated)
 
-The current inert template compares `GITHUB_SHA` to `REVIEWED_SHA_REQUIRED`, then checks out that same SHA. Adding a workflow to `main` changes the main commit SHA, so an earlier approved commit SHA cannot be the dispatch commit of the newly added workflow. This will intentionally **fail closed** as written. Resolve by approving the final activation commit SHA and using an external immutable expected SHA / approved workflow-run input validated before checkout, without allowing an operator to arbitrarily change the approved revision. Do not activate the current template as-is.
+The template now reads `A3_APPROVED_SOURCE_SHA` from the protected GitHub environment at run time. The approved SHA is set **after** the final workflow activation commit is created on `main`, resolving the circular dependency. The job rejects a missing or mismatched dispatch SHA before checkout and checks the checked-out SHA again. Since Required reviewers is disabled, environment variables are not independently protected against changes by the repository owner; this is a single-owner change-control measure, not independent authorisation.
 
 ## Production boundaries
 
