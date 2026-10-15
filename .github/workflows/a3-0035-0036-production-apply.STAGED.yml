@@ -1,0 +1,28 @@
+# STAGED ONLY. No production apply, no owner credentials, no executable dispatch.
+# A separately reviewed and explicitly authorised change is required to activate.
+name: A3 0035-0036 production admission STAGED — no apply
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pre-approval-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Verify draft executor fail-closed
+        run: node --test scripts/a3-0035-0036-production-admission-executor.DRAFT.test.mjs
+      - name: Mandatory production apply hard-stop
+        run: |
+          echo 'BLOCKED: Production apply is not authorised. No database connection was attempted.'
+          exit 2
