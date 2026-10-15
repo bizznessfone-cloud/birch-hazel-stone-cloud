@@ -14,6 +14,8 @@ import {
 import type { FoundingOrganisationType } from "@/lib/aether/founding-onboarding";
 import { foundingPropertyPreviewReady, validateFoundingPropertyDraft } from "@/lib/aether/founding-property-draft";
 import { getOnboardingState } from "@/lib/aether/onboarding-fns";
+import { readFoundingPropertyEligibilityFn } from "@/lib/aether/founding-property-eligibility-fns";
+import type { FoundingPropertyEligibility } from "@/lib/aether/founding-property-eligibility";
 
 export const Route = createFileRoute("/app/founding")({
   loader: async () => {
@@ -26,7 +28,16 @@ export const Route = createFileRoute("/app/founding")({
     }
     try {
       const founding = await readFoundingOnboardingStateFn();
-      return { screen: "journey" as const, gate: foundingGate({ hotelCount: 0, founding }) };
+      const gate = foundingGate({ hotelCount: 0, founding });
+      let eligibility: FoundingPropertyEligibility = { eligible: false, reason: "unavailable" };
+      if (gate.kind === "terms-pending" && gate.organisationType === "hotel") {
+        try {
+          eligibility = await readFoundingPropertyEligibilityFn();
+        } catch {
+          // Unavailable eligibility must never unlock registration.
+        }
+      }
+      return { screen: "journey" as const, gate, eligibility };
     } catch {
       return { screen: "unavailable" as const, message: UNAVAILABLE_MESSAGE };
     }
@@ -42,7 +53,7 @@ function FoundingJourney() {
   }
   if (data.gate.kind === "ambiguous") return <Status title="We need to check this account" body={AMBIGUOUS_MESSAGE} />;
   if (data.gate.kind === "classify") return <ClassifyStep />;
-  if (data.gate.kind === "terms-pending") return <TermsPending organisationType={data.gate.organisationType} />;
+  if (data.gate.kind === "terms-pending") return <TermsPending organisationType={data.gate.organisationType} eligibility={data.eligibility} />;
   return <BusinessNameStep />;
 }
 
@@ -158,7 +169,7 @@ function ClassifyStep() {
   );
 }
 
-function TermsPending({ organisationType }: { organisationType: FoundingOrganisationType }) {
+function TermsPending({ organisationType, eligibility }: { organisationType: FoundingOrganisationType; eligibility: FoundingPropertyEligibility }) {
   const [propertyName, setPropertyName] = useState("");
   const [locality, setLocality] = useState("");
   const [propertyCode, setPropertyCode] = useState("");
@@ -170,7 +181,7 @@ function TermsPending({ organisationType }: { organisationType: FoundingOrganisa
     <div className="mx-auto max-w-lg space-y-8">
       <Status
         title={TERMS_PENDING_TITLE}
-        body="Your business setup is saved. An approved agreement is required before registering your first property."
+        body={eligibility.eligible ? "Your approved agreement has been verified. Property registration will be available after setup is activated." : "Your business setup is saved. An approved agreement is required before registering your first property."}
         detail={`Business type: ${label}.`}
         progress={3}
       />
@@ -207,7 +218,7 @@ function TermsPending({ organisationType }: { organisationType: FoundingOrganisa
             {propertyCode && errors.code ? <p role="alert" className="mt-1 text-xs text-danger">{errors.code}</p> : null}
           </label>
           <p className="mt-5 text-xs leading-relaxed text-muted" role="status">
-            {previewReady ? "Details look ready. Registration remains unavailable until an approved agreement can be accepted." : "Preview only. Complete all three fields to check the details. Nothing is saved."}
+            {previewReady ? (eligibility.eligible ? "Details look ready. Registration is not activated in this preview." : "Details look ready. Registration remains unavailable until an approved agreement can be accepted.") : "Preview only. Complete all three fields to check the details. Nothing is saved."}
           </p>
           <button type="button" disabled
             className="mt-4 min-h-12 w-full bg-ink px-4 text-sm font-semibold tracking-wide text-canvas uppercase opacity-50">
