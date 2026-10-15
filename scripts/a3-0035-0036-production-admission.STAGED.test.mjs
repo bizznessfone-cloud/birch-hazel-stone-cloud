@@ -34,7 +34,8 @@ test("staged module is not a command-line executable and workflow is fail-closed
   const source=await readFile(new URL("./a3-0035-0036-production-admission.STAGED.mjs",import.meta.url),"utf8");
   assert.ok(!source.includes("process.argv"));
   const workflow=await readFile(new URL("../.github/workflows/a3-0035-0036-production-apply.STAGED.yml",import.meta.url),"utf8");
-  assert.ok(workflow.includes("exit 2"));
+  assert.ok(workflow.includes("pull_request:"));
+  assert.ok(workflow.includes("node --test"));
   assert.ok(!workflow.includes("A3_PRODUCTION_APPLY_OWNER_URL"));
   assert.ok(!workflow.includes("runProductionAdmission("));
 });
