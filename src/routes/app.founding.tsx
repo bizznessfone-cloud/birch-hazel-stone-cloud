@@ -67,6 +67,7 @@ function BusinessNameStep() {
 
   return (
     <form className="mx-auto max-w-lg" onSubmit={(event) => void submit(event)} aria-busy={busy}>
+      <FoundingProgress current={1} />
       <p className="text-xs font-medium tracking-[0.2em] text-muted uppercase">Your business</p>
       <h1 className="mt-3 text-4xl font-semibold tracking-tight">{BUSINESS_QUESTION}</h1>
       <p className="mt-4 text-sm leading-relaxed text-muted">
@@ -121,6 +122,7 @@ function ClassifyStep() {
 
   return (
     <section className="mx-auto max-w-lg" aria-busy={busy}>
+      <FoundingProgress current={2} />
       <p className="text-xs font-medium tracking-[0.2em] text-muted uppercase">Your business</p>
       <h1 className="mt-3 text-4xl font-semibold tracking-tight">{TYPE_QUESTION}</h1>
       <p className="mt-4 text-sm leading-relaxed text-muted">
@@ -162,17 +164,44 @@ function TermsPending({ organisationType }: { organisationType: FoundingOrganisa
       title={TERMS_PENDING_TITLE}
       body="Your account setup is saved. Terms are not yet available for acceptance, so this step cannot be completed. You will stay here until Terms are ready."
       detail={`Business type: ${label}.`}
+      progress={3}
     />
   );
 }
 
-function Status({ title, body, detail }: { title: string; body: string; detail?: string }) {
+function Status({ title, body, detail, progress }: { title: string; body: string; detail?: string; progress?: 1 | 2 | 3 }) {
   return (
     <section className="mx-auto max-w-lg">
+      {progress ? <FoundingProgress current={progress} /> : null}
       <p className="text-xs font-medium tracking-[0.2em] text-muted uppercase">Your business</p>
       <h1 className="mt-3 text-4xl font-semibold tracking-tight">{title}</h1>
       <p className="mt-4 text-sm leading-relaxed text-muted">{body}</p>
       {detail ? <p className="mt-4 text-sm">{detail}</p> : null}
     </section>
+  );
+}
+
+/** Visual progress only. Never treats provisional Terms as accepted. */
+function FoundingProgress({ current }: { current: 1 | 2 | 3 }) {
+  const steps = ["Business", "Business type", "Agreement"] as const;
+  return (
+    <nav aria-label="Account setup progress" className="mb-8">
+      <ol className="grid grid-cols-3 gap-2">
+        {steps.map((step, index) => {
+          const number = index + 1;
+          const active = number === current;
+          const complete = number < current;
+          return (
+            <li key={step} aria-current={active ? "step" : undefined} className="min-w-0">
+              <div className={`h-1 w-full ${complete || active ? "bg-ink" : "bg-line"}`} aria-hidden="true" />
+              <span className={`mt-2 block text-[11px] leading-snug ${active ? "font-semibold text-ink" : "text-muted"}`}>
+                {number}. {step}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+      <p className="sr-only">Step {current} of 3. {steps[current - 1]}.</p>
+    </nav>
   );
 }
