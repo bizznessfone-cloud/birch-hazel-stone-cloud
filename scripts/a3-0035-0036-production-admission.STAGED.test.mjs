@@ -11,6 +11,9 @@ const valid = {
   SBG_ADMISSION_PROJECT_ID: TARGET.project,
   SBG_ADMISSION_BRANCH_ID: TARGET.branch,
   SBG_ADMISSION_ENDPOINT_ID: TARGET.endpoint,
+  GITHUB_REF: "refs/heads/main",
+  GITHUB_EVENT_NAME: "workflow_dispatch",
+  GITHUB_WORKFLOW: "A3 0035-0036 production admission APPROVAL REQUIRED",
 };
 test("staged module validates exact target in offline-only configuration", () => {
   assert.deepEqual(validateEnvironment(valid), []);
@@ -18,6 +21,9 @@ test("staged module validates exact target in offline-only configuration", () =>
   assert.ok(validateEnvironment({...valid, A3_PRODUCTION_APPLY_OWNER_URL:url.replace(".c-5.", "-pooler.c-5.")}).includes("endpoint"));
   assert.ok(validateEnvironment({...valid, A3_PRODUCTION_APPROVAL_RECORD:""}).includes("approval-record"));
   assert.ok(validateEnvironment({...valid, DATABASE_URL:"ambient"}).includes("ambient-credentials"));
+  assert.ok(validateEnvironment({...valid, GITHUB_REF:"refs/heads/review"}).includes("workflow-context"));
+  assert.ok(validateEnvironment({...valid, GITHUB_EVENT_NAME:"push"}).includes("workflow-context"));
+  assert.ok(validateEnvironment({...valid, GITHUB_WORKFLOW:"other"}).includes("workflow-identity"));
 });
 test("without approval the staged module never connects or reads SQL", async () => {
   let connections=0, reads=0;
