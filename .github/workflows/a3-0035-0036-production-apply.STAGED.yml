@@ -1,28 +1,27 @@
-# STAGED ONLY. No production apply, no owner credentials, no executable dispatch.
-# A separately reviewed and explicitly authorised change is required to activate.
-name: A3 0035-0036 production admission STAGED — no apply
+# Offline-only admission checks. Never connects to Neon or applies migrations.
+name: A3 0035-0036 staged admission offline tests
 on:
-  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/a3-0035-0036-production-apply.STAGED.yml'
+      - 'scripts/a3-0035-0036-production-admission*.mjs'
+      - 'scripts/production-db-preflight.mjs'
+      - 'migrations/0035_cp3005e2d2d_founding_property.sql'
+      - 'migrations/0036_cp3005e2d2d_founding_integrity.sql'
 permissions:
   contents: read
 jobs:
-  pre-approval-only:
+  offline-only:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Checkout reviewed source
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: npm
       - run: npm ci --ignore-scripts
-      - name: Verify draft executor fail-closed
+      - name: Test both admission modules offline
         run: node --test scripts/a3-0035-0036-production-admission-executor.DRAFT.test.mjs scripts/a3-0035-0036-production-admission.STAGED.test.mjs
-      - name: Mandatory production apply hard-stop
-        run: |
-          echo 'BLOCKED: Production apply is not authorised. No database connection was attempted.'
-          exit 2
