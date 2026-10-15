@@ -2,6 +2,8 @@ name: Gate 2 onboarding offline checks
 on:
   push:
     branches: [feat/gate2-hotel-onboarding]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
