@@ -1,9 +1,11 @@
 # INERT TEMPLATE: intentionally NOT in .github/workflows and NOT executable by Actions.
 # To activate after separate user authorisation:
-# 1. Verify GitHub environment a3-production-0035-0036 restricts deployment to main.
-#    Single-owner repository: self-review prevention is disabled. Required-reviewer
-#    configuration remains unverified; self-approval is NOT independent review.
-#    Keep administrator bypass disabled. Never treat confirmation strings as authorisation.
+# 1. GitHub environment a3-production-0035-0036 exists and is restricted to main.
+#    Single-owner repository: Required reviewers is intentionally DISABLED and
+#    Prevent self-review is disabled. There is NO independent GitHub approval gate.
+#    Keep administrator bypass disabled. A manual confirmation string is NOT
+#    independent authorisation; require a separate explicit user decision before
+#    workflow activation AND again before dispatch. No production credentials yet.
 # 2. Provision dedicated A3_PRODUCTION_APPLY_OWNER_URL environment secret.
 # 3. Pin REVIEWED_SHA to the separately reviewed exact main commit, not a moving branch.
 #    Both dispatched main SHA and checked-out SHA must equal that exact commit.
@@ -47,7 +49,7 @@ jobs:
           EXPECTED_SHA: REVIEWED_SHA_REQUIRED
         run: |
           test "$GITHUB_SHA" = "$EXPECTED_SHA"
-      - name: Checkout independently reviewed immutable source
+      - name: Checkout explicitly authorised immutable source
         uses: actions/checkout@v4
         with:
           # Replace with independently approved immutable SHA BEFORE activation.
