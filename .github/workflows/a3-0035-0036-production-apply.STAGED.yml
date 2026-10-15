@@ -21,7 +21,7 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - name: Verify draft executor fail-closed
-        run: node --test scripts/a3-0035-0036-production-admission-executor.DRAFT.test.mjs
+        run: node --test scripts/a3-0035-0036-production-admission-executor.DRAFT.test.mjs scripts/a3-0035-0036-production-admission.STAGED.test.mjs
       - name: Mandatory production apply hard-stop
         run: |
           echo 'BLOCKED: Production apply is not authorised. No database connection was attempted.'
