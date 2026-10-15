@@ -158,14 +158,56 @@ function ClassifyStep() {
 }
 
 function TermsPending({ organisationType }: { organisationType: FoundingOrganisationType }) {
+  const [propertyName, setPropertyName] = useState("");
+  const [locality, setLocality] = useState("");
+  const [propertyCode, setPropertyCode] = useState("");
   const label = organisationType === "hotel" ? "Hotel / Accommodation" : "Independent Transfer Operator";
   return (
-    <Status
-      title={TERMS_PENDING_TITLE}
-      body="Your account setup is saved. Terms are not yet available for acceptance, so this step cannot be completed. You will stay here until Terms are ready."
-      detail={`Business type: ${label}.`}
-      progress={3}
-    />
+    <div className="mx-auto max-w-lg space-y-8">
+      <Status
+        title={TERMS_PENDING_TITLE}
+        body="Your business setup is saved. An approved agreement is required before registering your first property."
+        detail={`Business type: ${label}.`}
+        progress={3}
+      />
+      {organisationType === "hotel" ? (
+        <section className="border border-line bg-surface p-5" aria-labelledby="property-preview-title">
+          <p className="text-xs font-medium tracking-[0.2em] text-muted uppercase">Next step · Preview only</p>
+          <h2 id="property-preview-title" className="mt-2 text-2xl font-semibold tracking-tight">Your first property</h2>
+          <p className="mt-3 text-sm leading-relaxed text-muted">
+            Preview the details needed to register your hotel. Nothing is saved or submitted.
+          </p>
+          <label className="mt-6 block" htmlFor="preview-property-name">
+            <span className="mb-2 block text-xs font-medium tracking-widest text-muted uppercase">Property name</span>
+            <input id="preview-property-name" maxLength={120} autoComplete="off"
+              className="min-h-12 w-full border border-line bg-transparent px-3"
+              value={propertyName} onChange={event => setPropertyName(event.target.value)}
+              placeholder="e.g. Aegean Bay Hotel" />
+          </label>
+          <label className="mt-4 block" htmlFor="preview-property-location">
+            <span className="mb-2 block text-xs font-medium tracking-widest text-muted uppercase">Location</span>
+            <input id="preview-property-location" maxLength={160} autoComplete="off"
+              className="min-h-12 w-full border border-line bg-transparent px-3"
+              value={locality} onChange={event => setLocality(event.target.value)}
+              placeholder="e.g. Kos, Greece" />
+          </label>
+          <label className="mt-4 block" htmlFor="preview-property-code">
+            <span className="mb-2 block text-xs font-medium tracking-widest text-muted uppercase">Booking code</span>
+            <input id="preview-property-code" maxLength={32} autoComplete="off"
+              className="min-h-12 w-full border border-line bg-transparent px-3"
+              value={propertyCode} onChange={event => setPropertyCode(event.target.value)}
+              placeholder="e.g. aegean-bay" />
+          </label>
+          <p className="mt-5 text-xs leading-relaxed text-muted" role="status">
+            Preview only. Values are not retained when you leave this page.
+          </p>
+          <button type="button" disabled
+            className="mt-4 min-h-12 w-full bg-ink px-4 text-sm font-semibold tracking-wide text-canvas uppercase opacity-50">
+            Create property · Not yet available
+          </button>
+        </section>
+      ) : null}
+    </div>
   );
 }
 
