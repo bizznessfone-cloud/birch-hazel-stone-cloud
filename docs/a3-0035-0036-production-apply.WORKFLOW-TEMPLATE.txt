@@ -7,9 +7,11 @@
 #    independent authorisation; require a separate explicit user decision before
 #    workflow activation AND again before dispatch. No production credentials yet.
 # 2. Provision dedicated A3_PRODUCTION_APPLY_OWNER_URL environment secret.
-# 3. Pin REVIEWED_SHA to the separately reviewed exact main commit, not a moving branch.
-#    Both dispatched main SHA and checked-out SHA must equal that exact commit.
-#    This template intentionally fails until the placeholder is replaced.
+# 3. Pin an immutable source SHA using a protected environment variable
+#    A3_APPROVED_SOURCE_SHA configured ONLY after the final workflow commit is reviewed.
+#    The workflow must execute the dispatched main commit and compare it with
+#    the independently recorded SHA. Do not accept the expected SHA as dispatch input.
+#    Missing or mismatched SHA must fail before any credential-consuming step.
 # 4. Add this as a workflow on main only through a separately approved change.
 # 5. Obtain a second, explicit authorisation for the actual production dispatch.
 name: A3 0035-0036 production admission APPROVAL REQUIRED
@@ -44,16 +46,16 @@ jobs:
       A3_COMMIT_REHEARSAL_OWNER_URL: ''
       NEON_API_KEY: ''
     steps:
-      - name: Enforce exact approved source revision
+      - name: Enforce approved dispatch revision before checkout
         env:
-          EXPECTED_SHA: REVIEWED_SHA_REQUIRED
+          EXPECTED_SHA: ${{ vars.A3_APPROVED_SOURCE_SHA }}
         run: |
+          test -n "$EXPECTED_SHA"
           test "$GITHUB_SHA" = "$EXPECTED_SHA"
-      - name: Checkout explicitly authorised immutable source
+      - name: Checkout authorised dispatch revision
         uses: actions/checkout@v4
         with:
-          # Replace with independently approved immutable SHA BEFORE activation.
-          ref: REVIEWED_SHA_REQUIRED
+          ref: ${{ github.sha }}
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
@@ -62,7 +64,7 @@ jobs:
       - run: npm ci --ignore-scripts
       - name: Verify checked-out source revision
         env:
-          EXPECTED_SHA: REVIEWED_SHA_REQUIRED
+          EXPECTED_SHA: ${{ vars.A3_APPROVED_SOURCE_SHA }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
       - name: Run offline safety tests
         run: node --test scripts/a3-0035-0036-production-admission-executor.DRAFT.test.mjs scripts/a3-0035-0036-production-admission.STAGED.test.mjs
