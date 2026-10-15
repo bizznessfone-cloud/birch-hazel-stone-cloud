@@ -1,7 +1,9 @@
 # INERT TEMPLATE: intentionally NOT in .github/workflows and NOT executable by Actions.
 # To activate after separate user authorisation:
-# 1. Verify GitHub environment a3-production-0035-0036 has required human reviewers,
-#    prevents self-review, and restricts deployment to main.
+# 1. Verify GitHub environment a3-production-0035-0036 restricts deployment to main.
+#    Single-owner repository: self-review prevention is disabled. Required-reviewer
+#    configuration remains unverified; self-approval is NOT independent review.
+#    Keep administrator bypass disabled. Never treat confirmation strings as authorisation.
 # 2. Provision dedicated A3_PRODUCTION_APPLY_OWNER_URL environment secret.
 # 3. Pin REVIEWED_SHA to the separately reviewed exact commit, not a moving branch.
 # 4. Add this as a workflow on main only through a separately approved change.
