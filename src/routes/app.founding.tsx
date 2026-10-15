@@ -12,7 +12,7 @@ import {
   foundingGate,
 } from "@/lib/aether/founding-journey";
 import type { FoundingOrganisationType } from "@/lib/aether/founding-onboarding";
-import { validateFoundingPropertyDraft } from "@/lib/aether/founding-property-draft";
+import { foundingPropertyPreviewReady, validateFoundingPropertyDraft } from "@/lib/aether/founding-property-draft";
 import { getOnboardingState } from "@/lib/aether/onboarding-fns";
 
 export const Route = createFileRoute("/app/founding")({
@@ -162,7 +162,9 @@ function TermsPending({ organisationType }: { organisationType: FoundingOrganisa
   const [propertyName, setPropertyName] = useState("");
   const [locality, setLocality] = useState("");
   const [propertyCode, setPropertyCode] = useState("");
-  const errors = validateFoundingPropertyDraft({ name: propertyName, locality, code: propertyCode });
+  const draft = { name: propertyName, locality, code: propertyCode };
+  const errors = validateFoundingPropertyDraft(draft);
+  const previewReady = foundingPropertyPreviewReady(draft);
   const label = organisationType === "hotel" ? "Hotel / Accommodation" : "Independent Transfer Operator";
   return (
     <div className="mx-auto max-w-lg space-y-8">
@@ -205,7 +207,7 @@ function TermsPending({ organisationType }: { organisationType: FoundingOrganisa
             {propertyCode && errors.code ? <p role="alert" className="mt-1 text-xs text-danger">{errors.code}</p> : null}
           </label>
           <p className="mt-5 text-xs leading-relaxed text-muted" role="status">
-            Preview only. Values are not retained when you leave this page.
+            {previewReady ? "Details look ready. Registration remains unavailable until an approved agreement can be accepted." : "Preview only. Complete all three fields to check the details. Nothing is saved."}
           </p>
           <button type="button" disabled
             className="mt-4 min-h-12 w-full bg-ink px-4 text-sm font-semibold tracking-wide text-canvas uppercase opacity-50">
