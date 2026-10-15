@@ -112,3 +112,28 @@ test("inactive activation template is source-pinned, portable and credentials sc
   assert.ok(template.indexOf(secret) > template.indexOf("Verify checkout and offline safety tests"));
   assert.ok(!template.includes("pull_request:\\n"));
 });
+
+test("unexpected migration ledger or founding baseline refuses SQL writes", async () => {
+  const { readFile: read } = await import("node:fs/promises");
+  for (const scenario of ["ledger-drift", "baseline-drift"]) {
+    const statements = [];
+    let closed = false;
+    const db = {
+      query: async (sql) => {
+        statements.push(sql);
+        if (sql.includes("current_database() AS database")) return { rows: [{ database: TARGET.database, role: TARGET.role, session_role: TARGET.role, project: TARGET.project, branch: TARGET.branch, endpoint: TARGET.endpoint }] };
+        if (sql.includes("SELECT name FROM public._migrations ORDER BY name")) return { rows: scenario === "ledger-drift" ? [{ name: "unexpected-migration" }] : (await import("./production-db-preflight.mjs")).ACCEPTED_LEDGER.map(name => ({ name })) };
+        if (sql.includes("AS duplicates") && scenario === "baseline-drift") return { rows: [{ duplicates: 1, acceptances: 0, approval_exists: false }] };
+        return { rows: [] };
+      },
+      end: async () => { closed = true; },
+    };
+    const result = await runProductionAdmission({ env: approved, read, connect: async () => db });
+    assert.equal(result.verdict, "BLOCKED");
+    assert.ok(result.failures.includes(scenario));
+    assert.ok(statements.includes("ROLLBACK"));
+    assert.ok(!statements.some(sql => sql.includes("INSERT INTO public._migrations")));
+    assert.ok(!statements.some(sql => sql.includes("CREATE TABLE") || sql.includes("CREATE INDEX")));
+    assert.equal(closed, true);
+  }
+});
