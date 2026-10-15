@@ -17,7 +17,10 @@ export async function createFoundingProperty(input: {
   if (Object.keys(validateFoundingPropertyDraft(input.property)).length) {
     throw new Error("Invalid property details");
   }
-  if (!/^[A-Za-z_]+\/[A-Za-z_]+(?:\/[A-Za-z_]+)?$/.test(input.property.ianaTimezone)) {
+  // Intl rejects invented IANA identifiers; formatting alone is insufficient.
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: input.property.ianaTimezone });
+  } catch {
     throw new Error("Invalid timezone");
   }
   if (!/^[A-Z]{3}$/.test(input.property.currency)) throw new Error("Invalid currency");
