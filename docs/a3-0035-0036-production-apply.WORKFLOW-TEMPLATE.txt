@@ -1,0 +1,69 @@
+# INERT REVIEW TEMPLATE — not under .github/workflows, cannot be dispatched.
+# Activation requires a separate explicit user approval and an independently
+# reviewed change to main. Dispatch requires a SECOND explicit user approval.
+# Single-owner repository: environment reviewers are OFF; there is no independent
+# GitHub human approval gate. Manual confirmation alone is NOT authorisation.
+# Configure environment a3-production-0035-0036 restricted to main.
+# After activation commit lands on main, set environment variable
+# A3_APPROVED_SOURCE_SHA to that exact reviewed 40-character commit SHA.
+# Configure environment secret A3_PRODUCTION_APPLY_OWNER_URL separately.
+# Neither setting is to be configured or modified by this preparation PR.
+name: A3 0035-0036 production admission APPROVAL REQUIRED
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: "Type APPLY-0035-0036-PRODUCTION-EXPLICIT-AUTHORISATION"
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: a3-0035-0036-production-single-use
+  cancel-in-progress: false
+jobs:
+  admission:
+    if: ${{ inputs.confirmation == 'APPLY-0035-0036-PRODUCTION-EXPLICIT-AUTHORISATION' && github.ref == 'refs/heads/main' }}
+    environment: a3-production-0035-0036
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      A3_PRODUCTION_APPLY_CONFIRMATION: ${{ inputs.confirmation }}
+      A3_PRODUCTION_APPROVAL_RECORD: APPROVED-0035-0036-PRODUCTION
+      SBG_ADMISSION_PROJECT_ID: quiet-sound-53513710
+      SBG_ADMISSION_BRANCH_ID: br-green-darkness-b1k7wkue
+      SBG_ADMISSION_ENDPOINT_ID: ep-withered-haze-b1fd9hse
+      DATABASE_URL: ''
+      AETHER_DATABASE_OWNER_URL: ''
+      A3_REHEARSAL_OWNER_URL: ''
+      A3_COMMIT_REHEARSAL_OWNER_URL: ''
+      NEON_API_KEY: ''
+    steps:
+      - name: Enforce approved immutable dispatch revision
+        env:
+          EXPECTED_SHA: ${{ vars.A3_APPROVED_SOURCE_SHA }}
+        run: |
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$GITHUB_SHA" = "$EXPECTED_SHA"
+      - name: Checkout authorised revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Verify checkout and offline safety tests
+        env:
+          EXPECTED_SHA: ${{ vars.A3_APPROVED_SOURCE_SHA }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          node --test scripts/a3-0035-0036-minimal-activation.test.mjs
+      - name: Execute approved migrations 0035 and 0036
+        env:
+          A3_PRODUCTION_APPLY_OWNER_URL: ${{ secrets.A3_PRODUCTION_APPLY_OWNER_URL }}
+        run: |
+          test -n "$A3_PRODUCTION_APPLY_OWNER_URL"
+          node scripts/a3-0035-0036-production-admission-entry.STAGED.mjs
