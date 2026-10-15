@@ -12,6 +12,7 @@ import {
   foundingGate,
 } from "@/lib/aether/founding-journey";
 import type { FoundingOrganisationType } from "@/lib/aether/founding-onboarding";
+import { validateFoundingPropertyDraft } from "@/lib/aether/founding-property-draft";
 import { getOnboardingState } from "@/lib/aether/onboarding-fns";
 
 export const Route = createFileRoute("/app/founding")({
@@ -161,6 +162,7 @@ function TermsPending({ organisationType }: { organisationType: FoundingOrganisa
   const [propertyName, setPropertyName] = useState("");
   const [locality, setLocality] = useState("");
   const [propertyCode, setPropertyCode] = useState("");
+  const errors = validateFoundingPropertyDraft({ name: propertyName, locality, code: propertyCode });
   const label = organisationType === "hotel" ? "Hotel / Accommodation" : "Independent Transfer Operator";
   return (
     <div className="mx-auto max-w-lg space-y-8">
@@ -183,6 +185,7 @@ function TermsPending({ organisationType }: { organisationType: FoundingOrganisa
               className="min-h-12 w-full border border-line bg-transparent px-3"
               value={propertyName} onChange={event => setPropertyName(event.target.value)}
               placeholder="e.g. Aegean Bay Hotel" />
+            {propertyName && errors.name ? <p className="mt-1 text-xs text-danger">{errors.name}</p> : null}
           </label>
           <label className="mt-4 block" htmlFor="preview-property-location">
             <span className="mb-2 block text-xs font-medium tracking-widest text-muted uppercase">Location</span>
@@ -190,6 +193,7 @@ function TermsPending({ organisationType }: { organisationType: FoundingOrganisa
               className="min-h-12 w-full border border-line bg-transparent px-3"
               value={locality} onChange={event => setLocality(event.target.value)}
               placeholder="e.g. Kos, Greece" />
+            {locality && errors.locality ? <p className="mt-1 text-xs text-danger">{errors.locality}</p> : null}
           </label>
           <label className="mt-4 block" htmlFor="preview-property-code">
             <span className="mb-2 block text-xs font-medium tracking-widest text-muted uppercase">Booking code</span>
@@ -197,6 +201,7 @@ function TermsPending({ organisationType }: { organisationType: FoundingOrganisa
               className="min-h-12 w-full border border-line bg-transparent px-3"
               value={propertyCode} onChange={event => setPropertyCode(event.target.value)}
               placeholder="e.g. aegean-bay" />
+            {propertyCode && errors.code ? <p className="mt-1 text-xs text-danger">{errors.code}</p> : null}
           </label>
           <p className="mt-5 text-xs leading-relaxed text-muted" role="status">
             Preview only. Values are not retained when you leave this page.
