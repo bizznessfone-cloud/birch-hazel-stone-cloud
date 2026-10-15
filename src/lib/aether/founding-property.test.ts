@@ -28,3 +28,16 @@ test('rejects missing database result', async () => {
   const db = { query: async () => [] };
   await assert.rejects(createFoundingProperty({ db: db as never, userId: 'session-user', property }), /not created/);
 });
+
+test("accepts real international IANA timezones and rejects invented zones", async () => {
+  const db = { query: async (_sql: string, params: unknown[]) => {
+    assert.equal(params[4], "Europe/London");
+    return [{ hotel_id: "hotel-id", provider_id: "provider-id" }];
+  } };
+  assert.deepEqual(await createFoundingProperty({
+    db: db as never, userId: "session-user", property: { ...property, ianaTimezone: "Europe/London", currency: "GBP" },
+  }), { hotelId: "hotel-id", providerId: "provider-id" });
+  await assert.rejects(createFoundingProperty({
+    db: db as never, userId: "session-user", property: { ...property, ianaTimezone: "Europe/Imaginary" },
+  }), /Invalid timezone/);
+});
