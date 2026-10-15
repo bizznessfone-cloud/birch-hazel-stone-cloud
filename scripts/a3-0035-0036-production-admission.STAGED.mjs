@@ -42,6 +42,8 @@ export function validateEnvironment(env) {
   if (decodeURIComponent(url.username) !== TARGET.role) failures.push("role");
   if (!url.password) failures.push("password");
   if (env.A3_PRODUCTION_APPROVAL_RECORD !== "APPROVED-0035-0036-PRODUCTION") failures.push("approval-record");
+  if (env.GITHUB_REF !== "refs/heads/main" || env.GITHUB_EVENT_NAME !== "workflow_dispatch") failures.push("workflow-context");
+  if (env.GITHUB_WORKFLOW !== "A3 0035-0036 production admission APPROVAL REQUIRED") failures.push("workflow-identity");
   // No CLI or workflow invokes this module. Human approval must be enforced externally.
   if (decodeURIComponent(url.pathname.slice(1)) !== TARGET.database) failures.push("database");
   if (url.hostname !== TARGET.endpoint + ".c-5.eu-central-1.aws.neon.tech") failures.push("endpoint");
