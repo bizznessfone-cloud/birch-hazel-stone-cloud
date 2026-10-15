@@ -18,6 +18,6 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci --ignore-scripts
-      - run: node --experimental-strip-types --test src/lib/aether/founding-property-draft.test.ts
+      - run: node --experimental-strip-types --test src/lib/aether/founding-property-draft.test.ts src/lib/aether/founding-property.test.ts
       - run: npm run typecheck
       - run: npm run build
