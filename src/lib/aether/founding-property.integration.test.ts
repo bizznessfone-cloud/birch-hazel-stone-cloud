@@ -31,8 +31,8 @@ test("founding-property service enforces effective test agreement in isolated da
     const orgId = created.rows[0]!.organisation_id;
     await pg.query("select sbg_classify_founding_organisation($1, 'hotel')", [OWNER_USER.id]);
     const db = {
-      query: async <T>(sql: string, params?: unknown[]) => {
-        const result = await pg.query<T>(sql, params);
+      query: async (sql: string, params?: unknown[]) => {
+        const result = await pg.query(sql, params);
         return result.rows;
       },
     };
