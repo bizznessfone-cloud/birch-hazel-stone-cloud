@@ -15,6 +15,7 @@ import type { FoundingOrganisationType } from "@/lib/aether/founding-onboarding"
 import { foundingPropertyPreviewReady, validateFoundingPropertyDraft } from "@/lib/aether/founding-property-draft";
 import { getOnboardingState } from "@/lib/aether/onboarding-fns";
 import { readFoundingPropertyEligibilityFn } from "@/lib/aether/founding-property-eligibility-fns";
+import { createFoundingPropertyFn } from "@/lib/aether/founding-property-fns";
 import type { FoundingPropertyEligibility } from "@/lib/aether/founding-property-eligibility";
 
 export const Route = createFileRoute("/app/founding")({
@@ -173,6 +174,25 @@ function TermsPending({ organisationType, eligibility }: { organisationType: Fou
   const [propertyName, setPropertyName] = useState("");
   const [locality, setLocality] = useState("");
   const [propertyCode, setPropertyCode] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [registrationError, setRegistrationError] = useState<string | null>(null);
+  const router = useRouter();
+  async function registerProperty(event: FormEvent) {
+    event.preventDefault();
+    if (!eligibility.eligible || submitting || !foundingPropertyPreviewReady({ name: propertyName, locality, code: propertyCode })) return;
+    setSubmitting(true);
+    setRegistrationError(null);
+    try {
+      await createFoundingPropertyFn({
+        data: { name: propertyName.trim(), locality: locality.trim(), code: propertyCode.trim(), ianaTimezone: "Europe/Athens", currency: "EUR" },
+      });
+      await router.invalidate();
+    } catch {
+      setRegistrationError("Property registration could not be completed. Please check your details and agreement status.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
   const draft = { name: propertyName, locality, code: propertyCode };
   const errors = validateFoundingPropertyDraft(draft);
   const previewReady = foundingPropertyPreviewReady(draft);
@@ -186,11 +206,11 @@ function TermsPending({ organisationType, eligibility }: { organisationType: Fou
         progress={3}
       />
       {organisationType === "hotel" ? (
-        <section className="border border-line bg-surface p-5" aria-labelledby="property-preview-title">
-          <p className="text-xs font-medium tracking-[0.2em] text-muted uppercase">Next step · Preview only</p>
+        <form onSubmit={(event) => void registerProperty(event)} className="border border-line bg-surface p-5" aria-labelledby="property-preview-title" aria-busy={submitting}>
+          <p className="text-xs font-medium tracking-[0.2em] text-muted uppercase">{eligibility.eligible ? "Next step · Register property" : "Next step · Preview only"}</p>
           <h2 id="property-preview-title" className="mt-2 text-2xl font-semibold tracking-tight">Your first property</h2>
           <p className="mt-3 text-sm leading-relaxed text-muted">
-            Preview the details needed to register your hotel. Nothing is saved or submitted.
+            {eligibility.eligible ? "Register your hotel to open its workspace." : "Preview the details needed to register your hotel. Nothing is saved or submitted."}
           </p>
           <label className="mt-6 block" htmlFor="preview-property-name">
             <span className="mb-2 block text-xs font-medium tracking-widest text-muted uppercase">Property name</span>
@@ -218,13 +238,14 @@ function TermsPending({ organisationType, eligibility }: { organisationType: Fou
             {propertyCode && errors.code ? <p role="alert" className="mt-1 text-xs text-danger">{errors.code}</p> : null}
           </label>
           <p className="mt-5 text-xs leading-relaxed text-muted" role="status">
-            {previewReady ? (eligibility.eligible ? "Details look ready. Registration is not activated in this preview." : "Details look ready. Registration remains unavailable until an approved agreement can be accepted.") : "Preview only. Complete all three fields to check the details. Nothing is saved."}
+            {previewReady ? (eligibility.eligible ? "Details look ready. You can now register your property." : "Details look ready. Registration remains unavailable until an approved agreement can be accepted.") : "Preview only. Complete all three fields to check the details. Nothing is saved."}
           </p>
-          <button type="button" disabled
-            className="mt-4 min-h-12 w-full bg-ink px-4 text-sm font-semibold tracking-wide text-canvas uppercase opacity-50">
-            Create property · Not yet available
+          {registrationError ? <p role="alert" className="mt-3 text-sm text-danger">{registrationError}</p> : null}
+          <button type="submit" disabled={!eligibility.eligible || !previewReady || submitting}
+            className="mt-4 min-h-12 w-full bg-ink px-4 text-sm font-semibold tracking-wide text-canvas uppercase disabled:opacity-50">
+            {submitting ? "Creating property…" : eligibility.eligible ? "Create property" : "Create property · Not yet available"}
           </button>
-        </section>
+        </form>
       ) : null}
     </div>
   );
