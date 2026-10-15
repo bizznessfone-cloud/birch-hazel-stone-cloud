@@ -13,3 +13,8 @@ export function validateFoundingPropertyDraft(draft: FoundingPropertyDraft): Dra
   }
   return errors;
 }
+
+/** Presentational readiness only; never authorises agreement acceptance or database writes. */
+export function foundingPropertyPreviewReady(draft: FoundingPropertyDraft): boolean {
+  return Object.keys(validateFoundingPropertyDraft(draft)).length === 0;
+}
