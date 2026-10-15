@@ -174,17 +174,19 @@ function TermsPending({ organisationType, eligibility }: { organisationType: Fou
   const [propertyName, setPropertyName] = useState("");
   const [locality, setLocality] = useState("");
   const [propertyCode, setPropertyCode] = useState("");
+  const [ianaTimezone, setIanaTimezone] = useState("Europe/Athens");
+  const [currency, setCurrency] = useState("EUR");
   const [submitting, setSubmitting] = useState(false);
   const [registrationError, setRegistrationError] = useState<string | null>(null);
   const router = useRouter();
   async function registerProperty(event: FormEvent) {
     event.preventDefault();
-    if (!eligibility.eligible || submitting || !foundingPropertyPreviewReady({ name: propertyName, locality, code: propertyCode })) return;
+    if (!eligibility.eligible || submitting || !foundingPropertyPreviewReady({ name: propertyName, locality, code: propertyCode }) || !/^[A-Za-z_]+\/[A-Za-z_]+(?:\/[A-Za-z_]+)?$/.test(ianaTimezone) || !/^[A-Z]{3}$/.test(currency)) return;
     setSubmitting(true);
     setRegistrationError(null);
     try {
       await createFoundingPropertyFn({
-        data: { name: propertyName.trim(), locality: locality.trim(), code: propertyCode.trim(), ianaTimezone: "Europe/Athens", currency: "EUR" },
+        data: { name: propertyName.trim(), locality: locality.trim(), code: propertyCode.trim(), ianaTimezone, currency },
       });
       await router.invalidate();
     } catch {
@@ -237,11 +239,27 @@ function TermsPending({ organisationType, eligibility }: { organisationType: Fou
             <p className="mt-1 text-xs text-muted">This becomes part of the hotel’s booking link. Use lowercase letters, numbers and hyphens.</p>
             {propertyCode && errors.code ? <p role="alert" className="mt-1 text-xs text-danger">{errors.code}</p> : null}
           </label>
+          <label className="mt-4 block" htmlFor="property-timezone">
+            <span className="mb-2 block text-xs font-medium tracking-widest text-muted uppercase">Property timezone</span>
+            <input id="property-timezone" required maxLength={120} autoComplete="off"
+              className="min-h-12 w-full border border-line bg-transparent px-3"
+              value={ianaTimezone} onChange={event => setIanaTimezone(event.target.value)}
+              placeholder="e.g. Europe/Athens" />
+            <p className="mt-1 text-xs text-muted">Use the property's IANA timezone, such as Europe/London.</p>
+          </label>
+          <label className="mt-4 block" htmlFor="property-currency">
+            <span className="mb-2 block text-xs font-medium tracking-widest text-muted uppercase">Property currency</span>
+            <input id="property-currency" required maxLength={3} autoComplete="off"
+              className="min-h-12 w-full border border-line bg-transparent px-3 uppercase"
+              value={currency} onChange={event => setCurrency(event.target.value.toUpperCase())}
+              placeholder="e.g. EUR" />
+            <p className="mt-1 text-xs text-muted">Three-letter ISO currency code, such as EUR or GBP.</p>
+          </label>
           <p className="mt-5 text-xs leading-relaxed text-muted" role="status">
             {previewReady ? (eligibility.eligible ? "Details look ready. You can now register your property." : "Details look ready. Registration remains unavailable until an approved agreement can be accepted.") : "Preview only. Complete all three fields to check the details. Nothing is saved."}
           </p>
           {registrationError ? <p role="alert" className="mt-3 text-sm text-danger">{registrationError}</p> : null}
-          <button type="submit" disabled={!eligibility.eligible || !previewReady || submitting}
+          <button type="submit" disabled={!eligibility.eligible || !previewReady || submitting || !/^[A-Za-z_]+\/[A-Za-z_]+(?:\/[A-Za-z_]+)?$/.test(ianaTimezone) || !/^[A-Z]{3}$/.test(currency)}
             className="mt-4 min-h-12 w-full bg-ink px-4 text-sm font-semibold tracking-wide text-canvas uppercase disabled:opacity-50">
             {submitting ? "Creating property…" : eligibility.eligible ? "Create property" : "Create property · Not yet available"}
           </button>
