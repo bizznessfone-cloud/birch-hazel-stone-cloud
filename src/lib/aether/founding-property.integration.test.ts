@@ -12,6 +12,7 @@ const migrations = [
   "0034_cp3005e2d2c_founding_classification_acceptance.sql",
   "0035_cp3005e2d2d_founding_property.sql",
   "0036_cp3005e2d2d_founding_integrity.sql",
+  "0037_gate2_founding_property_eligibility.sql",
 ];
 const property = {
   name: "Blue Lagoon Hotel", locality: "Kos, Greece", code: "sbg-gate2-a",
@@ -30,6 +31,14 @@ test("founding-property service enforces effective test agreement in isolated da
     );
     const orgId = created.rows[0]!.organisation_id;
     await pg.query("select sbg_classify_founding_organisation($1, 'hotel')", [OWNER_USER.id]);
+    const eligibility = async () => {
+      const rows = await pg.query<{ eligible: boolean; reason: string }>(
+        "select eligible, reason from sbg_founding_property_eligibility_for_user($1)",
+        [OWNER_USER.id],
+      );
+      return rows.rows[0];
+    };
+    assert.deepEqual(await eligibility(), { eligible: false, reason: "agreement_required" });
     const db = {
       query: async (sql: string, params?: unknown[]) => {
         const result = await pg.query(sql, params);
@@ -57,6 +66,7 @@ test("founding-property service enforces effective test agreement in isolated da
       "insert into sbg_organisation_acceptances (organisation_id, accepted_by_user_id, agreement_version) values ($1::uuid, $2, $3)",
       [orgId, OWNER_USER.id, "fixture-gate2-not-legal"],
     );
+    assert.deepEqual(await eligibility(), { eligible: true, reason: "ready" });
     const result = await createFoundingProperty({ db: db as never, userId: OWNER_USER.id, property });
     assert.ok(result.hotelId);
     assert.ok(result.providerId);
