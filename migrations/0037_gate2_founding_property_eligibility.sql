@@ -16,7 +16,7 @@ begin
     return query select false, 'unauthorized'::text;
     return;
   end if;
-  select count(*)::integer, min(o.id)
+  select count(*)::integer, (array_agg(o.id))[1]
     into v_count, v_org
     from public.sbg_organisations o
    where o.created_by_user_id = p_user_id;
