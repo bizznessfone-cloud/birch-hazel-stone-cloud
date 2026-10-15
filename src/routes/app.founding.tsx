@@ -199,9 +199,10 @@ function TermsPending({ organisationType }: { organisationType: FoundingOrganisa
             <span className="mb-2 block text-xs font-medium tracking-widest text-muted uppercase">Booking code</span>
             <input id="preview-property-code" maxLength={32} autoComplete="off"
               className="min-h-12 w-full border border-line bg-transparent px-3"
-              value={propertyCode} onChange={event => setPropertyCode(event.target.value)}
+              value={propertyCode} onChange={event => setPropertyCode(event.target.value.toLowerCase().replace(/\s+/g, "-"))}
               placeholder="e.g. aegean-bay" />
-            {propertyCode && errors.code ? <p className="mt-1 text-xs text-danger">{errors.code}</p> : null}
+            <p className="mt-1 text-xs text-muted">This becomes part of the hotel’s booking link. Use lowercase letters, numbers and hyphens.</p>
+            {propertyCode && errors.code ? <p role="alert" className="mt-1 text-xs text-danger">{errors.code}</p> : null}
           </label>
           <p className="mt-5 text-xs leading-relaxed text-muted" role="status">
             Preview only. Values are not retained when you leave this page.
