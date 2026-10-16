@@ -187,6 +187,21 @@ test("active grant allows only its operator; revocation removes access", async (
     await setProvider(OWNER_USER.id, hotelId, ownProvider, true);
     assert.equal(await canAccessProvider(OTHER_USER.id, hotelId, ownProvider), true,
       "explicit provider authorisation allows only the matching provider");
+
+    // The provider agreement is a separate, revocable prerequisite.
+    await pg.query(
+      "update hotel_provider_agreements set active = false where hotel_id = $1::uuid and provider_id = $2::uuid",
+      [hotelId, ownProvider],
+    );
+    assert.equal(await canAccessProvider(OTHER_USER.id, hotelId, ownProvider), false,
+      "inactive hotel/provider agreement must deny provider access");
+    await pg.query(
+      "update hotel_provider_agreements set active = true where hotel_id = $1::uuid and provider_id = $2::uuid",
+      [hotelId, ownProvider],
+    );
+    assert.equal(await canAccessProvider(OTHER_USER.id, hotelId, ownProvider), true,
+      "restoring the agreement alone preserves the explicit grant under current policy");
+
     assert.equal(await canAccessProvider(OTHER_USER.id, hotelId, otherProvider), false,
       "another hotel's provider remains inaccessible");
     assert.equal(await canAccessProvider(OWNER_USER.id, hotelId, ownProvider), false,
