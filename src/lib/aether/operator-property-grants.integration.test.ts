@@ -341,8 +341,8 @@ test("active grant allows only its operator; revocation removes access", async (
     // A second operator membership must not let a user choose the
     // favourable grant via a forged organisation selector.
     const secondOperator = await pg.query<{ id: string }>(
-      "insert into sbg_organisations (name, organisation_type) values ($1, 'transfer_operator') returning id::text as id",
-      ["Second Fixture Operator"],
+      "insert into sbg_organisations (name, organisation_type, created_by_user_id) values ($1, 'transfer_operator', $2) returning id::text as id",
+      ["Second Fixture Operator", ZERO_USER.id],
     );
     const secondOperatorId = secondOperator.rows[0]!.id;
     await pg.query(
