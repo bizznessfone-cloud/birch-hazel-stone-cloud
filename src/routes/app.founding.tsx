@@ -229,8 +229,21 @@ function TermsPending({ organisationType, eligibility }: { organisationType: Fou
         detail={`Business type: ${label}.`}
         progress={3}
       />
+      {organisationType === "transfer_operator" ? (
+        <section className="border border-line bg-surface p-5" aria-labelledby="operator-next-title">
+          <p className="text-xs font-medium tracking-[0.2em] text-muted uppercase">Independent operator setup</p>
+          <h2 id="operator-next-title" className="mt-2 text-2xl font-semibold tracking-tight">Your operator workspace</h2>
+          <p className="mt-3 text-sm leading-relaxed text-muted">
+            Your transfer business classification is saved. Operator workspace activation is not yet available.
+            You will manage transfers for the properties you serve; this is separate from registering a hotel as an accommodation business.
+          </p>
+          <p className="mt-3 text-sm leading-relaxed text-muted" role="status">
+            No agreement has been accepted and no property, payment account or subscription has been created by this step.
+          </p>
+        </section>
+      ) : null}
       {organisationType === "hotel" ? (
-        <form onSubmit={(event) => void registerProperty(event)} className="border border-line bg-surface p-5" aria-labelledby="property-preview-title" aria-busy={submitting}>
+        <form onSubmit={(event) => void registerProperty(event) className="border border-line bg-surface p-5" aria-labelledby="property-preview-title" aria-busy={submitting}>
           <p className="text-xs font-medium tracking-[0.2em] text-muted uppercase">{eligibility.eligible ? "Next step · Register property" : "Next step · Preview only"}</p>
           <h2 id="property-preview-title" className="mt-2 text-2xl font-semibold tracking-tight">Your first property</h2>
           <p className="mt-3 text-sm leading-relaxed text-muted">
