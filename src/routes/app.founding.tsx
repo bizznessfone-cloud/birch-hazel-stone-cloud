@@ -181,7 +181,7 @@ function TermsPending({ organisationType, eligibility }: { organisationType: Fou
   const router = useRouter();
   async function registerProperty(event: FormEvent) {
     event.preventDefault();
-    if (!eligibility.eligible || submitting || !foundingPropertyPreviewReady({ name: propertyName, locality, code: propertyCode }) || !/^[A-Za-z_]+\/[A-Za-z_]+(?:\/[A-Za-z_]+)?$/.test(ianaTimezone) || !/^[A-Z]{3}$/.test(currency)) return;
+    if (!eligibility.eligible || submitting || !foundingPropertyPreviewReady({ name: propertyName, locality, code: propertyCode }) || !timezoneValid || !currencyValid) return;
     setSubmitting(true);
     setRegistrationError(null);
     try {
@@ -198,12 +198,21 @@ function TermsPending({ organisationType, eligibility }: { organisationType: Fou
   const draft = { name: propertyName, locality, code: propertyCode };
   const errors = validateFoundingPropertyDraft(draft);
   const previewReady = foundingPropertyPreviewReady(draft);
+  const timezoneValid = (() => {
+    try {
+      new Intl.DateTimeFormat("en-US", { timeZone: ianaTimezone });
+      return true;
+    } catch {
+      return false;
+    }
+  })();
+  const currencyValid = /^[A-Z]{3}$/.test(currency);
   const label = organisationType === "hotel" ? "Hotel / Accommodation" : "Independent Transfer Operator";
   return (
     <div className="mx-auto max-w-lg space-y-8">
       <Status
         title={eligibility.eligible ? "Agreement verified" : TERMS_PENDING_TITLE}
-        body={eligibility.eligible ? "Your approved agreement has been verified. Property registration will be available after setup is activated." : "Your business setup is saved. An approved agreement is required before registering your first property."}
+        body={eligibility.eligible ? "Your approved agreement has been verified. You can register your first property." : "Your business setup is saved. An approved agreement is required before registering your first property."}
         detail={`Business type: ${label}.`}
         progress={3}
       />
