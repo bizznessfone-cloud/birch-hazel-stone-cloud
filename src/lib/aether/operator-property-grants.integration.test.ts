@@ -260,6 +260,10 @@ test("active grant allows only its operator; revocation removes access", async (
     );
     assert.equal(await canAccessProvider(OTHER_USER.id, hotelId, ownProvider), false,
       "property regrant must not resurrect revoked provider authorisation");
+    await assert.rejects(scopedQuery(OTHER_USER.id, hotelId, ownProvider),
+      /operator provider booking access denied/i,
+      "property regrant must not restore provider booking access after cascading revocation");
+
     const staleProviderGrants = await pg.query<{ count: number }>(
       "select count(*)::int as count from sbg_operator_provider_authorisations where hotel_id = $1::uuid and operator_organisation_id = $2::uuid and revoked_at is null",
       [hotelId, operatorId],
