@@ -35,6 +35,10 @@ begin
            (b.cancelled_at is not null)
       from public.bookings b
      where b.hotel_id = p_hotel_id
+       -- A property relationship does not grant access to unrelated providers.
+       -- Until operator organisations are explicitly linked to executing
+       -- providers, no booking qualifies for operator visibility.
+       and false
      order by b.transfer_date desc, b.pickup_time desc, b.id
      limit p_limit;
 end;
@@ -45,4 +49,4 @@ revoke all on function public.sbg_list_operator_booking_summaries_for_user(text,
 -- Intentionally NO EXECUTE grant to aether_app yet: database function is
 -- migration-tested in isolation before exposure or commercial authorisation.
 comment on function public.sbg_list_operator_booking_summaries_for_user(text,uuid,integer) is
-  'Draft restricted operator booking projection; no app-role EXECUTE until scope and disclosure policy are approved.';
+  'Draft restricted operator booking projection; denies all booking rows pending explicit operator-to-provider assignment and approval. No app-role EXECUTE.';
