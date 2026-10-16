@@ -297,6 +297,23 @@ test("active grant allows only its operator; revocation removes access", async (
     const ownBookingId = await insertBooking(hotelId, "PT-GRANT-OWN");
     await insertBooking(otherHotelId, "PT-GRANT-OTHER");
 
+
+    // Membership removal must deny booking access even if both explicit
+    // authorisation records remain active in storage.
+    await pg.query(
+      "update sbg_organisation_members set removed_at = now() where user_id = $1 and organisation_id = $2::uuid and removed_at is null",
+      [OTHER_USER.id, operatorId],
+    );
+    await assert.rejects(scopedQuery(OTHER_USER.id, hotelId, ownProvider),
+      /operator provider booking access denied/i,
+      "removed operator member cannot read bookings despite retained grants");
+    assert.equal(await canAccessProvider(OTHER_USER.id, hotelId, ownProvider), false,
+      "removed operator membership fails provider eligibility");
+    await pg.query(
+      "update sbg_organisation_members set removed_at = null where user_id = $1 and organisation_id = $2::uuid",
+      [OTHER_USER.id, operatorId],
+    );
+
     const matching = await scopedQuery(OTHER_USER.id, hotelId, ownProvider);
     assert.equal(matching.rows.length, 1, "only executing-provider bookings are visible");
     assert.equal(matching.rows[0]?.bookingId, ownBookingId);
