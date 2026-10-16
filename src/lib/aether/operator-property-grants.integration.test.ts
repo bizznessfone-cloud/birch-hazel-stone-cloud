@@ -314,6 +314,28 @@ test("active grant allows only its operator; revocation removes access", async (
       [OTHER_USER.id, operatorId],
     );
 
+
+    // Rejection of invalid pagination is a security boundary: never
+    // permit unbounded provider booking exports via this function.
+    for (const invalidLimit of [0, -1, 101]) {
+      await assert.rejects(
+        pg.query(
+          "select * from sbg_list_operator_provider_booking_summaries_for_user($1,$2::uuid,$3::uuid,$4)",
+          [OTHER_USER.id, hotelId, ownProvider, invalidLimit],
+        ),
+        /operator provider booking access denied/i,
+        "invalid provider booking page size must fail closed",
+      );
+    }
+    await assert.rejects(
+      pg.query(
+        "select * from sbg_list_operator_provider_booking_summaries_for_user($1,$2::uuid,$3::uuid,$4)",
+        [OTHER_USER.id, hotelId, ownProvider, null],
+      ),
+      /operator provider booking access denied/i,
+      "null page size must fail closed",
+    );
+
     const matching = await scopedQuery(OTHER_USER.id, hotelId, ownProvider);
     assert.equal(matching.rows.length, 1, "only executing-provider bookings are visible");
     assert.equal(matching.rows[0]?.bookingId, ownBookingId);
