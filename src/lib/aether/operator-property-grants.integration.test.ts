@@ -19,6 +19,7 @@ test("operator grant storage is deny-by-default and creates no access grants", a
       "0039_gate2_operator_property_grants.sql",
       "0040_gate2_operator_property_access_read.sql",
       "0041_gate2_operator_property_grant_management.sql",
+      "0042_gate2_operator_booking_summaries.sql",
     ];
     for (const name of migrations) await pg.exec(readFileSync(`migrations/${name}`, "utf8"));
     const denied = await pg.query<{ allowed: boolean }>(
@@ -61,6 +62,7 @@ test("active grant allows only its operator; revocation removes access", async (
       "0039_gate2_operator_property_grants.sql",
       "0040_gate2_operator_property_access_read.sql",
       "0041_gate2_operator_property_grant_management.sql",
+      "0042_gate2_operator_booking_summaries.sql",
     ]) await pg.exec(readFileSync(`migrations/${migration}`, "utf8"));
     await insertAuthUser(pg, OWNER_USER);
     await insertAuthUser(pg, OTHER_USER);
