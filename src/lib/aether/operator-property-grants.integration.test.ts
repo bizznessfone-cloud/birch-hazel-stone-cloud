@@ -90,6 +90,21 @@ test("active grant allows only its operator; revocation removes access", async (
       );
       return result.rows[0]?.allowed;
     };
+    // An unrelated hotel may not be granted by this owner, even when the
+    // intended operator organisation is otherwise valid.
+    const unrelatedHotel = await pg.query<{ id: string }>(
+      "select id::text as id from hotels where id <> $1::uuid limit 1",
+      [hotelId],
+    );
+    if (unrelatedHotel.rows.length > 0) {
+      await assert.rejects(
+        pg.query(
+          "select sbg_set_operator_property_grant_for_user($1,$2::uuid,$3::uuid,true)",
+          [OWNER_USER.id, unrelatedHotel.rows[0]!.id, operatorId],
+        ),
+        /operator grant not authorised/i,
+      );
+    }
     assert.equal(await check(OTHER_USER.id), false, "operator classification alone is not a grant");
     assert.equal(await check(OWNER_USER.id), false, "hotel owner is not an operator");
     await assert.rejects(
