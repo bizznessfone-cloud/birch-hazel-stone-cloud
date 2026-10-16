@@ -165,18 +165,8 @@ test("active grant allows only its operator; revocation removes access", async (
       "select * from sbg_list_operator_booking_summaries_for_user($1,$2::uuid,$3)",
       [OTHER_USER.id, hotelId, 10],
     );
-    assert.equal(summaries.rows.length, 1, "only the granted hotel's booking is visible");
-    assert.deepEqual(summaries.rows[0], {
-      bookingId: ownBookingId,
-      humanReference: "PT-GRANT-OWN",
-      transferDate: "2026-10-20",
-      pickupTime: "10:30:00",
-      passengerCount: 2,
-      luggageCount: 1,
-      pickupText: "Hotel lobby",
-      destinationText: "Airport",
-      cancelled: false,
-    }, "SQL projection must exclude contact details, tokens, payment and other hotels");
+    assert.equal(summaries.rows.length, 0, "hotel grant alone must not expose bookings without operator-to-provider assignment");
+    assert.ok(ownBookingId, "fixture includes a real booking at the granted hotel");
     const execution = await pg.query<{ permitted: boolean }>(
       `select has_function_privilege('aether_app',
         'public.sbg_list_operator_booking_summaries_for_user(text,uuid,integer)', 'EXECUTE') as permitted`,
