@@ -1,7 +1,6 @@
-/** Gate 2: server-side grant read. Caller identity must come from an
- * authenticated session, never from a client-supplied organisation ID.
- * Database access is deliberately unavailable until a reviewed SQL function
- * is added and granted to the application role.
+/** Gate 2: session-bound operator grant lookup.
+ * The caller must derive sessionUserId from the authenticated server session.
+ * This read-only function never issues grants or confers hotel ownership.
  */
 import type { Sql } from "@/lib/db";
 
@@ -16,8 +15,19 @@ export async function readOperatorPropertyAccess(input: {
 }): Promise<OperatorPropertyAccessDecision> {
   if (!input.sessionUserId?.trim()) return { allowed: false, reason: "unauthorized" };
   if (!input.hotelId?.trim()) return { allowed: false, reason: "not_granted" };
-  // Until the session-bound SQL authorisation function exists, fail closed.
-  // Do not infer a grant from an operator classification, hotel code,
-  // organisation membership, or any user-provided operator organisation ID.
-  return { allowed: false, reason: "not_granted" };
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input.hotelId)) {
+    return { allowed: false, reason: "not_granted" };
+  }
+  try {
+    const rows = await input.db.query<{ allowed: boolean }>(
+      "select public.sbg_operator_can_access_property_for_user($1, $2::uuid) as allowed",
+      [input.sessionUserId, input.hotelId],
+    );
+    return rows.length === 1 && rows[0]?.allowed === true
+      ? { allowed: true }
+      : { allowed: false, reason: "not_granted" };
+  } catch {
+    // Missing migration, DB errors and ambiguous authority must never allow.
+    return { allowed: false, reason: "not_granted" };
+  }
 }
