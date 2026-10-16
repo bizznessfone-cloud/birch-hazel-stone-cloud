@@ -23,7 +23,7 @@ export async function createFoundingProperty(input: {
   } catch {
     throw new Error("Invalid timezone");
   }
-  if (!/^[A-Z]{3}$/.test(input.property.currency)) throw new Error("Invalid currency");
+  if (!/^[A-Z]{3}$/.test(input.property.currency) || !Intl.supportedValuesOf("currency").includes(input.property.currency)) throw new Error("Invalid currency");
   const rows = await input.db.query<{ hotel_id: string; provider_id: string }>(
     "select hotel_id::text as hotel_id, provider_id::text as provider_id from sbg_create_founding_property_for_user($1, $2, $3, $4, $5, $6)",
     [input.userId, input.property.code.trim(), input.property.name.trim(),
