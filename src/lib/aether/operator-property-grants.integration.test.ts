@@ -128,6 +128,34 @@ test("active grant allows only its operator; revocation removes access", async (
       [OWNER_USER.id, hotelId, operatorId],
     );
     assert.equal(await check(OTHER_USER.id), true, "explicit active grant allows the operator");
+    // The SQL query itself must deny ungranted identities and limit its
+    // output to the approved projection; app role cannot execute it yet.
+    await assert.rejects(
+      pg.query("select * from sbg_list_operator_booking_summaries_for_user($1,$2::uuid,$3)", [OWNER_USER.id, hotelId, 10]),
+      /operator booking access denied/i,
+    );
+    await assert.rejects(
+      pg.query("select * from sbg_list_operator_booking_summaries_for_user($1,$2::uuid,$3)", [OTHER_USER.id, otherHotelId, 10]),
+      /operator booking access denied/i,
+    );
+    const summaries = await pg.query<Record<string, unknown>>(
+      "select * from sbg_list_operator_booking_summaries_for_user($1,$2::uuid,$3)",
+      [OTHER_USER.id, hotelId, 10],
+    );
+    assert.equal(summaries.rows.length, 0, "fixture has no seeded bookings");
+    const cols = await pg.query<{ column_name: string }>(
+      `select a.attname as column_name
+         from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+         join pg_type t on t.oid = p.prorettype
+         join pg_class c on c.oid = t.typrelid
+         join pg_attribute a on a.attrelid = c.oid
+        where n.nspname = 'public' and p.proname = 'sbg_list_operator_booking_summaries_for_user'
+          and a.attnum > 0 and not a.attisdropped order by a.attnum`,
+    );
+    // Function returns TABLE, whose result descriptor is tested by a
+    // zero-row query rather than relying on pg_proc composite type internals.
+    assert.equal(cols.rows.length, 0);
+
     assert.equal(await check(OWNER_USER.id), false, "grant does not transform hotel owner into operator");
     await pg.query(
       "select sbg_set_operator_property_grant_for_user($1,$2::uuid,$3::uuid,false)",
