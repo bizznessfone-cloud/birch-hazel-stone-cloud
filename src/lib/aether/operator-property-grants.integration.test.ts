@@ -23,6 +23,7 @@ test("operator grant storage is deny-by-default and creates no access grants", a
       "0043_gate2_operator_provider_authorisations.sql",
       "0044_gate2_operator_provider_authorisation_management.sql",
       "0045_gate2_operator_provider_access_read.sql",
+      "0046_gate2_operator_provider_booking_summaries.sql",
     ];
     for (const name of migrations) await pg.exec(readFileSync(`migrations/${name}`, "utf8"));
     const denied = await pg.query<{ allowed: boolean }>(
@@ -84,6 +85,7 @@ test("active grant allows only its operator; revocation removes access", async (
       "0043_gate2_operator_provider_authorisations.sql",
       "0044_gate2_operator_provider_authorisation_management.sql",
       "0045_gate2_operator_provider_access_read.sql",
+      "0046_gate2_operator_provider_booking_summaries.sql",
     ]) await pg.exec(readFileSync(`migrations/${migration}`, "utf8"));
     await insertAuthUser(pg, OWNER_USER);
     await insertAuthUser(pg, OTHER_USER);
@@ -192,6 +194,17 @@ test("active grant allows only its operator; revocation removes access", async (
       [hotelId, ownProvider],
     );
     assert.equal(authorised.rows[0]?.count, 1, "only specifically authorised provider is granted");
+    // Provider-scoped projection is independent of the legacy hotel-only
+    // draft, which must continue to return zero rows.
+    const scopedQuery = (userId: string, targetHotelId: string, targetProviderId: string) =>
+      pg.query<Record<string, unknown>>(
+        "select * from sbg_list_operator_provider_booking_summaries_for_user($1,$2::uuid,$3::uuid,10)",
+        [userId, targetHotelId, targetProviderId],
+      );
+    await assert.rejects(scopedQuery(OTHER_USER.id, hotelId, otherProvider),
+      /operator provider booking access denied/i, "operator cannot query another provider");
+    await assert.rejects(scopedQuery(OWNER_USER.id, hotelId, ownProvider),
+      /operator provider booking access denied/i, "hotel owner cannot use operator projection");
     await setProvider(OWNER_USER.id, hotelId, ownProvider, false);
     assert.equal(await canAccessProvider(OTHER_USER.id, hotelId, ownProvider), false,
       "revocation removes provider eligibility");
@@ -226,8 +239,28 @@ test("active grant allows only its operator; revocation removes access", async (
       );
       return result.rows[0]!.id;
     };
+    await setProvider(OWNER_USER.id, hotelId, ownProvider, true);
+    const providerSummaries = await scopedQuery(OTHER_USER.id, hotelId, ownProvider);
+    assert.equal(providerSummaries.rows.length, 0, "no matching bookings exist yet");
     const ownBookingId = await insertBooking(hotelId, "PT-GRANT-OWN");
     await insertBooking(otherHotelId, "PT-GRANT-OTHER");
+
+    const matching = await scopedQuery(OTHER_USER.id, hotelId, ownProvider);
+    assert.equal(matching.rows.length, 1, "only executing-provider bookings are visible");
+    assert.equal(matching.rows[0]?.bookingId, ownBookingId);
+    assert.deepEqual(Object.keys(matching.rows[0]!).sort(), [
+      "bookingId", "humanReference", "transferDate", "pickupTime",
+      "passengerCount", "luggageCount", "pickupText", "destinationText", "cancelled",
+    ].sort(), "provider summary excludes PII, tokens and payment data");
+    const executable = await pg.query<{ permitted: boolean }>(
+      `select has_function_privilege('aether_app',
+        'public.sbg_list_operator_provider_booking_summaries_for_user(text,uuid,uuid,integer)', 'EXECUTE') as permitted`,
+    );
+    assert.equal(executable.rows[0]?.permitted, false, "app role cannot execute draft provider booking query");
+    await setProvider(OWNER_USER.id, hotelId, ownProvider, false);
+    await assert.rejects(scopedQuery(OTHER_USER.id, hotelId, ownProvider),
+      /operator provider booking access denied/i, "revoked provider authorisation denies booking summaries");
+
 
     // The SQL query itself must deny ungranted identities and limit its
     // output to the approved projection; app role cannot execute it yet.
