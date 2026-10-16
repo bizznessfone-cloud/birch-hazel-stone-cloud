@@ -185,10 +185,11 @@ function TermsPending({ organisationType, eligibility }: { organisationType: Fou
     setSubmitting(true);
     setRegistrationError(null);
     try {
-      await createFoundingPropertyFn({
+      const created = await createFoundingPropertyFn({
         data: { name: propertyName.trim(), locality: locality.trim(), code: propertyCode.trim(), ianaTimezone, currency },
       });
-      await router.invalidate();
+      // Navigate to the newly created property, not an arbitrary first hotel.
+      await router.navigate({ to: "/app/hotels/$hotelId", params: { hotelId: created.hotelId } });
     } catch {
       setRegistrationError("Property registration could not be completed. Please check your details and agreement status.");
     } finally {
