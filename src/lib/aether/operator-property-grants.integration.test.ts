@@ -408,6 +408,10 @@ test("active grant allows only its operator; revocation removes access", async (
     const matching = await scopedQuery(OTHER_USER.id, hotelId, ownProvider);
     assert.equal(matching.rows.length, 1, "only executing-provider bookings are visible");
     assert.equal(matching.rows[0]?.bookingId, ownBookingId);
+    assert.ok(matching.rows.every(row => row.bookingId !== secondProviderBooking.rows[0]!.id),
+      "same-hotel second provider booking must never leak into first provider results");
+    assert.ok(matching.rows.every(row => row.humanReference !== "PT-GRANT-SECOND"),
+      "same-hotel second provider reference must not appear in first provider projection");
     assert.deepEqual(Object.keys(matching.rows[0]!).sort(), [
       "bookingId", "humanReference", "transferDate", "pickupTime",
       "passengerCount", "luggageCount", "pickupText", "destinationText", "cancelled",
