@@ -336,6 +336,31 @@ test("active grant allows only its operator; revocation removes access", async (
       "null page size must fail closed",
     );
 
+
+    // Ambiguous active transfer-operator memberships must fail closed.
+    // A second operator membership must not let a user choose the
+    // favourable grant via a forged organisation selector.
+    const secondOperator = await pg.query<{ id: string }>(
+      "insert into sbg_organisations (name, organisation_type) values ($1, 'transfer_operator') returning id::text as id",
+      ["Second Fixture Operator"],
+    );
+    const secondOperatorId = secondOperator.rows[0]!.id;
+    await pg.query(
+      "insert into sbg_organisation_members (organisation_id, user_id, billing_authority) values ($1::uuid,$2,false)",
+      [secondOperatorId, OTHER_USER.id],
+    );
+    assert.equal(await canAccessProvider(OTHER_USER.id, hotelId, ownProvider), false,
+      "multiple active operator memberships deny provider access");
+    await assert.rejects(scopedQuery(OTHER_USER.id, hotelId, ownProvider),
+      /operator provider booking access denied/i,
+      "multiple active operator memberships deny booking summaries");
+    await pg.query(
+      "update sbg_organisation_members set removed_at = now() where organisation_id = $1::uuid and user_id = $2",
+      [secondOperatorId, OTHER_USER.id],
+    );
+    assert.equal(await canAccessProvider(OTHER_USER.id, hotelId, ownProvider), true,
+      "access resumes when only the explicitly authorised operator membership remains");
+
     const matching = await scopedQuery(OTHER_USER.id, hotelId, ownProvider);
     assert.equal(matching.rows.length, 1, "only executing-provider bookings are visible");
     assert.equal(matching.rows[0]?.bookingId, ownBookingId);
