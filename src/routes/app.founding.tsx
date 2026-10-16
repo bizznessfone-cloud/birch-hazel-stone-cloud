@@ -16,6 +16,7 @@ import { foundingPropertyPreviewReady, validateFoundingPropertyDraft } from "@/l
 import { getOnboardingState } from "@/lib/aether/onboarding-fns";
 import { readFoundingPropertyEligibilityFn } from "@/lib/aether/founding-property-eligibility-fns";
 import { createFoundingPropertyFn } from "@/lib/aether/founding-property-fns";
+import { foundingPropertyRegistrationMessage } from "@/lib/aether/founding-property-message";
 import type { FoundingPropertyEligibility } from "@/lib/aether/founding-property-eligibility";
 
 export const Route = createFileRoute("/app/founding")({
@@ -190,8 +191,8 @@ function TermsPending({ organisationType, eligibility }: { organisationType: Fou
       });
       // Navigate to the newly created property, not an arbitrary first hotel.
       await router.navigate({ to: "/app/hotels/$hotelId", params: { hotelId: created.hotelId } });
-    } catch {
-      setRegistrationError("Property registration could not be completed. Please check your details and agreement status.");
+    } catch (error) {
+      setRegistrationError(foundingPropertyRegistrationMessage(error));
     } finally {
       setSubmitting(false);
     }
