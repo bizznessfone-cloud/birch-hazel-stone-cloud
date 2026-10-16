@@ -24,6 +24,7 @@ test("operator grant storage is deny-by-default and creates no access grants", a
       "0044_gate2_operator_provider_authorisation_management.sql",
       "0045_gate2_operator_provider_access_read.sql",
       "0046_gate2_operator_provider_booking_summaries.sql",
+      "0047_gate2_property_revoke_cascades_provider_authorisations.sql",
     ];
     for (const name of migrations) await pg.exec(readFileSync(`migrations/${name}`, "utf8"));
     const denied = await pg.query<{ allowed: boolean }>(
@@ -86,6 +87,7 @@ test("active grant allows only its operator; revocation removes access", async (
       "0044_gate2_operator_provider_authorisation_management.sql",
       "0045_gate2_operator_provider_access_read.sql",
       "0046_gate2_operator_provider_booking_summaries.sql",
+      "0047_gate2_property_revoke_cascades_provider_authorisations.sql",
     ]) await pg.exec(readFileSync(`migrations/${migration}`, "utf8"));
     await insertAuthUser(pg, OWNER_USER);
     await insertAuthUser(pg, OTHER_USER);
@@ -213,6 +215,23 @@ test("active grant allows only its operator; revocation removes access", async (
       [hotelId, ownProvider],
     );
     assert.equal(revoked.rows[0]?.count, 0, "provider-specific revocation takes effect");
+    // Revoking the parent hotel grant must revoke subordinate provider grants.
+    await setProvider(OWNER_USER.id, hotelId, ownProvider, true);
+    await pg.query(
+      "select sbg_set_operator_property_grant_for_user($1,$2::uuid,$3::uuid,false)",
+      [OWNER_USER.id, hotelId, operatorId],
+    );
+    await pg.query(
+      "select sbg_set_operator_property_grant_for_user($1,$2::uuid,$3::uuid,true)",
+      [OWNER_USER.id, hotelId, operatorId],
+    );
+    assert.equal(await canAccessProvider(OTHER_USER.id, hotelId, ownProvider), false,
+      "property regrant must not resurrect revoked provider authorisation");
+    const staleProviderGrants = await pg.query<{ count: number }>(
+      "select count(*)::int as count from sbg_operator_provider_authorisations where hotel_id = $1::uuid and operator_organisation_id = $2::uuid and revoked_at is null",
+      [hotelId, operatorId],
+    );
+    assert.equal(staleProviderGrants.rows[0]?.count, 0, "parent revocation cascades to provider grants");
     const canExecute = await pg.query<{ permitted: boolean }>(
       `select has_function_privilege('aether_app',
         'public.sbg_set_operator_provider_authorisation_for_user(text,uuid,uuid,uuid,boolean)', 'EXECUTE') as permitted`,
