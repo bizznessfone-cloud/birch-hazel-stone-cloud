@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { openCp272PaymentDb, insertAuthUser, OWNER_USER, OTHER_USER } from "./cp26a4-fixture.ts";
+import { openCp272PaymentDb, insertAuthUser, OWNER_USER, OTHER_USER, ZERO_USER } from "./cp26a4-fixture.ts";
 
 test("operator grant storage is deny-by-default and creates no access grants", async () => {
   const pg = await openCp272PaymentDb();
@@ -64,6 +64,7 @@ test("active grant allows only its operator; revocation removes access", async (
     ]) await pg.exec(readFileSync(`migrations/${migration}`, "utf8"));
     await insertAuthUser(pg, OWNER_USER);
     await insertAuthUser(pg, OTHER_USER);
+    await insertAuthUser(pg, ZERO_USER);
     const ownerOrg = await pg.query<{ organisation_id: string }>(
       "select organisation_id::text as organisation_id from sbg_ensure_founding_organisation($1,$2)",
       [OWNER_USER.id, "Fixture Hotel Owner"],
@@ -90,19 +91,28 @@ test("active grant allows only its operator; revocation removes access", async (
       );
       return result.rows[0]?.allowed;
     };
-    // An unrelated hotel may not be granted by this owner, even when the
-    // intended operator organisation is otherwise valid.
-    const unrelatedHotel = await pg.query<{ id: string }>(
-      "select id::text as id from hotels where id <> $1::uuid limit 1",
-      [hotelId],
+    // A second independently owned hotel is mandatory, never conditional.
+    await pg.query(
+      "select organisation_id from sbg_ensure_founding_organisation($1,$2)",
+      [ZERO_USER.id, "Fixture Second Hotel Owner"],
     );
-    if (unrelatedHotel.rows.length > 0) {
+    await pg.query("select sbg_classify_founding_organisation($1,'hotel')", [ZERO_USER.id]);
+    await pg.query("select sbg_accept_approved_founding_agreement_for_user($1,$2)", [ZERO_USER.id, "fixture-operator-access"]);
+    const otherHotel = await pg.query<{ hotel_id: string }>(
+      "select hotel_id::text as hotel_id from sbg_create_founding_property_for_user($1,$2,$3,$4,$5,$6)",
+      [ZERO_USER.id, "sbg-other-grant-test", "Other Owner Hotel", "Rhodes, Greece", "Europe/Athens", "EUR"],
+    );
+    assert.equal(otherHotel.rows.length, 1, "a separate owner hotel must exist");
+    const otherHotelId = otherHotel.rows[0]!.hotel_id;
+    assert.notEqual(otherHotelId, hotelId);
+    for (const enable of [true, false]) {
       await assert.rejects(
         pg.query(
-          "select sbg_set_operator_property_grant_for_user($1,$2::uuid,$3::uuid,true)",
-          [OWNER_USER.id, unrelatedHotel.rows[0]!.id, operatorId],
+          "select sbg_set_operator_property_grant_for_user($1,$2::uuid,$3::uuid,$4)",
+          [OWNER_USER.id, otherHotelId, operatorId, enable],
         ),
         /operator grant not authorised/i,
+        "a hotel owner cannot modify another hotel's operator grants",
       );
     }
     assert.equal(await check(OTHER_USER.id), false, "operator classification alone is not a grant");
