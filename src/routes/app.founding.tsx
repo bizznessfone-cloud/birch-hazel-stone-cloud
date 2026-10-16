@@ -221,7 +221,7 @@ function TermsPending({ organisationType, eligibility }: { organisationType: Fou
           <p className="text-xs font-medium tracking-[0.2em] text-muted uppercase">{eligibility.eligible ? "Next step · Register property" : "Next step · Preview only"}</p>
           <h2 id="property-preview-title" className="mt-2 text-2xl font-semibold tracking-tight">Your first property</h2>
           <p className="mt-3 text-sm leading-relaxed text-muted">
-            {eligibility.eligible ? "Register your hotel to open its workspace." : "Preview the details needed to register your hotel. Nothing is saved or submitted."}
+            {eligibility.eligible ? "Register your hotel to open its workspace." : "Preview the details needed to register your hotel. Nothing is saved or submitted. Legal agreements are being finalised; this preview is not an acceptance of any agreement."}
           </p>
           <label className="mt-6 block" htmlFor="preview-property-name">
             <span className="mb-2 block text-xs font-medium tracking-widest text-muted uppercase">Property name</span>
