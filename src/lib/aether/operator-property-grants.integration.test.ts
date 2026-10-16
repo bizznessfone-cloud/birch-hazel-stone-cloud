@@ -202,6 +202,24 @@ test("active grant allows only its operator; revocation removes access", async (
     assert.equal(await canAccessProvider(OTHER_USER.id, hotelId, ownProvider), true,
       "restoring the agreement alone preserves the explicit grant under current policy");
 
+    // The booking projection must independently honour provider-agreement
+    // deactivation, not merely the eligibility predicate.
+    const providerQuery = () => pg.query(
+      "select * from sbg_list_operator_provider_booking_summaries_for_user($1,$2::uuid,$3::uuid,10)",
+      [OTHER_USER.id, hotelId, ownProvider],
+    );
+    await pg.query(
+      "update hotel_provider_agreements set active = false where hotel_id = $1::uuid and provider_id = $2::uuid",
+      [hotelId, ownProvider],
+    );
+    await assert.rejects(providerQuery(), /operator provider booking access denied/i,
+      "inactive agreement must block the booking projection itself");
+    await pg.query(
+      "update hotel_provider_agreements set active = true where hotel_id = $1::uuid and provider_id = $2::uuid",
+      [hotelId, ownProvider],
+    );
+
+
     assert.equal(await canAccessProvider(OTHER_USER.id, hotelId, otherProvider), false,
       "another hotel's provider remains inaccessible");
     assert.equal(await canAccessProvider(OWNER_USER.id, hotelId, ownProvider), false,
