@@ -13,6 +13,7 @@ const migrations = [
   "0035_cp3005e2d2d_founding_property.sql",
   "0036_cp3005e2d2d_founding_integrity.sql",
   "0037_gate2_founding_property_eligibility.sql",
+  "0038_gate2_approved_agreement_acceptance.sql",
 ];
 const property = {
   name: "Blue Lagoon Hotel", locality: "Kos, Greece", code: "sbg-gate2-a",
@@ -62,10 +63,20 @@ test("founding-property service enforces effective test agreement in isolated da
       createFoundingProperty({ db: db as never, userId: OWNER_USER.id, property }),
       /terms are not approved/i,
     );
-    await pg.query(
-      "insert into sbg_organisation_acceptances (organisation_id, accepted_by_user_id, agreement_version) values ($1::uuid, $2, $3)",
-      [orgId, OWNER_USER.id, "fixture-gate2-not-legal"],
+    await assert.rejects(
+      pg.query("select * from sbg_accept_approved_founding_agreement_for_user($1, $2)", [OWNER_USER.id, "terms-v1"]),
+      /approved agreement unavailable/i,
     );
+    const acceptance = await pg.query<{ agreement_version: string; already_accepted: boolean }>(
+      "select * from sbg_accept_approved_founding_agreement_for_user($1, $2)",
+      [OWNER_USER.id, "fixture-gate2-not-legal"],
+    );
+    assert.deepEqual(acceptance.rows[0], { agreement_version: "fixture-gate2-not-legal", already_accepted: false });
+    const repeated = await pg.query<{ already_accepted: boolean }>(
+      "select * from sbg_accept_approved_founding_agreement_for_user($1, $2)",
+      [OWNER_USER.id, "fixture-gate2-not-legal"],
+    );
+    assert.equal(repeated.rows[0]?.already_accepted, true, "repeat acceptance must not duplicate immutable evidence");
     assert.deepEqual(await eligibility(), { eligible: true, reason: "ready" });
     // Eligibility is advisory only: removing effective approval must immediately block the write.
     await pg.query(
