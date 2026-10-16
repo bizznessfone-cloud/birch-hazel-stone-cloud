@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { openCp272PaymentDb } from "./cp26a4-fixture.ts";
+import { openCp272PaymentDb, insertAuthUser, OWNER_USER, OTHER_USER } from "./cp26a4-fixture.ts";
 
 test("operator grant storage is deny-by-default and creates no access grants", async () => {
   const pg = await openCp272PaymentDb();
@@ -40,6 +40,68 @@ test("operator grant storage is deny-by-default and creates no access grants", a
       "select relrowsecurity from pg_class where oid = 'public.sbg_operator_property_grants'::regclass",
     );
     assert.equal(rls.rows[0]?.relrowsecurity, true);
+  } finally {
+    await pg.close();
+  }
+});
+
+test("active grant allows only its operator; revocation removes access", async () => {
+  const pg = await openCp272PaymentDb();
+  try {
+    for (const migration of [
+      "0031_cp3005e2c_organisation_type.sql",
+      "0032_cp3005e2c1_organisation_acceptance.sql",
+      "0033_cp3005e2d2b_founding_organisation.sql",
+      "0034_cp3005e2d2c_founding_classification_acceptance.sql",
+      "0035_cp3005e2d2d_founding_property.sql",
+      "0036_cp3005e2d2d_founding_integrity.sql",
+      "0037_gate2_founding_property_eligibility.sql",
+      "0038_gate2_approved_agreement_acceptance.sql",
+      "0039_gate2_operator_property_grants.sql",
+      "0040_gate2_operator_property_access_read.sql",
+    ]) await pg.exec(readFileSync(`migrations/${migration}`, "utf8"));
+    await insertAuthUser(pg, OWNER_USER);
+    await insertAuthUser(pg, OTHER_USER);
+    const ownerOrg = await pg.query<{ organisation_id: string }>(
+      "select organisation_id::text as organisation_id from sbg_ensure_founding_organisation($1,$2)",
+      [OWNER_USER.id, "Fixture Hotel Owner"],
+    );
+    await pg.query("select sbg_classify_founding_organisation($1,'hotel')", [OWNER_USER.id]);
+    await pg.query(
+      "insert into sbg_approved_property_agreement_versions(agreement_version,effective) values ('fixture-operator-access',true)",
+    );
+    await pg.query("select sbg_accept_approved_founding_agreement_for_user($1,$2)", [OWNER_USER.id, "fixture-operator-access"]);
+    const hotel = await pg.query<{ hotel_id: string }>(
+      "select hotel_id::text as hotel_id from sbg_create_founding_property_for_user($1,$2,$3,$4,$5,$6)",
+      [OWNER_USER.id, "sbg-grant-test", "Grant Test Hotel", "Kos, Greece", "Europe/Athens", "EUR"],
+    );
+    const hotelId = hotel.rows[0]!.hotel_id;
+    const operator = await pg.query<{ organisation_id: string }>(
+      "select organisation_id::text as organisation_id from sbg_ensure_founding_organisation($1,$2)",
+      [OTHER_USER.id, "Fixture Independent Operator"],
+    );
+    await pg.query("select sbg_classify_founding_organisation($1,'transfer_operator')", [OTHER_USER.id]);
+    const operatorId = operator.rows[0]!.organisation_id;
+    const check = async (userId: string) => {
+      const result = await pg.query<{ allowed: boolean }>(
+        "select sbg_operator_can_access_property_for_user($1,$2::uuid) as allowed", [userId, hotelId],
+      );
+      return result.rows[0]?.allowed;
+    };
+    assert.equal(await check(OTHER_USER.id), false, "operator classification alone is not a grant");
+    assert.equal(await check(OWNER_USER.id), false, "hotel owner is not an operator");
+    await pg.query(
+      "insert into sbg_operator_property_grants(operator_organisation_id,hotel_id,granted_by_user_id) values ($1,$2,$3)",
+      [operatorId, hotelId, OWNER_USER.id],
+    );
+    assert.equal(await check(OTHER_USER.id), true, "explicit active grant allows the operator");
+    assert.equal(await check(OWNER_USER.id), false, "grant does not transform hotel owner into operator");
+    await pg.query(
+      "update sbg_operator_property_grants set revoked_at = now() where operator_organisation_id = $1 and hotel_id = $2",
+      [operatorId, hotelId],
+    );
+    assert.equal(await check(OTHER_USER.id), false, "revocation must immediately deny");
+    assert.equal(ownerOrg.rows.length, 1);
   } finally {
     await pg.close();
   }
