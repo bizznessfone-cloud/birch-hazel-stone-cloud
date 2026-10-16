@@ -130,17 +130,21 @@ test("active grant allows only its operator; revocation removes access", async (
     assert.equal(await check(OTHER_USER.id), true, "explicit active grant allows the operator");
     // Two real bookings make the result projection and hotel isolation observable.
     const insertBooking = async (targetHotelId: string, reference: string) => {
+      const provider = await pg.query<{ id: string }>(
+        "select id::text as id from providers where hotel_id = $1::uuid order by id limit 1", [targetHotelId],
+      );
+      assert.equal(provider.rows.length, 1, "founding hotel must have an executing provider");
       const result = await pg.query<{ id: string }>(
         `insert into bookings (
-           hotel_id, transfer_date, pickup_time, duration_minutes,
+           hotel_id, executing_provider_id, transfer_date, pickup_time, duration_minutes,
            guest_name, guest_phone, guest_email, passenger_count, luggage_count,
            pickup_text, destination_text, human_reference, confirmation_token
          ) values (
-           $1::uuid, date '2026-10-20', time '10:30', 90,
+           $1::uuid, $4::uuid, date '2026-10-20', time '10:30', 90,
            'Private Guest', '+30000000000', 'private@sbg.test', 2, 1,
            'Hotel lobby', 'Airport', $2, $3
          ) returning id::text as id`,
-        [targetHotelId, reference, `secret-${reference}`],
+        [targetHotelId, reference, `secret-${reference}`, provider.rows[0]!.id],
       );
       return result.rows[0]!.id;
     };
