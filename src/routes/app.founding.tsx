@@ -268,7 +268,7 @@ function TermsPending({ organisationType, eligibility }: { organisationType: Fou
             {previewReady ? (eligibility.eligible ? "Details look ready. You can now register your property." : "Details look ready. Registration remains unavailable until an approved agreement can be accepted.") : "Preview only. Complete all three fields to check the details. Nothing is saved."}
           </p>
           {registrationError ? <p role="alert" className="mt-3 text-sm text-danger">{registrationError}</p> : null}
-          <button type="submit" disabled={!eligibility.eligible || !previewReady || submitting || !/^[A-Za-z_]+\/[A-Za-z_]+(?:\/[A-Za-z_]+)?$/.test(ianaTimezone) || !/^[A-Z]{3}$/.test(currency)}
+          <button type="submit" disabled={!eligibility.eligible || !previewReady || submitting || !timezoneValid || !currencyValid}
             className="mt-4 min-h-12 w-full bg-ink px-4 text-sm font-semibold tracking-wide text-canvas uppercase disabled:opacity-50">
             {submitting ? "Creating property…" : eligibility.eligible ? "Create property" : "Create property · Not yet available"}
           </button>
