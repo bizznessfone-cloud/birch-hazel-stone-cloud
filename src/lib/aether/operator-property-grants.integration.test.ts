@@ -17,8 +17,14 @@ test("operator grant storage is deny-by-default and creates no access grants", a
       "0037_gate2_founding_property_eligibility.sql",
       "0038_gate2_approved_agreement_acceptance.sql",
       "0039_gate2_operator_property_grants.sql",
+      "0040_gate2_operator_property_access_read.sql",
     ];
     for (const name of migrations) await pg.exec(readFileSync(`migrations/${name}`, "utf8"));
+    const denied = await pg.query<{ allowed: boolean }>(
+      "select public.sbg_operator_can_access_property_for_user($1, $2::uuid) as allowed",
+      ["nonexistent-user", "11111111-1111-4111-8111-111111111111"],
+    );
+    assert.equal(denied.rows[0]?.allowed, false, "missing identity cannot gain access");
     const count = await pg.query<{ count: number }>("select count(*)::int as count from public.sbg_operator_property_grants");
     assert.equal(count.rows[0]?.count, 0, "migration must not create any implicit hotel/operator relationship");
     const policies = await pg.query<{ count: number }>(
