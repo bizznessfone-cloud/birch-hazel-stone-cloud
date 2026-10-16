@@ -375,19 +375,21 @@ test("active grant allows only its operator; revocation removes access", async (
     assert.equal(await canAccessProvider(OTHER_USER.id, hotelId, ownProvider), true,
       "access resumes when only the explicitly authorised operator membership remains");
 
-    // A second executing provider at the SAME hotel must not inherit
+    // A second, inactive provider at the SAME hotel must not inherit
     // the first provider's authorisation or appear in its booking results.
     const secondProvider = await pg.query<{ id: string }>(
       "insert into providers (code, name, kind) values ('gate2-second-provider', 'Fixture Second Provider', 'external') returning id::text as id",
     );
     const secondProviderId = secondProvider.rows[0]!.id;
+    // V1 enforces one active provider agreement per hotel. A second
+    // provider can exist only as an inactive historical agreement.
     await pg.query(
-      "insert into hotel_provider_agreements (hotel_id, provider_id, active) values ($1::uuid,$2::uuid,true)",
+      "insert into hotel_provider_agreements (hotel_id, provider_id, active) values ($1::uuid,$2::uuid,false)",
       [hotelId, secondProviderId],
     );
     await assert.rejects(scopedQuery(OTHER_USER.id, hotelId, secondProviderId),
       /operator provider booking access denied/i,
-      "same-hotel provider without its own authorisation is inaccessible");
+      "inactive same-hotel provider without authorisation is inaccessible");
     const secondProviderBooking = await pg.query<{ id: string }>(
       `insert into bookings (
          hotel_id, executing_provider_id, transfer_date, pickup_time, duration_minutes,
