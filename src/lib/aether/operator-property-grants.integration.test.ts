@@ -132,6 +132,22 @@ test("active grant allows only its operator; revocation removes access", async (
       [OWNER_USER.id, hotelId, operatorId],
     );
     assert.equal(await check(OTHER_USER.id), false, "revocation must immediately deny");
+    // Reauthorisation is an explicit hotel-owner action, not automatic.
+    await pg.query(
+      "select sbg_set_operator_property_grant_for_user($1,$2::uuid,$3::uuid,true)",
+      [OWNER_USER.id, hotelId, operatorId],
+    );
+    assert.equal(await check(OTHER_USER.id), true, "explicit regrant restores access");
+    await pg.query(
+      "update sbg_organisation_members set removed_at = now() where organisation_id = $1::uuid and user_id = $2",
+      [operatorId, OTHER_USER.id],
+    );
+    assert.equal(await check(OTHER_USER.id), false, "removed operator membership must immediately deny");
+    const activeGrant = await pg.query<{ count: number }>(
+      "select count(*)::int as count from sbg_operator_property_grants where operator_organisation_id = $1::uuid and hotel_id = $2::uuid and revoked_at is null",
+      [operatorId, hotelId],
+    );
+    assert.equal(activeGrant.rows[0]?.count, 1, "membership denial must not silently mutate grant records");
     assert.equal(ownerOrg.rows.length, 1);
   } finally {
     await pg.close();
