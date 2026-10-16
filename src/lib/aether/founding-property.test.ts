@@ -41,3 +41,10 @@ test("accepts real international IANA timezones and rejects invented zones", asy
     db: db as never, userId: "session-user", property: { ...property, ianaTimezone: "Europe/Imaginary" },
   }), /Invalid timezone/);
 });
+
+test("rejects unknown three-letter currency even when its shape is valid", async () => {
+  const db = { query: async () => { throw Error("must not query"); } };
+  await assert.rejects(createFoundingProperty({
+    db: db as never, userId: "session-user", property: { ...property, currency: "ZZZ" },
+  }), /Invalid currency/);
+});
