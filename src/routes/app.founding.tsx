@@ -179,23 +179,31 @@ function TermsPending({ organisationType, eligibility }: { organisationType: Fou
   const [currency, setCurrency] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [registrationError, setRegistrationError] = useState<string | null>(null);
+  const [createdHotelId, setCreatedHotelId] = useState<string | null>(null);
   const router = useRouter();
   async function registerProperty(event: FormEvent) {
     event.preventDefault();
-    if (!eligibility.eligible || submitting || !foundingPropertyPreviewReady({ name: propertyName, locality, code: propertyCode }) || !timezoneValid || !currencyValid) return;
+    if (!eligibility.eligible || submitting || createdHotelId || !foundingPropertyPreviewReady({ name: propertyName, locality, code: propertyCode }) || !timezoneValid || !currencyValid) return;
     setSubmitting(true);
     setRegistrationError(null);
+    let hotelId: string;
     try {
       const created = await createFoundingPropertyFn({
         data: { name: propertyName.trim(), locality: locality.trim(), code: propertyCode.trim(), ianaTimezone, currency },
       });
-      // Navigate to the newly created property, not an arbitrary first hotel.
-      // Refresh the authenticated workspace loader before entering the new property.
-      // This prevents stale account lists from hiding a successful registration.
-      await router.invalidate();
-      await router.navigate({ to: "/app/hotels/$hotelId", params: { hotelId: created.hotelId } });
+      hotelId = created.hotelId;
+      // A successful server write must not be reported as failed if navigation fails.
+      setCreatedHotelId(hotelId);
     } catch (error) {
       setRegistrationError(foundingPropertyRegistrationMessage(error));
+      setSubmitting(false);
+      return;
+    }
+    try {
+      await router.invalidate();
+      await router.navigate({ to: "/app/hotels/$hotelId", params: { hotelId } });
+    } catch {
+      setRegistrationError("Your property was created successfully, but the workspace could not open automatically. Use the link below to continue.");
     } finally {
       setSubmitting(false);
     }
@@ -278,7 +286,12 @@ function TermsPending({ organisationType, eligibility }: { organisationType: Fou
                 : "All property details are valid. Registration remains unavailable until an approved agreement has been explicitly accepted."}
           </p>
           {registrationError ? <p role="alert" className="mt-3 text-sm text-danger">{registrationError}</p> : null}
-          <button type="submit" disabled={!eligibility.eligible || !previewReady || submitting || !timezoneValid || !currencyValid}
+          {createdHotelId ? (
+            <a className="mt-4 block text-sm font-semibold underline underline-offset-4" href={`/app/hotels/${encodeURIComponent(createdHotelId)}`}>
+              Open your new property's workspace
+            </a>
+          ) : null}
+          <button type="submit" disabled={!eligibility.eligible || !previewReady || submitting || !!createdHotelId || !timezoneValid || !currencyValid}
             className="mt-4 min-h-12 w-full bg-ink px-4 text-sm font-semibold tracking-wide text-canvas uppercase disabled:opacity-50">
             {submitting ? "Creating property…" : eligibility.eligible ? "Create property" : "Create property · Not yet available"}
           </button>
