@@ -356,7 +356,7 @@ test("active grant allows only its operator; revocation removes access", async (
     );
     const secondOperatorId = secondOperator.rows[0]!.id;
     await pg.query(
-      "insert into sbg_organisation_members (organisation_id, user_id, billing_authority) values ($1::uuid,$2,false)",
+      "insert into sbg_organisation_members (organisation_id, user_id, role, billing_authority) values ($1::uuid,$2,'operator',false)",
       [secondOperatorId, OTHER_USER.id],
     );
     assert.equal(await canAccessProvider(OTHER_USER.id, hotelId, ownProvider), false,
