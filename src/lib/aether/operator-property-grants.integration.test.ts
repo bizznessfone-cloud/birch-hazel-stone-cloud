@@ -128,6 +128,25 @@ test("active grant allows only its operator; revocation removes access", async (
       [OWNER_USER.id, hotelId, operatorId],
     );
     assert.equal(await check(OTHER_USER.id), true, "explicit active grant allows the operator");
+    // Two real bookings make the result projection and hotel isolation observable.
+    const insertBooking = async (targetHotelId: string, reference: string) => {
+      const result = await pg.query<{ id: string }>(
+        `insert into bookings (
+           hotel_id, transfer_date, pickup_time, duration_minutes,
+           guest_name, guest_phone, guest_email, passenger_count, luggage_count,
+           pickup_text, destination_text, human_reference, confirmation_token
+         ) values (
+           $1::uuid, date '2026-10-20', time '10:30', 90,
+           'Private Guest', '+30000000000', 'private@sbg.test', 2, 1,
+           'Hotel lobby', 'Airport', $2, $3
+         ) returning id::text as id`,
+        [targetHotelId, reference, `secret-${reference}`],
+      );
+      return result.rows[0]!.id;
+    };
+    const ownBookingId = await insertBooking(hotelId, "PT-GRANT-OWN");
+    await insertBooking(otherHotelId, "PT-GRANT-OTHER");
+
     // The SQL query itself must deny ungranted identities and limit its
     // output to the approved projection; app role cannot execute it yet.
     await assert.rejects(
@@ -142,19 +161,23 @@ test("active grant allows only its operator; revocation removes access", async (
       "select * from sbg_list_operator_booking_summaries_for_user($1,$2::uuid,$3)",
       [OTHER_USER.id, hotelId, 10],
     );
-    assert.equal(summaries.rows.length, 0, "fixture has no seeded bookings");
-    const cols = await pg.query<{ column_name: string }>(
-      `select a.attname as column_name
-         from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-         join pg_type t on t.oid = p.prorettype
-         join pg_class c on c.oid = t.typrelid
-         join pg_attribute a on a.attrelid = c.oid
-        where n.nspname = 'public' and p.proname = 'sbg_list_operator_booking_summaries_for_user'
-          and a.attnum > 0 and not a.attisdropped order by a.attnum`,
+    assert.equal(summaries.rows.length, 1, "only the granted hotel's booking is visible");
+    assert.deepEqual(summaries.rows[0], {
+      bookingId: ownBookingId,
+      humanReference: "PT-GRANT-OWN",
+      transferDate: "2026-10-20",
+      pickupTime: "10:30:00",
+      passengerCount: 2,
+      luggageCount: 1,
+      pickupText: "Hotel lobby",
+      destinationText: "Airport",
+      cancelled: false,
+    }, "SQL projection must exclude contact details, tokens, payment and other hotels");
+    const execution = await pg.query<{ permitted: boolean }>(
+      `select has_function_privilege('aether_app',
+        'public.sbg_list_operator_booking_summaries_for_user(text,uuid,integer)', 'EXECUTE') as permitted`,
     );
-    // Function returns TABLE, whose result descriptor is tested by a
-    // zero-row query rather than relying on pg_proc composite type internals.
-    assert.equal(cols.rows.length, 0);
+    assert.equal(execution.rows[0]?.permitted, false, "application role must not execute unapproved booking query");
 
     assert.equal(await check(OWNER_USER.id), false, "grant does not transform hotel owner into operator");
     await pg.query(
