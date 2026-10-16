@@ -67,6 +67,21 @@ test("founding-property service enforces effective test agreement in isolated da
       [orgId, OWNER_USER.id, "fixture-gate2-not-legal"],
     );
     assert.deepEqual(await eligibility(), { eligible: true, reason: "ready" });
+    // Eligibility is advisory only: removing effective approval must immediately block the write.
+    await pg.query(
+      "update sbg_approved_property_agreement_versions set effective = false where agreement_version = $1",
+      ["fixture-gate2-not-legal"],
+    );
+    assert.deepEqual(await eligibility(), { eligible: false, reason: "agreement_required" });
+    await assert.rejects(
+      createFoundingProperty({ db: db as never, userId: OWNER_USER.id, property }),
+      /terms are not approved/i,
+    );
+    await pg.query(
+      "update sbg_approved_property_agreement_versions set effective = true where agreement_version = $1",
+      ["fixture-gate2-not-legal"],
+    );
+    assert.deepEqual(await eligibility(), { eligible: true, reason: "ready" });
     const result = await createFoundingProperty({ db: db as never, userId: OWNER_USER.id, property });
     assert.ok(result.hotelId);
     assert.ok(result.providerId);
