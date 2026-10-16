@@ -190,6 +190,9 @@ function TermsPending({ organisationType, eligibility }: { organisationType: Fou
         data: { name: propertyName.trim(), locality: locality.trim(), code: propertyCode.trim(), ianaTimezone, currency },
       });
       // Navigate to the newly created property, not an arbitrary first hotel.
+      // Refresh the authenticated workspace loader before entering the new property.
+      // This prevents stale account lists from hiding a successful registration.
+      await router.invalidate();
       await router.navigate({ to: "/app/hotels/$hotelId", params: { hotelId: created.hotelId } });
     } catch (error) {
       setRegistrationError(foundingPropertyRegistrationMessage(error));
