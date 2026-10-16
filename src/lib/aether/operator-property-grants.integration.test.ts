@@ -340,9 +340,19 @@ test("active grant allows only its operator; revocation removes access", async (
     // Ambiguous active transfer-operator memberships must fail closed.
     // A second operator membership must not let a user choose the
     // favourable grant via a forged organisation selector.
+    const secondOperatorCreator = {
+      id: "fixture-second-operator-creator",
+      email: "second-operator-creator@sbg.test",
+      name: "Second Operator Creator",
+    };
+    await insertAuthUser(pg, secondOperatorCreator);
     const secondOperator = await pg.query<{ id: string }>(
-      "insert into sbg_organisations (name, organisation_type, created_by_user_id) values ($1, 'transfer_operator', $2) returning id::text as id",
-      ["Second Fixture Operator", ZERO_USER.id],
+      "select organisation_id::text as id from sbg_ensure_founding_organisation($1,$2)",
+      [secondOperatorCreator.id, "Second Fixture Operator"],
+    );
+    await pg.query(
+      "select sbg_classify_founding_organisation($1,'transfer_operator')",
+      [secondOperatorCreator.id],
     );
     const secondOperatorId = secondOperator.rows[0]!.id;
     await pg.query(
