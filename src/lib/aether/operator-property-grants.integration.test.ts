@@ -21,6 +21,7 @@ test("operator grant storage is deny-by-default and creates no access grants", a
       "0041_gate2_operator_property_grant_management.sql",
       "0042_gate2_operator_booking_summaries.sql",
       "0043_gate2_operator_provider_authorisations.sql",
+      "0044_gate2_operator_provider_authorisation_management.sql",
     ];
     for (const name of migrations) await pg.exec(readFileSync(`migrations/${name}`, "utf8"));
     const denied = await pg.query<{ allowed: boolean }>(
@@ -80,6 +81,7 @@ test("active grant allows only its operator; revocation removes access", async (
       "0041_gate2_operator_property_grant_management.sql",
       "0042_gate2_operator_booking_summaries.sql",
       "0043_gate2_operator_provider_authorisations.sql",
+      "0044_gate2_operator_provider_authorisation_management.sql",
     ]) await pg.exec(readFileSync(`migrations/${migration}`, "utf8"));
     await insertAuthUser(pg, OWNER_USER);
     await insertAuthUser(pg, OTHER_USER);
@@ -145,6 +147,46 @@ test("active grant allows only its operator; revocation removes access", async (
       [OWNER_USER.id, hotelId, operatorId],
     );
     assert.equal(await check(OTHER_USER.id), true, "explicit active grant allows the operator");
+
+    const providerForHotel = await pg.query<{ id: string }>(
+      "select provider_id::text as id from hotel_provider_agreements where hotel_id = $1::uuid and active = true",
+      [hotelId],
+    );
+    const providerForOtherHotel = await pg.query<{ id: string }>(
+      "select provider_id::text as id from hotel_provider_agreements where hotel_id = $1::uuid and active = true",
+      [otherHotelId],
+    );
+    const ownProvider = providerForHotel.rows[0]!.id;
+    const otherProvider = providerForOtherHotel.rows[0]!.id;
+    const setProvider = (userId: string, targetHotelId: string, targetProviderId: string, enabled: boolean) =>
+      pg.query(
+        "select sbg_set_operator_provider_authorisation_for_user($1,$2::uuid,$3::uuid,$4::uuid,$5)",
+        [userId, targetHotelId, targetProviderId, operatorId, enabled],
+      );
+    await assert.rejects(setProvider(OTHER_USER.id, hotelId, ownProvider, true),
+      /operator provider authorisation denied/i, "operator cannot self-authorise");
+    await assert.rejects(setProvider(OWNER_USER.id, hotelId, otherProvider, true),
+      /operator provider authorisation denied/i, "other hotel's provider is not eligible");
+    await assert.rejects(setProvider(OWNER_USER.id, otherHotelId, otherProvider, true),
+      /operator provider authorisation denied/i, "another hotel's owner must authorise");
+    await setProvider(OWNER_USER.id, hotelId, ownProvider, true);
+    const authorised = await pg.query<{ count: number }>(
+      "select count(*)::int as count from sbg_operator_provider_authorisations where hotel_id = $1::uuid and provider_id = $2::uuid and revoked_at is null",
+      [hotelId, ownProvider],
+    );
+    assert.equal(authorised.rows[0]?.count, 1, "only specifically authorised provider is granted");
+    await setProvider(OWNER_USER.id, hotelId, ownProvider, false);
+    const revoked = await pg.query<{ count: number }>(
+      "select count(*)::int as count from sbg_operator_provider_authorisations where hotel_id = $1::uuid and provider_id = $2::uuid and revoked_at is null",
+      [hotelId, ownProvider],
+    );
+    assert.equal(revoked.rows[0]?.count, 0, "provider-specific revocation takes effect");
+    const canExecute = await pg.query<{ permitted: boolean }>(
+      `select has_function_privilege('aether_app',
+        'public.sbg_set_operator_provider_authorisation_for_user(text,uuid,uuid,uuid,boolean)', 'EXECUTE') as permitted`,
+    );
+    assert.equal(canExecute.rows[0]?.permitted, false, "application cannot issue provider grants");
+
     // Two real bookings make the result projection and hotel isolation observable.
     const insertBooking = async (targetHotelId: string, reference: string) => {
       const provider = await pg.query<{ id: string }>(
