@@ -117,6 +117,16 @@ test("founding-property service enforces effective test agreement in isolated da
       [second.hotelId],
     );
     assert.equal(secondHotel.rows[0]?.organisation_id, orgId);
+    // International property settings must survive the full SQL creation path.
+    const london = await createFoundingProperty({
+      db: db as never, userId: OWNER_USER.id,
+      property: { name: "London Riverside", locality: "London, UK", code: "sbg-gate2-london", ianaTimezone: "Europe/London", currency: "GBP" },
+    });
+    const londonRows = await pg.query<{ iana_timezone: string; currency: string; organisation_id: string }>(
+      "select iana_timezone, currency, organisation_id::text as organisation_id from hotels where id = $1::uuid",
+      [london.hotelId],
+    );
+    assert.deepEqual(londonRows.rows[0], { iana_timezone: "Europe/London", currency: "GBP", organisation_id: orgId });
     await assert.rejects(
       createFoundingProperty({ db: db as never, userId: "nonexistent-user", property: { ...property, code: "sbg-gate2-c" } }),
       /account not found/i,
