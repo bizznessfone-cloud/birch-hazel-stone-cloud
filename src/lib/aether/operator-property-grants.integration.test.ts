@@ -375,6 +375,36 @@ test("active grant allows only its operator; revocation removes access", async (
     assert.equal(await canAccessProvider(OTHER_USER.id, hotelId, ownProvider), true,
       "access resumes when only the explicitly authorised operator membership remains");
 
+    // A second executing provider at the SAME hotel must not inherit
+    // the first provider's authorisation or appear in its booking results.
+    const secondProvider = await pg.query<{ id: string }>(
+      "insert into providers (code, name, kind) values ('gate2-second-provider', 'Fixture Second Provider', 'external') returning id::text as id",
+    );
+    const secondProviderId = secondProvider.rows[0]!.id;
+    await pg.query(
+      "insert into hotel_provider_agreements (hotel_id, provider_id, active) values ($1::uuid,$2::uuid,true)",
+      [hotelId, secondProviderId],
+    );
+    await assert.rejects(scopedQuery(OTHER_USER.id, hotelId, secondProviderId),
+      /operator provider booking access denied/i,
+      "same-hotel provider without its own authorisation is inaccessible");
+    const secondProviderBooking = await pg.query<{ id: string }>(
+      `insert into bookings (
+         hotel_id, executing_provider_id, transfer_date, pickup_time, duration_minutes,
+         guest_name, guest_phone, guest_email, passenger_count, luggage_count,
+         pickup_text, destination_text, human_reference, confirmation_token
+       ) values (
+         $1::uuid, $2::uuid, date '2026-10-20', time '11:30', 90,
+         'Other Provider Guest', '+30000000001', 'other-provider@sbg.test', 1, 0,
+         'Hotel lobby', 'Harbour', 'PT-GRANT-SECOND', 'secret-PT-GRANT-SECOND'
+       ) returning id::text as id`,
+      [hotelId, secondProviderId],
+    );
+    assert.equal(secondProviderBooking.rows.length, 1);
+    await assert.rejects(scopedQuery(OTHER_USER.id, hotelId, secondProviderId),
+      /operator provider booking access denied/i,
+      "a real same-hotel booking does not unlock unauthorised provider access");
+
     const matching = await scopedQuery(OTHER_USER.id, hotelId, ownProvider);
     assert.equal(matching.rows.length, 1, "only executing-provider bookings are visible");
     assert.equal(matching.rows[0]?.bookingId, ownBookingId);
