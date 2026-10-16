@@ -267,7 +267,11 @@ function TermsPending({ organisationType, eligibility }: { organisationType: Fou
             {currency && !currencyValid ? <p role="alert" className="mt-1 text-xs text-danger">Enter a recognised currency code.</p> : null}
           </label>
           <p className="mt-5 text-xs leading-relaxed text-muted" role="status">
-            {previewReady ? (eligibility.eligible ? "Details look ready. You can now register your property." : "Details look ready. Registration remains unavailable until an approved agreement can be accepted.") : "Preview only. Complete all three fields to check the details. Nothing is saved."}
+            {!previewReady || !timezoneValid || !currencyValid
+              ? "Complete the property name, location, booking code, valid timezone and currency. Nothing is saved until registration is available and you submit."
+              : eligibility.eligible
+                ? "All property details are valid. You can register your property."
+                : "All property details are valid. Registration remains unavailable until an approved agreement has been explicitly accepted."}
           </p>
           {registrationError ? <p role="alert" className="mt-3 text-sm text-danger">{registrationError}</p> : null}
           <button type="submit" disabled={!eligibility.eligible || !previewReady || submitting || !timezoneValid || !currencyValid}
