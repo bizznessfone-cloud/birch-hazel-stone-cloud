@@ -20,6 +20,7 @@ test("operator grant storage is deny-by-default and creates no access grants", a
       "0040_gate2_operator_property_access_read.sql",
       "0041_gate2_operator_property_grant_management.sql",
       "0042_gate2_operator_booking_summaries.sql",
+      "0043_gate2_operator_provider_authorisations.sql",
     ];
     for (const name of migrations) await pg.exec(readFileSync(`migrations/${name}`, "utf8"));
     const denied = await pg.query<{ allowed: boolean }>(
@@ -38,6 +39,21 @@ test("operator grant storage is deny-by-default and creates no access grants", a
          from (values ('aether_app'), ('aether_runtime')) as r(role)`,
     );
     assert.ok(privileges.rows.every(row => row.permitted === false), "runtime roles must not access grant storage");
+    const providerAuth = await pg.query<{ count: number }>(
+      "select count(*)::int as count from public.sbg_operator_provider_authorisations",
+    );
+    assert.equal(providerAuth.rows[0]?.count, 0, "provider authorisations are never seeded");
+    const providerPrivileges = await pg.query<{ role: string; permitted: boolean }>(
+      `select role, has_table_privilege(role, 'public.sbg_operator_provider_authorisations',
+        'SELECT, INSERT, UPDATE, DELETE') as permitted
+        from (values ('aether_app'), ('aether_runtime')) as r(role)`,
+    );
+    assert.ok(providerPrivileges.rows.every(row => row.permitted === false),
+      "runtime roles must not access operator/provider authorisations");
+    const providerRls = await pg.query<{ relrowsecurity: boolean }>(
+      "select relrowsecurity from pg_class where oid = 'public.sbg_operator_provider_authorisations'::regclass",
+    );
+    assert.equal(providerRls.rows[0]?.relrowsecurity, true, "provider authorisations require RLS");
     const rls = await pg.query<{ relrowsecurity: boolean }>(
       "select relrowsecurity from pg_class where oid = 'public.sbg_operator_property_grants'::regclass",
     );
@@ -63,6 +79,7 @@ test("active grant allows only its operator; revocation removes access", async (
       "0040_gate2_operator_property_access_read.sql",
       "0041_gate2_operator_property_grant_management.sql",
       "0042_gate2_operator_booking_summaries.sql",
+      "0043_gate2_operator_provider_authorisations.sql",
     ]) await pg.exec(readFileSync(`migrations/${migration}`, "utf8"));
     await insertAuthUser(pg, OWNER_USER);
     await insertAuthUser(pg, OTHER_USER);
