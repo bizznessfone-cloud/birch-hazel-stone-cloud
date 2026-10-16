@@ -18,6 +18,7 @@ test("operator grant storage is deny-by-default and creates no access grants", a
       "0038_gate2_approved_agreement_acceptance.sql",
       "0039_gate2_operator_property_grants.sql",
       "0040_gate2_operator_property_access_read.sql",
+      "0041_gate2_operator_property_grant_management.sql",
     ];
     for (const name of migrations) await pg.exec(readFileSync(`migrations/${name}`, "utf8"));
     const denied = await pg.query<{ allowed: boolean }>(
@@ -59,6 +60,7 @@ test("active grant allows only its operator; revocation removes access", async (
       "0038_gate2_approved_agreement_acceptance.sql",
       "0039_gate2_operator_property_grants.sql",
       "0040_gate2_operator_property_access_read.sql",
+      "0041_gate2_operator_property_grant_management.sql",
     ]) await pg.exec(readFileSync(`migrations/${migration}`, "utf8"));
     await insertAuthUser(pg, OWNER_USER);
     await insertAuthUser(pg, OTHER_USER);
@@ -90,15 +92,19 @@ test("active grant allows only its operator; revocation removes access", async (
     };
     assert.equal(await check(OTHER_USER.id), false, "operator classification alone is not a grant");
     assert.equal(await check(OWNER_USER.id), false, "hotel owner is not an operator");
+    await assert.rejects(
+      pg.query("select sbg_set_operator_property_grant_for_user($1,$2::uuid,$3::uuid,true)", [OTHER_USER.id, hotelId, operatorId]),
+      /operator grant not authorised/i,
+    );
     await pg.query(
-      "insert into sbg_operator_property_grants(operator_organisation_id,hotel_id,granted_by_user_id) values ($1,$2,$3)",
-      [operatorId, hotelId, OWNER_USER.id],
+      "select sbg_set_operator_property_grant_for_user($1,$2::uuid,$3::uuid,true)",
+      [OWNER_USER.id, hotelId, operatorId],
     );
     assert.equal(await check(OTHER_USER.id), true, "explicit active grant allows the operator");
     assert.equal(await check(OWNER_USER.id), false, "grant does not transform hotel owner into operator");
     await pg.query(
-      "update sbg_operator_property_grants set revoked_at = now() where operator_organisation_id = $1 and hotel_id = $2",
-      [operatorId, hotelId],
+      "select sbg_set_operator_property_grant_for_user($1,$2::uuid,$3::uuid,false)",
+      [OWNER_USER.id, hotelId, operatorId],
     );
     assert.equal(await check(OTHER_USER.id), false, "revocation must immediately deny");
     assert.equal(ownerOrg.rows.length, 1);
