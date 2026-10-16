@@ -174,8 +174,8 @@ function TermsPending({ organisationType, eligibility }: { organisationType: Fou
   const [propertyName, setPropertyName] = useState("");
   const [locality, setLocality] = useState("");
   const [propertyCode, setPropertyCode] = useState("");
-  const [ianaTimezone, setIanaTimezone] = useState("Europe/Athens");
-  const [currency, setCurrency] = useState("EUR");
+  const [ianaTimezone, setIanaTimezone] = useState("");
+  const [currency, setCurrency] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [registrationError, setRegistrationError] = useState<string | null>(null);
   const router = useRouter();
@@ -206,7 +206,7 @@ function TermsPending({ organisationType, eligibility }: { organisationType: Fou
       return false;
     }
   })();
-  const currencyValid = /^[A-Z]{3}$/.test(currency);
+  const currencyValid = /^[A-Z]{3}$/.test(currency) && Intl.supportedValuesOf("currency").includes(currency);
   const label = organisationType === "hotel" ? "Hotel / Accommodation" : "Independent Transfer Operator";
   return (
     <div className="mx-auto max-w-lg space-y-8">
@@ -263,6 +263,7 @@ function TermsPending({ organisationType, eligibility }: { organisationType: Fou
               value={currency} onChange={event => setCurrency(event.target.value.toUpperCase())}
               placeholder="e.g. EUR" />
             <p className="mt-1 text-xs text-muted">Three-letter ISO currency code, such as EUR or GBP.</p>
+            {currency && !currencyValid ? <p role="alert" className="mt-1 text-xs text-danger">Enter a recognised currency code.</p> : null}
           </label>
           <p className="mt-5 text-xs leading-relaxed text-muted" role="status">
             {previewReady ? (eligibility.eligible ? "Details look ready. You can now register your property." : "Details look ready. Registration remains unavailable until an approved agreement can be accepted.") : "Preview only. Complete all three fields to check the details. Nothing is saved."}
