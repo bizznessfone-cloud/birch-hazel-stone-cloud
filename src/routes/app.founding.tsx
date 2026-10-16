@@ -268,6 +268,7 @@ function TermsPending({ organisationType, eligibility }: { organisationType: Fou
               value={ianaTimezone} onChange={event => setIanaTimezone(event.target.value)}
               placeholder="e.g. Europe/Athens" />
             <p className="mt-1 text-xs text-muted">Use the property's IANA timezone, such as Europe/London.</p>
+            {ianaTimezone && !timezoneValid ? <p role="alert" className="mt-1 text-xs text-danger">Enter a recognised IANA timezone, such as Europe/Athens or Europe/London.</p> : null}
           </label>
           <label className="mt-4 block" htmlFor="property-currency">
             <span className="mb-2 block text-xs font-medium tracking-widest text-muted uppercase">Property currency</span>
