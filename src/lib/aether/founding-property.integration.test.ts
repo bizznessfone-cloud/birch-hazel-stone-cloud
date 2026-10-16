@@ -75,6 +75,15 @@ test("founding-property service enforces effective test agreement in isolated da
       [result.hotelId],
     );
     assert.equal(hotels.rows[0]?.organisation_id, orgId);
+    const workspace = await pg.query<{ id: string; code: string; iana_timezone: string; currency: string }>(
+      "select h.id::text as id, h.code, h.iana_timezone, h.currency from app_hotel_accounts aha join hotels h on h.id = aha.hotel_id where aha.user_id = $1",
+      [OWNER_USER.id],
+    );
+    assert.equal(workspace.rows.length, 1, "new hotel must appear in authenticated dashboard account list");
+    assert.equal(workspace.rows[0]?.id, result.hotelId);
+    assert.equal(workspace.rows[0]?.code, property.code);
+    assert.equal(workspace.rows[0]?.iana_timezone, property.ianaTimezone);
+    assert.equal(workspace.rows[0]?.currency, property.currency);
     await assert.rejects(
       createFoundingProperty({ db: db as never, userId: OWNER_USER.id, property }),
     );
