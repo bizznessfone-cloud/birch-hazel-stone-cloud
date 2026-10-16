@@ -20,6 +20,6 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci --ignore-scripts
-      - run: node --experimental-strip-types --test src/lib/aether/founding-property-draft.test.ts src/lib/aether/founding-property.test.ts src/lib/aether/founding-property.integration.test.ts src/lib/aether/founding-property-eligibility.test.ts
+      - run: node --experimental-strip-types --test src/lib/aether/founding-property-draft.test.ts src/lib/aether/founding-property.test.ts src/lib/aether/founding-property.integration.test.ts src/lib/aether/founding-property-eligibility.test.ts src/lib/aether/founding-property-message.test.ts src/lib/aether/founding-approved-acceptance.test.ts src/lib/aether/founding-journey.integration.test.ts src/lib/aether/operator-property-access.test.ts
       - run: npm run typecheck
       - run: npm run build
