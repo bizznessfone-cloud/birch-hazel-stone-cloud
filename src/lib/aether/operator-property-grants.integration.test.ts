@@ -27,6 +27,7 @@ test("operator grant storage is deny-by-default and creates no access grants", a
       "0047_gate2_property_revoke_cascades_provider_authorisations.sql",
       "0048_gate2_operator_property_list_read.sql",
       "0049_gate2_operator_provider_activation_read.sql",
+      "0050_gate2_operator_identity_lookup.sql",
     ];
     for (const name of migrations) await pg.exec(readFileSync(`migrations/${name}`, "utf8"));
     const denied = await pg.query<{ allowed: boolean }>(
@@ -92,6 +93,7 @@ test("active grant allows only its operator; revocation removes access", async (
       "0047_gate2_property_revoke_cascades_provider_authorisations.sql",
       "0048_gate2_operator_property_list_read.sql",
       "0049_gate2_operator_provider_activation_read.sql",
+      "0050_gate2_operator_identity_lookup.sql",
     ]) await pg.exec(readFileSync(`migrations/${migration}`, "utf8"));
     await insertAuthUser(pg, OWNER_USER);
     await insertAuthUser(pg, OTHER_USER);
@@ -116,6 +118,24 @@ test("active grant allows only its operator; revocation removes access", async (
     );
     await pg.query("select sbg_classify_founding_organisation($1,'transfer_operator')", [OTHER_USER.id]);
     const operatorId = operator.rows[0]!.organisation_id;
+    const resolveOperator = async (userId: string, targetHotelId: string, targetOperatorId: string) =>
+      (await pg.query<{ operator_organisation_id: string; operator_name: string }>(
+        "select operator_organisation_id::text, operator_name from sbg_resolve_operator_for_hotel_owner($1,$2::uuid,$3::uuid)",
+        [userId, targetHotelId, targetOperatorId],
+      )).rows;
+    assert.deepEqual(await resolveOperator(OWNER_USER.id, hotelId, operatorId),
+      [{ operator_organisation_id: operatorId, operator_name: "Fixture Independent Operator" }],
+      "hotel billing authority may confirm an exact operator identity");
+    assert.deepEqual(await resolveOperator(OTHER_USER.id, hotelId, operatorId), [],
+      "operator cannot resolve its own identity as hotel owner");
+    assert.deepEqual(await resolveOperator("nonexistent-user", hotelId, operatorId), [],
+      "unknown user cannot enumerate operator identities");
+    assert.deepEqual(await resolveOperator(OWNER_USER.id, hotelId, ownerOrg.rows[0]!.organisation_id), [],
+      "hotel organisation must not resolve as an operator");
+    const identityPrivilege = await pg.query<{ allowed: boolean }>(
+      "select has_function_privilege('aether_app', 'public.sbg_resolve_operator_for_hotel_owner(text,uuid,uuid)', 'EXECUTE') as allowed",
+    );
+    assert.equal(identityPrivilege.rows[0]?.allowed, true, "app role can perform exact-ID confirmation");
     const check = async (userId: string) => {
       const result = await pg.query<{ allowed: boolean }>(
         "select sbg_operator_can_access_property_for_user($1,$2::uuid) as allowed", [userId, hotelId],
