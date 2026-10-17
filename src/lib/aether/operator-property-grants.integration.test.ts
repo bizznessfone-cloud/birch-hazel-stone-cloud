@@ -35,6 +35,7 @@ test("operator grant storage is deny-by-default and creates no access grants", a
       "0055_gate2_shared_approved_agreement_acceptance.sql",
       "0056_gate2_commercial_billing_evidence.sql",
       "0057_gate2_operator_property_licence_allocation.sql",
+      "0058_gate2_property_licence_release.sql",
     ];
     for (const name of migrations) await pg.exec(readFileSync(`migrations/${name}`, "utf8"));
     const denied = await pg.query<{ allowed: boolean }>(
@@ -108,6 +109,7 @@ test("active grant allows only its operator; revocation removes access", async (
       "0055_gate2_shared_approved_agreement_acceptance.sql",
       "0056_gate2_commercial_billing_evidence.sql",
       "0057_gate2_operator_property_licence_allocation.sql",
+      "0058_gate2_property_licence_release.sql",
     ]) await pg.exec(readFileSync(`migrations/${migration}`, "utf8"));
     await insertAuthUser(pg, OWNER_USER);
     await insertAuthUser(pg, OTHER_USER);
@@ -436,10 +438,30 @@ test("active grant allows only its operator; revocation removes access", async (
     // Fixture-only direct SQL models the future controlled release service.
     // A release preserves the immutable allocation row; it does not restore
     // provider permissions or grant an allocation on its own.
-    await pg.query(
-      "update sbg_property_licence_allocations set released_at = now(), released_by_user_id = $1 where organisation_id = $2::uuid and hotel_id = $3::uuid and released_at is null",
-      [OTHER_USER.id, operatorId, hotelId],
+    const allocation = await pg.query<{ id: string }>(
+      "select id::text as id from sbg_property_licence_allocations where organisation_id = $1::uuid and hotel_id = $2::uuid and released_at is null",
+      [operatorId, hotelId],
     );
+    const allocationId = allocation.rows[0]!.id;
+    const release = (userId: string) => pg.query(
+      "select sbg_release_property_licence_for_user($1,$2::uuid)", [userId, allocationId],
+    );
+    const releasePrivilege = await pg.query<{ allowed: boolean }>(
+      "select has_function_privilege('aether_app','public.sbg_release_property_licence_for_user(text,uuid)','EXECUTE') as allowed",
+    );
+    assert.equal(releasePrivilege.rows[0]?.allowed, false, "app release capability remains gated");
+    await assert.rejects(release(OWNER_USER.id), /licence release denied/i,
+      "hotel owner cannot release an independent operator's paid licence");
+    await assert.rejects(release(ZERO_USER.id), /licence release denied/i,
+      "another organisation cannot release an operator's paid licence");
+    await release(OTHER_USER.id);
+    await release(OTHER_USER.id);
+    const releasedActor = await pg.query<{ released_by_user_id: string; count: number }>(
+      "select released_by_user_id, count(*)::int as count from sbg_property_licence_allocations where id = $1::uuid and released_at is not null group by released_by_user_id",
+      [allocationId],
+    );
+    assert.deepEqual(releasedActor.rows, [{ released_by_user_id: OTHER_USER.id, count: 1 }],
+      "release is idempotent and retains the authorised release actor");
     const releasedEvidence = await pg.query<{ allocated_quantity: number; available_quantity: number }>(
       "select allocated_quantity, available_quantity from sbg_commercial_billing_evidence_for_user($1)",
       [OTHER_USER.id],
