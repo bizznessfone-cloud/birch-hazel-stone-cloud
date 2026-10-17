@@ -20,7 +20,7 @@ export async function readCommercialOnboarding(input: {
       organisationType: r.organisation_type === "hotel" || r.organisation_type === "transfer_operator"
         ? r.organisation_type : null,
       approvedAgreementAccepted: r.approved_agreement_accepted,
-      licensedPropertyCount: r.accessible_property_count,
+      accessiblePropertyCount: r.accessible_property_count,
       propertyAccessVerified: r.accessible_property_count > 0,
     });
   } catch {
