@@ -85,3 +85,38 @@ The existing `/app/billing` route already contains Connect, subscription Checkou
 9. Any internal-only function without a CTA is documented as intentionally invisible, not treated as an omission requiring a UI control.
 
 **Grok instruction:** Audit and map first. Do not design, create, expose or rename controls until their actor, permission, surface and customer-language label are approved. This rule takes precedence over the general requirement that all functions be represented.
+
+
+## Phase 2 — guest, operations, owner and authentication route evidence
+
+This is a route-source inspection, not a completed end-to-end authorization audit. `Visible` means source JSX includes the surface, not that the action is admitted for production use.
+
+| Surface | Verified visible capability | Actor | Exposure classification | Review / failure requirement |
+| --- | --- | --- | --- | --- |
+| `/$hotelSlug` and `/book/$hotelCode` | Resolve public hotel; `GuestBook` booking component; friendly unavailable hotel message | Guest | Public | Inspect nested GuestBook actions and API before final signoff; never show internal hotel/provider IDs |
+| `/confirmed/$token` | Token-based confirmation and customer controls | Guest with token | Public, token-scoped | Confirm redaction and permitted token actions; no internal audit/debug data |
+| `/ops/` | Local-day transfers, attention counts, next transfer and booking feed | Authenticated ops | Business | Today is hotel-local; attention statuses are not admin actions |
+| `/ops/bookings/` | Booking list and detail links | Authenticated ops | Business | Scope bookings to authorised hotels |
+| `/ops/bookings/$bookingId` | Booking details, assign/unassign vehicle and driver, status/cancellation controls, audit | Authenticated ops | Business | Enforce server scope, CSRF, conflict denial; keep raw SQL/concurrency errors invisible |
+| `/ops/vehicles` | Add/edit vehicles, active/inactive toggles | Authenticated ops | Business | Capacity and assignment effects require safe messages |
+| `/ops/drivers` | Add/edit drivers, active/inactive toggles | Authenticated ops | Business | Avoid presenting internal record IDs |
+| `/ops/hotels` | Add/edit hotels, booking code, booking link/copy | Authenticated ops | Business, legacy | Reconcile with organisation/property-grant ownership; do not accidentally allow operator to create a fake owned hotel |
+| `/owner/` | Signup funnel and overview | SBG owner | Privileged internal | Must never render in guest or customer nav |
+| `/owner/plans` | Edit catalogue plans; create, activate or retire price versions | SBG owner | Privileged internal | Catalogue activation is not Stripe LIVE or hotel publication; confirmation and audit required |
+| `/owner/revenue` | Domain A SaaS revenue and subscription metrics | SBG owner | Privileged internal | Internal terms `Domain A`, `MRR`, entitlement acceptable **only** in owner context |
+| `/owner/system` | Commerce and system state | SBG owner | Privileged internal | Diagnostics/commerce lock details must remain owner-only |
+| `/login` | Sign in/sign up, password recovery navigation | Account holder | Public authentication | Friendly errors, no account enumeration or internal auth debug |
+| `/forgot-password`, `/reset-password` | Recovery | Account holder | Public authentication | Generic acknowledgment and single-use reset boundary |
+| `/ops/login`, `/owner/login` | Separate operations/owner authentication | Appropriate privileged actor | Role-specific authentication | Do not cross-wire session/permissions or expose privileged links in public navigation |
+
+### Phase 2 findings requiring reconciliation
+
+1. **Legacy ops hotel editor** permits an add/edit hotel UI. Do not map it to the new operator-granted property model without proving its authority and tenancy boundary.
+2. **Booking detail includes an audit display** for authenticated operations. Audit records must not leak to guests, and raw backend state should be translated where customer-facing.
+3. **Owner pricing controls are real internal CTAs** and must remain segregated. Catalogue price activation is not authorisation to turn on Stripe LIVE.
+4. **Public booking is implemented partly inside `GuestBook`**; route-only inspection cannot establish every step, payment CTA or error state. Component/API inspection remains mandatory.
+5. **Authenticated ops booking access and new transfer-operator access are not equivalent.** Contract 2 deliberately denies operator bookings until separately admitted. A visible legacy ops route does not override this gate.
+
+### Remaining before complete coverage
+
+Inspect `src/components/aether/guest-book`, booking/confirmation server actions, all relevant ops mutations, owner authorisation middleware, and the route/navigation hierarchy. For each function record actor, prerequisites, data source, user-facing wording, confirmation, failure, audit and denied-state behaviour. No design or new controls yet.
