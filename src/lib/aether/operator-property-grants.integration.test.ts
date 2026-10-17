@@ -254,6 +254,11 @@ test("active grant allows only its operator; revocation removes access", async (
       "select sbg_set_operator_property_grant_for_user($1,$2::uuid,$3::uuid,false)",
       [OWNER_USER.id, hotelId, operatorId],
     );
+    assert.equal(await canAccessProvider(OTHER_USER.id, hotelId, ownProvider), false,
+      "property revocation immediately denies provider eligibility before any regrant");
+    await assert.rejects(scopedQuery(OTHER_USER.id, hotelId, ownProvider),
+      /operator provider booking access denied/i,
+      "property revocation immediately blocks provider booking summaries");
     await pg.query(
       "select sbg_set_operator_property_grant_for_user($1,$2::uuid,$3::uuid,true)",
       [OWNER_USER.id, hotelId, operatorId],
