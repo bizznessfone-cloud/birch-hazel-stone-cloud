@@ -26,6 +26,7 @@ test("operator grant storage is deny-by-default and creates no access grants", a
       "0046_gate2_operator_provider_booking_summaries.sql",
       "0047_gate2_property_revoke_cascades_provider_authorisations.sql",
       "0048_gate2_operator_property_list_read.sql",
+      "0049_gate2_operator_provider_activation_read.sql",
     ];
     for (const name of migrations) await pg.exec(readFileSync(`migrations/${name}`, "utf8"));
     const denied = await pg.query<{ allowed: boolean }>(
@@ -90,6 +91,7 @@ test("active grant allows only its operator; revocation removes access", async (
       "0046_gate2_operator_provider_booking_summaries.sql",
       "0047_gate2_property_revoke_cascades_provider_authorisations.sql",
       "0048_gate2_operator_property_list_read.sql",
+      "0049_gate2_operator_provider_activation_read.sql",
     ]) await pg.exec(readFileSync(`migrations/${migration}`, "utf8"));
     await insertAuthUser(pg, OWNER_USER);
     await insertAuthUser(pg, OTHER_USER);
@@ -473,6 +475,22 @@ test("active grant allows only its operator; revocation removes access", async (
         'public.sbg_list_operator_booking_summaries_for_user(text,uuid,integer)', 'EXECUTE') as permitted`,
     );
     assert.equal(execution.rows[0]?.permitted, false, "application role must not execute unapproved booking query");
+
+    const activation = async (userId: string, propertyId: string) =>
+      (await pg.query<{ provider_authorised: boolean; provider_id: string }>(
+        "select provider_authorised, provider_id::text from sbg_operator_provider_activation_for_user($1,$2::uuid)",
+        [userId, propertyId],
+      )).rows;
+    assert.deepEqual(await activation(OWNER_USER.id, hotelId), [],
+      "hotel owner cannot impersonate an operator activation");
+    assert.deepEqual(await activation(OTHER_USER.id, otherHotelId), [],
+      "operator cannot inspect an ungranted property");
+    assert.deepEqual(await activation(OTHER_USER.id, hotelId), [],
+      "revoked provider authorisation must not appear active");
+    const activationPrivilege = await pg.query<{ allowed: boolean }>(
+      "select has_function_privilege('aether_app', 'public.sbg_operator_provider_activation_for_user(text,uuid)', 'EXECUTE') as allowed",
+    );
+    assert.equal(activationPrivilege.rows[0]?.allowed, true, "app may read scoped status only");
 
     const listProperties = async (userId: string) => (await pg.query<{ hotel_id: string; hotel_name: string }>(
       "select hotel_id::text, hotel_name from sbg_operator_properties_for_user($1)", [userId],
