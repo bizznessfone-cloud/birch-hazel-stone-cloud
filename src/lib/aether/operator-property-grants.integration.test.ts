@@ -36,6 +36,7 @@ test("operator grant storage is deny-by-default and creates no access grants", a
       "0056_gate2_commercial_billing_evidence.sql",
       "0057_gate2_operator_property_licence_allocation.sql",
       "0058_gate2_property_licence_release.sql",
+      "0059_gate2_property_licence_release_app_execute.sql",
     ];
     for (const name of migrations) await pg.exec(readFileSync(`migrations/${name}`, "utf8"));
     const denied = await pg.query<{ allowed: boolean }>(
@@ -110,6 +111,7 @@ test("active grant allows only its operator; revocation removes access", async (
       "0056_gate2_commercial_billing_evidence.sql",
       "0057_gate2_operator_property_licence_allocation.sql",
       "0058_gate2_property_licence_release.sql",
+      "0059_gate2_property_licence_release_app_execute.sql",
     ]) await pg.exec(readFileSync(`migrations/${migration}`, "utf8"));
     await insertAuthUser(pg, OWNER_USER);
     await insertAuthUser(pg, OTHER_USER);
@@ -449,7 +451,11 @@ test("active grant allows only its operator; revocation removes access", async (
     const releasePrivilege = await pg.query<{ allowed: boolean }>(
       "select has_function_privilege('aether_app','public.sbg_release_property_licence_for_user(text,uuid)','EXECUTE') as allowed",
     );
-    assert.equal(releasePrivilege.rows[0]?.allowed, false, "app release capability remains gated");
+    assert.equal(releasePrivilege.rows[0]?.allowed, true, "app role may call guarded release");
+    const runtimeReleasePrivilege = await pg.query<{ allowed: boolean }>(
+      "select has_function_privilege('aether_runtime','public.sbg_release_property_licence_for_user(text,uuid)','EXECUTE') as allowed",
+    );
+    assert.equal(runtimeReleasePrivilege.rows[0]?.allowed, false, "runtime role cannot bypass authenticated release");
     await assert.rejects(release(OWNER_USER.id), /licence release denied/i,
       "hotel owner cannot release an independent operator's paid licence");
     await assert.rejects(release(ZERO_USER.id), /licence release denied/i,
