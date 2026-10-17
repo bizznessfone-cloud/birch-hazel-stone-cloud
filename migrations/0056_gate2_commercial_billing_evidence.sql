@@ -33,11 +33,22 @@ begin
       select 1 from public.sbg_property_licence_allocations a
       join public.hotels h on h.id = a.hotel_id
       where a.organisation_id = v_org and a.released_at is null
-        and (h.organisation_id is distinct from v_org
-          or (v_type = 'transfer_operator' and not exists (
-            select 1 from public.sbg_operator_property_grants g
-            where g.operator_organisation_id = v_org and g.hotel_id = a.hotel_id
-              and g.revoked_at is null)))
+        and (
+          (v_type = 'hotel' and h.organisation_id is distinct from v_org)
+          or (v_type = 'transfer_operator' and (
+            h.organisation_id = v_org or not exists (
+              select 1 from public.sbg_operator_property_grants g
+              join public.sbg_operator_provider_authorisations pa
+                on pa.operator_organisation_id = g.operator_organisation_id
+               and pa.hotel_id = g.hotel_id and pa.revoked_at is null
+              join public.hotel_provider_agreements ha
+                on ha.hotel_id = pa.hotel_id and ha.provider_id = pa.provider_id
+               and ha.active = true
+              where g.operator_organisation_id = v_org and g.hotel_id = a.hotel_id
+                and g.revoked_at is null
+            )
+          ))
+        )
     )
   from (select 1) seed
   left join public.sbg_organisation_billing b on b.organisation_id = v_org
