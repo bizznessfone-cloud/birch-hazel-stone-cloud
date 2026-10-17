@@ -33,7 +33,7 @@ function OperatorWorkspace() {
           {properties.map(property => (
             <li key={property.hotelId} className="py-4">
               <p className="font-medium">{property.name}</p>
-              <p className="mt-1 text-xs text-muted">Property grant recorded · Operational access not active</p>
+              <p className="mt-1 text-xs text-muted">{property.providerAuthorised ? "Provider authorisation verified · Operational activation still pending" : "Property grant recorded · Provider authorisation pending"}</p>
             </li>
           ))}
         </ul>
