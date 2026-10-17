@@ -29,7 +29,8 @@
     "verify:neon": "node scripts/verify-neon-runtime.mjs",
     "verify:neon:full": "node scripts/verify-neon-production.mjs",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test:gate2:contracts": "node --experimental-strip-types --test src/lib/aether/operator-property-grant-confirm.test.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.4",
