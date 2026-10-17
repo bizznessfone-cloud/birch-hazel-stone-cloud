@@ -407,6 +407,18 @@ test("active grant allows only its operator; revocation removes access", async (
     await setProvider(OWNER_USER.id, hotelId, ownProvider, false);
     assert.equal(await canAccessProvider(OTHER_USER.id, hotelId, ownProvider), false,
       "revocation removes provider eligibility");
+    const revokedEvidence = await pg.query<{ allocated_quantity: number; allocation_integrity_ok: boolean }>(
+      "select allocated_quantity, allocation_integrity_ok from sbg_commercial_billing_evidence_for_user($1)",
+      [OTHER_USER.id],
+    );
+    assert.deepEqual(revokedEvidence.rows, [{ allocated_quantity: 1, allocation_integrity_ok: false }],
+      "revocation invalidates eligibility while preserving the allocation audit record");
+    const preservedAllocation = await pg.query<{ count: number }>(
+      "select count(*)::int as count from sbg_property_licence_allocations where organisation_id = $1::uuid and hotel_id = $2::uuid and released_at is null",
+      [operatorId, hotelId],
+    );
+    assert.equal(preservedAllocation.rows[0]?.count, 1,
+      "provider revocation must not silently release or delete paid licence history");
     const revoked = await pg.query<{ count: number }>(
       "select count(*)::int as count from sbg_operator_provider_authorisations where hotel_id = $1::uuid and provider_id = $2::uuid and revoked_at is null",
       [hotelId, ownProvider],
