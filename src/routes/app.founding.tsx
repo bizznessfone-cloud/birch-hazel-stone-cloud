@@ -246,6 +246,9 @@ function TermsPending({ organisationType, eligibility }: { organisationType: Fou
             Setup is paused pending approved agreements and activation. No agreement has been accepted;
             no hotel access, guest booking access, payment account or subscription has been granted by this step.
           </p>
+          <a href="/app/operator" className="mt-5 inline-block border border-line px-4 py-3 text-sm font-semibold underline-offset-4 hover:underline">
+            Open operator workspace (read-only)
+          </a>
         </section>
       ) : null}
       {organisationType === "hotel" ? (
