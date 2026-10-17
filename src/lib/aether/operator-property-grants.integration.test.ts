@@ -403,6 +403,11 @@ test("active grant allows only its operator; revocation removes access", async (
       [hotelId, secondProviderId],
     );
     assert.equal(secondProviderBooking.rows.length, 1);
+    await assert.rejects(setProvider(OWNER_USER.id, hotelId, secondProviderId, true),
+      /operator provider authorisation denied/i,
+      "inactive former provider cannot be authorised while another provider is active");
+    assert.equal(await canAccessProvider(OTHER_USER.id, hotelId, ownProvider), true,
+      "rejected former-provider authorisation leaves current provider access unchanged");
     await assert.rejects(scopedQuery(OTHER_USER.id, hotelId, secondProviderId),
       /operator provider booking access denied/i,
       "a real same-hotel booking does not unlock unauthorised provider access");
