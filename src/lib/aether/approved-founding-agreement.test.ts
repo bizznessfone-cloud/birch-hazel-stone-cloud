@@ -26,7 +26,7 @@ test("explicit acceptance passes only the session user and verified effective ve
     db, sessionUserId: "hotel-owner", displayedVersion: version, displayedSha256: sha,
     explicitlyAccepted: true,
   }), { version, alreadyAccepted: false });
-  assert.deepEqual(calls[1]?.args, ["hotel-owner", version]);
+  assert.deepEqual(calls[1]?.args, ["hotel-owner", version, sha]);
 });
 test("no acceptance for missing document, changed hash/version, or missing consent", async () => {
   for (const input of [
