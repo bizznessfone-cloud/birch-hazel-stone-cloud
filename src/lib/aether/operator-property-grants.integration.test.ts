@@ -109,10 +109,25 @@ test("active grant allows only its operator; revocation removes access", async (
       [OWNER_USER.id, "Fixture Hotel Owner"],
     );
     await pg.query("select sbg_classify_founding_organisation($1,'hotel')", [OWNER_USER.id]);
+    // Test-only approved document fixture: no production/legal publication.
+    const fixtureText = "Offline agreement fixture; not legal terms";
+    const fixtureHash = (await pg.query<{ digest: string }>(
+      "select encode(sha256(convert_to($1,'UTF8')),'hex') as digest", [fixtureText],
+    )).rows[0]!.digest;
     await pg.query(
-      "insert into sbg_approved_property_agreement_versions(agreement_version,effective) values ('fixture-operator-access',true)",
+      "insert into sbg_approved_property_agreement_versions(agreement_version,effective) values ('fixture-operator-access',false)",
     );
-    await pg.query("select sbg_accept_approved_founding_agreement_for_user($1,$2)", [OWNER_USER.id, "fixture-operator-access"]);
+    await pg.query(
+      "insert into sbg_approved_agreement_documents(agreement_version,document_text,document_sha256) values ($1,$2,$3)",
+      ["fixture-operator-access", fixtureText, fixtureHash],
+    );
+    await pg.query(
+      "update sbg_approved_property_agreement_versions set effective = true where agreement_version = 'fixture-operator-access'",
+    );
+    await pg.query(
+      "select sbg_accept_approved_founding_agreement_for_user($1,$2,$3)",
+      [OWNER_USER.id, "fixture-operator-access", fixtureHash],
+    );
     const hotel = await pg.query<{ hotel_id: string }>(
       "select hotel_id::text as hotel_id from sbg_create_founding_property_for_user($1,$2,$3,$4,$5,$6)",
       [OWNER_USER.id, "sbg-grant-test", "Grant Test Hotel", "Kos, Greece", "Europe/Athens", "EUR"],
