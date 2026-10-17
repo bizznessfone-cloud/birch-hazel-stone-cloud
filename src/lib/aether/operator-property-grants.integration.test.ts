@@ -160,6 +160,15 @@ test("active grant allows only its operator; revocation removes access", async (
       [OWNER_USER.id, "sbg-grant-test", "Grant Test Hotel", "Kos, Greece", "Europe/Athens", "EUR"],
     );
     const hotelId = hotel.rows[0]!.hotel_id;
+    const hotelCommercial = await pg.query<{
+      organisation_exists: boolean; organisation_type: string;
+      approved_agreement_accepted: boolean; accessible_property_count: number;
+    }>("select * from sbg_commercial_founding_snapshot_for_user($1)", [OWNER_USER.id]);
+    assert.deepEqual(hotelCommercial.rows, [{
+      organisation_exists: true, organisation_type: "hotel",
+      approved_agreement_accepted: true, accessible_property_count: 1,
+    }], "hotel founder sees its own one property and approved agreement");
+
     const operator = await pg.query<{ organisation_id: string }>(
       "select organisation_id::text as organisation_id from sbg_ensure_founding_organisation($1,$2)",
       [OTHER_USER.id, "Fixture Independent Operator"],
