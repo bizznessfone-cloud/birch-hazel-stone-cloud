@@ -343,6 +343,20 @@ test("active grant allows only its operator; revocation removes access", async (
     }], "operator allocation is commercially counted without implying active billing");
     await assert.rejects(allocateOperator(), /duplicate key|licence quantity exceeded/i,
       "one hotel cannot receive a second active allocation");
+    // Purchased quantity is evidence, not an activation decision. Subscription
+    // states must remain visible and must not silently alter allocations.
+    for (const status of ["incomplete", "past_due", "unpaid", "canceled", "active"]) {
+      await pg.query("update sbg_organisation_billing set status = $1 where organisation_id = $2::uuid",
+        [status, operatorId]);
+      const snapshot = await pg.query<{ billing_status: string; allocated_quantity: number }>(
+        "select billing_status, allocated_quantity from sbg_commercial_billing_evidence_for_user($1)",
+        [OTHER_USER.id],
+      );
+      assert.deepEqual(snapshot.rows, [{ billing_status: status, allocated_quantity: 1 }],
+        "billing evidence must report subscription state without granting operations");
+    }
+    await pg.query("update sbg_organisation_billing set status = 'inactive' where organisation_id = $1::uuid",
+      [operatorId]);
     const authorisedStatus = await pg.query<{ provider_authorised: boolean; provider_id: string }>(
       "select provider_authorised, provider_id::text from sbg_operator_provider_activation_for_user($1,$2::uuid)",
       [OTHER_USER.id, hotelId],
