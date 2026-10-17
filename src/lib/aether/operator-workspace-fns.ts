@@ -29,7 +29,7 @@ export const listOperatorWorkspacePropertiesFn = createServerFn({ method: "GET" 
       const db = await getSql();
       const founding = await readFoundingOnboardingState({ db, userId: context.userId });
       if (founding.status !== "ready" || founding.organisationType !== "transfer_operator") {
-        return { properties: [] as Array<{ hotelId: string; name: string }> };
+        return { properties: [] as Array<{ hotelId: string; name: string; providerAuthorised: boolean }> };
       }
       const rows = await db.query<{ hotel_id: string; hotel_name: string }>(
         "select hotel_id::text, hotel_name from public.sbg_operator_properties_for_user($1)",
@@ -37,7 +37,7 @@ export const listOperatorWorkspacePropertiesFn = createServerFn({ method: "GET" 
       );
       if (!Array.isArray(rows) || rows.length > 100 || rows.some(row =>
         typeof row.hotel_id !== "string" || typeof row.hotel_name !== "string"
-      )) return { properties: [] as Array<{ hotelId: string; name: string }> };
+      )) return { properties: [] as Array<{ hotelId: string; name: string; providerAuthorised: boolean }> };
       const properties: Array<{ hotelId: string; name: string; providerAuthorised: boolean }> = [];
       for (const row of rows) {
         // 0049 is status-only; missing migration or read failure denies status.
@@ -56,6 +56,6 @@ export const listOperatorWorkspacePropertiesFn = createServerFn({ method: "GET" 
       return { properties };
     } catch {
       // Missing migration, ambiguous membership or DB failure never exposes properties.
-      return { properties: [] as Array<{ hotelId: string; name: string }> };
+      return { properties: [] as Array<{ hotelId: string; name: string; providerAuthorised: boolean }> };
     }
   });
