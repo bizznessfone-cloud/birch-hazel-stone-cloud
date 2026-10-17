@@ -30,7 +30,7 @@
     "verify:neon:full": "node scripts/verify-neon-production.mjs",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "test:gate2:contracts": "node --experimental-strip-types --test src/lib/aether/operator-property-grant-confirm.test.ts src/lib/aether/operator-provider-authorisation.test.ts src/lib/aether/approved-founding-agreement.test.ts src/lib/aether/commercial-onboarding-contract.test.ts src/lib/aether/commercial-billing-evidence.test.ts src/lib/aether/property-licence-release.test.ts src/lib/aether/commercial-activation-assessment.test.ts"
+    "test:gate2:contracts": "node --experimental-strip-types --test src/lib/aether/operator-property-grant-confirm.test.ts src/lib/aether/operator-provider-authorisation.test.ts src/lib/aether/approved-founding-agreement.test.ts src/lib/aether/commercial-onboarding-contract.test.ts src/lib/aether/commercial-billing-evidence.test.ts src/lib/aether/property-licence-release.test.ts src/lib/aether/commercial-activation-assessment.test.ts src/lib/aether/booking-lifecycle.test.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.4",
