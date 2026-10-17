@@ -7,13 +7,13 @@ export type CommercialOnboardingDecision =
   | { status: "classification_required"; canActivate: false }
   | { status: "agreement_required"; organisationType: LicenceOrganisationType; canActivate: false }
   | { status: "property_access_required"; organisationType: LicenceOrganisationType; canActivate: false }
-  | { status: "billing_not_activated"; organisationType: LicenceOrganisationType; propertyCount: number; canActivate: false }
+  | { status: "billing_verification_required"; organisationType: LicenceOrganisationType; accessiblePropertyCount: number; canActivate: false }
   | { status: "unavailable"; canActivate: false };
 export function commercialOnboardingDecision(input: {
   organisationExists: boolean;
   organisationType: LicenceOrganisationType | null;
   approvedAgreementAccepted: boolean;
-  licensedPropertyCount: number;
+  accessiblePropertyCount: number;
   propertyAccessVerified: boolean;
 }): CommercialOnboardingDecision {
   if (!input.organisationExists) return { status: "organisation_required", canActivate: false };
@@ -21,10 +21,10 @@ export function commercialOnboardingDecision(input: {
     return { status: "classification_required", canActivate: false };
   if (!input.approvedAgreementAccepted)
     return { status: "agreement_required", organisationType: input.organisationType, canActivate: false };
-  if (!Number.isSafeInteger(input.licensedPropertyCount) || input.licensedPropertyCount < 0)
+  if (!Number.isSafeInteger(input.accessiblePropertyCount) || input.accessiblePropertyCount < 0)
     return { status: "unavailable", canActivate: false };
-  if (!input.propertyAccessVerified || input.licensedPropertyCount === 0)
+  if (!input.propertyAccessVerified || input.accessiblePropertyCount === 0)
     return { status: "property_access_required", organisationType: input.organisationType, canActivate: false };
-  return { status: "billing_not_activated", organisationType: input.organisationType,
-    propertyCount: input.licensedPropertyCount, canActivate: false };
+  return { status: "billing_verification_required", organisationType: input.organisationType,
+    accessiblePropertyCount: input.accessiblePropertyCount, canActivate: false };
 }
