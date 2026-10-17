@@ -136,6 +136,17 @@ test("active grant allows only its operator; revocation removes access", async (
       "select has_function_privilege('aether_app', 'public.sbg_resolve_operator_for_hotel_owner(text,uuid,uuid)', 'EXECUTE') as allowed",
     );
     assert.equal(identityPrivilege.rows[0]?.allowed, true, "app role can perform exact-ID confirmation");
+    // Confirmation contract: wrong names or mismatched IDs cannot be treated as verified.
+    const confirmable = async (userId: string, hotel: string, org: string, name: string) => {
+      const resolved = await resolveOperator(userId, hotel, org);
+      return resolved.length === 1 &&
+        resolved[0]?.operator_organisation_id === org &&
+        resolved[0]?.operator_name === name;
+    };
+    assert.equal(await confirmable(OWNER_USER.id, hotelId, operatorId, "Wrong Name"), false);
+    assert.equal(await confirmable(OWNER_USER.id, hotelId, ownerOrg.rows[0]!.organisation_id, "Fixture Hotel Owner"), false);
+    assert.equal(await confirmable(OTHER_USER.id, hotelId, operatorId, "Fixture Independent Operator"), false);
+    assert.equal(await confirmable(OWNER_USER.id, hotelId, operatorId, "Fixture Independent Operator"), true);
     const check = async (userId: string) => {
       const result = await pg.query<{ allowed: boolean }>(
         "select sbg_operator_can_access_property_for_user($1,$2::uuid) as allowed", [userId, hotelId],
