@@ -25,6 +25,7 @@ test("operator grant storage is deny-by-default and creates no access grants", a
       "0045_gate2_operator_provider_access_read.sql",
       "0046_gate2_operator_provider_booking_summaries.sql",
       "0047_gate2_property_revoke_cascades_provider_authorisations.sql",
+      "0048_gate2_operator_property_list_read.sql",
     ];
     for (const name of migrations) await pg.exec(readFileSync(`migrations/${name}`, "utf8"));
     const denied = await pg.query<{ allowed: boolean }>(
@@ -88,6 +89,7 @@ test("active grant allows only its operator; revocation removes access", async (
       "0045_gate2_operator_provider_access_read.sql",
       "0046_gate2_operator_provider_booking_summaries.sql",
       "0047_gate2_property_revoke_cascades_provider_authorisations.sql",
+      "0048_gate2_operator_property_list_read.sql",
     ]) await pg.exec(readFileSync(`migrations/${migration}`, "utf8"));
     await insertAuthUser(pg, OWNER_USER);
     await insertAuthUser(pg, OTHER_USER);
@@ -472,18 +474,32 @@ test("active grant allows only its operator; revocation removes access", async (
     );
     assert.equal(execution.rows[0]?.permitted, false, "application role must not execute unapproved booking query");
 
+    const listProperties = async (userId: string) => (await pg.query<{ hotel_id: string; hotel_name: string }>(
+      "select hotel_id::text, hotel_name from sbg_operator_properties_for_user($1)", [userId],
+    )).rows;
+    assert.deepEqual(await listProperties(OWNER_USER.id), [], "hotel owner cannot discover operator properties");
+    assert.deepEqual(await listProperties("nonexistent-user"), [], "unknown identity cannot discover properties");
+    assert.deepEqual(await listProperties(OTHER_USER.id), [{ hotel_id: hotelId, hotel_name: "Grant Test Hotel" }],
+      "only the explicitly granted hotel is listed, with no guest data");
+    const listPrivilege = await pg.query<{ allowed: boolean }>(
+      "select has_function_privilege('aether_app', 'public.sbg_operator_properties_for_user(text)', 'EXECUTE') as allowed",
+    );
+    assert.equal(listPrivilege.rows[0]?.allowed, true, "app role may call only the scoped list function");
+
     assert.equal(await check(OWNER_USER.id), false, "grant does not transform hotel owner into operator");
     await pg.query(
       "select sbg_set_operator_property_grant_for_user($1,$2::uuid,$3::uuid,false)",
       [OWNER_USER.id, hotelId, operatorId],
     );
     assert.equal(await check(OTHER_USER.id), false, "revocation must immediately deny");
+    assert.deepEqual(await listProperties(OTHER_USER.id), [], "revoked grant disappears from property list");
     // Reauthorisation is an explicit hotel-owner action, not automatic.
     await pg.query(
       "select sbg_set_operator_property_grant_for_user($1,$2::uuid,$3::uuid,true)",
       [OWNER_USER.id, hotelId, operatorId],
     );
     assert.equal(await check(OTHER_USER.id), true, "explicit regrant restores access");
+    assert.equal((await listProperties(OTHER_USER.id)).length, 1, "explicit regrant restores listing");
     await pg.query(
       "update sbg_organisation_members set removed_at = now() where organisation_id = $1::uuid and user_id = $2",
       [operatorId, OTHER_USER.id],
