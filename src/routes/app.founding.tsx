@@ -235,10 +235,16 @@ function TermsPending({ organisationType, eligibility }: { organisationType: Fou
           <h2 id="operator-next-title" className="mt-2 text-2xl font-semibold tracking-tight">Your operator workspace</h2>
           <p className="mt-3 text-sm leading-relaxed text-muted">
             Your transfer business classification is saved. Operator workspace activation is not yet available.
-            You will manage transfers for the properties you serve; this is separate from registering a hotel as an accommodation business.
+            Your business does not register or own a hotel through this journey.
+          </p>
+          <p className="mt-3 text-sm leading-relaxed text-muted">
+            Before an operator can manage transfers for a hotel, the hotel must explicitly authorise that operator
+            and the executing transport provider. An approved operating agreement is also required.
+            These approvals are separate from your business classification.
           </p>
           <p className="mt-3 text-sm leading-relaxed text-muted" role="status">
-            No agreement has been accepted and no property, payment account or subscription has been created by this step.
+            Setup is paused pending approved agreements and activation. No agreement has been accepted;
+            no hotel access, guest booking access, payment account or subscription has been granted by this step.
           </p>
         </section>
       ) : null}
