@@ -189,6 +189,12 @@ test("active grant allows only its operator; revocation removes access", async (
     assert.equal(await canAccessProvider(OTHER_USER.id, hotelId, ownProvider), false,
       "property grant does not imply provider access");
     await setProvider(OWNER_USER.id, hotelId, ownProvider, true);
+    const authorisedStatus = await pg.query<{ provider_authorised: boolean; provider_id: string }>(
+      "select provider_authorised, provider_id::text from sbg_operator_provider_activation_for_user($1,$2::uuid)",
+      [OTHER_USER.id, hotelId],
+    );
+    assert.deepEqual(authorisedStatus.rows, [{ provider_authorised: true, provider_id: ownProvider }],
+      "active agreement and explicit authorisation produce provider status");
     assert.equal(await canAccessProvider(OTHER_USER.id, hotelId, ownProvider), true,
       "explicit provider authorisation allows only the matching provider");
 
