@@ -28,6 +28,7 @@ test("operator grant storage is deny-by-default and creates no access grants", a
       "0048_gate2_operator_property_list_read.sql",
       "0049_gate2_operator_provider_activation_read.sql",
       "0050_gate2_operator_identity_lookup.sql",
+      "0051_gate2_provider_authorisation_app_execute.sql",
     ];
     for (const name of migrations) await pg.exec(readFileSync(`migrations/${name}`, "utf8"));
     const denied = await pg.query<{ allowed: boolean }>(
@@ -94,6 +95,7 @@ test("active grant allows only its operator; revocation removes access", async (
       "0048_gate2_operator_property_list_read.sql",
       "0049_gate2_operator_provider_activation_read.sql",
       "0050_gate2_operator_identity_lookup.sql",
+      "0051_gate2_provider_authorisation_app_execute.sql",
     ]) await pg.exec(readFileSync(`migrations/${migration}`, "utf8"));
     await insertAuthUser(pg, OWNER_USER);
     await insertAuthUser(pg, OTHER_USER);
@@ -199,6 +201,14 @@ test("active grant allows only its operator; revocation removes access", async (
     );
     const ownProvider = providerForHotel.rows[0]!.id;
     const otherProvider = providerForOtherHotel.rows[0]!.id;
+    const providerAppPrivilege = await pg.query<{ allowed: boolean }>(
+      "select has_function_privilege('aether_app', 'public.sbg_set_operator_provider_authorisation_for_user(text,uuid,uuid,uuid,boolean)', 'EXECUTE') as allowed",
+    );
+    assert.equal(providerAppPrivilege.rows[0]?.allowed, true, "app role may invoke only the guarded provider setter");
+    const providerRuntimePrivilege = await pg.query<{ allowed: boolean }>(
+      "select has_function_privilege('aether_runtime', 'public.sbg_set_operator_provider_authorisation_for_user(text,uuid,uuid,uuid,boolean)', 'EXECUTE') as allowed",
+    );
+    assert.equal(providerRuntimePrivilege.rows[0]?.allowed, false, "runtime role must not invoke provider setter");
     const setProvider = (userId: string, targetHotelId: string, targetProviderId: string, enabled: boolean) =>
       pg.query(
         "select sbg_set_operator_provider_authorisation_for_user($1,$2::uuid,$3::uuid,$4::uuid,$5)",
