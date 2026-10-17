@@ -100,12 +100,22 @@ These are still true of this tree, and the contract tests assert them so the gap
 - Insert plus immediate confirmation email.
 - Confirmation page copy "Confirmed" / "Your transfer is booked" before payment verification.
 - Payee lookup by hotel connection.
-- No hold expiry column.
-- No `received_after_expiry` disposition. `sbg_apply_payment_event` writes the supplied status onto the payment row only.
+- The running booking path still does not write `hold_expires_at` or stop the confirmation email. Stage A adds the columns in source only.
+- `sbg_apply_payment_event` still writes the supplied status onto the payment row only. `received_after_expiry` is allowed by migration 0060 and is not confirmation.
 
 ## Implementation sequence
 
-No stage is authorised by this document. Do not apply a migration from this checkpoint.
+Source migration [migrations/0060_gate2_booking_lifecycle_schema.sql](../migrations/0060_gate2_booking_lifecycle_schema.sql) is not in `ACCEPTED_LEDGER` or `AUTHORISED_PENDING`. It does not change GiST, the occupancy trigger, or the 60-minute duration rule.
+
+`bookings.lifecycle_state` is separate from `bookings.status`. Existing rows, and any current insert that does not set the column, become `legacy_unreconciled` with null `hold_expires_at` and null `confirmed_paid_at`. That state keeps historical assignments. It is not `confirmed_paid` and it cannot store a confirmation timestamp. Stage B must set an open-hold state explicitly; the default stays unreconciled so today's insert path does not start failing and does not become paid.
+
+The schema requires a finite `hold_expires_at` for `awaiting_payment` and `payment_processing`, and a finite `confirmed_paid_at` for `confirmed_paid`. It cannot see `sbg_booking_payments`. A `confirmed_paid` row without a payment row is still possible. Stage D must add one security-definer transition that writes the lifecycle only together with verified payment evidence. Until then, `aether_app` and `aether_runtime` cannot write the three lifecycle columns; the guard trigger covers the table-level update grant from migration 0011.
+
+`sbg_booking_payments.status` accepts `received_after_expiry` in addition to the existing statuses. Existing payment rows are not rewritten. The new status is not `paid` and does not change the booking lifecycle.
+
+## Implementation sequence
+
+No stage is authorised for production by this document. Stage A is source-only. Do not apply migration 0060 from this checkpoint.
 
 A. Lifecycle schema and invariants. New migration only. Add booking lifecycle, `hold_expires_at`, and confirmed-at. Add the late-payment disposition without editing [0021](../migrations/0021_cp25_hotel_guest_payments.sql) or [0030](../migrations/0030_cp272_fix_prepare_booking_payment.sql) in place. Rollback drops only the new columns and constraint values; existing payment rows stay in the old status set.
 
@@ -121,4 +131,4 @@ F. Guest interface. Replace premature confirmed copy after the server tests pass
 
 G. Isolated end-to-end acceptance on a disposable branch. Production, Stripe LIVE, and CP31 remain separate authorisations.
 
-Recommended first stage: **A**. The later stages are unsafe while confirmation is still an insert side-effect and the payee is still the hotel row.
+Recommended next stage, after separate authorisation: **B**. Stage A does not make confirmation stop being an insert side-effect, and the payee is still the hotel row.
