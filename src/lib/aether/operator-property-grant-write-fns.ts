@@ -16,6 +16,8 @@ export const setOperatorPropertyGrantFn = createServerFn({ method: "POST" })
   .validator(grantInput)
   .handler(async ({ data, context }) => {
     const db = await getSql();
+    // Grant creation must use confirmOperatorPropertyGrantFn with exact identity confirmation.
+    if (data.enable) throw new Error("Operator identity confirmation required");
     return setOperatorPropertyGrant({
       db, sessionUserId: context.userId,
       hotelId: data.hotelId,
