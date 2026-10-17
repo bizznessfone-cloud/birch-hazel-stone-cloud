@@ -58,5 +58,3 @@ grant execute on function public.sbg_accept_approved_founding_agreement_for_user
 -- Retire the old version-only entrypoint: it cannot bind consent to document bytes.
 revoke all on function public.sbg_accept_approved_founding_agreement_for_user(text,text)
   from public, aether_runtime, aether_app;
--- Retire the obsolete overload entirely so no privileged role can accidentally call it.
-drop function public.sbg_accept_approved_founding_agreement_for_user(text,text);
