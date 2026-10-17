@@ -18,8 +18,8 @@ export async function acceptEffectiveFoundingAgreement(input: {
     throw new Error("Approved agreement unavailable or changed");
   }
   const rows = await input.db.query<{ agreement_version: string; already_accepted: boolean }>(
-    "select agreement_version, already_accepted from public.sbg_accept_approved_founding_agreement_for_user($1,$2)",
-    [input.sessionUserId, effective.version],
+    "select agreement_version, already_accepted from public.sbg_accept_approved_founding_agreement_for_user($1,$2,$3)",
+    [input.sessionUserId, effective.version, effective.sha256],
   );
   if (rows.length !== 1 || rows[0]?.agreement_version !== effective.version) {
     throw new Error("Approved agreement acceptance not recorded");
