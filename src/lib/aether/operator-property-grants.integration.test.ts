@@ -216,7 +216,7 @@ test("active grant allows only its operator; revocation removes access", async (
       [ZERO_USER.id, "Fixture Second Hotel Owner"],
     );
     await pg.query("select sbg_classify_founding_organisation($1,'hotel')", [ZERO_USER.id]);
-    await pg.query("select sbg_accept_approved_founding_agreement_for_user($1,$2)", [ZERO_USER.id, "fixture-operator-access"]);
+    await pg.query("select sbg_accept_approved_founding_agreement_for_user($1,$2,$3)", [ZERO_USER.id, "fixture-operator-access", fixtureHash]);
     const otherHotel = await pg.query<{ hotel_id: string }>(
       "select hotel_id::text as hotel_id from sbg_create_founding_property_for_user($1,$2,$3,$4,$5,$6)",
       [ZERO_USER.id, "sbg-other-grant-test", "Other Owner Hotel", "Rhodes, Greece", "Europe/Athens", "EUR"],
@@ -245,6 +245,15 @@ test("active grant allows only its operator; revocation removes access", async (
       [OWNER_USER.id, hotelId, operatorId],
     );
     assert.equal(await check(OTHER_USER.id), true, "explicit active grant allows the operator");
+    const operatorCommercial = await pg.query<{
+      organisation_exists: boolean; organisation_type: string;
+      approved_agreement_accepted: boolean; accessible_property_count: number;
+    }>("select * from sbg_commercial_founding_snapshot_for_user($1)", [OTHER_USER.id]);
+    assert.deepEqual(operatorCommercial.rows, [{
+      organisation_exists: true, organisation_type: "transfer_operator",
+      approved_agreement_accepted: false, accessible_property_count: 1,
+    }], "operator grant is visible, but cannot imply legal acceptance or paid entitlement");
+
 
     const providerForHotel = await pg.query<{ id: string }>(
       "select provider_id::text as id from hotel_provider_agreements where hotel_id = $1::uuid and active = true",
