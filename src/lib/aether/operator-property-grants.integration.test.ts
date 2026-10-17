@@ -419,6 +419,12 @@ test("active grant allows only its operator; revocation removes access", async (
     );
     assert.equal(deniedFormerProviderGrant.rows[0]?.count, 0,
       "rejected former-provider authorisation must not persist an active grant");
+    const retainedCurrentProviderGrant = await pg.query<{ count: number }>(
+      "select count(*)::int as count from sbg_operator_provider_authorisations where hotel_id = $1::uuid and provider_id = $2::uuid and operator_organisation_id = $3::uuid and revoked_at is null",
+      [hotelId, ownProvider, operatorId],
+    );
+    assert.equal(retainedCurrentProviderGrant.rows[0]?.count, 1,
+      "rejected former-provider authorisation must not revoke the active provider grant");
     await assert.rejects(scopedQuery(OTHER_USER.id, hotelId, secondProviderId),
       /operator provider booking access denied/i,
       "a real same-hotel booking does not unlock unauthorised provider access");
