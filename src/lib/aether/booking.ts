@@ -25,6 +25,7 @@ export type BookingErrorCode =
   | "hotel_not_live"
   | "invalid_time"
   | "invalid_duration"
+  | "duration_not_accepted"
   | "nonexistent"
   | "ambiguous"
   | "invalid_party"

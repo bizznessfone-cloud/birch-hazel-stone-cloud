@@ -20,6 +20,7 @@ import {
   emptyDraft,
   touristMessage,
 } from "./guest.ts";
+import { PROVISIONAL_PUBLIC_DURATION_MINUTES } from "./public-booking-duration.ts";
 import {
   InventoryError,
   assignDriver,
@@ -529,7 +530,6 @@ describe("Phase 9 full test reconstruction", () => {
       destinationText: "ATH airport",
       transferDate: "2026-01-15",
       pickupTime: "09:00",
-      durationMinutes: 60,
       passengerCount: 2,
       luggageCount: 1,
       guestName: "Nikos Guest",
@@ -543,7 +543,7 @@ describe("Phase 9 full test reconstruction", () => {
       destinationId: destinations.gate!,
       transferDate: draft.transferDate,
       pickupTime: draft.pickupTime,
-      durationMinutes: draft.durationMinutes,
+      durationMinutes: PROVISIONAL_PUBLIC_DURATION_MINUTES,
       guestName: draft.guestName,
       guestPhone: draft.guestPhone,
       guestEmail: draft.guestEmail,

@@ -14,6 +14,12 @@ import {
   CP14_DEFAULT_DESTINATION_NAME,
   applyCp14LiveCatalog,
 } from "./cp14-fixture.ts";
+import { createPublicBookingInput } from "./booking-fns.ts";
+import {
+  PROVISIONAL_PUBLIC_DURATION_MINUTES,
+  publicBookingEngineInput,
+  type PublicBookingRequest,
+} from "./public-booking-duration.ts";
 
 const FOUNDATION_SQL = readFileSync(
   new URL("../../../migrations/0002_foundation.sql", import.meta.url),
@@ -316,5 +322,50 @@ describe("Phase 4 booking engine", () => {
     assert.doesNotMatch(engine, /vehicle_id/);
     assert.doesNotMatch(engine, /driver_id/);
     assert.doesNotMatch(engine, /localStorage/);
+  });
+
+  test("public booking rejects a client duration and assigns the provisional server duration", async () => {
+    const request = {
+      hotelCode: "gate",
+      destinationId: "11111111-1111-4111-8111-111111111111",
+      transferDate: "2026-01-15",
+      pickupTime: "09:00",
+      guestName: "Ada Guest",
+      guestPhone: "+302101234567",
+      guestEmail: "ada@example.com",
+      passengerCount: 2,
+      luggageCount: 1,
+      pickupText: "Hotel lobby",
+    };
+    const parsed = createPublicBookingInput.parse(request);
+    assert.equal("durationMinutes" in parsed, false);
+    assert.throws(
+      () => createPublicBookingInput.parse({ ...request, durationMinutes: 15 }),
+      (err: unknown) =>
+        err instanceof Error &&
+        err.name === "BookingError" &&
+        (err as { code?: string }).code === "duration_not_accepted",
+    );
+    const overridden = { ...request, durationMinutes: 90 } as PublicBookingRequest;
+    assert.throws(
+      () => publicBookingEngineInput(overridden),
+      (err: unknown) => err instanceof BookingError && err.code === "duration_not_accepted",
+    );
+    const assigned = publicBookingEngineInput(request);
+    assert.equal(assigned.durationMinutes, PROVISIONAL_PUBLIC_DURATION_MINUTES);
+    assert.equal(PROVISIONAL_PUBLIC_DURATION_MINUTES, 60);
+
+    const { db, pg, hotelCode, destinationIdByCode } = await openDb();
+    const authorised = await createBooking(
+      db,
+      validInput(hotelCode, destinationIdByCode[hotelCode]!, { durationMinutes: 45 }),
+    );
+    assert.equal(authorised.durationMinutes, 45);
+    const serverAssigned = await createBooking(db, {
+      ...validInput(hotelCode, destinationIdByCode[hotelCode]!),
+      durationMinutes: assigned.durationMinutes,
+    });
+    assert.equal(serverAssigned.durationMinutes, 60);
+    await pg.close();
   });
 });
