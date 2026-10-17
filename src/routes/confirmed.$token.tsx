@@ -87,7 +87,6 @@ function ConfirmationCard({
         <dl className="mt-8 divide-y divide-line border border-line bg-surface">
           <DefinitionRow label="Hotel" value={booking.hotelName} />
           <DefinitionRow label="When" value={`${booking.transferDate} · ${booking.pickupTime}`} />
-          <DefinitionRow label="Duration" value={`${booking.durationMinutes} min`} />
           <DefinitionRow label="Pickup" value={booking.pickupText} />
           <DefinitionRow label="Destination" value={booking.destinationText} />
           <DefinitionRow

@@ -10,12 +10,12 @@ import {
   getPublicBookingByToken as getPublicBookingByTokenEngine,
   getPublicHotel as getPublicHotelEngine,
   type BookingDb,
-  type CreateBookingInput,
   type PublicBooking,
   type PublicHotel,
 } from "./booking";
 import { guestLimiterIdentity } from "./client-ip";
 import { createLimitedGuestBooking } from "./guest-create";
+import { publicBookingEngineInput, type PublicBookingRequest } from "./public-booking-duration";
 
 type Executable = Kysely<AetherDatabase> | Transaction<AetherDatabase>;
 
@@ -50,9 +50,13 @@ function requestClientHint(): string {
 }
 
 export async function createBookingFromRequest(
-  input: CreateBookingInput,
+  input: PublicBookingRequest,
 ): Promise<Awaited<ReturnType<typeof createLimitedGuestBooking>>> {
-  return createLimitedGuestBooking(await appDb(), input, requestClientHint());
+  return createLimitedGuestBooking(
+    await appDb(),
+    publicBookingEngineInput(input),
+    requestClientHint(),
+  );
 }
 
 export async function getPublicBookingFromRequest(token: string): Promise<PublicBooking> {

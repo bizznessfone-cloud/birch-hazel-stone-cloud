@@ -1,0 +1,25 @@
+name: Gate 2 onboarding offline checks
+on:
+  push:
+    branches: [feat/gate2-hotel-onboarding]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: node --experimental-strip-types --test src/lib/aether/founding-property-draft.test.ts src/lib/aether/founding-property.test.ts src/lib/aether/founding-property.integration.test.ts src/lib/aether/founding-property-eligibility.test.ts src/lib/aether/founding-property-message.test.ts src/lib/aether/founding-approved-acceptance.test.ts src/lib/aether/founding-journey.integration.test.ts src/lib/aether/operator-property-access.test.ts src/lib/aether/operator-property-grants.integration.test.ts src/lib/aether/operator-property-grant-read.test.ts src/lib/aether/operator-property-grant-write.test.ts src/lib/aether/operator-booking-access.test.ts src/lib/aether/operator-booking-visibility.test.ts
+      - run: npm run typecheck
+      - run: npm run build
