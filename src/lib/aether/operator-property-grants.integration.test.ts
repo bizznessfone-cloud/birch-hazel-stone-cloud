@@ -128,6 +128,31 @@ test("active grant allows only its operator; revocation removes access", async (
       "select sbg_accept_approved_founding_agreement_for_user($1,$2,$3)",
       [OWNER_USER.id, "fixture-operator-access", fixtureHash],
     );
+    // Document integrity and atomic acceptance: reject stale/tampered evidence.
+    await assert.rejects(
+      pg.query("select sbg_accept_approved_founding_agreement_for_user($1,$2,$3)",
+        [OWNER_USER.id, "fixture-operator-access", "0".repeat(64)]),
+      /approved agreement unavailable or changed/i,
+    );
+    await assert.rejects(
+      pg.query("select sbg_accept_approved_founding_agreement_for_user($1,$2,$3)",
+        [OWNER_USER.id, "terms-v1", fixtureHash]),
+      /approved agreement unavailable or changed/i,
+    );
+    const currentDocument = await pg.query<{ agreement_version: string; document_sha256: string }>(
+      "select agreement_version, document_sha256 from sbg_read_effective_founding_agreement()",
+    );
+    assert.deepEqual(currentDocument.rows.map(r => ({ agreement_version: r.agreement_version, document_sha256: r.document_sha256 })),
+      [{ agreement_version: "fixture-operator-access", document_sha256: fixtureHash }]);
+    await assert.rejects(
+      pg.query("update sbg_approved_agreement_documents set document_text = 'tampered' where agreement_version = 'fixture-operator-access'"),
+      /published agreement documents are immutable/i,
+    );
+    const noVersionOnlyPrivilege = await pg.query<{ allowed: boolean }>(
+      "select has_function_privilege('aether_app','public.sbg_accept_approved_founding_agreement_for_user(text,text)','EXECUTE') as allowed",
+    );
+    assert.equal(noVersionOnlyPrivilege.rows[0]?.allowed, false, "version-only acceptance must be unavailable to app role");
+
     const hotel = await pg.query<{ hotel_id: string }>(
       "select hotel_id::text as hotel_id from sbg_create_founding_property_for_user($1,$2,$3,$4,$5,$6)",
       [OWNER_USER.id, "sbg-grant-test", "Grant Test Hotel", "Kos, Greece", "Europe/Athens", "EUR"],
