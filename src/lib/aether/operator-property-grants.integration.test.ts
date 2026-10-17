@@ -320,7 +320,29 @@ test("active grant allows only its operator; revocation removes access", async (
     };
     assert.equal(await canAccessProvider(OTHER_USER.id, hotelId, ownProvider), false,
       "property grant does not imply provider access");
+    // A grant alone cannot allocate an operator licence before provider authorisation.
+    await pg.query(
+      "insert into sbg_organisation_billing(organisation_id,status,licensed_quantity) values ($1::uuid,'inactive',1)",
+      [operatorId],
+    );
+    const allocateOperator = () => pg.query(
+      "insert into sbg_property_licence_allocations(organisation_id,hotel_id,allocated_by_user_id) values ($1::uuid,$2::uuid,$3)",
+      [operatorId, hotelId, OTHER_USER.id],
+    );
+    await assert.rejects(allocateOperator(), /provider permission required/i,
+      "property grant alone cannot create an operator licence allocation");
     await setProvider(OWNER_USER.id, hotelId, ownProvider, true);
+    await allocateOperator();
+    const billingEvidence = await pg.query<{
+      billing_status: string; purchased_quantity: number; allocated_quantity: number;
+      available_quantity: number; allocation_integrity_ok: boolean;
+    }>("select * from sbg_commercial_billing_evidence_for_user($1)", [OTHER_USER.id]);
+    assert.deepEqual(billingEvidence.rows, [{
+      billing_status: "inactive", purchased_quantity: 1, allocated_quantity: 1,
+      available_quantity: 0, allocation_integrity_ok: true,
+    }], "operator allocation is commercially counted without implying active billing");
+    await assert.rejects(allocateOperator(), /duplicate key|licence quantity exceeded/i,
+      "one hotel cannot receive a second active allocation");
     const authorisedStatus = await pg.query<{ provider_authorised: boolean; provider_id: string }>(
       "select provider_authorised, provider_id::text from sbg_operator_provider_activation_for_user($1,$2::uuid)",
       [OTHER_USER.id, hotelId],
