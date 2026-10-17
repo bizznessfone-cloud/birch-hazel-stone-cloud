@@ -255,6 +255,27 @@ test("active grant allows only its operator; revocation removes access", async (
       organisation_exists: true, organisation_type: "transfer_operator",
       approved_agreement_accepted: false, accessible_property_count: 1,
     }], "operator grant is visible, but cannot imply legal acceptance or paid entitlement");
+    await assert.rejects(
+      pg.query("select sbg_accept_approved_founding_agreement_for_user($1,$2,$3)",
+        [OTHER_USER.id, "fixture-operator-access", "0".repeat(64)]),
+      /approved agreement unavailable or changed/i,
+      "operator cannot accept an incorrect document hash",
+    );
+    const operatorAcceptance = await pg.query<{ agreement_version: string; already_accepted: boolean }>(
+      "select * from sbg_accept_approved_founding_agreement_for_user($1,$2,$3)",
+      [OTHER_USER.id, "fixture-operator-access", fixtureHash],
+    );
+    assert.deepEqual(operatorAcceptance.rows,
+      [{ agreement_version: "fixture-operator-access", already_accepted: false }],
+      "operator explicitly accepts the same approved document as a hotel founder");
+    const operatorAfterAcceptance = await pg.query<{ approved_agreement_accepted: boolean; accessible_property_count: number }>(
+      "select approved_agreement_accepted, accessible_property_count from sbg_commercial_founding_snapshot_for_user($1)",
+      [OTHER_USER.id],
+    );
+    assert.deepEqual(operatorAfterAcceptance.rows,
+      [{ approved_agreement_accepted: true, accessible_property_count: 1 }],
+      "operator legal acceptance does not create additional property grants");
+
 
 
     const providerForHotel = await pg.query<{ id: string }>(
