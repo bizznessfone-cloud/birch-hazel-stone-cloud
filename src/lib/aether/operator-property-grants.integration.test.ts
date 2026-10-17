@@ -433,6 +433,27 @@ test("active grant allows only its operator; revocation removes access", async (
     );
     assert.equal(preservedAllocation.rows[0]?.count, 1,
       "provider revocation must not silently release or delete paid licence history");
+    // Fixture-only direct SQL models the future controlled release service.
+    // A release preserves the immutable allocation row; it does not restore
+    // provider permissions or grant an allocation on its own.
+    await pg.query(
+      "update sbg_property_licence_allocations set released_at = now(), released_by_user_id = $1 where organisation_id = $2::uuid and hotel_id = $3::uuid and released_at is null",
+      [OTHER_USER.id, operatorId, hotelId],
+    );
+    const releasedEvidence = await pg.query<{ allocated_quantity: number; available_quantity: number }>(
+      "select allocated_quantity, available_quantity from sbg_commercial_billing_evidence_for_user($1)",
+      [OTHER_USER.id],
+    );
+    assert.deepEqual(releasedEvidence.rows, [{ allocated_quantity: 0, available_quantity: 1 }],
+      "explicit release restores available quantity without deleting history");
+    await assert.rejects(allocateOperator(), /provider permission required/i,
+      "released licence cannot be reallocated after provider revocation");
+    const allocationHistory = await pg.query<{ count: number }>(
+      "select count(*)::int as count from sbg_property_licence_allocations where organisation_id = $1::uuid and hotel_id = $2::uuid and released_at is not null",
+      [operatorId, hotelId],
+    );
+    assert.equal(allocationHistory.rows[0]?.count, 1,
+      "released allocation remains auditable");
     const revoked = await pg.query<{ count: number }>(
       "select count(*)::int as count from sbg_operator_provider_authorisations where hotel_id = $1::uuid and provider_id = $2::uuid and revoked_at is null",
       [hotelId, ownProvider],
