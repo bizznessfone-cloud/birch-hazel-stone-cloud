@@ -59,3 +59,29 @@ The existing `/app/billing` route already contains Connect, subscription Checkou
 6. Every mapping row must eventually include actor, prerequisite, data source, CTA/read state, confirmation, success, failure, revocation and audit implications.
 
 **Next:** inspect guest, operations, owner and auth routes, then produce the full action-to-surface coverage matrix and identify real gaps. This is documentation only.
+
+
+## Mandatory Grok frontend/backend separation rule — non-negotiable
+
+**Functional completeness is not indiscriminate visibility.** Every platform capability must be inventoried, but only authorised, relevant, human-readable actions may be surfaced to the correct actor. Grok must never render database terminology, RPC names, migration identifiers, internal entitlement states, raw IDs/tokens, test fixtures, debug controls, infrastructure status, internal audit actions, or backend-only CTA/buttons on public guest pages or ordinary hotel/operator screens.
+
+| Surface | Permitted presentation | Prohibited presentation |
+| --- | --- | --- |
+| Public marketing and guest booking | Human-readable service, booking, payment and confirmation actions with relevant user states | SQL/RPC names, migrations, allocation guards, developer actions, diagnostics, internal provider/entitlement machinery |
+| Authenticated hotel workspace | Plain-language hotel-authorised business operations and relevant account/billing states | Internal DB controls, privileged owner administration, operator-only actions without hotel authority, raw technical errors |
+| Authenticated transfer-operator workspace | Plain-language operator-authorised property, licence and business actions | Hotel-owner-only authorisation controls, raw internal permission flags, booking/payment actions while denied |
+| SBG owner/internal administration | Explicitly authorised operational controls in a segregated owner-only surface | Any accidental reuse or exposure of those controls in public or customer routes |
+
+**Required enforcement for Grok and review:**
+
+1. Map each backend capability to an **actor, authorisation rule, and intended surface** before proposing a visible CTA. Mark non-user-facing capabilities as **internal/no CTA**; this still counts as accounted-for functionality.
+2. Public copy must use customer terminology, not implementation identifiers. Example: `sbg_release_property_licence_for_user` is never a label; a permitted billing-authority action could be **Release licence** with a clear confirmation and consequences.
+3. Never automatically generate a button from a function, API route, DB migration, enum or test name. Never expose developer-only controls simply to achieve full functional coverage.
+4. Internal state codes must be translated to plain-language statuses. Show safe, actionable failure messages; do not reveal SQL, stack traces, database constraints, credentials, personal tokens or debug payloads.
+5. The UI must hide or disable actions outside the actor's scope **and** the server must enforce authority independently. No client-side-only security.
+6. Preserve separation between public guest routes, authenticated business routes and privileged SBG owner/internal routes. Do not conflate hotel-owner permission with transfer-operator permission.
+7. No operational activation, guest money collection, live billing or production admission may be implied by a visible CTA until its separate release gate is explicitly approved.
+8. During UX mapping, require a **public-surface contamination check** for every guest and marketing route, plus a **role/authority matrix** for every hotel, operator and owner action. Any leaked internal CTA or raw backend terminology is a **release-blocking defect**.
+9. Any internal-only function without a CTA is documented as intentionally invisible, not treated as an omission requiring a UI control.
+
+**Grok instruction:** Audit and map first. Do not design, create, expose or rename controls until their actor, permission, surface and customer-language label are approved. This rule takes precedence over the general requirement that all functions be represented.
