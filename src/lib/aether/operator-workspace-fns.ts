@@ -38,7 +38,22 @@ export const listOperatorWorkspacePropertiesFn = createServerFn({ method: "GET" 
       if (!Array.isArray(rows) || rows.length > 100 || rows.some(row =>
         typeof row.hotel_id !== "string" || typeof row.hotel_name !== "string"
       )) return { properties: [] as Array<{ hotelId: string; name: string }> };
-      return { properties: rows.map(row => ({ hotelId: row.hotel_id, name: row.hotel_name })) };
+      const properties: Array<{ hotelId: string; name: string; providerAuthorised: boolean }> = [];
+      for (const row of rows) {
+        // 0049 is status-only; missing migration or read failure denies status.
+        let providerAuthorised = false;
+        try {
+          const status = await db.query<{ provider_authorised: boolean }>(
+            "select provider_authorised from public.sbg_operator_provider_activation_for_user($1,$2::uuid)",
+            [context.userId, row.hotel_id],
+          );
+          providerAuthorised = status.length === 1 && status[0]?.provider_authorised === true;
+        } catch {
+          providerAuthorised = false;
+        }
+        properties.push({ hotelId: row.hotel_id, name: row.hotel_name, providerAuthorised });
+      }
+      return { properties };
     } catch {
       // Missing migration, ambiguous membership or DB failure never exposes properties.
       return { properties: [] as Array<{ hotelId: string; name: string }> };
