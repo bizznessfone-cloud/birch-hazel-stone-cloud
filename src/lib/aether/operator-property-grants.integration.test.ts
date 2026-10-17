@@ -329,7 +329,7 @@ test("active grant allows only its operator; revocation removes access", async (
       `select has_function_privilege('aether_app',
         'public.sbg_set_operator_provider_authorisation_for_user(text,uuid,uuid,uuid,boolean)', 'EXECUTE') as permitted`,
     );
-    assert.equal(canExecute.rows[0]?.permitted, false, "application cannot issue provider grants");
+    assert.equal(canExecute.rows[0]?.permitted, true, "application may call only the owner-guarded provider setter after 0051");
 
     // Two real bookings make the result projection and hotel isolation observable.
     const insertBooking = async (targetHotelId: string, reference: string) => {
