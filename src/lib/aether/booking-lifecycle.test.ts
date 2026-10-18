@@ -299,18 +299,19 @@ test("current engine still lacks the lifecycle; the gap register must stay expli
   const paymentSql = readFileSync(new URL("../../../migrations/0021_cp25_hotel_guest_payments.sql", import.meta.url), "utf8");
   const duration = readFileSync(new URL("./public-booking-duration.ts", import.meta.url), "utf8");
   assert.doesNotMatch(guestCreate, /sendConfirmationEmail/);
-  assert.match(confirmed, /Your transfer is booked/);
-  assert.match(confirmed, /Confirmed/);
+  assert.doesNotMatch(confirmed, /Your transfer is booked/);
+  assert.doesNotMatch(confirmed, /Pay for transfer/);
+  assert.match(confirmed, /guestStatus/);
+  assert.doesNotMatch(confirmed, /startGuestPayment/);
   assert.match(domainB, /c\.hotel_id = b\.hotel_id/);
   assert.doesNotMatch(paymentSql, /received_after_expiry/);
   assert.match(paymentSql, /status = p_status/);
   assert.match(duration, /PROVISIONAL_PUBLIC_DURATION_MINUTES = 60/);
   const gaps = [
     "insert_confirms_before_payment",
-    "confirmation_page_before_payment",
     "payee_is_hotel_connection",
     "no_hold_expiry",
     "no_late_payment_disposition",
   ];
-  assert.equal(gaps.length, 5);
+  assert.equal(gaps.length, 4);
 });

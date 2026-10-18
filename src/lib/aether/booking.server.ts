@@ -7,15 +7,15 @@ import { getRequest } from "@tanstack/react-start/server";
 import { getAetherDb } from "./kysely";
 import type { AetherDatabase } from "./schema";
 import {
-  getPublicBookingByToken as getPublicBookingByTokenEngine,
   getPublicHotel as getPublicHotelEngine,
   type BookingDb,
-  type PublicBooking,
   type PublicHotel,
 } from "./booking";
 import { guestLimiterIdentity } from "./client-ip";
 import { createLimitedGuestBooking } from "./guest-create";
 import { publicBookingEngineInput, type PublicBookingRequest } from "./public-booking-duration";
+import { getPublicGuestBooking } from "./public-booking-read";
+import type { PublicGuestBooking } from "./public-booking-status";
 
 type Executable = Kysely<AetherDatabase> | Transaction<AetherDatabase>;
 
@@ -59,8 +59,8 @@ export async function createBookingFromRequest(
   );
 }
 
-export async function getPublicBookingFromRequest(token: string): Promise<PublicBooking> {
-  return getPublicBookingByTokenEngine(await appDb(), token);
+export async function getPublicBookingFromRequest(token: string): Promise<PublicGuestBooking> {
+  return getPublicGuestBooking(await appDb(), token);
 }
 
 export async function getPublicHotelFromRequest(hotelCode: string): Promise<PublicHotel> {
@@ -69,3 +69,4 @@ export async function getPublicHotelFromRequest(hotelCode: string): Promise<Publ
 
 export { BookingError } from "./booking";
 export type { CreateBookingInput, CreatedBooking, PublicBooking, PublicHotel } from "./booking";
+export type { PublicGuestBooking } from "./public-booking-status";

@@ -80,6 +80,5 @@ test("CP25 keeps guest transfer payment on the connected hotel account", () => {
   assert.match(payment, /sbg_prepare_booking_payment/);
   assert.match(payment, /createGuestTransferCheckout/);
   assert.match(payment, /stripe_account_id/);
-  assert.match(confirmation, /startGuestPayment/);
-  assert.match(confirmation, /Pay for transfer/);
+  assert.doesNotMatch(confirmation, /startGuestPayment|Pay for transfer|sbg_prepare_booking_payment/);
 });

@@ -95,12 +95,11 @@ A verified `paid` event after expiry or failure:
 
 ## Current gaps
 
-These are still true of this tree, and the contract tests assert them so the gap cannot disappear unnoticed:
+These remain true of this tree:
 
-- Insert plus immediate confirmation email.
-- Confirmation page copy "Confirmed" / "Your transfer is booked" before payment verification.
-- Payee lookup by hotel connection.
-- The running booking path still does not write `hold_expires_at` or stop the confirmation email. Stage A adds the columns in source only.
+- Guest creation still inserts `legacy_unreconciled`. It does not open `awaiting_payment`, so a new booking is not a paid confirmation and the public page does not call it one.
+- Payee lookup by hotel connection remains on the live Domain B path.
+- The running booking path still does not write `hold_expires_at`.
 - `sbg_apply_payment_event` still writes the supplied status onto the payment row only. `received_after_expiry` is allowed by migration 0060 and is not confirmation.
 
 ## Stage A schema
@@ -125,7 +124,7 @@ Expiry locks due `awaiting_payment` or `payment_processing` rows with `for updat
 
 ## Implementation sequence
 
-No stage is authorised for production by this document. Stages A through E are source-only. Do not apply migrations 0060, 0061, 0062, 0063, or 0064 from this checkpoint.
+No stage is authorised for production by this document. Stages A through F are source-only. Do not apply migrations 0060, 0061, 0062, 0063, or 0064 from this checkpoint.
 
 A. Lifecycle schema and invariants. New migration only. Add booking lifecycle, `hold_expires_at`, and confirmed-at. Add the late-payment disposition without editing [0021](../migrations/0021_cp25_hotel_guest_payments.sql) or [0030](../migrations/0030_cp272_fix_prepare_booking_payment.sql) in place. Rollback drops only the new columns and constraint values; existing payment rows stay in the old status set.
 
@@ -137,11 +136,11 @@ D. Verified payment-to-confirmation. Webhook confirms only inside the hold. Repl
 
 E. Confirmation email and dispatch admission. Send the email only after D. Assignment functions refuse every earlier state.
 
-F. Guest interface. Replace premature confirmed copy after the server tests pass. No redesign in this checkpoint.
+F. Guest interface. The confirmation page reads the server lifecycle. It does not treat a return URL as payment.
 
 G. Isolated end-to-end acceptance on a disposable branch. Production, Stripe LIVE, and CP31 remain separate authorisations.
 
-Recommended next stage, after separate authorisation: **F**. Do not start it from this checkpoint. Stage E admits a paid confirmation claim and blocks unpaid dispatch for the new lifecycle. It does not send email, change the confirmation page, or mount checkout.
+Recommended next stage, after separate authorisation: **G**. Do not start it from this checkpoint. Stage F replaces the premature confirmation copy. It does not open checkout or mount the webhook.
 
 ## Stage C payment authority
 
@@ -184,8 +183,14 @@ Source migration [migrations/0064_gate2_paid_confirmation_admission.sql](../migr
 
 `sbg_claim_confirmation_email(booking_id)` is executable only by `aether_mailer`. The role is `nologin`, has no table DML, and is not granted to `aether_app`. The function locks the booking, then the payment. It admits only `confirmed_paid` with a finite `confirmed_paid_at`, a payment in `paid` with `paid_at`, and a frozen executing-provider binding that matches the booking. It refuses legacy, pending, processing, expired, failed, cancelled, and refunded rows. It returns no guest fields.
 
-One outbox row exists per booking. The first call inserts `claimed` for five minutes. A second call while that claim is live returns `claim_held` and does not issue another token. Recording `sent` with the live token is terminal (`already_sent`). Recording `failed` with a short provider code keeps the row retryable. An expired claim can be reclaimed. Attempt 5 is the last. A claim is not delivery. [confirmation-admission.ts](../src/lib/aether/confirmation-admission.ts) calls the sender only after the claim transaction has finished, and guest creation does not call it. [guest-create.ts](../src/lib/aether/guest-create.ts) no longer calls `sendConfirmationEmail`. The confirmation page copy is unchanged.
+One outbox row exists per booking. The first call inserts `claimed` for five minutes. A second call while that claim is live returns `claim_held` and does not issue another token. Recording `sent` with the live token is terminal (`already_sent`). Recording `failed` with a short provider code keeps the row retryable. An expired claim can be reclaimed. Attempt 5 is the last. A claim is not delivery. [confirmation-admission.ts](../src/lib/aether/confirmation-admission.ts) calls the sender only after the claim transaction has finished, and guest creation does not call it. [guest-create.ts](../src/lib/aether/guest-create.ts) no longer calls `sendConfirmationEmail`. Stage F owns the confirmation-page wording.
 
 `sbg_bookings_dispatch_admission_guard` runs before insert or update. Clearing a vehicle or driver is allowed. Setting one is refused unless the resource belongs to the executing provider and either the row stays `legacy_unreconciled`, or the lifecycle is already `confirmed_paid`, the payment is `paid`, and `sbg_resolve_executing_payee` still succeeds. Revocation, cancellation, and every earlier new lifecycle are `dispatch_not_admitted`. The occupancy exclusion constraint is unchanged. Direct `aether_app` updates of `vehicle_id` or `driver_id` hit the same trigger. `inventory.ts` maps that error and does not widen operator scope.
 
-Stage F, the guest confirmation copy, stays unauthorised.
+Stage F reads that lifecycle for the guest. It does not send the email.
+
+## Stage F guest status
+
+[public-booking-status.ts](../src/lib/aether/public-booking-status.ts) is the only public projection. [public-booking-read.ts](../src/lib/aether/public-booking-read.ts) loads it by confirmation token. It reads `bookings.lifecycle_state`, `confirmed_paid_at`, `cancelled_at`, and the payment row's paid evidence. It does not read a return URL. `confirmed_paid` is shown as confirmed only when `confirmed_paid_at` is set, the payment is `paid` with `paid_at`, the frozen executing-provider binding is complete, and that provider matches the booking. Anything else, including `legacy_unreconciled` and a paid-looking legacy row, is "Booking status unavailable". The confirmation page renders that projection. It does not call `startGuestPayment` or `sbg_prepare_booking_payment`. Online payment stays closed. Checking states may refresh at most four times. Terminal states are not polled. No migration was added. The lookup needs columns from 0060 and 0062, which are not production-admitted. Do not deploy this page before those migrations are admitted.
+
+Stage G, isolated end-to-end acceptance, stays unauthorised.

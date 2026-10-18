@@ -35,7 +35,7 @@ Before payment: 'Review and pay' / 'Complete payment'; after checkout return whi
 
 - guest.ts DEFAULT_DURATION_MINUTES is 60; guest-book.tsx exposes a 1–1440 minute duration stepper and passes duration to createPublicBooking; booking-fns.ts validates client-supplied duration; booking.ts stores that value.
 - guest-create.ts sends a confirmation email immediately after booking insert, before guest payment.
-- confirmed.$token.tsx says 'Your transfer is booked' and shows 'Confirmed' before payment, while also offering 'Pay for transfer'.
+- confirmed.$token.tsx now shows the server lifecycle projection. It no longer says the transfer is booked before payment, and it does not start checkout. `guest-payment-fns.ts` still contains the unmounted legacy prepare path.
 - guest-payment-fns.ts invokes sbg_prepare_booking_payment and creates Stripe Checkout on a connected account; an explicit CP31 admission guard has not been established by this review.
 - domain-b-payment.ts currently binds payment events through a hotel-associated Stripe connection. Reconcile this with the independent executing-provider model.
 - Booking insertion and occupancy are already implemented; do not replace working exclusion, idempotency, time-zone or audit protections without tests.

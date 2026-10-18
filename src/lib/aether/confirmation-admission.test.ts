@@ -222,7 +222,8 @@ test("0064 is source-only and guest creation does not send mail", () => {
   assert.match(guest, /assertGuestCreateRateLimit/);
   assert.doesNotMatch(admission, /api\.resend\.com|sendConfirmationEmail/);
   assert.doesNotMatch(webhook, /sbg_claim_confirmation_email|sbg_accept_verified_payment_event/);
-  assert.match(page, /Your transfer is booked/);
+  assert.doesNotMatch(page, /Your transfer is booked/);
+  assert.doesNotMatch(page, /startGuestPayment/);
   assert.match(SQL, /legacy_unreconciled/);
 });
 

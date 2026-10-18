@@ -543,7 +543,7 @@ function ReviewStep(props: {
   const destinationName = selected?.name ?? props.draft.destinationText;
   const priceLabel = selected
     ? formatQuotedPrice(props.currency, selected.amountMinor)
-    : "To be confirmed";
+    : "Quoted by the hotel";
   return (
     <form
       className="flex flex-1 flex-col gap-6"
