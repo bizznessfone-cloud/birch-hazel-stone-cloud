@@ -103,7 +103,7 @@ These are still true of this tree, and the contract tests assert them so the gap
 - The running booking path still does not write `hold_expires_at` or stop the confirmation email. Stage A adds the columns in source only.
 - `sbg_apply_payment_event` still writes the supplied status onto the payment row only. `received_after_expiry` is allowed by migration 0060 and is not confirmation.
 
-## Implementation sequence
+## Stage A schema
 
 Source migration [migrations/0060_gate2_booking_lifecycle_schema.sql](../migrations/0060_gate2_booking_lifecycle_schema.sql) is not in `ACCEPTED_LEDGER` or `AUTHORISED_PENDING`. It does not change GiST, the occupancy trigger, or the 60-minute duration rule.
 
@@ -113,9 +113,19 @@ The schema requires a finite `hold_expires_at` for `awaiting_payment` and `payme
 
 `sbg_booking_payments.status` accepts `received_after_expiry` in addition to the existing statuses. Existing payment rows are not rewritten. The new status is not `paid` and does not change the booking lifecycle.
 
+## Stage B holds
+
+Source migration [migrations/0061_gate2_provisional_hold_operations.sql](../migrations/0061_gate2_provisional_hold_operations.sql) adds `sbg_open_provisional_hold` and `sbg_expire_provisional_holds`. Neither is scheduled, and the guest booking route does not call them. The 30-minute ceiling remains `provisional_pending_approval`.
+
+A hold can be opened only for a `legacy_unreconciled` booking created within the last two minutes, with no vehicle, driver, cancellation, or payment row. The database clock sets `hold_expires_at`. The caller supplies a TTL of 60 to 1800 seconds and cannot supply the expiry timestamp. A second open is `duplicate_hold` and does not move the deadline. Older or assigned rows stay `legacy_unreconciled`.
+
+Expiry locks due `awaiting_payment` or `payment_processing` rows with `for update skip locked`, then locks any payment row. It sets the booking lifecycle to `expired` only when payment status is not `paid` or `received_after_expiry`. It does not change the payment row, a Stripe session, or any vehicle or driver. A second call is a no-op. A past-due hold that already has verified payment evidence is left unchanged for reconciliation. Stage D must lock the booking first, then the payment row, and must not confirm an expired lifecycle. That race is not fully closed while Stage D is absent.
+
+`aether_app` may execute the two functions. `aether_runtime` and `public` may not. Direct updates of the lifecycle columns remain denied for both application roles.
+
 ## Implementation sequence
 
-No stage is authorised for production by this document. Stage A is source-only. Do not apply migration 0060 from this checkpoint.
+No stage is authorised for production by this document. Stages A and B are source-only. Do not apply migrations 0060 or 0061 from this checkpoint.
 
 A. Lifecycle schema and invariants. New migration only. Add booking lifecycle, `hold_expires_at`, and confirmed-at. Add the late-payment disposition without editing [0021](../migrations/0021_cp25_hotel_guest_payments.sql) or [0030](../migrations/0030_cp272_fix_prepare_booking_payment.sql) in place. Rollback drops only the new columns and constraint values; existing payment rows stay in the old status set.
 
@@ -131,4 +141,4 @@ F. Guest interface. Replace premature confirmed copy after the server tests pass
 
 G. Isolated end-to-end acceptance on a disposable branch. Production, Stripe LIVE, and CP31 remain separate authorisations.
 
-Recommended next stage, after separate authorisation: **B**. Stage A does not make confirmation stop being an insert side-effect, and the payee is still the hotel row.
+Recommended next stage, after separate authorisation: **C**. Provisional holds can be opened and expired in isolation. The payee is still the hotel row, and a late or overlapping payment still cannot be confirmed safely.
