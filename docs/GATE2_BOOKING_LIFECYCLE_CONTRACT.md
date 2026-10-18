@@ -109,7 +109,7 @@ Source migration [migrations/0060_gate2_booking_lifecycle_schema.sql](../migrati
 
 `bookings.lifecycle_state` is separate from `bookings.status`. Existing rows, and any current insert that does not set the column, become `legacy_unreconciled` with null `hold_expires_at` and null `confirmed_paid_at`. That state keeps historical assignments. It is not `confirmed_paid` and it cannot store a confirmation timestamp. Stage B must set an open-hold state explicitly; the default stays unreconciled so today's insert path does not start failing and does not become paid.
 
-The schema requires a finite `hold_expires_at` for `awaiting_payment` and `payment_processing`, and a finite `confirmed_paid_at` for `confirmed_paid`. It cannot see `sbg_booking_payments`. A `confirmed_paid` row without a payment row is still possible. Stage D must add one security-definer transition that writes the lifecycle only together with verified payment evidence. Until then, `aether_app` and `aether_runtime` cannot write the three lifecycle columns; the guard trigger covers the table-level update grant from migration 0011.
+The schema requires a finite `hold_expires_at` for `awaiting_payment` and `payment_processing`, and a finite `confirmed_paid_at` for `confirmed_paid`. It cannot see `sbg_booking_payments`. A `confirmed_paid` row without a payment row is still possible until the Stage D transition is the only writer. `aether_app` and `aether_runtime` still cannot write the three lifecycle columns; the guard trigger covers the table-level update grant from migration 0011. The Stage D function writes them only as a security definer, and only for `aether_webhook`.
 
 `sbg_booking_payments.status` accepts `received_after_expiry` in addition to the existing statuses. Existing payment rows are not rewritten. The new status is not `paid` and does not change the booking lifecycle.
 
@@ -119,13 +119,13 @@ Source migration [migrations/0061_gate2_provisional_hold_operations.sql](../migr
 
 A hold can be opened only for a `legacy_unreconciled` booking created within the last two minutes, with no vehicle, driver, cancellation, or payment row. The database clock sets `hold_expires_at`. The caller supplies a TTL of 60 to 1800 seconds and cannot supply the expiry timestamp. A second open is `duplicate_hold` and does not move the deadline. Older or assigned rows stay `legacy_unreconciled`.
 
-Expiry locks due `awaiting_payment` or `payment_processing` rows with `for update skip locked`, then locks any payment row. It sets the booking lifecycle to `expired` only when payment status is not `paid` or `received_after_expiry`. It does not change the payment row, a Stripe session, or any vehicle or driver. A second call is a no-op. A past-due hold that already has verified payment evidence is left unchanged for reconciliation. Stage D must lock the booking first, then the payment row, and must not confirm an expired lifecycle. That race is not fully closed while Stage D is absent.
+Expiry locks due `awaiting_payment` or `payment_processing` rows with `for update skip locked`, then locks any payment row. It sets the booking lifecycle to `expired` only when payment status is not `paid` or `received_after_expiry`. It does not change the payment row, a Stripe session, or any vehicle or driver. A second call is a no-op. A past-due hold that already has verified payment evidence is left unchanged for reconciliation. Stage D locks the booking first, then the payment row, and does not confirm an expired lifecycle. Expiry will not wait on a booking another session has locked, because it uses `skip locked`. The payment transition waits. That overlap is covered by [verified-payment-concurrency.test.ts](../src/lib/aether/verified-payment-concurrency.test.ts) against a disposable local Postgres. It is not part of the default PGlite suite, and a PGlite run is not a concurrency pass.
 
 `aether_app` may execute `sbg_open_provisional_hold`. Migration 0062 revokes `aether_app` execute on `sbg_expire_provisional_holds`. `aether_runtime` and `public` may not execute either function. Direct updates of the lifecycle columns remain denied for both application roles. No expiry worker role is created.
 
 ## Implementation sequence
 
-No stage is authorised for production by this document. Stages A, B, and C are source-only. Do not apply migrations 0060, 0061, or 0062 from this checkpoint.
+No stage is authorised for production by this document. Stages A, B, C, and D are source-only. Do not apply migrations 0060, 0061, 0062, or 0063 from this checkpoint.
 
 A. Lifecycle schema and invariants. New migration only. Add booking lifecycle, `hold_expires_at`, and confirmed-at. Add the late-payment disposition without editing [0021](../migrations/0021_cp25_hotel_guest_payments.sql) or [0030](../migrations/0030_cp272_fix_prepare_booking_payment.sql) in place. Rollback drops only the new columns and constraint values; existing payment rows stay in the old status set.
 
@@ -141,7 +141,7 @@ F. Guest interface. Replace premature confirmed copy after the server tests pass
 
 G. Isolated end-to-end acceptance on a disposable branch. Production, Stripe LIVE, and CP31 remain separate authorisations.
 
-Recommended next stage, after separate authorisation: **D**. Executing-provider authority can be resolved and bound in isolation. Checkout, webhooks, and paid confirmation are not admitted. The live handler still joins the hotel Stripe account, and `sbg_apply_payment_event` still consumes an event id before that account check.
+Recommended next stage, after separate authorisation: **E**. Do not start it from this checkpoint. Stage D's transition exists and is not mounted. Email and dispatch stay refused until a later authorisation. Switching the live webhook is also a separate authorisation; it is not part of Stage D and it is not permission to start Stage E.
 
 ## Stage C payment authority
 
@@ -153,4 +153,25 @@ Source migration [migrations/0062_gate2_executing_provider_payment_authority.sql
 
 `sbg_assess_payment_authority_event` compares a webhook claim with that frozen attempt: booking, payment, executing provider, account, session, amount, and currency. A hotel account presented for an operator attempt is `hotel_account_not_payee`. The function does not insert `sbg_stripe_events`. A mismatch therefore cannot consume a legitimate event id. `aether_app` may execute these four functions. `aether_runtime` and `public` may not. Direct writes of the authority columns are denied to both application roles by `sbg_booking_payment_authority_guard`.
 
-Stage D, and not before, wires this boundary into checkout and the webhook. It must stop using the hotel-connection join in [domain-b-payment.ts](../src/lib/aether/domain-b-payment.ts), must not call the current `sbg_apply_payment_event` for an unmatched account, must lock the booking before the payment, and must insert the Stripe event id only after `matched`, in the same transaction as the disposition write. It must not confirm an expired lifecycle and must not retarget a bound attempt when drift is `account_changed` or `payee_changed`.
+## Stage D verified payment
+
+Source migration [migrations/0063_gate2_verified_payment_transition.sql](../migrations/0063_gate2_verified_payment_transition.sql) is not in `ACCEPTED_LEDGER` or `AUTHORISED_PENDING`. It does not replace `sbg_prepare_booking_payment` or `sbg_apply_payment_event`. It does not open Checkout, send email, admit dispatch, or change the public webhook.
+
+`sbg_accept_verified_payment_event` is executable only by `aether_webhook`. That role is `nologin`, has no table DML, and is not granted to `aether_app`. `aether_app`, `aether_runtime`, and `public` cannot execute the function. The function is security definer. It does not verify a Stripe signature. `p_signature_verified` is the caller's attestation, not a signature. The only cryptographic check remains `verifyStripeSignature` in [stripe.server.ts](../src/lib/aether/stripe.server.ts). [verified-payment.ts](../src/lib/aether/verified-payment.ts) calls this function and nothing else. It is not imported by the webhook, guest checkout, or Domain B.
+
+Lock order is the booking row, then the payment row. The Stripe event id is inserted only after `sbg_assess_payment_authority_event` returns `matched`, in the same transaction as the payment disposition and the lifecycle write. A mismatch, a false attestation, a bad event id, an unsupported event, an ineligible lifecycle, a refund that is not yet confirmed and paid, or authority drift does not insert the event id. The same event id is a no-op. A second distinct event after settlement is `ignored_after_settlement` and does not confirm again. `confirmed_paid_at` and `paid_at` come from `clock_timestamp()`. The caller cannot supply them. The success URL is not a parameter.
+
+A success can confirm only when the lifecycle is `awaiting_payment` or `payment_processing`, the hold is finite and still at or after the database clock, and the payment status is `pending`, `expired`, or `canceled`. `expired` and `canceled` here are Checkout Session dispositions, not an expired booking hold. The same predicate runs the live payee check: `sbg_resolve_executing_payee` must still return the frozen organisation and the account on the event. A revoked authorisation, a changed account, or a changed payee is `authority_drift`. Drift does not confirm, does not insert the event id, and does not retarget the attempt. An expired booking hold is never confirmable, including when the Checkout Session status is already `expired` or `canceled`. That path records `received_after_expiry`, moves a still-open `awaiting_payment` or `payment_processing` row to `expired`, and does not set `confirmed_paid_at`. `failed` is terminal for confirmation. A later success after `failed` is late reconciliation and does not resurrect the hold. A later failure, cancellation, or refund does not overwrite `paid`, `received_after_expiry`, `confirmed_paid`, or `refunded`. A refund is applied only when the lifecycle is already `confirmed_paid` and the payment is `paid`; the payment stays `paid` and the lifecycle becomes `refunded`. `checkout.session.completed` without `paid` is `processing`: the event is recorded and nothing is confirmed, so a later distinct paid event can still confirm. `checkout.session.expired` marks a pending payment `expired` and does not change the booking lifecycle, so a later paid event can still confirm while the hold is open.
+
+### Integration contract
+
+Do not activate this handler in the public checkout route. When a later authorisation does, the order is fixed:
+
+1. `verifyStripeSignature` must return true. Do not call the transition when it does not.
+2. Call `sbg_accept_verified_payment_event` only on a connection whose role is `aether_webhook`. Do not grant that role to `aether_app` or accept the call from a guest request.
+3. Stop calling `sbg_apply_payment_event` for these Checkout events in the same activation. That function remains in place for the current production path. It can set `sbg_booking_payments.status` to `paid` without `confirmed_paid`, and it inserts `sbg_stripe_events` before its account check. A row it has already marked `paid` is `ignored_after_settlement` here and will not be confirmed afterwards.
+4. Do not treat `/confirmed/{token}?payment=success` as evidence.
+5. Do not confirm an expired, failed, cancelled, refunded, or `legacy_unreconciled` lifecycle.
+6. Do not retarget a bound attempt when the current payee or account has drifted.
+
+Stage E, confirmation email and dispatch, stays unauthorised. Neither runs from this transition.

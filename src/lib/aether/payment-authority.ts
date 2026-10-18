@@ -3,10 +3,9 @@
  * Not imported by guest checkout, domain-b-payment.ts, or the confirmation email.
  * A resolved payee does not admit Checkout or CP31.
  *
- * Stage D must call assessPaymentAuthorityEvent before any event-id insert.
- * The current sbg_apply_payment_event consumes the Stripe event id before its
- * account check, and evaluateDomainBCheckoutBinding still joins the hotel
- * connection. Neither is invoked here.
+ * sbg_accept_verified_payment_event calls sbg_assess_payment_authority_event
+ * before it inserts a Stripe event id. This module does not call
+ * sbg_apply_payment_event and is not mounted on the webhook.
  */
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
