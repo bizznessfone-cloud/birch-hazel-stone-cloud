@@ -2,6 +2,8 @@
  * Internal adapter for Stage B hold operations.
  * Not imported by the guest booking route, checkout, or email sender.
  * The 30-minute ceiling is provisional and is not a production approval.
+ * Migration 0062 revokes aether_app execute on bulk expiry. This function is
+ * not a privilege and is not a scheduler.
  */
 import { PROVISIONAL_HOLD_TTL_MS, PROVISIONAL_HOLD_TTL_STATUS } from "./booking-lifecycle.ts";
 

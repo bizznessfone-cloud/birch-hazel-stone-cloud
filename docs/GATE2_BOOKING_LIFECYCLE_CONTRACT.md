@@ -121,11 +121,11 @@ A hold can be opened only for a `legacy_unreconciled` booking created within the
 
 Expiry locks due `awaiting_payment` or `payment_processing` rows with `for update skip locked`, then locks any payment row. It sets the booking lifecycle to `expired` only when payment status is not `paid` or `received_after_expiry`. It does not change the payment row, a Stripe session, or any vehicle or driver. A second call is a no-op. A past-due hold that already has verified payment evidence is left unchanged for reconciliation. Stage D must lock the booking first, then the payment row, and must not confirm an expired lifecycle. That race is not fully closed while Stage D is absent.
 
-`aether_app` may execute the two functions. `aether_runtime` and `public` may not. Direct updates of the lifecycle columns remain denied for both application roles.
+`aether_app` may execute `sbg_open_provisional_hold`. Migration 0062 revokes `aether_app` execute on `sbg_expire_provisional_holds`. `aether_runtime` and `public` may not execute either function. Direct updates of the lifecycle columns remain denied for both application roles. No expiry worker role is created.
 
 ## Implementation sequence
 
-No stage is authorised for production by this document. Stages A and B are source-only. Do not apply migrations 0060 or 0061 from this checkpoint.
+No stage is authorised for production by this document. Stages A, B, and C are source-only. Do not apply migrations 0060, 0061, or 0062 from this checkpoint.
 
 A. Lifecycle schema and invariants. New migration only. Add booking lifecycle, `hold_expires_at`, and confirmed-at. Add the late-payment disposition without editing [0021](../migrations/0021_cp25_hotel_guest_payments.sql) or [0030](../migrations/0030_cp272_fix_prepare_booking_payment.sql) in place. Rollback drops only the new columns and constraint values; existing payment rows stay in the old status set.
 
@@ -141,4 +141,16 @@ F. Guest interface. Replace premature confirmed copy after the server tests pass
 
 G. Isolated end-to-end acceptance on a disposable branch. Production, Stripe LIVE, and CP31 remain separate authorisations.
 
-Recommended next stage, after separate authorisation: **C**. Provisional holds can be opened and expired in isolation. The payee is still the hotel row, and a late or overlapping payment still cannot be confirmed safely.
+Recommended next stage, after separate authorisation: **D**. Executing-provider authority can be resolved and bound in isolation. Checkout, webhooks, and paid confirmation are not admitted. The live handler still joins the hotel Stripe account, and `sbg_apply_payment_event` still consumes an event id before that account check.
+
+## Stage C payment authority
+
+Source migration [migrations/0062_gate2_executing_provider_payment_authority.sql](../migrations/0062_gate2_executing_provider_payment_authority.sql) is not in `ACCEPTED_LEDGER` or `AUTHORISED_PENDING`. It does not replace `sbg_prepare_booking_payment` or `sbg_apply_payment_event`, and it does not open Checkout.
+
+`sbg_resolve_executing_payee(booking_id)` reads the booking's recorded `executing_provider_id`. The caller cannot supply a Stripe account, a provider, or a recipient. Hotel in-house (`providers.kind = in_house`, no active operator authorisation) pays the hotel organisation. An independent operator (`external`, exactly one active provider authorisation, and an active property grant) pays that operator organisation. Both require one active agreement. The property's one active licence allocation stays on `hotels.organisation_id`, because migration 0027 rejects any other holder. The payee's own `sbg_organisation_billing.status` must be `active` with `licensed_quantity >= 1`. `trialing` and `past_due` are not payment authority. The current account is `sbg_organisation_stripe_connections`, not `sbg_stripe_connections` joined from `bookings.hotel_id`. An operator account that equals the hotel's connected account is `hotel_account_not_payee`. Anything ambiguous fails closed.
+
+`sbg_bind_payment_authority(booking_id)` writes that result once onto the existing `sbg_booking_payments` row: organisation, executing provider, kind, account, and `authority_bound_at`. It does not change amount, currency, session, payment intent, or status, and it does not insert a payment row. A second call returns `immutable` and does not follow a later account or payee change. `sbg_payment_authority_drift` reports the difference and does not rewrite the attempt.
+
+`sbg_assess_payment_authority_event` compares a webhook claim with that frozen attempt: booking, payment, executing provider, account, session, amount, and currency. A hotel account presented for an operator attempt is `hotel_account_not_payee`. The function does not insert `sbg_stripe_events`. A mismatch therefore cannot consume a legitimate event id. `aether_app` may execute these four functions. `aether_runtime` and `public` may not. Direct writes of the authority columns are denied to both application roles by `sbg_booking_payment_authority_guard`.
+
+Stage D, and not before, wires this boundary into checkout and the webhook. It must stop using the hotel-connection join in [domain-b-payment.ts](../src/lib/aether/domain-b-payment.ts), must not call the current `sbg_apply_payment_event` for an unmatched account, must lock the booking before the payment, and must insert the Stripe event id only after `matched`, in the same transaction as the disposition write. It must not confirm an expired lifecycle and must not retarget a bound attempt when drift is `account_changed` or `payee_changed`.
