@@ -119,7 +119,8 @@ test("public status uses the server lifecycle and ignores a return url", () => {
   assert.match(page, /Refresh status/);
   assert.match(page, /shouldPollGuestStatus/);
   assert.match(page, /guestStatus/);
-  assert.match(payment, /sbg_prepare_booking_payment/);
+  assert.doesNotMatch(payment, /sbg_prepare_booking_payment|createGuestTransferCheckout/);
+  assert.match(payment, /GuestCheckoutClosed/);
   assert.doesNotMatch(schema, /revoke select \(lifecycle_state/);
   const projected = JSON.stringify(projectPublicGuestStatus(facts(PAID)));
   assert.doesNotMatch(projected, /confirmed_paid|acct_|payee_|webhook/);

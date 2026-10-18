@@ -33,7 +33,7 @@ import {
   domainBLiveCheckoutEnabled,
 } from "./domain-b-live.ts";
 import { handleDomainBCheckoutEvent } from "./domain-b-payment.ts";
-import { startGuestPaymentForBooking } from "./guest-payment-fns.ts";
+import { GuestCheckoutClosed, startGuestPaymentForBooking } from "./guest-payment-fns.ts";
 import { createGuestTransferCheckout, createSubscriptionCheckout } from "./stripe.server.ts";
 import {
   OTHER_USER,
@@ -787,38 +787,35 @@ async function guestBooking(pg: PGlite, token: string, amount = 4200) {
   return { hotelId: hotel.hotelId, bookingId: booking.rows[0]!.id, status };
 }
 
-test("M7 guest checkout uses the prepared row, reuses a valid session, and keys Stripe to the payment", async () => {
+test("M7 guest checkout is denied before prepare, Stripe, or a checkout URL", async () => {
   const pg = await openCp272PaymentDb();
-  const calls: Array<{ body: string; headers: Headers }> = [];
+  let fetches = 0;
   const original = globalThis.fetch;
-  globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
-    calls.push({ body: String(init?.body ?? ""), headers: new Headers(init?.headers) });
+  globalThis.fetch = (async () => {
+    fetches += 1;
     return new Response(JSON.stringify({ id: "cs_m7pay", url: "https://stripe.example/guest" }), { status: 200 });
   }) as typeof fetch;
   try {
     const fixture = await guestBooking(pg, "m7-token");
     await withEnv({ STRIPE_SECRET_KEY: TEST_KEY, SBG_SAAS_COMMERCE: "off", SBG_DOMAIN_B_LIVE_CHECKOUT: undefined }, async () => {
       const db = asSql(pg);
-      const first = await startGuestPaymentForBooking(db, "m7-token", ORIGIN);
-      const second = await startGuestPaymentForBooking(db, "m7-token", ORIGIN);
-      assert.equal(first.status, "pending");
-      assert.equal(second.url, first.url);
-      assert.equal(calls.length, 1);
-      assert.equal(calls[0]!.headers.get("Idempotency-Key"), (await pg.query<{ id: string }>("select id::text as id from sbg_booking_payments")).rows[0]!.id);
-      assert.equal(calls[0]!.headers.get("Stripe-Account"), "acct_m7");
-      const params = new URLSearchParams(calls[0]!.body);
-      assert.equal(params.get("line_items[0][price_data][unit_amount]"), "4200");
-      assert.equal(params.get("line_items[0][price_data][currency]"), "eur");
-      assert.equal(params.get("mode"), "payment");
-      assert.equal(params.get("metadata[organisation_id]"), null);
-      assert.equal(params.get("metadata[plan_code]"), null);
+      await assert.rejects(() => startGuestPaymentForBooking(db, "m7-token", ORIGIN), GuestCheckoutClosed);
+      await assert.rejects(() => startGuestPaymentForBooking(db, "m7-token", ORIGIN), (error: unknown) => {
+        assert.ok(error instanceof GuestCheckoutClosed);
+        assert.equal(error.code, "guest_checkout_closed");
+        assert.equal(error.message, "Online payment is not open for this booking.");
+        return true;
+      });
+      assert.equal(fetches, 0);
       const held = await pg.query<{ n: number }>("select count(*)::int as n from sbg_booking_payments");
-      assert.equal(held.rows[0]!.n, 1);
+      assert.equal(held.rows[0]!.n, 0);
       assert.equal(await hotelStatus(pg, fixture.hotelId), fixture.status);
     });
     const guest = read("src/lib/aether/guest-payment-fns.ts");
     assert.match(guest, /z\.object\(\{ token: z\.string\(\)\.min\(1\) \}\)/);
-    assert.doesNotMatch(guest, /SBG_SAAS_COMMERCE|assertDomainACommerceAllowed/);
+    assert.match(guest, /return startGuestPaymentForBooking\(closedSql\(\), data\.token, ""\)/);
+    assert.doesNotMatch(guest, /sbg_prepare_booking_payment|createGuestTransferCheckout|sbg_set_booking_checkout_session|getSql/);
+    assert.doesNotMatch(guest, /SBG_SAAS_COMMERCE|assertDomainACommerceAllowed|SBG_DOMAIN_B|assertDomainBLiveCheckoutAllowed/);
     const guestFn = read("src/lib/aether/stripe.server.ts");
     const slice = guestFn.slice(guestFn.indexOf("export async function createGuestTransferCheckout"));
     assert.doesNotMatch(slice, /assertDomainACommerceAllowed|application_fee|organisation_id|property_licence/);
@@ -829,59 +826,30 @@ test("M7 guest checkout uses the prepared row, reuses a valid session, and keys 
   }
 });
 
-test("M7 concurrent guest calls share one payment idempotency key and a failed session can be prepared again", async () => {
+test("M7 commerce and Domain B flags do not reopen guest checkout", async () => {
   const pg = await openCp272PaymentDb();
-  let release: () => void = () => {};
-  const gate = new Promise<void>((resolve) => { release = resolve; });
-  let opened: () => void = () => {};
-  const openedGate = new Promise<void>((resolve) => { opened = resolve; });
-  const keys: string[] = [];
+  let fetches = 0;
   const original = globalThis.fetch;
-  let n = 0;
-  globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
-    n += 1;
-    keys.push(new Headers(init?.headers).get("Idempotency-Key") ?? "");
-    if (n === 1) {
-      opened();
-      await gate;
-    }
+  globalThis.fetch = (async () => {
+    fetches += 1;
     return new Response(JSON.stringify({ id: "cs_m7concurrent", url: "https://stripe.example/guest" }), { status: 200 });
   }) as typeof fetch;
   try {
     await guestBooking(pg, "m7-race", 1800);
-    await withEnv({ STRIPE_SECRET_KEY: TEST_KEY, SBG_SAAS_COMMERCE: undefined, SBG_DOMAIN_B_LIVE_CHECKOUT: undefined }, async () => {
-      const db = asSql(pg);
-      const first = startGuestPaymentForBooking(db, "m7-race", ORIGIN);
-      await openedGate;
-      const second = startGuestPaymentForBooking(db, "m7-race", ORIGIN);
-      for (let i = 0; i < 50 && keys.length < 2; i += 1) {
-        await new Promise((resolve) => setTimeout(resolve, 20));
-      }
-      assert.equal(keys.length, 2);
-      release();
-      const results = await Promise.all([first, second]);
-      assert.equal(results[0]!.url, "https://stripe.example/guest");
-      assert.equal(results[1]!.url, "https://stripe.example/guest");
-      assert.equal(keys.length, 2);
-      assert.equal(keys[0], keys[1]);
-      assert.match(keys[0]!, /^[0-9a-f-]{36}$/i);
-      const third = await startGuestPaymentForBooking(db, "m7-race", ORIGIN);
-      assert.equal(third.url, results[0]!.url);
-      assert.equal(keys.length, 2);
-      await pg.query(
-        `update sbg_booking_payments
-            set status = 'failed', stripe_checkout_session_id = 'cs_old', stripe_checkout_url = 'https://old.example/x'`,
-      );
-      const reset = await startGuestPaymentForBooking(db, "m7-race", ORIGIN);
-      assert.equal(reset.url, "https://stripe.example/guest");
-      const stored = await pg.query<{ status: string; session: string | null }>(
-        "select status, stripe_checkout_session_id as session from sbg_booking_payments",
-      );
-      assert.equal(stored.rows[0]!.status, "pending");
-      assert.equal(stored.rows[0]!.session, "cs_m7concurrent");
-    });
+    const db = asSql(pg);
+    for (const env of [
+      { STRIPE_SECRET_KEY: TEST_KEY, SBG_SAAS_COMMERCE: "live", SBG_DOMAIN_B_LIVE_CHECKOUT: "true" },
+      { STRIPE_SECRET_KEY: LIVE_KEY, SBG_SAAS_COMMERCE: "test", SBG_DOMAIN_B_LIVE_CHECKOUT: "true" },
+      { STRIPE_SECRET_KEY: TEST_KEY, SBG_SAAS_COMMERCE: "off", SBG_DOMAIN_B_LIVE_CHECKOUT: undefined },
+    ]) {
+      await withEnv(env, async () => {
+        await assert.rejects(() => startGuestPaymentForBooking(db, "m7-race", ORIGIN), GuestCheckoutClosed);
+      });
+    }
+    assert.equal(fetches, 0);
+    const held = await pg.query<{ n: number }>("select count(*)::int as n from sbg_booking_payments");
+    assert.equal(held.rows[0]!.n, 0);
   } finally {
-    release();
     globalThis.fetch = original;
     await pg.close();
   }
@@ -915,15 +883,23 @@ function paymentEvent(input: {
 
 test("M7 webhook binding rejects mismatches and applies one valid event idempotently", async () => {
   const pg = await openCp272PaymentDb();
+  let fetches = 0;
   const original = globalThis.fetch;
-  globalThis.fetch = (async () =>
-    new Response(JSON.stringify({ id: "cs_m7pay", url: "https://stripe.example/guest" }), { status: 200 })) as typeof fetch;
+  globalThis.fetch = (async () => {
+    fetches += 1;
+    return new Response(JSON.stringify({ id: "cs_m7pay", url: "https://stripe.example/guest" }), { status: 200 });
+  }) as typeof fetch;
   try {
     const fixture = await guestBooking(pg, "m7-hook");
     const db = asSql(pg);
-    await withEnv({ STRIPE_SECRET_KEY: TEST_KEY, SBG_DOMAIN_B_LIVE_CHECKOUT: undefined }, async () => {
-      await startGuestPaymentForBooking(db, "m7-hook", ORIGIN);
-    });
+    await pg.query(
+      `insert into sbg_booking_payments (
+         booking_id, amount_minor, currency, status, stripe_checkout_session_id, stripe_checkout_url
+       ) values ($1::uuid, 4200, 'EUR', 'pending', 'cs_m7pay', 'https://stripe.example/guest')`,
+      [fixture.bookingId],
+    );
+    await assert.rejects(() => startGuestPaymentForBooking(db, "m7-hook", ORIGIN), GuestCheckoutClosed);
+    assert.equal(fetches, 0);
     const payment = (
       await pg.query<{ id: string }>("select id::text as id from sbg_booking_payments")
     ).rows[0]!.id;
