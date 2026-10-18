@@ -1,6 +1,7 @@
 /**
  * Guest create after the client-IP limiter. No auth server, no operator auth.
- * Booking transaction finishes before confirmation email. Email failure does not roll back.
+ * Booking creation does not send a paid confirmation email.
+ * That delivery is a separate claim after confirmed_paid, outside this request.
  */
 import {
   createBooking as createBookingEngine,
@@ -8,7 +9,7 @@ import {
   type CreateBookingInput,
   type CreatedBooking,
 } from "./booking.ts";
-import { sendConfirmationEmail, type ConfirmationEmailStatus } from "./confirmation-email.ts";
+import type { ConfirmationEmailStatus } from "./confirmation-email.ts";
 import { assertGuestCreateRateLimit, hashGuestClientKey } from "./guest-rate-limit.ts";
 import type { EnvMap } from "./runtime-config.ts";
 
@@ -21,10 +22,9 @@ export async function createLimitedGuestBooking(
   await assertGuestCreateRateLimit(db, hashGuestClientKey(clientHint), new Date(), env);
 
   const booking = await createBookingEngine(db, input);
-  const email = await sendConfirmationEmail(booking, input.guestEmail);
 
   return {
     ...booking,
-    confirmationEmailStatus: email.status,
+    confirmationEmailStatus: "not_configured",
   };
 }

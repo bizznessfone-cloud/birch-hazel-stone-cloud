@@ -125,7 +125,7 @@ Expiry locks due `awaiting_payment` or `payment_processing` rows with `for updat
 
 ## Implementation sequence
 
-No stage is authorised for production by this document. Stages A, B, C, and D are source-only. Do not apply migrations 0060, 0061, 0062, or 0063 from this checkpoint.
+No stage is authorised for production by this document. Stages A through E are source-only. Do not apply migrations 0060, 0061, 0062, 0063, or 0064 from this checkpoint.
 
 A. Lifecycle schema and invariants. New migration only. Add booking lifecycle, `hold_expires_at`, and confirmed-at. Add the late-payment disposition without editing [0021](../migrations/0021_cp25_hotel_guest_payments.sql) or [0030](../migrations/0030_cp272_fix_prepare_booking_payment.sql) in place. Rollback drops only the new columns and constraint values; existing payment rows stay in the old status set.
 
@@ -141,7 +141,7 @@ F. Guest interface. Replace premature confirmed copy after the server tests pass
 
 G. Isolated end-to-end acceptance on a disposable branch. Production, Stripe LIVE, and CP31 remain separate authorisations.
 
-Recommended next stage, after separate authorisation: **E**. Do not start it from this checkpoint. Stage D's transition exists and is not mounted. Email and dispatch stay refused until a later authorisation. Switching the live webhook is also a separate authorisation; it is not part of Stage D and it is not permission to start Stage E.
+Recommended next stage, after separate authorisation: **F**. Do not start it from this checkpoint. Stage E admits a paid confirmation claim and blocks unpaid dispatch for the new lifecycle. It does not send email, change the confirmation page, or mount checkout.
 
 ## Stage C payment authority
 
@@ -174,4 +174,18 @@ Do not activate this handler in the public checkout route. When a later authoris
 5. Do not confirm an expired, failed, cancelled, refunded, or `legacy_unreconciled` lifecycle.
 6. Do not retarget a bound attempt when the current payee or account has drifted.
 
-Stage E, confirmation email and dispatch, stays unauthorised. Neither runs from this transition.
+Stage E, confirmation email and dispatch, does not run from the payment transition. The claim is a separate operation.
+
+## Stage E paid confirmation and dispatch
+
+Source migration [migrations/0064_gate2_paid_confirmation_admission.sql](../migrations/0064_gate2_paid_confirmation_admission.sql) is not in `ACCEPTED_LEDGER` or `AUTHORISED_PENDING`. It does not send email and does not change GiST.
+
+`legacy_unreconciled` is not converted. Those rows do not receive a paid confirmation email. An assignment on a legacy row is still allowed when `cancelled_at` is null and the vehicle or driver belongs to the booking's executing provider. That is the existing operator path. It is not the paid-confirmation path.
+
+`sbg_claim_confirmation_email(booking_id)` is executable only by `aether_mailer`. The role is `nologin`, has no table DML, and is not granted to `aether_app`. The function locks the booking, then the payment. It admits only `confirmed_paid` with a finite `confirmed_paid_at`, a payment in `paid` with `paid_at`, and a frozen executing-provider binding that matches the booking. It refuses legacy, pending, processing, expired, failed, cancelled, and refunded rows. It returns no guest fields.
+
+One outbox row exists per booking. The first call inserts `claimed` for five minutes. A second call while that claim is live returns `claim_held` and does not issue another token. Recording `sent` with the live token is terminal (`already_sent`). Recording `failed` with a short provider code keeps the row retryable. An expired claim can be reclaimed. Attempt 5 is the last. A claim is not delivery. [confirmation-admission.ts](../src/lib/aether/confirmation-admission.ts) calls the sender only after the claim transaction has finished, and guest creation does not call it. [guest-create.ts](../src/lib/aether/guest-create.ts) no longer calls `sendConfirmationEmail`. The confirmation page copy is unchanged.
+
+`sbg_bookings_dispatch_admission_guard` runs before insert or update. Clearing a vehicle or driver is allowed. Setting one is refused unless the resource belongs to the executing provider and either the row stays `legacy_unreconciled`, or the lifecycle is already `confirmed_paid`, the payment is `paid`, and `sbg_resolve_executing_payee` still succeeds. Revocation, cancellation, and every earlier new lifecycle are `dispatch_not_admitted`. The occupancy exclusion constraint is unchanged. Direct `aether_app` updates of `vehicle_id` or `driver_id` hit the same trigger. `inventory.ts` maps that error and does not widen operator scope.
+
+Stage F, the guest confirmation copy, stays unauthorised.

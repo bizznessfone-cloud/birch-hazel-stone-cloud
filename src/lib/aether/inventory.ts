@@ -62,6 +62,15 @@ function throwUnavailable(kind: "vehicle" | "driver"): never {
   throw new InventoryError("unavailable", 409, message);
 }
 
+function rethrowAssignment(err: unknown, kind: "vehicle" | "driver"): never {
+  if (isOverlap(err)) throwUnavailable(kind);
+  const message = err instanceof Error ? err.message : String(err);
+  if (message.includes("dispatch_not_admitted")) {
+    throw new InventoryError("forbidden", 403, "This booking cannot be dispatched.");
+  }
+  throw err instanceof Error ? err : new Error(message);
+}
+
 async function audit(
   db: InventoryDb,
   scope: OpsScope,
@@ -179,8 +188,7 @@ export async function assignVehicle(
         [args.vehicleId, args.bookingId],
       );
     } catch (err) {
-      if (isOverlap(err)) throwUnavailable("vehicle");
-      throw err;
+      rethrowAssignment(err, "vehicle");
     }
     await audit(txn, args.scope, "vehicle.assign", args.bookingId, {
       vehicle_id: args.vehicleId,
@@ -222,8 +230,7 @@ export async function assignDriver(
         [args.driverId, args.bookingId],
       );
     } catch (err) {
-      if (isOverlap(err)) throwUnavailable("driver");
-      throw err;
+      rethrowAssignment(err, "driver");
     }
     await audit(txn, args.scope, "driver.assign", args.bookingId, {
       driver_id: args.driverId,

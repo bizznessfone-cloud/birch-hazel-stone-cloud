@@ -282,11 +282,13 @@ test("a request under the limit commits the booking and email failure does not r
   assert.equal(first.hotelCode, "gate");
 
   const previousFetch = globalThis.fetch;
+  let fetchCalls = 0;
   const previousKey = process.env.RESEND_API_KEY;
   const previousFrom = process.env.RESEND_FROM_EMAIL;
   process.env.RESEND_API_KEY = "re_test_cp273c";
   process.env.RESEND_FROM_EMAIL = "bookings@example.com";
   globalThis.fetch = (async () => {
+    fetchCalls += 1;
     throw new Error("resend down");
   }) as typeof fetch;
   try {
@@ -300,7 +302,8 @@ test("a request under the limit commits the booking and email failure does not r
       hint,
       DEV_ENV,
     );
-    assert.equal(second.confirmationEmailStatus, "failed");
+    assert.equal(second.confirmationEmailStatus, "not_configured");
+    assert.equal(fetchCalls, 0);
     assert.notEqual(second.confirmationToken, first.confirmationToken);
   } finally {
     globalThis.fetch = previousFetch;
@@ -354,7 +357,7 @@ test("guest booking source does not trust the leftmost XFF hop", () => {
   const body = create.slice(create.indexOf("export async function createLimitedGuestBooking"));
   assert.match(body, /assertGuestCreateRateLimit/);
   assert.ok(body.indexOf("assertGuestCreateRateLimit") < body.indexOf("createBookingEngine("));
-  assert.ok(body.indexOf("createBookingEngine(") < body.indexOf("sendConfirmationEmail"));
+  assert.doesNotMatch(body, /sendConfirmationEmail/);
   assert.match(ip, /getIPFromHeader/);
   assert.match(ip, /x-vercel-forwarded-for/);
   const preflight = readFileSync(`${root}/scripts/production-db-preflight.mjs`, "utf8");
