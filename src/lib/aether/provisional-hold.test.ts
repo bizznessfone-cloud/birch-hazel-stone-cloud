@@ -81,8 +81,11 @@ test("0061 is source-only and does not schedule expiry or edit earlier migration
   assert.doesNotMatch(HOLD_SQL, /stripe_checkout/);
   const guest = readFileSync(new URL("./guest-create.ts", import.meta.url), "utf8");
   const fns = readFileSync(new URL("./booking-fns.ts", import.meta.url), "utf8");
-  assert.doesNotMatch(guest, /sbg_open_provisional_hold/);
+  const booking = readFileSync(new URL("./booking.ts", import.meta.url), "utf8");
+  assert.doesNotMatch(guest, /sbg_open_provisional_hold|sbg_expire_provisional_holds/);
   assert.doesNotMatch(fns, /openProvisionalHold/);
+  assert.match(booking, /openFreshHold/);
+  assert.doesNotMatch(booking, /expireProvisionalHolds|sbg_expire_provisional_holds/);
 });
 
 test("unsafe TTL values are rejected before a hold is stored", async () => {

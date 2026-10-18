@@ -6,6 +6,7 @@
  */
 import { createHash, randomBytes } from "node:crypto";
 import { hotelIdentity, type HotelIdentity } from "./hotel.ts";
+import { openProvisionalHold } from "./provisional-hold.ts";
 import {
   civilInstant,
   CivilTimeError,
@@ -501,7 +502,16 @@ async function createFresh(db: BookingDb, v: Validated, quote: ResolvedQuote): P
      ))`,
     [id, v.hotelCode, quote.destinationId, quote.amountMinor, quote.currency],
   );
+  await openFreshHold(db, id);
   return id;
+}
+
+async function openFreshHold(db: BookingDb, bookingId: string): Promise<void> {
+  const rows = await db.query<{ signature: string | null }>(
+    `select to_regprocedure('public.sbg_open_provisional_hold(uuid, integer)')::text as signature`,
+  );
+  if (!rows[0]?.signature) return;
+  await openProvisionalHold(db, bookingId);
 }
 
 export async function createBooking(
@@ -514,8 +524,8 @@ export async function createBooking(
     throw new BookingError("idempotency_conflict", 400, "invalid idempotency key");
   }
 
+  const quote = await resolveLiveQuote(db, v);
   const run = async (txn: BookingDb): Promise<string> => {
-    const quote = await resolveLiveQuote(txn, v);
     const hash = requestHash(v, quote);
     if (!key) return createFresh(txn, v, quote);
 
@@ -558,7 +568,7 @@ export async function createBooking(
     return bookingId;
   };
 
-  const id = key ? await db.transaction(run) : await run(db);
+  const id = await db.transaction(run);
   return loadCreatedById(db, id);
 }
 
