@@ -120,6 +120,10 @@ async function lockBooking(db: InventoryDb, bookingId: string): Promise<BookingL
 }
 
 function assertDispatcher(scope: OpsScope, booking: BookingLock): void {
+  // Operator authority is enforced here. aether_app and aether_runtime are
+  // shared database roles, and sbg_dispatch_set_vehicle does not authenticate
+  // an operator. A direct SQL call can still assign a compatible vehicle on
+  // another tenant's admitted booking.
   if (!isProviderDispatcher(scope) || booking.executing_provider_id !== scope.providerId) {
     throw new InventoryError("forbidden", 403, "Not allowed.");
   }
@@ -173,6 +177,27 @@ async function requireDriver(
   }
 }
 
+async function setDispatchVehicle(
+  db: InventoryDb,
+  bookingId: string,
+  vehicleId: string | null,
+): Promise<void> {
+  const present = await db.query<{ signature: string | null }>(
+    `select to_regprocedure('public.sbg_dispatch_set_vehicle(uuid, uuid)')::text as signature`,
+  );
+  if (present[0]?.signature) {
+    await db.query(`select public.sbg_dispatch_set_vehicle($1::uuid, $2::uuid)`, [
+      bookingId,
+      vehicleId,
+    ]);
+    return;
+  }
+  await db.query(`update bookings set vehicle_id = $1::uuid where id = $2::uuid`, [
+    vehicleId,
+    bookingId,
+  ]);
+}
+
 export async function assignVehicle(
   db: InventoryDb,
   args: { bookingId: string; vehicleId: string; scope: OpsScope },
@@ -183,10 +208,7 @@ export async function assignVehicle(
     assertNotCancelled(booking);
     await requireVehicle(txn, args.vehicleId, args.scope.providerId!);
     try {
-      await txn.query(
-        "update bookings set vehicle_id = $1::uuid where id = $2::uuid",
-        [args.vehicleId, args.bookingId],
-      );
+      await setDispatchVehicle(txn, args.bookingId, args.vehicleId);
     } catch (err) {
       rethrowAssignment(err, "vehicle");
     }
@@ -205,9 +227,11 @@ export async function unassignVehicle(
     const booking = await lockBooking(txn, args.bookingId);
     assertDispatcher(args.scope, booking);
     assertNotCancelled(booking);
-    await txn.query("update bookings set vehicle_id = null where id = $1::uuid", [
-      args.bookingId,
-    ]);
+    try {
+      await setDispatchVehicle(txn, args.bookingId, null);
+    } catch (err) {
+      rethrowAssignment(err, "vehicle");
+    }
     await audit(txn, args.scope, "vehicle.unassign", args.bookingId, {
       vehicle_id: booking.vehicle_id,
     });
