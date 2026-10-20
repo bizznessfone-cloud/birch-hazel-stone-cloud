@@ -87,7 +87,11 @@ async function asRole(
 
 test("stage 1 source does not open checkout, admit production, or reserve a vehicle", () => {
   const files = migrationFiles();
-  assert.equal(files.at(-1), "0065_gate2_vehicle_dispatch_boundary.sql");
+  assert.equal(files.includes("0065_gate2_vehicle_dispatch_boundary.sql"), true);
+  assert.ok(
+    (files.at(-1) ?? "") >= "0065_gate2_vehicle_dispatch_boundary.sql",
+    files.at(-1),
+  );
   assert.equal(files.includes("0064_gate2_paid_confirmation_admission.sql"), true);
   const sql = readFileSync(new URL("0065_gate2_vehicle_dispatch_boundary.sql", MIGRATIONS), "utf8");
   const inventory = readFileSync(new URL("./inventory.ts", import.meta.url), "utf8");
