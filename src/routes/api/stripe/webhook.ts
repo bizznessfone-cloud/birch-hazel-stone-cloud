@@ -37,7 +37,17 @@ export const Route = createFileRoute("/api/stripe/webhook")({
           "account.application.deauthorized",
         ]);
 
-        if (!relevant.has(event.type)) {
+        // Refunds carry no booking metadata. The application role cannot
+        // correlate them, so acknowledging one would burn Stripe's retry
+        // before the isolated endpoint can release a capacity vehicle.
+        if (event.type === "charge.refunded" || event.type === "refund.updated") {
+          return Response.json(
+            { received: false, outcome: "capacity_payment_unmounted" },
+            { status: 503 },
+          );
+        }
+
+        if (!(typeof event.type === "string" && event.type.startsWith("checkout.session.")) && !relevant.has(event.type)) {
           return Response.json({ received: true });
         }
 
@@ -48,7 +58,38 @@ export const Route = createFileRoute("/api/stripe/webhook")({
           const metadata = object?.metadata ?? {};
           const bookingId = typeof metadata.booking_id === "string" ? metadata.booking_id : null;
           const paymentId = typeof metadata.payment_id === "string" ? metadata.payment_id : null;
-          if (!bookingId || !paymentId) return Response.json({ received: true });
+          if (!bookingId || !paymentId) {
+            if (!relevant.has(event.type)) {
+              return Response.json(
+                { received: false, outcome: "capacity_payment_unmounted" },
+                { status: 503 },
+              );
+            }
+            return Response.json({ received: true });
+          }
+          const { CapacityLatchUnavailable, capacityWebhookLatch } = await import(
+            "@/lib/aether/guest-payment-latch"
+          );
+          try {
+            const latch = await capacityWebhookLatch(db, bookingId);
+            if (latch === "fail_closed" || latch === "unproven") {
+              return Response.json(
+                { received: false, outcome: "capacity_payment_unmounted" },
+                { status: 503 },
+              );
+            }
+          } catch (error) {
+            if (error instanceof CapacityLatchUnavailable) {
+              return Response.json(
+                { received: false, outcome: "capacity_payment_unmounted" },
+                { status: 503 },
+              );
+            }
+            throw error;
+          }
+          if (!relevant.has(event.type)) {
+            return Response.json({ received: true, outcome: "checkout_not_applied" });
+          }
           const { evaluateDomainBCheckoutBinding } = await import("@/lib/aether/domain-b-payment");
           const decision = await evaluateDomainBCheckoutBinding(db, event);
           if (decision.action === "ignore") return Response.json({ received: true });

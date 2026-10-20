@@ -42,7 +42,7 @@ async function resetCluster(adminUrl: URL): Promise<string> {
       );
       await admin.query(`drop database if exists ${row.datname}`);
     }
-    for (const role of ["aether_app", "aether_runtime", "aether_webhook", "aether_mailer", "sbg_capacity_writer"]) {
+    for (const role of ["aether_payment_gateway", "aether_expiry_runner", "aether_expiry", "aether_app", "aether_runtime", "aether_webhook", "aether_mailer", "sbg_capacity_writer"]) {
       const exists = await admin.query("select 1 from pg_roles where rolname = $1", [role]);
       if (exists.rowCount === 0) continue;
       await admin.query(`drop owned by ${role}`);

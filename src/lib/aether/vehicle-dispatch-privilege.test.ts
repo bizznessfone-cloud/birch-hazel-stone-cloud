@@ -44,7 +44,7 @@ async function resetCluster(adminUrl: URL): Promise<string> {
       where datname = 'neondb' and pid <> pg_backend_pid()`,
   );
   await admin.query("drop database if exists neondb");
-  for (const role of ["aether_app", "aether_runtime", "aether_webhook", "aether_mailer"]) {
+  for (const role of ["aether_payment_gateway", "aether_expiry_runner", "aether_expiry", "aether_app", "aether_runtime", "aether_webhook", "aether_mailer"]) {
     const exists = await admin.query("select 1 from pg_roles where rolname = $1", [role]);
     if (exists.rowCount === 0) continue;
     await admin.query(`drop owned by ${role}`);
