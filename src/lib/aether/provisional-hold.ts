@@ -83,22 +83,38 @@ export async function openProvisionalHold(
   }
 }
 
+function isCapacityRetry(err: unknown): boolean {
+  const code = (err as { code?: string }).code;
+  if (code === "40P01") return true;
+  const message = err instanceof Error ? err.message : String(err);
+  return code === "40001" && message.includes("capacity_lock_retry");
+}
+
 export async function expireProvisionalHolds(db: HoldDb, limit = 100): Promise<ExpiredHold[]> {
   if (!Number.isInteger(limit) || limit < 1 || limit > MAX_EXPIRY_BATCH) {
     throw new Error("unsafe_expiry_limit");
   }
   try {
-    const rows = await db.query<{
-      expired_booking_id: string;
-      previous_lifecycle: string;
-      observed_payment_status: string | null;
-    }>("select * from sbg_expire_provisional_holds($1::integer)", [limit]);
-    return rows.map((row) => ({
-      bookingId: row.expired_booking_id,
-      previousLifecycle: row.previous_lifecycle,
-      paymentStatus: row.observed_payment_status,
-    }));
+    return await expireProvisionalHoldsOnce(db, limit);
   } catch (err) {
-    rethrowHold(err);
+    if (!isCapacityRetry(err)) rethrowHold(err);
+    try {
+      return await expireProvisionalHoldsOnce(db, limit);
+    } catch (retryErr) {
+      rethrowHold(retryErr);
+    }
   }
+}
+
+async function expireProvisionalHoldsOnce(db: HoldDb, limit: number): Promise<ExpiredHold[]> {
+  const rows = await db.query<{
+    expired_booking_id: string;
+    previous_lifecycle: string;
+    observed_payment_status: string | null;
+  }>("select * from sbg_expire_provisional_holds($1::integer)", [limit]);
+  return rows.map((row) => ({
+    bookingId: row.expired_booking_id,
+    previousLifecycle: row.previous_lifecycle,
+    paymentStatus: row.observed_payment_status,
+  }));
 }

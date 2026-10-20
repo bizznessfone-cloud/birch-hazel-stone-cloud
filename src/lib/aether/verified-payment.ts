@@ -34,7 +34,26 @@ export type VerifiedPaymentTransition = {
   eventRecorded: boolean;
 };
 
+function isCapacityRetry(err: unknown): boolean {
+  const code = (err as { code?: string }).code;
+  if (code === "40P01") return true;
+  const message = err instanceof Error ? err.message : String(err);
+  return code === "40001" && message.includes("capacity_lock_retry");
+}
+
 export async function acceptVerifiedPaymentEvent(
+  db: AuthorityDb,
+  claim: VerifiedPaymentClaim,
+): Promise<VerifiedPaymentTransition> {
+  try {
+    return await acceptVerifiedPaymentEventOnce(db, claim);
+  } catch (err) {
+    if (!isCapacityRetry(err)) throw err;
+    return await acceptVerifiedPaymentEventOnce(db, claim);
+  }
+}
+
+async function acceptVerifiedPaymentEventOnce(
   db: AuthorityDb,
   claim: VerifiedPaymentClaim,
 ): Promise<VerifiedPaymentTransition> {

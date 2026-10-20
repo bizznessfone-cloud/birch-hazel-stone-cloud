@@ -54,6 +54,22 @@ function isOverlap(err: unknown): boolean {
   return (err as { code?: string }).code === "23P01";
 }
 
+function isCapacityRetry(err: unknown): boolean {
+  const code = (err as { code?: string }).code;
+  if (code === "40P01") return true;
+  const message = err instanceof Error ? err.message : String(err);
+  return code === "40001" && message.includes("capacity_lock_retry");
+}
+
+async function retryCapacityLock<T>(run: () => Promise<T>): Promise<T> {
+  try {
+    return await run();
+  } catch (err) {
+    if (!isCapacityRetry(err)) throw err;
+    return await run();
+  }
+}
+
 function throwUnavailable(kind: "vehicle" | "driver"): never {
   const message =
     kind === "vehicle"
@@ -106,6 +122,35 @@ async function loadSnapshot(db: InventoryDb, bookingId: string): Promise<Assignm
     status: row.status,
     cancelled: row.cancelled_at != null,
   };
+}
+
+async function peekBooking(db: InventoryDb, bookingId: string): Promise<BookingLock> {
+  const rows = await db.query<BookingLock>(
+    `select id, hotel_id, executing_provider_id, vehicle_id, driver_id, status, cancelled_at
+     from bookings where id = $1::uuid`,
+    [bookingId],
+  );
+  const row = rows[0];
+  if (!row) throw new InventoryError("not_found", 404, "Booking not found.");
+  return row;
+}
+
+async function isCapacityManaged(db: InventoryDb, bookingId: string): Promise<boolean> {
+  const present = await db.query<{ present: boolean }>(
+    `select exists (
+       select 1
+         from information_schema.columns
+        where table_schema = 'public'
+          and table_name = 'bookings'
+          and column_name = 'capacity_managed'
+     ) as present`,
+  );
+  if (present[0]?.present !== true) return false;
+  const rows = await db.query<{ capacity_managed: boolean }>(
+    `select capacity_managed from bookings where id = $1::uuid`,
+    [bookingId],
+  );
+  return rows[0]?.capacity_managed === true;
 }
 
 async function lockBooking(db: InventoryDb, bookingId: string): Promise<BookingLock> {
@@ -202,31 +247,44 @@ export async function assignVehicle(
   db: InventoryDb,
   args: { bookingId: string; vehicleId: string; scope: OpsScope },
 ): Promise<AssignmentSnapshot> {
-  return db.transaction(async (txn) => {
-    const booking = await lockBooking(txn, args.bookingId);
+  return retryCapacityLock(() => db.transaction(async (txn) => {
+    const booking = await peekBooking(txn, args.bookingId);
     assertDispatcher(args.scope, booking);
     assertNotCancelled(booking);
     await requireVehicle(txn, args.vehicleId, args.scope.providerId!);
-    try {
-      await setDispatchVehicle(txn, args.bookingId, args.vehicleId);
-    } catch (err) {
-      rethrowAssignment(err, "vehicle");
+    if (await isCapacityManaged(txn, args.bookingId)) {
+      const rows = await txn.query<{ reserve_outcome: string }>(
+        `select reserve_outcome from public.sbg_reassign_capacity_vehicle($1::uuid, $2::uuid)`,
+        [args.bookingId, args.vehicleId],
+      );
+      if (rows[0]?.reserve_outcome !== "reassigned") {
+        throw new InventoryError("unavailable", 409, "That vehicle is not available.");
+      }
+    } else {
+      try {
+        await setDispatchVehicle(txn, args.bookingId, args.vehicleId);
+      } catch (err) {
+        rethrowAssignment(err, "vehicle");
+      }
     }
     await audit(txn, args.scope, "vehicle.assign", args.bookingId, {
       vehicle_id: args.vehicleId,
     });
     return loadSnapshot(txn, args.bookingId);
-  });
+  }));
 }
 
 export async function unassignVehicle(
   db: InventoryDb,
   args: { bookingId: string; scope: OpsScope },
 ): Promise<AssignmentSnapshot> {
-  return db.transaction(async (txn) => {
-    const booking = await lockBooking(txn, args.bookingId);
+  return retryCapacityLock(() => db.transaction(async (txn) => {
+    const booking = await peekBooking(txn, args.bookingId);
     assertDispatcher(args.scope, booking);
     assertNotCancelled(booking);
+    if (await isCapacityManaged(txn, args.bookingId)) {
+      throw new InventoryError("unavailable", 409, "That vehicle is not available.");
+    }
     try {
       await setDispatchVehicle(txn, args.bookingId, null);
     } catch (err) {
@@ -236,67 +294,111 @@ export async function unassignVehicle(
       vehicle_id: booking.vehicle_id,
     });
     return loadSnapshot(txn, args.bookingId);
-  });
+  }));
 }
 
 export async function assignDriver(
   db: InventoryDb,
   args: { bookingId: string; driverId: string; scope: OpsScope },
 ): Promise<AssignmentSnapshot> {
-  return db.transaction(async (txn) => {
-    const booking = await lockBooking(txn, args.bookingId);
+  return retryCapacityLock(() => db.transaction(async (txn) => {
+    const booking = await peekBooking(txn, args.bookingId);
     assertDispatcher(args.scope, booking);
     assertNotCancelled(booking);
     await requireDriver(txn, args.driverId, args.scope.providerId!);
-    try {
-      await txn.query(
-        "update bookings set driver_id = $1::uuid where id = $2::uuid",
-        [args.driverId, args.bookingId],
+    if (await isCapacityManaged(txn, args.bookingId)) {
+      const rows = await txn.query<{ reserve_outcome: string }>(
+        `select reserve_outcome from public.sbg_assign_capacity_driver($1::uuid, $2::uuid)`,
+        [args.bookingId, args.driverId],
       );
-    } catch (err) {
-      rethrowAssignment(err, "driver");
+      if (rows[0]?.reserve_outcome !== "assigned") {
+        throw new InventoryError("unavailable", 409, "That driver is not available.");
+      }
+    } else {
+      const locked = await lockBooking(txn, args.bookingId);
+      if (await isCapacityManaged(txn, args.bookingId)) {
+        throw new InventoryError("unavailable", 409, "That driver is not available.");
+      }
+      assertNotCancelled(locked);
+      try {
+        await txn.query(
+          "update bookings set driver_id = $1::uuid where id = $2::uuid",
+          [args.driverId, args.bookingId],
+        );
+      } catch (err) {
+        rethrowAssignment(err, "driver");
+      }
     }
     await audit(txn, args.scope, "driver.assign", args.bookingId, {
       driver_id: args.driverId,
     });
     return loadSnapshot(txn, args.bookingId);
-  });
+  }));
 }
 
 export async function unassignDriver(
   db: InventoryDb,
   args: { bookingId: string; scope: OpsScope },
 ): Promise<AssignmentSnapshot> {
-  return db.transaction(async (txn) => {
-    const booking = await lockBooking(txn, args.bookingId);
+  return retryCapacityLock(() => db.transaction(async (txn) => {
+    const booking = await peekBooking(txn, args.bookingId);
     assertDispatcher(args.scope, booking);
     assertNotCancelled(booking);
-    await txn.query("update bookings set driver_id = null where id = $1::uuid", [
-      args.bookingId,
-    ]);
+    if (await isCapacityManaged(txn, args.bookingId)) {
+      const rows = await txn.query<{ reserve_outcome: string }>(
+        `select reserve_outcome from public.sbg_assign_capacity_driver($1::uuid, $2::uuid)`,
+        [args.bookingId, null],
+      );
+      if (rows[0]?.reserve_outcome !== "assigned") {
+        throw new InventoryError("unavailable", 409, "That driver is not available.");
+      }
+    } else {
+      await lockBooking(txn, args.bookingId);
+      if (await isCapacityManaged(txn, args.bookingId)) {
+        throw new InventoryError("unavailable", 409, "That driver is not available.");
+      }
+      await txn.query("update bookings set driver_id = null where id = $1::uuid", [
+        args.bookingId,
+      ]);
+    }
     await audit(txn, args.scope, "driver.unassign", args.bookingId, {
       driver_id: booking.driver_id,
     });
     return loadSnapshot(txn, args.bookingId);
-  });
+  }));
 }
 
 export async function cancelBooking(
   db: InventoryDb,
   args: { bookingId: string; scope: OpsScope },
 ): Promise<AssignmentSnapshot> {
-  return db.transaction(async (txn) => {
-    const booking = await lockBooking(txn, args.bookingId);
+  return retryCapacityLock(() => db.transaction(async (txn) => {
+    const booking = await peekBooking(txn, args.bookingId);
     assertCancel(args.scope, booking);
-    if (booking.cancelled_at == null) {
-      await txn.query(
-        "update bookings set cancelled_at = now() where id = $1::uuid",
+    if (await isCapacityManaged(txn, args.bookingId)) {
+      const rows = await txn.query<{ reserve_outcome: string }>(
+        `select reserve_outcome from public.sbg_release_capacity($1::uuid)`,
         [args.bookingId],
       );
+      if (rows[0]?.reserve_outcome !== "released") {
+        throw new InventoryError("unavailable", 409, "This booking cannot be cancelled.");
+      }
       await audit(txn, args.scope, "booking.cancel", args.bookingId, {});
+    } else if (booking.cancelled_at == null) {
+      const locked = await lockBooking(txn, args.bookingId);
+      if (await isCapacityManaged(txn, args.bookingId)) {
+        throw new InventoryError("unavailable", 409, "This booking cannot be cancelled.");
+      }
+      if (locked.cancelled_at == null) {
+        await txn.query(
+          "update bookings set cancelled_at = now() where id = $1::uuid",
+          [args.bookingId],
+        );
+        await audit(txn, args.scope, "booking.cancel", args.bookingId, {});
+      }
     }
     return loadSnapshot(txn, args.bookingId);
-  });
+  }));
 }
 
 export async function setBookingStatus(
@@ -307,7 +409,7 @@ export async function setBookingStatus(
   if (!status || status.length > 40) {
     throw new InventoryError("invalid_status", 400, "Invalid status.");
   }
-  return db.transaction(async (txn) => {
+  return retryCapacityLock(() => db.transaction(async (txn) => {
     const booking = await lockBooking(txn, args.bookingId);
     assertDispatcher(args.scope, booking);
     await txn.query("update bookings set status = $1 where id = $2::uuid", [
@@ -318,5 +420,5 @@ export async function setBookingStatus(
       status,
     });
     return loadSnapshot(txn, args.bookingId);
-  });
+  }));
 }
