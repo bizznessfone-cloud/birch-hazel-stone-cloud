@@ -49,7 +49,7 @@ async function resetCluster(adminUrl: URL): Promise<string> {
       where datname = 'neondb' and pid <> pg_backend_pid()`,
   );
   await admin.query("drop database if exists neondb");
-  for (const role of ["aether_payment_gateway", "aether_expiry_runner", "aether_expiry", "aether_app", "aether_runtime", "aether_webhook", "aether_mailer"]) {
+  for (const role of ["sbg_fleet_writer", "aether_payment_gateway", "aether_expiry_runner", "aether_expiry", "aether_app", "aether_runtime", "aether_webhook", "aether_mailer"]) {
     const exists = await admin.query("select 1 from pg_roles where rolname = $1", [role]);
     if (exists.rowCount === 0) continue;
     await admin.query(`drop owned by ${role}`);
@@ -735,12 +735,26 @@ test("local postgres feasibility covers route, fleet, hours, and repositioning",
       return { ok: false, code: (err as { code?: string }).code ?? "" };
     }
   }
+  const nameOnly = await asRole(
+    "aether_runtime",
+    "update vehicles set name = 'Van 2' where id = $1::uuid",
+    [van],
+  );
+  assert.equal(nameOnly.ok, true);
   const deskUpdate = await asRole(
     "aether_runtime",
     "update vehicles set name = 'Van 2', capacity = 6, active = true where id = $1::uuid",
     [van],
   );
-  assert.equal(deskUpdate.ok, true);
+  assert.equal(deskUpdate.ok, false);
+  if (!deskUpdate.ok) assert.equal(deskUpdate.code, "42501");
+  const activeOnly = await asRole(
+    "aether_runtime",
+    "update vehicles set active = false where id = $1::uuid",
+    [van],
+  );
+  assert.equal(activeOnly.ok, false);
+  if (!activeOnly.ok) assert.equal(activeOnly.code, "42501");
   const luggageUpdate = await asRole(
     "aether_runtime",
     "update vehicles set luggage_capacity = 2 where id = $1::uuid",
@@ -773,12 +787,15 @@ test("local postgres feasibility covers route, fleet, hours, and repositioning",
   const appLuggage = await asRole("aether_app", "update vehicles set luggage_capacity = 2 where id = $1::uuid", [van]);
   assert.equal(appLuggage.ok, false);
   if (!appLuggage.ok) assert.equal(appLuggage.code, "42501");
+  const appName = await asRole("aether_app", "update vehicles set name = 'Van' where id = $1::uuid", [van]);
+  assert.equal(appName.ok, true);
   const appDesk = await asRole(
     "aether_app",
     "update vehicles set name = 'Van', capacity = 7, active = true where id = $1::uuid",
     [van],
   );
-  assert.equal(appDesk.ok, true);
+  assert.equal(appDesk.ok, false);
+  if (!appDesk.ok) assert.equal(appDesk.code, "42501");
   const appInsert = await asRole(
     "aether_app",
     `insert into vehicles (name, capacity, active, owned_by_provider_id, operated_by_provider_id)

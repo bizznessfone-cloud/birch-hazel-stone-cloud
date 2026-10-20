@@ -316,6 +316,13 @@ export async function listOpsVehicles(db: OpsDeskDb, scope: OpsScope): Promise<O
   }));
 }
 
+function isFleetLockRetry(err: unknown): boolean {
+  const code = (err as { code?: string }).code;
+  if (code === "40P01") return true;
+  const message = err instanceof Error ? err.message : String(err);
+  return code === "40001" && message.includes("capacity_lock_retry");
+}
+
 export async function upsertVehicle(
   db: OpsDeskDb,
   scope: OpsScope,
@@ -330,6 +337,58 @@ export async function upsertVehicle(
     throw new OpsDeskError("invalid", 400, "Capacity must be 1–20.");
   }
   if (input.id) {
+    const present = await db.query<{ present: boolean }>(
+      `select to_regprocedure(
+         'public.sbg_fleet_configure_vehicle(uuid,uuid,integer,boolean,integer,boolean,text)'
+       ) is not null as present`,
+    );
+    if (present[0]?.present) {
+      const providerId = scope.providerId;
+      const call = () =>
+        db.query<{ fleet_outcome: string; fleet_rejection: string | null }>(
+          `select fleet_outcome, fleet_rejection
+             from public.sbg_fleet_configure_vehicle(
+               $1::uuid, $2::uuid, $3::integer, $4::boolean, null::integer, false, $5
+             )`,
+          [providerId, input.id, input.capacity, input.active, name],
+        );
+      let configured: { fleet_outcome: string; fleet_rejection: string | null }[];
+      try {
+        configured = await call();
+      } catch (err) {
+        if ((err as { code?: string }).code === "55P03") {
+          throw new OpsDeskError("conflict", 409, "That vehicle is busy. Try again.");
+        }
+        if (!isFleetLockRetry(err)) throw err;
+        configured = await call();
+      }
+      const outcome = configured[0]?.fleet_outcome;
+      if (outcome === "not_found" || outcome === "wrong_provider") {
+        throw new OpsDeskError("not_found", 404, "Vehicle not found.");
+      }
+      if (outcome === "rejected") {
+        throw new OpsDeskError(
+          "conflict",
+          409,
+          configured[0]?.fleet_rejection === "lock_busy"
+            ? "That vehicle is busy. Try again."
+            : "That vehicle change conflicts with an assigned booking.",
+        );
+      }
+      if (outcome !== "updated" && outcome !== "unchanged") {
+        throw new OpsDeskError("invalid", 400, "Vehicle could not be saved.");
+      }
+      const saved = await db.query<OpsVehicle>(
+        `select id, name, capacity, active
+           from vehicles
+          where id = $1::uuid
+            and operated_by_provider_id = $2::uuid
+            and owned_by_provider_id = $2::uuid`,
+        [input.id, providerId],
+      );
+      if (!saved[0]) throw new OpsDeskError("not_found", 404, "Vehicle not found.");
+      return { ...saved[0], capacity: Number(saved[0].capacity), active: saved[0].active !== false };
+    }
     const rows = await db.query<OpsVehicle>(
       `update vehicles
           set name = $1, capacity = $2, active = $3

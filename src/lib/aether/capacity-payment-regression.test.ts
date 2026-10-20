@@ -43,7 +43,7 @@ async function resetCluster(adminUrl: URL): Promise<string> {
       );
       await admin.query(`drop database if exists ${row.datname}`);
     }
-    for (const role of ["aether_payment_gateway", "aether_expiry_runner", "aether_expiry", "aether_app", "aether_runtime", "aether_webhook", "aether_mailer", "sbg_capacity_writer"]) {
+    for (const role of ["sbg_fleet_writer", "aether_payment_gateway", "aether_expiry_runner", "aether_expiry", "aether_app", "aether_runtime", "aether_webhook", "aether_mailer", "sbg_capacity_writer"]) {
       const exists = await admin.query("select 1 from pg_roles where rolname = $1", [role]);
       if (exists.rowCount === 0) continue;
       await admin.query(`drop owned by ${role}`);
@@ -85,7 +85,7 @@ test("0069 payment, expiry, privilege, and legacy concurrency", { timeout: 180_0
   try {
     await apply(root, migrationFiles());
     const last = migrationFiles().at(-1);
-    assert.equal(last, "0070_gate2_isolated_payment_authority.sql");
+    assert.equal(last, "0071_gate2_vehicle_integrity.sql");
 
     const owners = await root.query<{ proname: string; owner: string }>(
       `select p.proname, r.rolname as owner

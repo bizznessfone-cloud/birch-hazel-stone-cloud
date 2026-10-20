@@ -283,6 +283,7 @@ async function resetCluster(adminUrl: URL): Promise<string> {
       await admin.query(`drop database if exists ${row.datname}`);
     }
     for (const role of [
+      "sbg_fleet_writer",
       "aether_payment_gateway",
       "aether_expiry_runner",
       "aether_expiry",
@@ -325,7 +326,7 @@ test("gateway, operator payee, refund, expiry, and forged admission", { timeout:
   const gateway = new pg.Client({ connectionString: gatewayUrl.toString() });
   try {
     const files = migrationFiles();
-    assert.equal(files.at(-1), "0070_gate2_isolated_payment_authority.sql");
+    assert.equal(files.at(-1), "0071_gate2_vehicle_integrity.sql");
     for (const name of files) {
       await root.query(readFileSync(new URL(name, MIGRATIONS), "utf8"));
     }
