@@ -326,7 +326,7 @@ test("gateway, operator payee, refund, expiry, and forged admission", { timeout:
   const gateway = new pg.Client({ connectionString: gatewayUrl.toString() });
   try {
     const files = migrationFiles();
-    assert.equal(files.at(-1), "0078_gate2_capacity_checkout_claim_generation.sql");
+    assert.equal(files.at(-1), "0079_gate2_bound_payee_test_mode.sql");
     for (const name of files) {
       await root.query(readFileSync(new URL(name, MIGRATIONS), "utf8"));
     }

@@ -106,10 +106,15 @@ test("stage 6D source stays test-only and off the SaaS webhook", () => {
   const entry = readFileSync(new URL("./guest-payment-gateway-entry.ts", import.meta.url), "utf8");
   const webhook = readFileSync(new URL("../../routes/api/stripe/webhook.ts", import.meta.url), "utf8");
   const preflight = readFileSync(new URL("../../../scripts/production-db-preflight.mjs", import.meta.url), "utf8");
-  assert.equal(files.at(-1), "0078_gate2_capacity_checkout_claim_generation.sql");
+  const proof = readFileSync(new URL("0079_gate2_bound_payee_test_mode.sql", MIGRATIONS), "utf8");
+  assert.equal(files.at(-1), "0079_gate2_bound_payee_test_mode.sql");
   assert.equal(files.includes("0077_gate2_capacity_guest_payment.sql"), true);
   assert.equal(preflight.includes("0077_gate2_capacity_guest_payment.sql"), false);
   assert.equal(preflight.includes("0078_gate2_capacity_checkout_claim_generation.sql"), false);
+  assert.equal(preflight.includes("0079_gate2_bound_payee_test_mode.sql"), false);
+  assert.match(proof, /sbg_bound_payee_is_test_mode/);
+  assert.match(proof, /returns boolean/);
+  assert.doesNotMatch(proof, /grant\s+select\s+on\s+table\s+public\.sbg_organisation_stripe_connections/i);
   assert.doesNotMatch(sql, /from public\.sbg_stripe_connections|join public\.sbg_stripe_connections/);
   assert.doesNotMatch(generation, /from public\.sbg_stripe_connections|join public\.sbg_stripe_connections/);
   assert.match(generation, /checkout_claim_generation/);
@@ -898,6 +903,96 @@ test("bound payee, concurrency, and mocked payment lifecycle", { timeout: 180_00
       (err: unknown) => err instanceof GuestPaymentTestError && err.code === "booking_not_payable",
     );
     assert.equal(expired.length, expiredBeforeCancel);
+
+    const appBooking = await createBooking(db, input("s6din", inDestination, "2026-07-25"));
+    const appUrl = new URL(dbUrl);
+    appUrl.username = "aether_app";
+    appUrl.password = "";
+    const appClient = new pg.Client({ connectionString: appUrl.toString() });
+    await appClient.connect();
+    const appDb = bookingDb(appClient);
+    try {
+      await assert.rejects(
+        () => appClient.query("select stripe_account_id, livemode from public.sbg_organisation_stripe_connections"),
+        (err: { code?: string }) => err.code === "42501",
+      );
+      await assert.rejects(
+        () => appClient.query("select count(*)::int as n from public.sbg_organisation_stripe_connections"),
+        (err: { code?: string }) => err.code === "42501",
+      );
+      await assert.rejects(
+        () => appClient.query(
+          "select stripe_account_id from public.sbg_organisation_stripe_connections where organisation_id = $1::uuid",
+          [operatorOrg],
+        ),
+        (err: { code?: string }) => err.code === "42501",
+      );
+      const beforeApp = created.length;
+      const started = await startGuestPaymentForBooking(appDb, appBooking.confirmationToken, "https://guest.test", TEST_ENV, deps);
+      assert.equal(started.accountId, "acct_inhouse");
+      assert.equal(created.length, beforeApp + 1);
+      const mode = await appClient.query<{ test_mode: boolean }>(
+        "select public.sbg_bound_payee_is_test_mode($1::uuid) as test_mode",
+        [started.paymentId],
+      );
+      assert.equal(mode.rows[0]!.test_mode, true);
+      const resultType = await root.query<{ result: string }>(
+        "select pg_get_function_result('public.sbg_bound_payee_is_test_mode(uuid)'::regprocedure) as result",
+      );
+      assert.equal(resultType.rows[0]!.result, "boolean");
+      const denied = await root.query<{ gateway: boolean; runner: boolean; app: boolean }>(
+        `select
+           has_function_privilege('aether_payment_gateway', 'public.sbg_bound_payee_is_test_mode(uuid)', 'execute') as gateway,
+           has_function_privilege('aether_expiry_runner', 'public.sbg_bound_payee_is_test_mode(uuid)', 'execute') as runner,
+           has_function_privilege('aether_app', 'public.sbg_bound_payee_is_test_mode(uuid)', 'execute') as app`,
+      );
+      assert.equal(denied.rows[0]!.gateway, false);
+      assert.equal(denied.rows[0]!.runner, false);
+      assert.equal(denied.rows[0]!.app, true);
+
+      await root.query(
+        `update public.sbg_organisation_stripe_connections
+            set disconnected_at = clock_timestamp()
+          where stripe_account_id = 'acct_inhouse'`,
+      );
+      const beforeRevoke = created.length;
+      await assert.rejects(
+        () => startGuestPaymentForBooking(appDb, appBooking.confirmationToken, "https://guest.test", TEST_ENV, deps),
+        (err: unknown) => err instanceof GuestPaymentTestError && err.code === "live_payee_rejected",
+      );
+      assert.equal(created.length, beforeRevoke);
+
+      await root.query(
+        `update public.sbg_organisation_stripe_connections
+            set disconnected_at = null, livemode = true
+          where stripe_account_id = 'acct_inhouse'`,
+      );
+      const liveBooking = await createBooking(db, input("s6din", inDestination, "2026-07-26"));
+      const beforeLive = created.length;
+      await assert.rejects(
+        () => startGuestPaymentForBooking(appDb, liveBooking.confirmationToken, "https://guest.test", TEST_ENV, deps),
+        (err: unknown) => err instanceof GuestPaymentTestError && err.code === "live_payee_rejected",
+      );
+      assert.equal(created.length, beforeLive);
+
+      await root.query(
+        `delete from public.sbg_organisation_stripe_connections where stripe_account_id = 'acct_inhouse'`,
+      );
+      const missingBooking = await createBooking(db, input("s6din", inDestination, "2026-07-27"));
+      const beforeMissing = created.length;
+      await assert.rejects(
+        () => startGuestPaymentForBooking(appDb, missingBooking.confirmationToken, "https://guest.test", TEST_ENV, deps),
+        (err: unknown) => err instanceof GuestPaymentTestError && err.code === "stripe_disconnected",
+      );
+      assert.equal(created.length, beforeMissing);
+      await root.query(
+        `insert into public.sbg_organisation_stripe_connections (organisation_id, stripe_account_id, livemode)
+         values ($1::uuid, 'acct_inhouse', false)`,
+        [hotelOrg],
+      );
+    } finally {
+      await appClient.end().catch(() => undefined);
+    }
 
     const listenerUrl = new URL(dbUrl);
     listenerUrl.username = "aether_payment_gateway";

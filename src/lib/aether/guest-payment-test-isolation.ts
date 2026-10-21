@@ -120,22 +120,16 @@ export async function assertConnectedDisposableDatabase(db: QueryDb): Promise<vo
 }
 
 export async function assertBoundPayeeIsTestMode(db: QueryDb, paymentId: string): Promise<void> {
-  let rows: { livemode: boolean | null }[];
+  let rows: { test_mode: boolean | null }[];
   try {
-    rows = await db.query<{ livemode: boolean | null }>(
-      `select c.livemode
-         from public.sbg_booking_payments p
-         join public.sbg_organisation_stripe_connections c
-           on c.organisation_id = p.payee_organisation_id
-          and c.stripe_account_id = p.payee_stripe_account_id
-          and c.disconnected_at is null
-        where p.id = $1::uuid`,
+    rows = await db.query<{ test_mode: boolean | null }>(
+      `select public.sbg_bound_payee_is_test_mode($1::uuid) as test_mode`,
       [paymentId],
     );
   } catch {
     throw new GuestPaymentIsolationError("live_payee_rejected");
   }
-  if (rows.length !== 1 || rows[0]?.livemode !== false) {
+  if (rows.length !== 1 || rows[0]?.test_mode !== true) {
     throw new GuestPaymentIsolationError("live_payee_rejected");
   }
 }

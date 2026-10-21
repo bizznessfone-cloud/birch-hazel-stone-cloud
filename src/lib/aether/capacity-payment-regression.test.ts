@@ -85,7 +85,7 @@ test("0069 payment, expiry, privilege, and legacy concurrency", { timeout: 180_0
   try {
     await apply(root, migrationFiles());
     const last = migrationFiles().at(-1);
-    assert.equal(last, "0078_gate2_capacity_checkout_claim_generation.sql");
+    assert.equal(last, "0079_gate2_bound_payee_test_mode.sql");
 
     const owners = await root.query<{ proname: string; owner: string }>(
       `select p.proname, r.rolname as owner
