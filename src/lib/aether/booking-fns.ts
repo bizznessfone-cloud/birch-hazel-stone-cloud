@@ -36,6 +36,7 @@ const createInput = z.preprocess(
     destinationText: z.string().nullable().optional(),
     specialRequirements: z.string().nullable().optional(),
     idempotencyKey: z.string().nullable().optional(),
+    direction: z.enum(["from_hotel", "to_hotel"]).optional(),
   }),
 );
 

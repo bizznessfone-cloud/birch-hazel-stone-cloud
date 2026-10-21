@@ -84,6 +84,8 @@ export function touristMessage(code: string, fallback?: string): string {
       return "We could not find that booking.";
     case "no_provider":
       return "Transfers are not available for this hotel yet.";
+    case "unavailable":
+      return "That transfer is not available at this time. Please choose another date or time.";
     case "idempotency_conflict":
       return "This request does not match a booking already started. Please review and try again.";
     case "rate_limited":

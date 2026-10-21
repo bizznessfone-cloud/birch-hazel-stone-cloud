@@ -33,6 +33,7 @@ export type BookingErrorCode =
   | "invalid_contact"
   | "invalid_location"
   | "invalid_destination"
+  | "unavailable"
   | "idempotency_conflict"
   | "not_found"
   | "no_provider"
@@ -90,6 +91,7 @@ export type CreateBookingInput = {
   destinationText?: string | null;
   specialRequirements?: string | null;
   idempotencyKey?: string | null;
+  direction?: "from_hotel" | "to_hotel" | null;
   quotedAmountMinor?: unknown;
   quotedCurrency?: unknown;
   amountMinor?: unknown;
@@ -132,6 +134,7 @@ type Validated = {
   luggageCount: number;
   pickupText: string;
   specialRequirements: string | null;
+  direction: "from_hotel" | "to_hotel" | null;
 };
 
 type ResolvedQuote = {
@@ -196,6 +199,7 @@ function requestHash(v: Validated, quote: ResolvedQuote): string {
         luggageCount: v.luggageCount,
         pickupText: v.pickupText,
         specialRequirements: v.specialRequirements,
+        direction: v.direction,
       }),
     )
     .digest("hex");
@@ -250,6 +254,13 @@ function validateInput(input: CreateBookingInput): Validated {
   if (input.specialRequirements != null && String(input.specialRequirements).trim()) {
     specialRequirements = String(input.specialRequirements).trim();
   }
+  let direction: "from_hotel" | "to_hotel" | null = null;
+  if (input.direction != null) {
+    if (input.direction !== "from_hotel" && input.direction !== "to_hotel") {
+      throw new BookingError("invalid_destination", 400, "direction is not available");
+    }
+    direction = input.direction;
+  }
 
   return {
     hotelCode,
@@ -264,6 +275,7 @@ function validateInput(input: CreateBookingInput): Validated {
     luggageCount: input.luggageCount,
     pickupText,
     specialRequirements,
+    direction,
   };
 }
 
@@ -502,8 +514,119 @@ async function createFresh(db: BookingDb, v: Validated, quote: ResolvedQuote): P
      ))`,
     [id, v.hotelCode, quote.destinationId, quote.amountMinor, quote.currency],
   );
-  await openFreshHold(db, id);
+  const reserved = await reserveCapacityIfFleet(db, id, quote, v);
+  if (!reserved) await openFreshHold(db, id);
   return id;
+}
+
+function isCapacityLockRetry(err: unknown): boolean {
+  const code = (err as { code?: string }).code;
+  if (code === "40P01") return true;
+  const message = err instanceof Error ? err.message : String(err);
+  return code === "40001" && message.includes("capacity_lock_retry");
+}
+
+function pgCode(err: unknown): string {
+  return (err as { code?: string }).code ?? "";
+}
+
+async function reservationMode(
+  db: BookingDb,
+  providerId: string,
+): Promise<"absent" | "legacy" | "capacity" | "unset"> {
+  const present = await db.query<{ present: boolean }>(
+    `select exists (
+       select 1
+         from information_schema.columns
+        where table_schema = 'public'
+          and table_name = 'providers'
+          and column_name = 'reservation_mode'
+     ) as present`,
+  );
+  // A database that has not applied 0076 has no activation column.
+  // That is schema absence, not an unset provider. The provisional hold remains.
+  // The catalog probe must not raise: a raised error would abort the booking transaction.
+  if (!present[0]?.present) return "absent";
+  const rows = await db.query<{ reservation_mode: string | null }>(
+    `select reservation_mode from public.providers where id = $1::uuid`,
+    [providerId],
+  );
+  if (rows.length !== 1) return "unset";
+  const mode = rows[0]?.reservation_mode;
+  if (mode === "legacy" || mode === "capacity") return mode;
+  return "unset";
+}
+
+async function reserveCapacityIfFleet(
+  db: BookingDb,
+  bookingId: string,
+  quote: ResolvedQuote,
+  v: Validated,
+): Promise<boolean> {
+  const mode = await reservationMode(db, quote.providerId);
+  if (mode === "absent" || mode === "legacy") return false;
+  if (mode !== "capacity") {
+    throw new BookingError("unavailable", 409, "reservation mode is not configured");
+  }
+
+  const signature = await db.query<{ signature: string | null }>(
+    `select to_regprocedure('public.sbg_reserve_capacity(uuid, uuid, uuid, uuid)')::text as signature`,
+  );
+  if (!signature[0]?.signature) {
+    throw new BookingError("unavailable", 409, "capacity reservation is not available");
+  }
+  if (!v.direction) {
+    throw new BookingError("invalid_destination", 409, "direction is required");
+  }
+
+  const doors = await db.query<{ id: string }>(
+    `select id
+       from public.sbg_fleet_locations
+      where provider_id = $1::uuid
+        and hotel_id = $2::uuid
+        and kind = 'hotel'
+        and active`,
+    [quote.providerId, quote.hotelId],
+  );
+  if (doors.length !== 1) {
+    throw new BookingError("invalid_destination", 409, "hotel location is not available");
+  }
+
+  let bindings: { fleet_location_id: string; active: boolean; provider_id: string }[];
+  try {
+    bindings = await db.query<{ fleet_location_id: string; active: boolean; provider_id: string }>(
+      `select b.fleet_location_id::text, l.active, l.provider_id::text
+         from public.sbg_guest_destination_bindings b
+         join public.sbg_fleet_locations l on l.id = b.fleet_location_id
+        where b.hotel_destination_id = $1::uuid
+          and b.hotel_id = $2::uuid
+          and b.provider_id = $3::uuid`,
+      [quote.destinationId, quote.hotelId, quote.providerId],
+    );
+  } catch (err) {
+    if (pgCode(err) === "42P01" || pgCode(err) === "42703") {
+      throw new BookingError("invalid_destination", 409, "destination is not available");
+    }
+    throw err;
+  }
+  const binding = bindings[0];
+  if (bindings.length !== 1 || !binding || binding.active !== true || binding.provider_id !== quote.providerId) {
+    throw new BookingError("invalid_destination", 409, "destination is not available");
+  }
+  if (binding.fleet_location_id === doors[0]!.id) {
+    throw new BookingError("invalid_destination", 409, "destination is not available");
+  }
+  const origin = v.direction === "from_hotel" ? doors[0]!.id : binding.fleet_location_id;
+  const destination = v.direction === "from_hotel" ? binding.fleet_location_id : doors[0]!.id;
+  const reserved = await db.query<{ reserve_outcome: string; reserve_rejection: string | null }>(
+    `select reserve_outcome, reserve_rejection
+       from public.sbg_reserve_capacity($1::uuid, $2::uuid, $3::uuid, $4::uuid)`,
+    [bookingId, origin, destination, null],
+  );
+  if (reserved[0]?.reserve_outcome !== "reserved") {
+    throw new BookingError("unavailable", 409, "that transfer is not available");
+  }
+  return true;
 }
 
 async function openFreshHold(db: BookingDb, bookingId: string): Promise<void> {
@@ -568,7 +691,13 @@ export async function createBooking(
     return bookingId;
   };
 
-  const id = await db.transaction(run);
+  let id: string;
+  try {
+    id = await db.transaction(run);
+  } catch (err) {
+    if (!isCapacityLockRetry(err)) throw err;
+    id = await db.transaction(run);
+  }
   return loadCreatedById(db, id);
 }
 

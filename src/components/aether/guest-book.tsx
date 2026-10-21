@@ -97,6 +97,7 @@ export function GuestBook({
           destinationText: draft.destinationText,
           specialRequirements: draft.specialRequirements.trim() || null,
           idempotencyKey,
+          direction: draft.direction,
         },
       });
       if (!result.ok) {

@@ -61,7 +61,7 @@ async function resetCluster(adminUrl: URL): Promise<string> {
 
 test("stage 5B source is additive and does not open checkout", () => {
   const files = migrationFiles();
-  assert.equal(files.at(-1), "0074_gate2_location_integrity.sql");
+  assert.equal(files.at(-1), "0076_gate2_provider_reservation_mode.sql");
   assert.equal(files.includes("0071_gate2_vehicle_integrity.sql"), true);
   assert.equal(files.includes("0070_gate2_isolated_payment_authority.sql"), true);
   const sql = readFileSync(new URL("0071_gate2_vehicle_integrity.sql", MIGRATIONS), "utf8");
@@ -71,6 +71,8 @@ test("stage 5B source is additive and does not open checkout", () => {
   assert.equal(preflight.includes("0072_gate2_route_reposition_integrity.sql"), false);
   assert.equal(preflight.includes("0073_gate2_hours_exception_integrity.sql"), false);
   assert.equal(preflight.includes("0074_gate2_location_integrity.sql"), false);
+  assert.equal(preflight.includes("0075_gate2_guest_destination_binding.sql"), false);
+  assert.equal(preflight.includes("0076_gate2_provider_reservation_mode.sql"), false);
   assert.equal(preflight.includes("AUTHORISED_PENDING = []"), true);
   assert.match(sql, /create role sbg_fleet_writer/);
   assert.match(sql, /nologin/);
@@ -86,7 +88,7 @@ test("stage 5B source is additive and does not open checkout", () => {
   assert.doesNotMatch(sql, /sbg_accept_verified_payment_event/);
   assert.doesNotMatch(sql, /^\s*commit\s*;/im);
   assert.match(booking, /openFreshHold/);
-  assert.doesNotMatch(booking, /sbg_reserve_capacity/);
+  assert.match(booking, /sbg_reserve_capacity/);
   assert.doesNotMatch(booking, /sbg_fleet_configure_vehicle/);
 });
 

@@ -93,7 +93,7 @@ test("stage 3 source is additive and does not open checkout", () => {
   assert.match(sql, /capacity_managed is not true/);
   const booking = readFileSync(new URL("./booking.ts", import.meta.url), "utf8");
   const guest = readFileSync(new URL("./guest-create.ts", import.meta.url), "utf8");
-  assert.doesNotMatch(booking, /sbg_reserve_capacity/);
+  assert.match(booking, /sbg_reserve_capacity/);
   assert.match(booking, /openFreshHold/);
   assert.doesNotMatch(guest, /sbg_reserve_capacity/);
   assert.doesNotMatch(sql, /grant update \(capacity_managed\) on table public\.bookings to aether_app/);

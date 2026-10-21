@@ -31,5 +31,6 @@ export function publicBookingEngineInput(input: PublicBookingRequest): CreateBoo
     destinationText: input.destinationText,
     specialRequirements: input.specialRequirements,
     idempotencyKey: input.idempotencyKey,
+    direction: input.direction,
   };
 }
