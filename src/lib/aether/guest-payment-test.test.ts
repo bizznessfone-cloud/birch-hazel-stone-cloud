@@ -15,6 +15,14 @@ import {
   startGuestPaymentForBooking,
   type GuestCheckoutRequest,
 } from "./guest-payment-fns.ts";
+import { runLocalExpiryOnce } from "./expiry-runner-local.ts";
+import { startLocalGuestPaymentTestListener } from "./guest-payment-test-listener.ts";
+import {
+  assertDisposableDatabaseIdentity,
+  assertGuestPaymentTestProcess,
+  GuestPaymentIsolationError,
+  readAuthorisedClusterSystemIdentifier,
+} from "./guest-payment-test-isolation.ts";
 
 const ADMIN_URL = process.env.STAGE_G2S5_PG_URL;
 const MIGRATIONS = new URL("../../../migrations/", import.meta.url);
@@ -113,6 +121,75 @@ test("stage 6D source stays test-only and off the SaaS webhook", () => {
   assert.match(entry, /handleGuestPaymentWebhook/);
   assert.doesNotMatch(webhook, /acceptIsolatedGuestPaymentTest|handleGuestPaymentWebhook/);
   assert.match(webhook, /capacity_payment_unmounted/);
+  assert.doesNotMatch(webhook, /startLocalGuestPaymentTestListener|runLocalExpiryOnce/);
+  const listener = readFileSync(new URL("./guest-payment-test-listener.ts", import.meta.url), "utf8");
+  const expiry = readFileSync(new URL("./expiry-runner.ts", import.meta.url), "utf8");
+  assert.match(listener, /host: LOCAL_TEST_LISTENER_HOST/);
+  assert.doesNotMatch(listener, /0\.0\.0\.0/);
+  assert.doesNotMatch(expiry, /pg_cron|cron\.schedule|runLocalExpiryOnce/);
+});
+
+test("TEST guards reject live credentials, live flags, and an unauthorised database", () => {
+  assert.throws(
+    () => assertGuestPaymentTestProcess({ STRIPE_SECRET_KEY: "sk_live_no", SBG_GUEST_PAYMENT_TEST: "true" }),
+    (err: unknown) => err instanceof GuestPaymentIsolationError && err.code === "live_credentials_rejected",
+  );
+  assert.throws(
+    () => assertGuestPaymentTestProcess({ STRIPE_SECRET_KEY: "rk_live_no" }),
+    (err: unknown) => err instanceof GuestPaymentIsolationError && err.code === "live_credentials_rejected",
+  );
+  assert.throws(
+    () => assertGuestPaymentTestProcess({ STRIPE_SECRET_KEY: "sk_test_ok", SBG_DOMAIN_B_LIVE_CHECKOUT: "true" }),
+    (err: unknown) => err instanceof GuestPaymentIsolationError && err.code === "live_payment_flag",
+  );
+  assert.throws(
+    () => assertGuestPaymentTestProcess({ STRIPE_SECRET_KEY: "sk_test_ok", SBG_SAAS_COMMERCE: "live" }),
+    (err: unknown) => err instanceof GuestPaymentIsolationError && err.code === "live_payment_flag",
+  );
+  const authorised = {
+    dataDirectory: "/tmp/s1pg/data",
+    listenAddresses: "127.0.0.1",
+    port: "54329",
+    serverAddr: "127.0.0.1/32",
+    databaseName: "neondb",
+    inRecovery: false,
+    systemIdentifier: readAuthorisedClusterSystemIdentifier().toString(),
+  };
+  assert.doesNotThrow(() => assertDisposableDatabaseIdentity(authorised));
+  for (const facts of [
+    { ...authorised, serverAddr: "10.0.0.8/32" },
+    { ...authorised, serverAddr: null },
+    { ...authorised, dataDirectory: "/var/lib/postgresql/18/main" },
+    { ...authorised, listenAddresses: "*" },
+    { ...authorised, databaseName: "postgres" },
+    { ...authorised, inRecovery: true },
+    { ...authorised, port: null },
+    { ...authorised, systemIdentifier: "1" },
+  ]) {
+    assert.throws(
+      () => assertDisposableDatabaseIdentity(facts),
+      (err: unknown) => err instanceof GuestPaymentIsolationError && err.code === "database_not_authorised",
+    );
+  }
+  let queries = 0;
+  const db = {
+    async query() {
+      queries += 1;
+      return [];
+    },
+  };
+  return Promise.all([
+    assert.rejects(
+      () => startGuestPaymentForBooking(db, "token", "https://guest.test", { ...TEST_ENV, STRIPE_SECRET_KEY: "sk_live_stage6d" }),
+      (err: unknown) => err instanceof GuestPaymentTestError && err.code === "live_credentials_rejected",
+    ),
+    assert.rejects(
+      () => startGuestPaymentForBooking(db, "token", "https://guest.test", { ...TEST_ENV, SBG_DOMAIN_B_LIVE_CHECKOUT: "true" }),
+      (err: unknown) => err instanceof GuestPaymentTestError && err.code === "live_payment_flag",
+    ),
+  ]).then(() => {
+    assert.equal(queries, 0);
+  });
 });
 
 test("isolated entry refuses the SaaS secret before the database", async () => {
@@ -316,8 +393,16 @@ test("bound payee, concurrency, and mocked payment lifecycle", { timeout: 180_00
 
     await root.query(
       `insert into sbg_organisation_stripe_connections (organisation_id, stripe_account_id, livemode)
-       values ($1::uuid, 'acct_inhouse', false), ($2::uuid, 'acct_operator', false)`,
+       values ($1::uuid, 'acct_inhouse', true), ($2::uuid, 'acct_operator', false)`,
       [hotelOrg, operatorOrg],
+    );
+    await assert.rejects(
+      () => startGuestPaymentForBooking(db, first.confirmationToken, "https://guest.test", TEST_ENV, deps),
+      (err: unknown) => err instanceof GuestPaymentTestError && err.code === "live_payee_rejected",
+    );
+    assert.equal(created.length, 0);
+    await root.query(
+      `update sbg_organisation_stripe_connections set livemode = false where stripe_account_id = 'acct_inhouse'`,
     );
     await root.query(
       `insert into sbg_stripe_connections (hotel_id, stripe_account_id, livemode)
@@ -813,6 +898,70 @@ test("bound payee, concurrency, and mocked payment lifecycle", { timeout: 180_00
       (err: unknown) => err instanceof GuestPaymentTestError && err.code === "booking_not_payable",
     );
     assert.equal(expired.length, expiredBeforeCancel);
+
+    const listenerUrl = new URL(dbUrl);
+    listenerUrl.username = "aether_payment_gateway";
+    listenerUrl.password = "";
+    const expiryUrl = new URL(dbUrl);
+    expiryUrl.username = "aether_expiry_runner";
+    expiryUrl.password = "";
+    await assert.rejects(
+      () => startLocalGuestPaymentTestListener({
+        connectionString: "postgresql://postgres@127.0.0.1:54329/neondb",
+        webhookSecret: WEBHOOK_SECRET,
+        env: TEST_ENV,
+      }),
+      (err: unknown) => err instanceof GuestPaymentIsolationError && err.code === "role_not_authorised",
+    );
+    await assert.rejects(
+      () => startLocalGuestPaymentTestListener({
+        connectionString: `postgresql://aether_payment_gateway:secret@127.0.0.1:${listenerUrl.port}/neondb`,
+        webhookSecret: WEBHOOK_SECRET,
+        env: TEST_ENV,
+      }),
+      (err: unknown) => err instanceof GuestPaymentIsolationError && err.code === "password_not_permitted",
+    );
+    await assert.rejects(
+      () => startLocalGuestPaymentTestListener({
+        connectionString: `postgresql://aether_payment_gateway@127.0.0.1:${listenerUrl.port}/postgres`,
+        webhookSecret: WEBHOOK_SECRET,
+        env: TEST_ENV,
+      }),
+      (err: unknown) => err instanceof GuestPaymentIsolationError && err.code === "database_not_authorised",
+    );
+    const listener = await startLocalGuestPaymentTestListener({
+      connectionString: listenerUrl.toString(),
+      webhookSecret: WEBHOOK_SECRET,
+      env: TEST_ENV,
+    });
+    try {
+      assert.equal(listener.host, "127.0.0.1");
+      const bad = await fetch(`http://127.0.0.1:${listener.port}/`, {
+        method: "POST",
+        headers: { "stripe-signature": "t=1,v1=dead" },
+        body: "{}",
+      });
+      assert.equal(bad.status, 400);
+      assert.equal((await bad.json()).outcome, "invalid_signature");
+    } finally {
+      await listener.close();
+    }
+    const gatewayPriv = await root.query<{ can_expire: boolean; can_settle: boolean }>(
+      `select
+         has_function_privilege('aether_payment_gateway', 'public.sbg_expire_provisional_holds(integer)', 'execute') as can_expire,
+         has_function_privilege('aether_payment_gateway', 'public.sbg_settle_capacity_checkout_attempt(uuid,integer,integer,text,text)', 'execute') as can_settle`,
+    );
+    const runnerPriv = await root.query<{ can_accept: boolean; can_settle: boolean }>(
+      `select
+         has_function_privilege('aether_expiry_runner', 'public.sbg_accept_verified_payment_event(boolean,text,text,uuid,uuid,uuid,text,text,integer,text,text,text)', 'execute') as can_accept,
+         has_function_privilege('aether_expiry_runner', 'public.sbg_settle_capacity_checkout_attempt(uuid,integer,integer,text,text)', 'execute') as can_settle`,
+    );
+    assert.equal(gatewayPriv.rows[0]!.can_expire, false);
+    assert.equal(gatewayPriv.rows[0]!.can_settle, false);
+    assert.equal(runnerPriv.rows[0]!.can_accept, false);
+    assert.equal(runnerPriv.rows[0]!.can_settle, false);
+    const localExpiry = await runLocalExpiryOnce(expiryUrl.toString(), TEST_ENV);
+    assert.ok(Array.isArray(localExpiry));
 
     void payload;
   } finally {

@@ -8,7 +8,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import type { Sql } from "../db.ts";
 import { bindPaymentAuthority } from "./payment-authority.ts";
-import { classifyStripeSecretKey } from "./saas-commerce.server.ts";
+import {
+  assertBoundPayeeIsTestMode,
+  assertConnectedDisposableDatabase,
+  assertGuestPaymentTestProcess,
+  GuestPaymentIsolationError,
+} from "./guest-payment-test-isolation.ts";
 
 const tokenInput = z.object({ token: z.string().min(1) });
 
@@ -97,6 +102,11 @@ async function defaultDeps(): Promise<GuestPaymentDeps> {
   };
 }
 
+function rejectIsolation(err: unknown): never {
+  if (err instanceof GuestPaymentIsolationError) throw new GuestPaymentTestError(err.code);
+  throw err;
+}
+
 export async function startGuestPaymentForBooking(
   db: PaymentDb,
   token: string,
@@ -105,9 +115,11 @@ export async function startGuestPaymentForBooking(
   deps?: GuestPaymentDeps,
 ): Promise<{ url: string; paymentId: string; accountId: string }> {
   if (!guestPaymentTestEnabled(env)) throw new GuestCheckoutClosed();
-  const keyMode = classifyStripeSecretKey(env.STRIPE_SECRET_KEY);
-  if (keyMode !== "test") {
-    throw new GuestPaymentTestError("live_credentials_rejected", "Stripe test credentials are required.");
+  try {
+    assertGuestPaymentTestProcess(env);
+    await assertConnectedDisposableDatabase(db);
+  } catch (err) {
+    rejectIsolation(err);
   }
   if (!origin.startsWith("https://") && !origin.startsWith("http://")) {
     throw new GuestPaymentTestError("invalid_origin", "A return origin is required.");
@@ -147,6 +159,11 @@ export async function startGuestPaymentForBooking(
     throw err;
   }
   if (!bound.stripeAccountId) throw new GuestPaymentTestError("stripe_disconnected");
+  try {
+    await assertBoundPayeeIsTestMode(db, prepared.payment_id);
+  } catch (err) {
+    rejectIsolation(err);
+  }
 
   const payableUrl = async (): Promise<string> => {
     try {
