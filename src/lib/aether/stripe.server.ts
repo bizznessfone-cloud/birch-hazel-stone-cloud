@@ -210,6 +210,7 @@ export async function createGuestTransferCheckout(input: {
   currency: string;
   successUrl: string;
   cancelUrl: string;
+  idempotencyKey?: string;
 }) {
   assertDomainBLiveCheckoutAllowed();
   const session = await stripePost<{ id: string; url?: string }>(
@@ -226,10 +227,23 @@ export async function createGuestTransferCheckout(input: {
       "metadata[payment_id]": input.paymentId,
     },
     input.accountId,
-    input.paymentId,
+    input.idempotencyKey ?? input.paymentId,
   );
   if (typeof session.url !== "string" || !session.url.startsWith("https://")) {
     throw new Error("Stripe Checkout URL was not returned.");
   }
   return { id: session.id, url: session.url };
+}
+
+/** Expire one direct-charge session on the connected account. No platform fee. */
+export async function expireGuestTransferCheckout(input: {
+  accountId: string;
+  sessionId: string;
+}) {
+  assertDomainBLiveCheckoutAllowed();
+  await stripePost(
+    `/checkout/sessions/${encodeURIComponent(input.sessionId)}/expire`,
+    {},
+    input.accountId,
+  );
 }

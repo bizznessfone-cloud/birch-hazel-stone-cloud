@@ -78,7 +78,8 @@ test("guest checkout stays closed and a hold is not a vehicle reservation", () =
   assert.match(booking, /openFreshHold/);
   assert.doesNotMatch(booking, /expireProvisionalHolds|createGuestTransferCheckout|sbg_prepare_booking_payment/);
   assert.match(payment, /throw new GuestCheckoutClosed\(\)/);
-  assert.doesNotMatch(payment, /sbg_prepare_booking_payment|createGuestTransferCheckout|SBG_SAAS_COMMERCE|SBG_DOMAIN_B/);
+  assert.match(payment, /SBG_GUEST_PAYMENT_TEST/);
+  assert.doesNotMatch(payment, /sbg_prepare_booking_payment|SBG_SAAS_COMMERCE|SBG_DOMAIN_B_LIVE_CHECKOUT/);
 });
 
 test("a new booking enters awaiting_payment and a retry does not extend the hold", async () => {

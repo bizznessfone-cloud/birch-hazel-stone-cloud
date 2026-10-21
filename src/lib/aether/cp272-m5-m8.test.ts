@@ -814,7 +814,9 @@ test("M7 guest checkout is denied before prepare, Stripe, or a checkout URL", as
     const guest = read("src/lib/aether/guest-payment-fns.ts");
     assert.match(guest, /z\.object\(\{ token: z\.string\(\)\.min\(1\) \}\)/);
     assert.match(guest, /return startGuestPaymentForBooking\(closedSql\(\), data\.token, ""\)/);
-    assert.doesNotMatch(guest, /sbg_prepare_booking_payment|createGuestTransferCheckout|sbg_set_booking_checkout_session|getSql/);
+    assert.match(guest, /if \(!guestPaymentTestEnabled\(\)\)/);
+    assert.doesNotMatch(guest, /sbg_prepare_booking_payment|sbg_set_booking_checkout_session/);
+    assert.ok(guest.indexOf("getSql") > guest.indexOf("return startGuestPaymentForBooking(closedSql(), data.token, \"\");"));
     assert.doesNotMatch(guest, /SBG_SAAS_COMMERCE|assertDomainACommerceAllowed|SBG_DOMAIN_B|assertDomainBLiveCheckoutAllowed/);
     const guestFn = read("src/lib/aether/stripe.server.ts");
     const slice = guestFn.slice(guestFn.indexOf("export async function createGuestTransferCheckout"));

@@ -91,13 +91,14 @@ async function resetCluster(adminUrl: URL): Promise<string> {
 
 test("stage 6B source binds catalogue ids and does not open checkout", () => {
   const files = migrationFiles();
-  assert.equal(files.at(-1), "0076_gate2_provider_reservation_mode.sql");
+  assert.equal(files.at(-1), "0077_gate2_capacity_guest_payment.sql");
   const sql = readFileSync(new URL("0076_gate2_provider_reservation_mode.sql", MIGRATIONS), "utf8");
   const booking = readFileSync(new URL("./booking.ts", import.meta.url), "utf8");
   const preflight = readFileSync(new URL("../../../scripts/production-db-preflight.mjs", import.meta.url), "utf8");
   const webhook = readFileSync(new URL("../../routes/api/stripe/webhook.ts", import.meta.url), "utf8");
   assert.equal(preflight.includes("0075_gate2_guest_destination_binding.sql"), false);
   assert.equal(preflight.includes("0076_gate2_provider_reservation_mode.sql"), false);
+  assert.equal(preflight.includes("0077_gate2_capacity_guest_payment.sql"), false);
   assert.equal(preflight.includes("AUTHORISED_PENDING = []"), true);
   assert.match(sql, /reservation_mode/);
   assert.match(sql, /'legacy'/);
