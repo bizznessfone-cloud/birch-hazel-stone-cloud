@@ -85,7 +85,7 @@ test("0069 payment, expiry, privilege, and legacy concurrency", { timeout: 180_0
   try {
     await apply(root, migrationFiles());
     const last = migrationFiles().at(-1);
-    assert.equal(last, "0072_gate2_route_reposition_integrity.sql");
+    assert.equal(last, "0073_gate2_hours_exception_integrity.sql");
 
     const owners = await root.query<{ proname: string; owner: string }>(
       `select p.proname, r.rolname as owner
