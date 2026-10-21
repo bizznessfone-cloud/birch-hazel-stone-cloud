@@ -148,36 +148,64 @@ export async function startGuestPaymentForBooking(
   }
   if (!bound.stripeAccountId) throw new GuestPaymentTestError("stripe_disconnected");
 
+  const payableUrl = async (): Promise<string> => {
+    try {
+      const rows = await db.query<{ payable_session_id: string; payable_url: string }>(
+        `select payable_session_id, payable_url
+           from public.sbg_require_payable_capacity_checkout($1::uuid)`,
+        [prepared.payment_id],
+      );
+      const url = rows[0]?.payable_url;
+      if (!url?.startsWith("https://")) throw new GuestPaymentTestError("booking_not_payable");
+      return url;
+    } catch (err) {
+      if (err instanceof GuestPaymentTestError) throw err;
+      const code = knownCode(err);
+      if (code) throw new GuestPaymentTestError(code);
+      throw err;
+    }
+  };
+
   if (
     prepared.status === "pending" &&
     prepared.checkout_session_id &&
     prepared.checkout_url?.startsWith("https://")
   ) {
     return {
-      url: prepared.checkout_url,
+      url: await payableUrl(),
       paymentId: prepared.payment_id,
       accountId: bound.stripeAccountId,
     };
   }
 
-  let claim: { claim_outcome: string; claim_attempt: number; claim_session_id: string | null; claim_url: string | null };
+  let claim: {
+    claim_outcome: string;
+    claim_attempt: number;
+    claim_generation: number;
+    claim_session_id: string | null;
+    claim_url: string | null;
+  };
   try {
     const claims = await db.query<typeof claim>(
-      `select claim_outcome, claim_attempt, claim_session_id, claim_url
+      `select claim_outcome, claim_attempt, claim_generation, claim_session_id, claim_url
          from public.sbg_claim_capacity_checkout($1::uuid)`,
       [prepared.payment_id],
     );
     const row = claims[0];
     if (!row) throw new GuestPaymentTestError("checkout_in_progress");
-    claim = { ...row, claim_attempt: Number(row.claim_attempt) };
+    claim = {
+      ...row,
+      claim_attempt: Number(row.claim_attempt),
+      claim_generation: Number(row.claim_generation),
+    };
   } catch (err) {
     if (err instanceof GuestPaymentTestError) throw err;
     const code = knownCode(err);
     if (code) throw new GuestPaymentTestError(code);
     throw err;
   }
-  if (claim.claim_outcome === "stored" && claim.claim_url?.startsWith("https://")) {
-    return { url: claim.claim_url, paymentId: prepared.payment_id, accountId: bound.stripeAccountId };
+  if (claim.claim_outcome === "stored") {
+    return { url: await payableUrl(), paymentId: prepared.payment_id, accountId: bound.stripeAccountId };
   }
   if (claim.claim_outcome === "in_progress") {
     throw new GuestPaymentTestError("checkout_in_progress");
@@ -196,19 +224,30 @@ export async function startGuestPaymentForBooking(
     cancelUrl: `${origin}/confirmed/${encodeURIComponent(token)}`,
     idempotencyKey: `${prepared.payment_id}:${claim.claim_attempt}`,
   });
-  const stored = await db.query<{ sbg_store_capacity_checkout_session: string }>(
-    `select public.sbg_store_capacity_checkout_session($1::uuid, $2::integer, $3, $4)`,
-    [prepared.payment_id, claim.claim_attempt, session.id, session.url],
-  );
-  if (stored[0]?.sbg_store_capacity_checkout_session === "stored") {
-    return { url: session.url, paymentId: prepared.payment_id, accountId: bound.stripeAccountId };
+  let outcome = "rejected";
+  try {
+    const settled = await db.query<{ sbg_settle_capacity_checkout_attempt: string }>(
+      `select public.sbg_settle_capacity_checkout_attempt($1::uuid, $2::integer, $3::integer, $4, $5)`,
+      [prepared.payment_id, claim.claim_attempt, claim.claim_generation, session.id, session.url],
+    );
+    outcome = settled[0]?.sbg_settle_capacity_checkout_attempt ?? "rejected";
+  } catch (err) {
+    if (err instanceof GuestPaymentTestError) throw err;
+    const code = knownCode(err);
+    if (code) throw new GuestPaymentTestError(code);
+    throw err;
   }
-  await checkout.expireCheckout({ accountId: bound.stripeAccountId, sessionId: session.id });
-  await db.query(
-    `select public.sbg_release_capacity_checkout_claim($1::uuid, $2::integer)`,
-    [prepared.payment_id, claim.claim_attempt],
-  );
-  throw new GuestPaymentTestError("checkout_not_stored", "The Checkout session could not be correlated.");
+  if (outcome === "stored" || outcome === "authoritative") {
+    return { url: await payableUrl(), paymentId: prepared.payment_id, accountId: bound.stripeAccountId };
+  }
+  if (outcome === "expire_unstored") {
+    await checkout.expireCheckout({ accountId: bound.stripeAccountId, sessionId: session.id });
+    throw new GuestPaymentTestError("checkout_not_stored", "The Checkout session could not be correlated.");
+  }
+  if (outcome === "not_payable") {
+    return { url: await payableUrl(), paymentId: prepared.payment_id, accountId: bound.stripeAccountId };
+  }
+  throw new GuestPaymentTestError("checkout_in_progress");
 }
 
 export const startGuestPayment = createServerFn({ method: "POST" })

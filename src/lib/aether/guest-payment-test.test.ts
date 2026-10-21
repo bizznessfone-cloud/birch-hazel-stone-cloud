@@ -93,13 +93,19 @@ async function resetCluster(adminUrl: URL): Promise<string> {
 test("stage 6D source stays test-only and off the SaaS webhook", () => {
   const files = migrationFiles();
   const sql = readFileSync(new URL("0077_gate2_capacity_guest_payment.sql", MIGRATIONS), "utf8");
+  const generation = readFileSync(new URL("0078_gate2_capacity_checkout_claim_generation.sql", MIGRATIONS), "utf8");
   const payment = readFileSync(new URL("./guest-payment-fns.ts", import.meta.url), "utf8");
   const entry = readFileSync(new URL("./guest-payment-gateway-entry.ts", import.meta.url), "utf8");
   const webhook = readFileSync(new URL("../../routes/api/stripe/webhook.ts", import.meta.url), "utf8");
   const preflight = readFileSync(new URL("../../../scripts/production-db-preflight.mjs", import.meta.url), "utf8");
-  assert.equal(files.at(-1), "0077_gate2_capacity_guest_payment.sql");
+  assert.equal(files.at(-1), "0078_gate2_capacity_checkout_claim_generation.sql");
+  assert.equal(files.includes("0077_gate2_capacity_guest_payment.sql"), true);
   assert.equal(preflight.includes("0077_gate2_capacity_guest_payment.sql"), false);
+  assert.equal(preflight.includes("0078_gate2_capacity_checkout_claim_generation.sql"), false);
   assert.doesNotMatch(sql, /from public\.sbg_stripe_connections|join public\.sbg_stripe_connections/);
+  assert.doesNotMatch(generation, /from public\.sbg_stripe_connections|join public\.sbg_stripe_connections/);
+  assert.match(generation, /checkout_claim_generation/);
+  assert.match(generation, /sbg_settle_capacity_checkout_attempt/);
   assert.match(sql, /sbg_prepare_capacity_guest_payment/);
   assert.match(payment, /throw new GuestCheckoutClosed\(\)/);
   assert.match(payment, /bound\.stripeAccountId/);
@@ -152,12 +158,19 @@ test("bound payee, concurrency, and mocked payment lifecycle", { timeout: 180_00
   await right.connect();
   const created: GuestCheckoutRequest[] = [];
   const expired: { accountId: string; sessionId: string }[] = [];
+  const queued: Array<(session: { id: string; url: string }) => void> = [];
   let failStore = false;
+  let queueCheckout = false;
   const deps = {
     async createCheckout(input: GuestCheckoutRequest) {
       created.push(input);
       if (failStore) {
         await root.query(`update sbg_booking_payments set status = 'failed' where id = $1::uuid`, [input.paymentId]);
+      }
+      if (queueCheckout) {
+        return await new Promise<{ id: string; url: string }>((resolve) => {
+          queued.push(resolve);
+        });
       }
       await new Promise((resolve) => setTimeout(resolve, 150));
       return { id: `cs_test_${created.length}`, url: `https://checkout.stripe.test/${created.length}` };
@@ -658,6 +671,148 @@ test("bound payee, concurrency, and mocked payment lifecycle", { timeout: 180_00
     }));
     assert.equal(earlyRefund.status, 409);
     assert.equal(earlyRefund.body.outcome, "uncorrelated");
+
+    async function waitForCreates(target: number) {
+      for (let i = 0; i < 100; i += 1) {
+        if (created.length >= target) return;
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+      throw new Error("timed out waiting for checkout");
+    }
+    async function stalePair(date: string) {
+      const booking = await createBooking(db, input("s6din", inDestination, date));
+      queueCheckout = true;
+      queued.length = 0;
+      const mark = created.length;
+      const pendingA = startGuestPaymentForBooking(db, booking.confirmationToken, "https://guest.test", TEST_ENV, deps);
+      await waitForCreates(mark + 1);
+      const paymentId = created[mark]!.paymentId;
+      const attempt = Number(created[mark]!.idempotencyKey.split(":")[1]);
+      const generationA = Number((await root.query<{ g: number }>(
+        `select checkout_claim_generation as g from sbg_booking_payments where id = $1::uuid`,
+        [paymentId],
+      )).rows[0]!.g);
+      await root.query(
+        `update sbg_booking_payments set checkout_claim_at = clock_timestamp() - interval '3 minutes' where id = $1::uuid`,
+        [paymentId],
+      );
+      const pendingB = startGuestPaymentForBooking(db, booking.confirmationToken, "https://guest.test", TEST_ENV, deps);
+      await waitForCreates(mark + 2);
+      const generationB = Number((await root.query<{ g: number }>(
+        `select checkout_claim_generation as g from sbg_booking_payments where id = $1::uuid`,
+        [paymentId],
+      )).rows[0]!.g);
+      assert.equal(created[mark]!.idempotencyKey, created[mark + 1]!.idempotencyKey);
+      assert.equal(created[mark]!.accountId, "acct_inhouse");
+      assert.equal(created[mark + 1]!.accountId, "acct_inhouse");
+      assert.notEqual(generationA, generationB);
+      const stale = await root.query<{ sbg_release_capacity_checkout_claim: string }>(
+        `select public.sbg_release_capacity_checkout_claim($1::uuid, $2::integer, $3::integer)`,
+        [paymentId, attempt, generationA],
+      );
+      assert.equal(stale.rows[0]!.sbg_release_capacity_checkout_claim, "held");
+      const owned = await root.query<{ g: number; claimed: boolean }>(
+        `select checkout_claim_generation as g, checkout_claim_at is not null as claimed
+           from sbg_booking_payments where id = $1::uuid`,
+        [paymentId],
+      );
+      assert.equal(Number(owned.rows[0]!.g), generationB);
+      assert.equal(owned.rows[0]!.claimed, true);
+      return { booking, pendingA, pendingB, paymentId, mark };
+    }
+
+    const sameWinner = await stalePair("2026-07-20");
+    const expiredBeforeSame = expired.length;
+    queued[1]!({ id: "cs_same_b_first", url: "https://checkout.stripe.test/same-b" });
+    const sameB = await sameWinner.pendingB;
+    queued[0]!({ id: "cs_same_b_first", url: "https://checkout.stripe.test/same-b" });
+    const sameA = await sameWinner.pendingA;
+    queueCheckout = false;
+    assert.equal(sameA.url, sameB.url);
+    assert.equal(sameA.accountId, "acct_inhouse");
+    assert.equal(expired.length, expiredBeforeSame);
+    const sameStored = await root.query<{ session: string }>(
+      `select stripe_checkout_session_id as session from sbg_booking_payments where id = $1::uuid`,
+      [sameWinner.paymentId],
+    );
+    assert.equal(sameStored.rows[0]!.session, "cs_same_b_first");
+    const sameCalls = created.length;
+    const sameAgain = await startGuestPaymentForBooking(db, sameWinner.booking.confirmationToken, "https://guest.test", TEST_ENV, deps);
+    assert.equal(sameAgain.url, sameB.url);
+    assert.equal(created.length, sameCalls);
+
+    const sameOpposite = await stalePair("2026-07-21");
+    const expiredBeforeOpposite = expired.length;
+    queued[0]!({ id: "cs_same_a_first", url: "https://checkout.stripe.test/same-a" });
+    await assert.rejects(sameOpposite.pendingA, (err: unknown) => err instanceof GuestPaymentTestError && err.code === "checkout_in_progress");
+    queued[1]!({ id: "cs_same_a_first", url: "https://checkout.stripe.test/same-a" });
+    const oppositeB = await sameOpposite.pendingB;
+    queueCheckout = false;
+    assert.equal(oppositeB.url, "https://checkout.stripe.test/same-a");
+    assert.equal(expired.length, expiredBeforeOpposite);
+    const oppositeStored = await root.query<{ session: string }>(
+      `select stripe_checkout_session_id as session from sbg_booking_payments where id = $1::uuid`,
+      [sameOpposite.paymentId],
+    );
+    assert.equal(oppositeStored.rows[0]!.session, "cs_same_a_first");
+    const oppositeCalls = created.length;
+    const oppositeAgain = await startGuestPaymentForBooking(db, sameOpposite.booking.confirmationToken, "https://guest.test", TEST_ENV, deps);
+    assert.equal(oppositeAgain.url, oppositeB.url);
+    assert.equal(created.length, oppositeCalls);
+
+    const different = await stalePair("2026-07-22");
+    queued[1]!({ id: "cs_winner_only", url: "https://checkout.stripe.test/winner" });
+    const differentB = await different.pendingB;
+    queued[0]!({ id: "cs_loser_only", url: "https://checkout.stripe.test/loser" });
+    await assert.rejects(different.pendingA, (err: unknown) => err instanceof GuestPaymentTestError && err.code === "checkout_not_stored");
+    queueCheckout = false;
+    assert.equal(differentB.url, "https://checkout.stripe.test/winner");
+    assert.equal(expired.filter((row) => row.sessionId === "cs_loser_only" && row.accountId === "acct_inhouse").length, 1);
+    assert.equal(expired.filter((row) => row.sessionId === "cs_winner_only").length, 0);
+    const differentStored = await root.query<{ session: string }>(
+      `select stripe_checkout_session_id as session from sbg_booking_payments where id = $1::uuid`,
+      [different.paymentId],
+    );
+    assert.equal(differentStored.rows[0]!.session, "cs_winner_only");
+    const differentCalls = created.length;
+    const differentAgain = await startGuestPaymentForBooking(db, different.booking.confirmationToken, "https://guest.test", TEST_ENV, deps);
+    assert.equal(differentAgain.url, differentB.url);
+    assert.equal(created.length, differentCalls);
+
+    const staleHeld = await createBooking(db, input("s6din", inDestination, "2026-07-23"));
+    const stalePay = await startGuestPaymentForBooking(db, staleHeld.confirmationToken, "https://guest.test", TEST_ENV, deps);
+    const expiredBeforeHold = expired.length;
+    await root.query("alter table public.bookings disable trigger bookings_capacity_managed_guard");
+    await root.query(
+      `update bookings set hold_expires_at = clock_timestamp() - interval '1 minute' where confirmation_token = $1`,
+      [staleHeld.confirmationToken],
+    );
+    await root.query("alter table public.bookings enable trigger bookings_capacity_managed_guard");
+    await assert.rejects(
+      () => startGuestPaymentForBooking(db, staleHeld.confirmationToken, "https://guest.test", TEST_ENV, deps),
+      (err: unknown) => err instanceof GuestPaymentTestError && err.code === "hold_expired",
+    );
+    assert.equal(expired.length, expiredBeforeHold);
+    const heldSession = await root.query<{ session: string }>(
+      `select stripe_checkout_session_id as session from sbg_booking_payments where id = $1::uuid`,
+      [stalePay.paymentId],
+    );
+    assert.ok(heldSession.rows[0]!.session);
+
+    const cancelled = await createBooking(db, input("s6din", inDestination, "2026-07-24"));
+    await startGuestPaymentForBooking(db, cancelled.confirmationToken, "https://guest.test", TEST_ENV, deps);
+    const expiredBeforeCancel = expired.length;
+    await root.query("alter table public.bookings disable trigger user");
+    await root.query(
+      `update bookings set cancelled_at = clock_timestamp(), lifecycle_state = 'cancelled' where confirmation_token = $1`,
+      [cancelled.confirmationToken],
+    );
+    await root.query("alter table public.bookings enable trigger user");
+    await assert.rejects(
+      () => startGuestPaymentForBooking(db, cancelled.confirmationToken, "https://guest.test", TEST_ENV, deps),
+      (err: unknown) => err instanceof GuestPaymentTestError && err.code === "booking_not_payable",
+    );
+    assert.equal(expired.length, expiredBeforeCancel);
 
     void payload;
   } finally {
