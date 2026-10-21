@@ -61,13 +61,14 @@ async function resetCluster(adminUrl: URL): Promise<string> {
 
 test("stage 5C source reuses the fleet writer and does not open checkout", () => {
   const files = migrationFiles();
-  assert.equal(files.at(-1), "0073_gate2_hours_exception_integrity.sql");
+  assert.equal(files.at(-1), "0074_gate2_location_integrity.sql");
   assert.equal(files.includes("0072_gate2_route_reposition_integrity.sql"), true);
   const sql = readFileSync(new URL("0072_gate2_route_reposition_integrity.sql", MIGRATIONS), "utf8");
   const preflight = readFileSync(new URL("../../../scripts/production-db-preflight.mjs", import.meta.url), "utf8");
   const booking = readFileSync(new URL("./booking.ts", import.meta.url), "utf8");
   assert.equal(preflight.includes("0072_gate2_route_reposition_integrity.sql"), false);
   assert.equal(preflight.includes("0073_gate2_hours_exception_integrity.sql"), false);
+  assert.equal(preflight.includes("0074_gate2_location_integrity.sql"), false);
   assert.equal(preflight.includes("AUTHORISED_PENDING = []"), true);
   assert.match(sql, /sbg_fleet_writer/);
   assert.doesNotMatch(sql, /create role /);
