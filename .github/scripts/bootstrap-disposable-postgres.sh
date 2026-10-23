@@ -4,6 +4,50 @@
 # already require. It does not use a service container, Neon, or production.
 set -eu
 
+BIN=/usr/lib/postgresql/18/bin
+DISPOSABLE_URL="postgresql://postgres@127.0.0.1:54329/postgres"
+
+assert_disposable_cluster() {
+  if [ ! -f /tmp/s1pg/data/global/pg_control ]; then
+    echo "Disposable control file is missing." >&2
+    exit 1
+  fi
+  file_id=$(node -e 'const fs=require("node:fs"); const fd=fs.openSync("/tmp/s1pg/data/global/pg_control","r"); const buf=Buffer.alloc(8); if (fs.readSync(fd, buf, 0, 8, 0)!==8) process.exit(2); fs.closeSync(fd); process.stdout.write(buf.readBigUInt64LE(0).toString());')
+  db_id=$("$BIN/psql" "$DISPOSABLE_URL" -v ON_ERROR_STOP=1 -Atqc "select case when current_setting('data_directory') = '/tmp/s1pg/data' and current_setting('listen_addresses') = '127.0.0.1' and inet_server_addr() = '127.0.0.1'::inet and current_setting('port') = '54329' and pg_is_in_recovery() = false then system_identifier::text else '' end from pg_control_system()")
+  if [ -z "$file_id" ] || [ "$file_id" != "$db_id" ]; then
+    echo "Disposable cluster identity check failed." >&2
+    exit 1
+  fi
+}
+
+cleanup_disposable_databases() {
+  assert_disposable_cluster
+  databases=$("$BIN/psql" "$DISPOSABLE_URL" -v ON_ERROR_STOP=1 -Atqc "select datname from pg_database where datallowconn and datname not in ('postgres', 'template0', 'template1') order by 1")
+  for database in $databases; do
+    case "$database" in
+      *[!a-z0-9_]*)
+        echo "Refusing to drop an unexpected database name." >&2
+        exit 1
+        ;;
+    esac
+    "$BIN/psql" "$DISPOSABLE_URL" -v ON_ERROR_STOP=1 -c "select pg_terminate_backend(pid) from pg_stat_activity where datname = '${database}' and pid <> pg_backend_pid()" >/dev/null
+    "$BIN/psql" "$DISPOSABLE_URL" -v ON_ERROR_STOP=1 -c "drop database if exists \"${database}\"" >/dev/null
+  done
+}
+
+if [ "${1:-}" = "cleanup" ]; then
+  if [ "$#" -ne 1 ]; then
+    echo "Cleanup accepts no further arguments." >&2
+    exit 1
+  fi
+  cleanup_disposable_databases
+  exit 0
+fi
+if [ "$#" -ne 0 ]; then
+  echo "Unexpected bootstrap argument." >&2
+  exit 1
+fi
+
 . /etc/os-release
 if [ -z "${VERSION_CODENAME:-}" ]; then
   echo "Ubuntu codename is unavailable." >&2
@@ -39,7 +83,6 @@ if [ -d /var/lib/postgresql/18/main ]; then
   exit 1
 fi
 
-BIN=/usr/lib/postgresql/18/bin
 VERSION=$("$BIN/postgres" -V)
 echo "$VERSION"
 printf '%s\n' "$VERSION" | grep -q 'PostgreSQL) 18\.'
@@ -59,25 +102,4 @@ port = 54329
 unix_socket_directories = '/tmp/s1pg'
 EOF
 "$BIN/pg_ctl" -D /tmp/s1pg/data -l /tmp/s1pg/postgres.log -w start
-
-"$BIN/psql" "postgresql://postgres@127.0.0.1:54329/postgres" -v ON_ERROR_STOP=1 <<'SQL'
-do $$
-begin
-  if current_setting('data_directory') is distinct from '/tmp/s1pg/data' then
-    raise exception 'disposable data directory was not used';
-  end if;
-  if current_setting('listen_addresses') is distinct from '127.0.0.1' then
-    raise exception 'PostgreSQL is not loopback-only';
-  end if;
-  if inet_server_addr() <> '127.0.0.1'::inet then
-    raise exception 'server address is not loopback';
-  end if;
-  if current_setting('port') is distinct from '54329' then
-    raise exception 'PostgreSQL is not listening on 54329';
-  end if;
-  if pg_is_in_recovery() then
-    raise exception 'cluster is in recovery';
-  end if;
-end
-$$;
-SQL
+assert_disposable_cluster

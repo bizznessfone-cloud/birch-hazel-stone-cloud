@@ -43,16 +43,19 @@ jobs:
           STAGE_E_PG_URL: postgresql://postgres@127.0.0.1:54329/postgres
         run: |
           set -eu
-          node --experimental-strip-types --test --test-concurrency=1 \
-            src/lib/aether/capacity-payment-regression.test.ts \
-            src/lib/aether/payment-gateway.test.ts \
-            src/lib/aether/guest-capacity-reservation.test.ts \
-            src/lib/aether/capacity-reservation.test.ts \
-            src/lib/aether/vehicle-dispatch-privilege.test.ts \
-            src/lib/aether/provisional-hold-integration-concurrency.test.ts \
-            src/lib/aether/verified-payment-concurrency.test.ts \
-            src/lib/aether/confirmation-admission-concurrency.test.ts
-          node --experimental-strip-types --test src/lib/aether/guest-payment-test.test.ts
+          run_suite() {
+            sh .github/scripts/bootstrap-disposable-postgres.sh cleanup
+            node --experimental-strip-types --test --test-concurrency=1 --test-force-exit "$1"
+          }
+          run_suite src/lib/aether/capacity-payment-regression.test.ts
+          run_suite src/lib/aether/payment-gateway.test.ts
+          run_suite src/lib/aether/guest-capacity-reservation.test.ts
+          run_suite src/lib/aether/capacity-reservation.test.ts
+          run_suite src/lib/aether/vehicle-dispatch-privilege.test.ts
+          run_suite src/lib/aether/provisional-hold-integration-concurrency.test.ts
+          run_suite src/lib/aether/verified-payment-concurrency.test.ts
+          run_suite src/lib/aether/confirmation-admission-concurrency.test.ts
+          node --experimental-strip-types --test --test-concurrency=1 --test-force-exit src/lib/aether/guest-payment-test.test.ts
 
       - name: Confirm migration 0079 survived the final reset
         run: |
