@@ -3,7 +3,7 @@
  * The execution gate is closed. Reaching this file does not call Stripe.
  * A later commit must change the gate before any Checkout Session can be created.
  */
-import { spawn, type ChildProcess } from "node:child_process";
+import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { createServer, type IncomingMessage } from "node:http";
 import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
@@ -20,6 +20,7 @@ const CLI_ARCHIVE = `stripe_${CLI_VERSION}_linux_x86_64.tar.gz`;
 const ADMIN_URL = "postgresql://postgres@127.0.0.1:54329/postgres";
 const DATABASE_URL = "postgresql://postgres@127.0.0.1:54329/neondb";
 const GATEWAY_URL = "postgresql://aether_payment_gateway@127.0.0.1:54329/neondb";
+const APP_URL = "postgresql://aether_app@127.0.0.1:54329/neondb";
 const RETURN_ORIGIN = "http://127.0.0.1:9";
 
 class HarnessClosed extends Error {
@@ -211,6 +212,7 @@ type BrowserPage = {
   locator(selector: string): { count(): Promise<number> };
   frameLocator(selector: string): { locator(selector: string): { fill(value: string, options: { timeout: number }): Promise<void> } };
   getByRole(role: "button", options: { name: RegExp }): { click(options: { timeout: number }): Promise<void> };
+  on?(event: "console" | "request" | "response", listener: () => void): void;
   waitForURL(predicate: (url: URL) => boolean, options: { timeout: number }): Promise<void>;
 };
 
@@ -222,20 +224,21 @@ async function assertNoChallenge(page: BrowserPage): Promise<void> {
 }
 
 async function completeHostedCheckout(checkoutUrl: string): Promise<void> {
+  process.env.DEBUG = "";
   const { chromium } = await import("playwright");
   const browser = await chromium.launch({ headless: true });
   try {
-    const page = await browser.newPage() as BrowserPage;
+    const context = await browser.newContext();
+    const page = await context.newPage() as BrowserPage;
+    page.on?.("console", () => undefined);
+    page.on?.("request", () => undefined);
+    page.on?.("response", () => undefined);
     try {
       await page.goto(checkoutUrl, { timeout: 30_000, waitUntil: "domcontentloaded" });
-    } catch {
-      throw sanitiseBrowserFailure();
-    }
-    await assertNoChallenge(page);
-    const card = page.frameLocator('iframe[title*="card number" i]').locator("input");
-    const expiry = page.frameLocator('iframe[title*="expir" i]').locator("input");
-    const cvc = page.frameLocator('iframe[title*="CVC" i]').locator("input");
-    try {
+      await assertNoChallenge(page);
+      const card = page.frameLocator('iframe[title*="card number" i]').locator("input");
+      const expiry = page.frameLocator('iframe[title*="expir" i]').locator("input");
+      const cvc = page.frameLocator('iframe[title*="CVC" i]').locator("input");
       await card.fill("4242424242424242", { timeout: 20_000 });
       await expiry.fill("1234", { timeout: 20_000 });
       await cvc.fill("123", { timeout: 20_000 });
@@ -264,7 +267,7 @@ async function forwardConnectEvents(input: {
   stripeBin: string;
   listenerPort: number;
   secretReady: (secret: string) => void;
-}): Promise<{ child: ChildProcess; stop: () => Promise<void> }> {
+}): Promise<{ ready: Promise<void>; assertAlive: () => void; stop: () => Promise<void> }> {
   const child = spawn(
     input.stripeBin,
     ["listen", "--forward-connect-to", `http://127.0.0.1:${input.listenerPort}`, "--events", "checkout.session.completed"],
@@ -274,18 +277,36 @@ async function forwardConnectEvents(input: {
     },
   );
   let secret = "";
+  let readySeen = false;
+  let announced = false;
   let pending = "";
-  const watch = (chunk: Buffer) => {
-    if (secret) return;
-    pending = (pending + chunk.toString("utf8")).slice(-4000);
-    const match = pending.match(/whsec_[A-Za-z0-9]+/);
-    if (!match) return;
-    secret = match[0];
-    pending = "";
-    input.secretReady(secret);
+  let rejectReady: (err: Error) => void = () => undefined;
+  const ready = new Promise<void>((resolve, reject) => {
+    rejectReady = reject;
+    const watch = (chunk: Buffer) => {
+      pending = (pending + chunk.toString("utf8")).slice(-8000);
+      const match = pending.match(/whsec_[A-Za-z0-9]+/);
+      if (match) secret = match[0];
+      if (pending.includes("Ready!")) readySeen = true;
+      if (!announced && secret && readySeen) {
+        announced = true;
+        pending = "";
+        input.secretReady(secret);
+        resolve();
+      }
+    };
+    child.stdout?.on("data", watch);
+    child.stderr?.on("data", watch);
+    child.once("exit", () => {
+      if (!announced) reject(new Error("stripe_cli_exited"));
+    });
+    child.once("error", () => {
+      if (!announced) reject(new Error("stripe_cli_exited"));
+    });
+  });
+  const assertAlive = () => {
+    if (child.exitCode != null || child.signalCode != null) throw new Error("stripe_cli_exited");
   };
-  child.stdout?.on("data", watch);
-  child.stderr?.on("data", watch);
   const stop = async () => {
     if (child.exitCode != null) return;
     child.kill("SIGTERM");
@@ -300,7 +321,29 @@ async function forwardConnectEvents(input: {
       });
     });
   };
-  return { child, stop };
+  return { ready: ready.catch((err) => { rejectReady(err); throw err; }), assertAlive, stop };
+}
+
+function assertPaidConnectEvent(event: {
+  type?: string;
+  account?: string;
+  livemode?: boolean;
+  data?: { object?: { object?: string; mode?: string; amount_total?: number; currency?: string; payment_status?: string; livemode?: boolean } };
+}): void {
+  const session = event.data?.object;
+  if (
+    event.type !== "checkout.session.completed"
+    || event.account !== CONNECTED_ACCOUNT
+    || event.livemode !== false
+    || session?.object !== "checkout.session"
+    || session.mode !== "payment"
+    || session.livemode !== false
+    || session.amount_total !== AMOUNT_MINOR
+    || session.currency !== "eur"
+    || session.payment_status !== "paid"
+  ) {
+    throw new Error("webhook_event_rejected");
+  }
 }
 
 async function runAuthorisedHarness(): Promise<void> {
@@ -325,6 +368,7 @@ async function runAuthorisedHarness(): Promise<void> {
       const { startLocalGuestPaymentTestListener } = await import("../../src/lib/aether/guest-payment-test-listener.ts");
       let listener: Awaited<ReturnType<typeof startLocalGuestPaymentTestListener>> | null = null;
       let captured: { raw: string; signature: string } | null = null;
+      let failure = "";
       const proxy = createServer(async (req, res) => {
         const raw = await readBody(req);
         const signature = req.headers["stripe-signature"]?.toString() ?? "";
@@ -333,14 +377,28 @@ async function runAuthorisedHarness(): Promise<void> {
           res.end(JSON.stringify({ received: false, outcome: "listener_not_ready" }));
           return;
         }
-        if (!captured && raw.includes("checkout.session.completed")) captured = { raw, signature };
         const forwarded = await fetch(`http://127.0.0.1:${listener.port}/`, {
           method: "POST",
           headers: { "content-type": "application/json", "stripe-signature": signature },
           body: raw,
         });
+        const responseText = await forwarded.text();
+        let outcome = "";
+        try {
+          outcome = String((JSON.parse(responseText) as { outcome?: string }).outcome ?? "");
+        } catch {
+          outcome = "";
+        }
+        if (forwarded.ok && outcome === "confirmed_paid" && !captured) {
+          try {
+            assertPaidConnectEvent(JSON.parse(raw) as Parameters<typeof assertPaidConnectEvent>[0]);
+            captured = { raw, signature };
+          } catch (err) {
+            failure = err instanceof Error && err.message === "webhook_event_rejected" ? err.message : "webhook_event_rejected";
+          }
+        }
         res.writeHead(forwarded.status, { "content-type": "application/json" });
-        res.end(await forwarded.text());
+        res.end(responseText);
       });
       await new Promise<void>((resolve) => proxy.listen(0, "127.0.0.1", () => resolve()));
       const proxyAddress = proxy.address();
@@ -354,21 +412,30 @@ async function runAuthorisedHarness(): Promise<void> {
         },
       });
       try {
-        const deadline = Date.now() + 20_000;
-        while (!webhookSecret) {
-          if (Date.now() > deadline) throw new Error("webhook_secret_timeout");
-          await new Promise((resolve) => setTimeout(resolve, 100));
-        }
+        await Promise.race([
+          forwarding.ready,
+          new Promise((_, reject) => setTimeout(() => reject(new Error("webhook_secret_timeout")), 20_000)),
+        ]);
+        forwarding.assertAlive();
+        if (!webhookSecret) throw new Error("webhook_secret_timeout");
         listener = await startLocalGuestPaymentTestListener({
           connectionString: GATEWAY_URL,
           webhookSecret,
           env: process.env,
         });
         const { startGuestPaymentForBooking } = await import("../../src/lib/aether/guest-payment-fns.ts");
-        const db = {
-          query: async <T>(text: string, params?: unknown[]) => (await database.query(text, params)).rows as T[],
-        };
-        const payment = await startGuestPaymentForBooking(db, fixture.token, RETURN_ORIGIN, process.env);
+        const app = await connectAdmin(APP_URL);
+        let payment: { url: string; accountId: string };
+        try {
+          const who = await app.query<{ current_user: string }>("select current_user");
+          if (who.rows[0]?.current_user !== "aether_app") throw new Error("role_not_authorised");
+          const db = {
+            query: async <T>(text: string, params?: unknown[]) => (await app.query(text, params)).rows as T[],
+          };
+          payment = await startGuestPaymentForBooking(db, fixture.token, RETURN_ORIGIN, process.env);
+        } finally {
+          await app.end();
+        }
         if (payment.accountId !== CONNECTED_ACCOUNT) throw new Error("unexpected_payee");
         const session = await database.query<{
           session_id: string;
@@ -399,8 +466,11 @@ async function runAuthorisedHarness(): Promise<void> {
           throw new Error("checkout_not_test_mode");
         }
         await completeHostedCheckout(payment.url);
-        const confirmed = await waitForBooking(database, fixture.bookingId);
+        forwarding.assertAlive();
+        const confirmed = await waitForBooking(database, fixture.bookingId, forwarding.assertAlive);
+        if (failure) throw new Error(failure);
         if (!captured) throw new Error("webhook_not_captured");
+        assertPaidConnectEvent(JSON.parse(captured.raw) as Parameters<typeof assertPaidConnectEvent>[0]);
         const replay = await fetch(`http://127.0.0.1:${listener.port}/`, {
           method: "POST",
           headers: { "content-type": "application/json", "stripe-signature": captured.signature },
@@ -408,15 +478,19 @@ async function runAuthorisedHarness(): Promise<void> {
         });
         const replayBody = await replay.json() as { outcome?: string };
         if (replayBody.outcome !== "duplicate") throw new Error("replay_not_duplicate");
+        const afterReplay = await waitForBooking(database, fixture.bookingId, forwarding.assertAlive);
+        if (afterReplay.paid_count !== 1) throw new Error("replay_not_duplicate");
         console.log(JSON.stringify({
           connectedAccount: CONNECTED_ACCOUNT,
           livemode: false,
-          amountMinor: confirmed.amount_minor,
-          currency: confirmed.currency,
-          bookingState: confirmed.lifecycle_state,
-          confirmations: confirmed.paid_count,
-          vehicleAssigned: confirmed.vehicle_id != null,
-          replay: replayBody.outcome,
+          amountMinor: afterReplay.amount_minor,
+          currency: afterReplay.currency,
+          bookingState: afterReplay.lifecycle_state,
+          confirmations: afterReplay.paid_count,
+          vehicleAssigned: afterReplay.vehicle_id != null,
+          replay: "duplicate",
+          eventType: "checkout.session.completed",
+          eventMode: "payment",
           subscriptionCheckout: false,
           saasWebhook: false,
         }));
@@ -434,7 +508,11 @@ async function runAuthorisedHarness(): Promise<void> {
   }
 }
 
-async function waitForBooking(database: QueryClient, bookingId: string): Promise<{
+async function waitForBooking(
+  database: QueryClient,
+  bookingId: string,
+  assertAlive: () => void,
+): Promise<{
   lifecycle_state: string;
   vehicle_id: string | null;
   amount_minor: number;
@@ -443,6 +521,7 @@ async function waitForBooking(database: QueryClient, bookingId: string): Promise
 }> {
   const deadline = Date.now() + 120_000;
   while (Date.now() < deadline) {
+    assertAlive();
     const rows = await database.query<{
       lifecycle_state: string;
       vehicle_id: string | null;
@@ -462,13 +541,122 @@ async function waitForBooking(database: QueryClient, bookingId: string): Promise
       [bookingId],
     );
     const row = rows.rows[0];
-    if (row?.lifecycle_state === "confirmed_paid" && row.paid_count === 1 && row.vehicle_id) return row;
+    if (
+      row?.lifecycle_state === "confirmed_paid"
+      && row.paid_count === 1
+      && row.vehicle_id
+      && row.amount_minor === AMOUNT_MINOR
+      && row.currency === "EUR"
+    ) return row;
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }
   throw new Error("payment_not_confirmed");
 }
 
+async function verifyDisposableFixture(): Promise<void> {
+  const { assertConnectedDisposableDatabase } = await import("../../src/lib/aether/guest-payment-test-isolation.ts");
+  const root = await connectAdmin(ADMIN_URL);
+  try {
+    const facts = await root.query<{
+      dataDirectory: string;
+      listenAddresses: string;
+      port: string;
+      serverAddr: string | null;
+      inRecovery: boolean;
+    }>(
+      `select current_setting('data_directory') as "dataDirectory",
+              current_setting('listen_addresses') as "listenAddresses",
+              current_setting('port') as "port",
+              inet_server_addr()::text as "serverAddr",
+              pg_is_in_recovery() as "inRecovery"`,
+    );
+    const fact = facts.rows[0];
+    if (
+      fact?.dataDirectory !== "/tmp/s1pg/data"
+      || fact.listenAddresses !== "127.0.0.1"
+      || fact.port !== "54329"
+      || fact.inRecovery !== false
+      || !fact.serverAddr?.startsWith("127.0.0.1")
+    ) {
+      throw new Error("database_not_authorised");
+    }
+    await root.query("drop database if exists neondb");
+    await root.query("create database neondb");
+    const database = await connectAdmin(DATABASE_URL);
+    try {
+      await assertConnectedDisposableDatabase({
+        query: async <T>(text: string, params?: unknown[]) => (await database.query(text, params)).rows as T[],
+      });
+      await applyMigrations((sql) => database.query(sql).then(() => undefined));
+      await database.query(
+        `insert into "user" ("id","name","email","emailVerified","createdAt","updatedAt")
+         values ('user-sbg-test','SBG Test','sbg-test@example.com',true,now(),now())`,
+      );
+      const fixture = await createDisposableBooking(database);
+      const held = await database.query<{ assigned: boolean; hold_open: boolean; amount_minor: number; lifecycle_state: string }>(
+        `select b.vehicle_id is not null as assigned,
+                b.hold_expires_at > clock_timestamp() as hold_open,
+                d.amount_minor,
+                b.lifecycle_state
+           from bookings b
+           join hotel_destinations d on d.id = b.destination_id
+          where b.id = $1::uuid`,
+        [fixture.bookingId],
+      );
+      const booking = held.rows[0];
+      if (!booking?.assigned || booking.hold_open !== true || Number(booking.amount_minor) !== AMOUNT_MINOR) {
+        throw new Error("fixture_not_payable");
+      }
+      const app = await connectAdmin(APP_URL);
+      try {
+        const who = await app.query<{ current_user: string }>("select current_user");
+        if (who.rows[0]?.current_user !== "aether_app") throw new Error("role_not_authorised");
+        const prepared = await app.query<{ payment_id: string; amount_minor: number; currency: string }>(
+          `select payment_id, amount_minor, currency from public.sbg_prepare_capacity_guest_payment($1)`,
+          [fixture.token],
+        );
+        const payment = prepared.rows[0];
+        if (!payment || Number(payment.amount_minor) !== AMOUNT_MINOR || payment.currency !== "EUR") {
+          throw new Error("fixture_not_payable");
+        }
+        const bound = await app.query<{ bound_stripe_account_id: string }>(
+          `select bound_stripe_account_id from public.sbg_bind_payment_authority($1::uuid)`,
+          [fixture.bookingId],
+        );
+        if (bound.rows[0]?.bound_stripe_account_id !== CONNECTED_ACCOUNT) throw new Error("unexpected_payee");
+        const testMode = await app.query<{ test_mode: boolean }>(
+          `select public.sbg_bound_payee_is_test_mode($1::uuid) as test_mode`,
+          [payment.payment_id],
+        );
+        if (testMode.rows[0]?.test_mode !== true) throw new Error("live_payee_rejected");
+        const hidden = await app.query<{ denied: boolean }>(
+          `select has_table_privilege('aether_app', 'public.sbg_organisation_stripe_connections', 'select') as denied`,
+        );
+        if (hidden.rows[0]?.denied !== false) throw new Error("connection_table_readable");
+      } finally {
+        await app.end();
+      }
+      console.log(JSON.stringify({
+        fixture: "payable",
+        amountMinor: AMOUNT_MINOR,
+        currency: "EUR",
+        connectedAccount: CONNECTED_ACCOUNT,
+        vehicleAssigned: true,
+        checkoutCreated: false,
+      }));
+    } finally {
+      await database.end();
+    }
+  } finally {
+    await root.end();
+  }
+}
+
 async function main(): Promise<void> {
+  if (process.argv[2] === "fixture-check") {
+    await verifyDisposableFixture();
+    return;
+  }
   if (STRIPE_TEST_EXECUTION_GATE !== "open") throw new HarnessClosed();
   await runAuthorisedHarness();
 }
