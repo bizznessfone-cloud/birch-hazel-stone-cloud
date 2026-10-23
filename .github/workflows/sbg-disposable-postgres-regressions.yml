@@ -1,0 +1,78 @@
+# Manual Gate 2 regression run on a disposable loopback cluster.
+# No Stripe credentials, no production database, no deployment.
+name: SBG disposable PostgreSQL regressions
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sbg-disposable-postgres-regressions
+  cancel-in-progress: false
+
+jobs:
+  regressions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Start disposable PostgreSQL 18
+        run: sh .github/scripts/bootstrap-disposable-postgres.sh
+
+      - name: Run Gate 2 payment, capacity, concurrency and security suites
+        env:
+          STAGE_G2S1_PG_URL: postgresql://postgres@127.0.0.1:54329/postgres
+          STAGE_G2S3_PG_URL: postgresql://postgres@127.0.0.1:54329/postgres
+          STAGE_G2S4_PG_URL: postgresql://postgres@127.0.0.1:54329/postgres
+          STAGE_G2S5_PG_URL: postgresql://postgres@127.0.0.1:54329/postgres
+          STAGE_G2B_PG_URL: postgresql://postgres@127.0.0.1:54329/postgres
+          STAGE_D_PG_URL: postgresql://postgres@127.0.0.1:54329/postgres
+          STAGE_E_PG_URL: postgresql://postgres@127.0.0.1:54329/postgres
+        run: |
+          set -eu
+          node --experimental-strip-types --test --test-concurrency=1 \
+            src/lib/aether/capacity-payment-regression.test.ts \
+            src/lib/aether/payment-gateway.test.ts \
+            src/lib/aether/guest-capacity-reservation.test.ts \
+            src/lib/aether/capacity-reservation.test.ts \
+            src/lib/aether/vehicle-dispatch-privilege.test.ts \
+            src/lib/aether/provisional-hold-integration-concurrency.test.ts \
+            src/lib/aether/verified-payment-concurrency.test.ts \
+            src/lib/aether/confirmation-admission-concurrency.test.ts
+          node --experimental-strip-types --test src/lib/aether/guest-payment-test.test.ts
+
+      - name: Confirm migration 0079 survived the final reset
+        run: |
+          /usr/lib/postgresql/18/bin/psql \
+            "postgresql://postgres@127.0.0.1:54329/neondb" \
+            -v ON_ERROR_STOP=1 <<'SQL'
+          do $$
+          begin
+            if to_regprocedure('public.sbg_bound_payee_is_test_mode(uuid)') is null then
+              raise exception 'migration 0079 is absent';
+            end if;
+            if current_setting('data_directory') is distinct from '/tmp/s1pg/data' then
+              raise exception 'data directory mismatch';
+            end if;
+            if current_setting('listen_addresses') is distinct from '127.0.0.1' then
+              raise exception 'listen address mismatch';
+            end if;
+            if inet_server_addr() <> '127.0.0.1'::inet then
+              raise exception 'server is not loopback';
+            end if;
+          end
+          $$;
+          SQL
