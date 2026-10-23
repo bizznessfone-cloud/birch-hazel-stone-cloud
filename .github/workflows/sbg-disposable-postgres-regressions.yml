@@ -43,7 +43,7 @@ jobs:
           STAGE_E_PG_URL: postgresql://postgres@127.0.0.1:54329/postgres
         run: |
           set -eu
-          node --experimental-strip-types --test \
+          node --experimental-strip-types --test --test-concurrency=1 \
             src/lib/aether/capacity-payment-regression.test.ts \
             src/lib/aether/payment-gateway.test.ts \
             src/lib/aether/guest-capacity-reservation.test.ts \
