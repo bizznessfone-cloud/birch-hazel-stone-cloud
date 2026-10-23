@@ -79,3 +79,6 @@ jobs:
           end
           $$;
           SQL
+
+      - name: Prove the disposable booking fixture
+        run: node --experimental-strip-types .github/scripts/stripe-test-harness.ts fixture-check

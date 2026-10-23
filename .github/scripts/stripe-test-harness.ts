@@ -346,16 +346,95 @@ function assertPaidConnectEvent(event: {
   }
 }
 
+async function assertAuthorisedAdminSession(root: QueryClient): Promise<void> {
+  const {
+    AUTHORISED_DISPOSABLE_DATA_DIRECTORY,
+    AUTHORISED_DISPOSABLE_LISTEN,
+    readAuthorisedClusterSystemIdentifier,
+  } = await import("../../src/lib/aether/guest-payment-test-isolation.ts");
+  let rows: Array<{
+    dataDirectory: string;
+    listenAddresses: string;
+    port: string;
+    serverAddr: string | null;
+    inRecovery: boolean;
+    systemIdentifier: string;
+  }>;
+  try {
+    rows = await root.query(
+      `select current_setting('data_directory') as "dataDirectory",
+              current_setting('listen_addresses') as "listenAddresses",
+              current_setting('port') as "port",
+              inet_server_addr()::text as "serverAddr",
+              pg_is_in_recovery() as "inRecovery",
+              system_identifier::text as "systemIdentifier"
+         from pg_control_system()`,
+    );
+  } catch {
+    throw new Error("database_not_authorised");
+  }
+  const fact = rows[0];
+  let sessionId: bigint;
+  try {
+    sessionId = BigInt(fact?.systemIdentifier ?? "");
+  } catch {
+    throw new Error("database_not_authorised");
+  }
+  const loopback = fact?.serverAddr === "127.0.0.1" || fact?.serverAddr === "127.0.0.1/32";
+  if (
+    !fact
+    || !loopback
+    || sessionId !== readAuthorisedClusterSystemIdentifier()
+    || fact.dataDirectory !== AUTHORISED_DISPOSABLE_DATA_DIRECTORY
+    || fact.listenAddresses !== AUTHORISED_DISPOSABLE_LISTEN
+    || fact.port !== "54329"
+    || fact.inRecovery !== false
+  ) {
+    throw new Error("database_not_authorised");
+  }
+}
+
+async function resetAuthorisedDisposableDatabase(): Promise<{ root: QueryClient; database: QueryClient }> {
+  const admin = new URL(ADMIN_URL);
+  if (admin.protocol !== "postgresql:" || admin.hostname !== "127.0.0.1" || admin.port !== "54329" || admin.pathname !== "/postgres") {
+    throw new Error("database_not_authorised");
+  }
+  await new Promise<void>((resolve, reject) => {
+    const child = spawn("sh", [".github/scripts/bootstrap-disposable-postgres.sh", "identify"], { stdio: "inherit" });
+    child.once("error", () => reject(new Error("database_not_authorised")));
+    child.once("exit", (code) => (code === 0 ? resolve() : reject(new Error("database_not_authorised"))));
+  });
+  const root = await connectAdmin(ADMIN_URL);
+  try {
+    await assertAuthorisedAdminSession(root);
+    await root.query("drop database if exists neondb");
+    await root.query("create database neondb");
+    const database = await connectAdmin(DATABASE_URL);
+    try {
+      const { assertConnectedDisposableDatabase } = await import("../../src/lib/aether/guest-payment-test-isolation.ts");
+      await assertConnectedDisposableDatabase({
+        query: async <T>(text: string, params?: unknown[]) => (await database.query(text, params)).rows as T[],
+      });
+      return { root, database };
+    } catch (err) {
+      await database.end().catch(() => undefined);
+      throw err;
+    }
+  } catch (err) {
+    await root.end().catch(() => undefined);
+    throw err;
+  }
+}
+
 async function runAuthorisedHarness(): Promise<void> {
   const { assertGuestPaymentTestProcess } = await import("../../src/lib/aether/guest-payment-test-isolation.ts");
   assertGuestPaymentTestProcess(process.env);
   if (process.env.STRIPE_WEBHOOK_SECRET) throw new Error("saas_webhook_secret_present");
-  const root = await connectAdmin(ADMIN_URL);
+  const opened = await resetAuthorisedDisposableDatabase();
+  const root = opened.root;
+  const database = opened.database;
   let directory = "";
   try {
-    await root.query("drop database if exists neondb");
-    await root.query("create database neondb");
-    const database = await connectAdmin(DATABASE_URL);
     try {
       await applyMigrations((sql) => database.query(sql).then(() => undefined));
       await database.query(
@@ -554,39 +633,22 @@ async function waitForBooking(
 }
 
 async function verifyDisposableFixture(): Promise<void> {
-  const { assertConnectedDisposableDatabase } = await import("../../src/lib/aether/guest-payment-test-isolation.ts");
-  const root = await connectAdmin(ADMIN_URL);
-  try {
-    const facts = await root.query<{
-      dataDirectory: string;
-      listenAddresses: string;
-      port: string;
-      serverAddr: string | null;
-      inRecovery: boolean;
-    }>(
-      `select current_setting('data_directory') as "dataDirectory",
-              current_setting('listen_addresses') as "listenAddresses",
-              current_setting('port') as "port",
-              inet_server_addr()::text as "serverAddr",
-              pg_is_in_recovery() as "inRecovery"`,
-    );
-    const fact = facts.rows[0];
-    if (
-      fact?.dataDirectory !== "/tmp/s1pg/data"
-      || fact.listenAddresses !== "127.0.0.1"
-      || fact.port !== "54329"
-      || fact.inRecovery !== false
-      || !fact.serverAddr?.startsWith("127.0.0.1")
-    ) {
-      throw new Error("database_not_authorised");
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input, init) => {
+    const target = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+    if (target.includes("stripe.com") || target.includes("playwright")) {
+      throw new Error("stripe_call_forbidden");
     }
-    await root.query("drop database if exists neondb");
-    await root.query("create database neondb");
-    const database = await connectAdmin(DATABASE_URL);
+    return originalFetch(input, init);
+  };
+  let root: QueryClient | null = null;
+  let database: QueryClient | null = null;
+  try {
+  try {
     try {
-      await assertConnectedDisposableDatabase({
-        query: async <T>(text: string, params?: unknown[]) => (await database.query(text, params)).rows as T[],
-      });
+      const opened = await resetAuthorisedDisposableDatabase();
+      root = opened.root;
+      database = opened.database;
       await applyMigrations((sql) => database.query(sql).then(() => undefined));
       await database.query(
         `insert into "user" ("id","name","email","emailVerified","createdAt","updatedAt")
@@ -645,10 +707,13 @@ async function verifyDisposableFixture(): Promise<void> {
         checkoutCreated: false,
       }));
     } finally {
-      await database.end();
+      await database?.end();
     }
   } finally {
-    await root.end();
+    await root?.end();
+  }
+  } finally {
+    globalThis.fetch = originalFetch;
   }
 }
 

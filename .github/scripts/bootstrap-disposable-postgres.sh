@@ -35,6 +35,14 @@ cleanup_disposable_databases() {
   done
 }
 
+if [ "${1:-}" = "identify" ]; then
+  if [ "$#" -ne 1 ]; then
+    echo "Identify accepts no further arguments." >&2
+    exit 1
+  fi
+  assert_disposable_cluster
+  exit 0
+fi
 if [ "${1:-}" = "cleanup" ]; then
   if [ "$#" -ne 1 ]; then
     echo "Cleanup accepts no further arguments." >&2
