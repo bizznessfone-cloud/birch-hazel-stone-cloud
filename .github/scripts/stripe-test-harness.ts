@@ -346,22 +346,49 @@ function assertPaidConnectEvent(event: {
   }
 }
 
+type ClusterIdentityFact = {
+  dataDirectory: string;
+  listenAddresses: string;
+  port: string;
+  serverAddr: string | null;
+  inRecovery: boolean;
+  systemIdentifier: string;
+};
+
+export function firstQueryRow<T>(result: { rows?: T[] } | null | undefined): T | undefined {
+  return Array.isArray(result?.rows) ? result.rows[0] : undefined;
+}
+
+export function identityIsAuthorised(
+  fact: ClusterIdentityFact | undefined,
+  controlId: bigint,
+  expected: { dataDirectory: string; listenAddresses: string },
+): boolean {
+  if (!fact) return false;
+  let sessionId: bigint;
+  try {
+    sessionId = BigInt(fact.systemIdentifier);
+  } catch {
+    return false;
+  }
+  const loopback = fact.serverAddr === "127.0.0.1" || fact.serverAddr === "127.0.0.1/32";
+  return loopback
+    && sessionId === controlId
+    && fact.dataDirectory === expected.dataDirectory
+    && fact.listenAddresses === expected.listenAddresses
+    && fact.port === "54329"
+    && fact.inRecovery === false;
+}
+
 async function assertAuthorisedAdminSession(root: QueryClient): Promise<void> {
   const {
     AUTHORISED_DISPOSABLE_DATA_DIRECTORY,
     AUTHORISED_DISPOSABLE_LISTEN,
     readAuthorisedClusterSystemIdentifier,
   } = await import("../../src/lib/aether/guest-payment-test-isolation.ts");
-  let rows: Array<{
-    dataDirectory: string;
-    listenAddresses: string;
-    port: string;
-    serverAddr: string | null;
-    inRecovery: boolean;
-    systemIdentifier: string;
-  }>;
+  let fact: ClusterIdentityFact | undefined;
   try {
-    rows = await root.query(
+    const result = await root.query<ClusterIdentityFact>(
       `select current_setting('data_directory') as "dataDirectory",
               current_setting('listen_addresses') as "listenAddresses",
               current_setting('port') as "port",
@@ -370,26 +397,14 @@ async function assertAuthorisedAdminSession(root: QueryClient): Promise<void> {
               system_identifier::text as "systemIdentifier"
          from pg_control_system()`,
     );
+    fact = firstQueryRow(result);
   } catch {
     throw new Error("database_not_authorised");
   }
-  const fact = rows[0];
-  let sessionId: bigint;
-  try {
-    sessionId = BigInt(fact?.systemIdentifier ?? "");
-  } catch {
-    throw new Error("database_not_authorised");
-  }
-  const loopback = fact?.serverAddr === "127.0.0.1" || fact?.serverAddr === "127.0.0.1/32";
-  if (
-    !fact
-    || !loopback
-    || sessionId !== readAuthorisedClusterSystemIdentifier()
-    || fact.dataDirectory !== AUTHORISED_DISPOSABLE_DATA_DIRECTORY
-    || fact.listenAddresses !== AUTHORISED_DISPOSABLE_LISTEN
-    || fact.port !== "54329"
-    || fact.inRecovery !== false
-  ) {
+  if (!identityIsAuthorised(fact, readAuthorisedClusterSystemIdentifier(), {
+    dataDirectory: AUTHORISED_DISPOSABLE_DATA_DIRECTORY,
+    listenAddresses: AUTHORISED_DISPOSABLE_LISTEN,
+  })) {
     throw new Error("database_not_authorised");
   }
 }
