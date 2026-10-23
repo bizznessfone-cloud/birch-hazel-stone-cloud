@@ -7,7 +7,8 @@
 # Do not create a repository or production secret with that name.
 # The secret must be a platform sk_test_ or rk_test_ key for acct_1UKEDfFHnHXHuPOw.
 # stripe listen needs permission to open an ephemeral Connect webhook.
-# An sk_test_ key is the compatible choice. Do not use a live key.
+# execute-test-payment loads the harness, which returns before any Stripe API call
+# while STRIPE_TEST_EXECUTION_GATE remains closed.
 name: SBG Stripe TEST checkout
 
 on:

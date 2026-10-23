@@ -60,11 +60,8 @@ PY
 node --experimental-strip-types --input-type=module -e 'import { assertGuestPaymentTestProcess } from "./src/lib/aether/guest-payment-test-isolation.ts"; assertGuestPaymentTestProcess(process.env);'
 
 if [ "$phase" = "execute-test-payment" ]; then
-  echo "Checkout execution is disabled." >&2
-  echo "The Stripe CLI can authenticate with --api-key and forward Connect events only to 127.0.0.1." >&2
-  echo "No secure Checkout URL handoff exists: the URL must not be logged, uploaded, or stored." >&2
-  echo "A person would have to open the session from the Stripe Dashboard after a later authorisation." >&2
-  exit 2
+  node --experimental-strip-types .github/scripts/stripe-test-harness.ts
+  exit $?
 fi
 
 if [ "$phase" != "preflight" ]; then
