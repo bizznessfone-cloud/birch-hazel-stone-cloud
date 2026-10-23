@@ -1,0 +1,60 @@
+# Manual Stripe TEST skeleton. Not registered on main and not dispatched by this commit.
+# It does not replace the credential-free regression workflow.
+# Before any future dispatch, create the GitHub Environment sbg-stripe-test with:
+# - a required reviewer
+# - deployment branches limited to test/stripe-gate2-runner
+# - one environment secret, SBG_STRIPE_TEST_SECRET_KEY
+# Do not create a repository or production secret with that name.
+# The secret must be a platform sk_test_ or rk_test_ key for acct_1UKEDfFHnHXHuPOw.
+# stripe listen needs permission to open an ephemeral Connect webhook.
+# An sk_test_ key is the compatible choice. Do not use a live key.
+name: SBG Stripe TEST checkout
+
+on:
+  workflow_dispatch:
+    inputs:
+      phase:
+        description: Preflight checks the runner only. Payment execution is refused.
+        required: true
+        default: preflight
+        type: choice
+        options:
+          - preflight
+          - execute-test-payment
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sbg-stripe-test-checkout
+  cancel-in-progress: false
+
+jobs:
+  stripe-test:
+    if: github.ref == 'refs/heads/test/stripe-gate2-runner' && github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: sbg-stripe-test
+    env:
+      SBG_GUEST_PAYMENT_TEST: "true"
+      SBG_DOMAIN_B_LIVE_CHECKOUT: "false"
+      SBG_SAAS_COMMERCE: "off"
+      STRIPE_SECRET_KEY: ${{ secrets.SBG_STRIPE_TEST_SECRET_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Start disposable PostgreSQL 18
+        run: sh .github/scripts/bootstrap-disposable-postgres.sh
+
+      - name: Run Stripe TEST preflight
+        run: sh .github/scripts/stripe-test-preflight.sh "${{ inputs.phase }}"
