@@ -34,7 +34,67 @@ export function sanitiseBrowserFailure(): Error {
   return new Error("checkout_browser_failed");
 }
 
-function safeCode(err: unknown): string {
+const FIXTURE_STAGES = new Set([
+  "cluster_identity",
+  "migrations",
+  "test_user",
+  "catalogue_fixture",
+  "booking",
+  "hold_verification",
+  "app_role",
+  "payment_prepare",
+  "payee_binding",
+  "test_mode",
+  "connection_privilege",
+  "cleanup",
+]);
+
+const FIXTURE_SQLSTATES = new Set([
+  "08006",
+  "0a000",
+  "0lp01",
+  "22p02",
+  "22023",
+  "23502",
+  "23503",
+  "23505",
+  "23514",
+  "25006",
+  "28000",
+  "28p01",
+  "3d000",
+  "40p01",
+  "42501",
+  "42601",
+  "42703",
+  "42704",
+  "42710",
+  "42883",
+  "42p01",
+  "42p07",
+  "55006",
+  "55p03",
+  "57p01",
+  "p0001",
+]);
+
+export function fixtureStageCode(stage: string, err: unknown): string {
+  if (!FIXTURE_STAGES.has(stage)) return "fixture_stage_unknown";
+  const raw = err && typeof err === "object" && "code" in err ? String((err as { code?: unknown }).code ?? "") : "";
+  const sqlstate = /^[0-9A-Za-z]{5}$/.test(raw) ? raw.toLowerCase() : "";
+  return FIXTURE_SQLSTATES.has(sqlstate) ? `fixture_${stage}_${sqlstate}` : `fixture_${stage}_failed`;
+}
+
+async function runFixtureStage<T>(stage: string, fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    if (err instanceof Error && /^fixture_[a-z0-9_]+_(failed|[0-9a-z]{5})$/.test(err.message)) throw err;
+    throw new Error(fixtureStageCode(stage, err));
+  }
+}
+
+export function safeCode(err: unknown): string {
   const message = err instanceof Error ? err.message : "";
   return /^[a-z0-9_]+$/.test(message) ? message : "stripe_test_harness_failed";
 }
@@ -89,29 +149,7 @@ async function connectAdmin(databaseUrl: string): Promise<QueryClient> {
   return client;
 }
 
-async function createDisposableBooking(admin: QueryClient): Promise<{ token: string; bookingId: string }> {
-  const booking = await import("../../src/lib/aether/booking.ts");
-  type BookingDb = Parameters<typeof booking.createBooking>[0];
-  const db: BookingDb = {
-    query: async <T>(text: string, params?: unknown[]) => (await admin.query(text, params)).rows as T[],
-    async transaction<T>(fn: (inner: BookingDb) => Promise<T>) {
-      await admin.query("begin");
-      const inner: BookingDb = {
-        query: async <R>(text: string, params?: unknown[]) => (await admin.query(text, params)).rows as R[],
-        transaction() {
-          throw new Error("nested");
-        },
-      };
-      try {
-        const result = await fn(inner);
-        await admin.query("commit");
-        return result;
-      } catch (err) {
-        await admin.query("rollback");
-        throw err;
-      }
-    },
-  };
+async function createCatalogueFixture(admin: QueryClient): Promise<{ destinationId: string }> {
   const hotelOrg = (await admin.query<{ id: string }>(
     `insert into sbg_organisations (name, created_by_user_id, organisation_type)
      values ('SBG TEST Hotel', 'user-sbg-test', 'hotel') returning id`,
@@ -186,6 +224,32 @@ async function createDisposableBooking(admin: QueryClient): Promise<{ token: str
      values ($1::uuid, $2, false)`,
     [hotelOrg, CONNECTED_ACCOUNT],
   );
+  return { destinationId };
+}
+
+async function createFixtureBooking(admin: QueryClient, destinationId: string): Promise<{ token: string; bookingId: string }> {
+  const booking = await import("../../src/lib/aether/booking.ts");
+  type BookingDb = Parameters<typeof booking.createBooking>[0];
+  const db: BookingDb = {
+    query: async <T>(text: string, params?: unknown[]) => (await admin.query(text, params)).rows as T[],
+    async transaction<T>(fn: (inner: BookingDb) => Promise<T>) {
+      await admin.query("begin");
+      const inner: BookingDb = {
+        query: async <R>(text: string, params?: unknown[]) => (await admin.query(text, params)).rows as R[],
+        transaction() {
+          throw new Error("nested");
+        },
+      };
+      try {
+        const result = await fn(inner);
+        await admin.query("commit");
+        return result;
+      } catch (err) {
+        await admin.query("rollback");
+        throw err;
+      }
+    },
+  };
   const created = await booking.createBooking(db, {
     hotelCode: "sbg-t23",
     destinationId,
@@ -658,61 +722,71 @@ async function verifyDisposableFixture(): Promise<void> {
   };
   let root: QueryClient | null = null;
   let database: QueryClient | null = null;
-  try {
+  let app: QueryClient | null = null;
+  let failure: unknown;
   try {
     try {
-      const opened = await resetAuthorisedDisposableDatabase();
+      const opened = await runFixtureStage("cluster_identity", () => resetAuthorisedDisposableDatabase());
       root = opened.root;
       database = opened.database;
-      await applyMigrations((sql) => database.query(sql).then(() => undefined));
-      await database.query(
+      const active = database;
+      await runFixtureStage("migrations", () => applyMigrations((sql) => active.query(sql).then(() => undefined)));
+      await runFixtureStage("test_user", () => active.query(
         `insert into "user" ("id","name","email","emailVerified","createdAt","updatedAt")
          values ('user-sbg-test','SBG Test','sbg-test@example.com',true,now(),now())`,
-      );
-      const fixture = await createDisposableBooking(database);
-      const held = await database.query<{ assigned: boolean; hold_open: boolean; amount_minor: number; lifecycle_state: string }>(
-        `select b.vehicle_id is not null as assigned,
-                b.hold_expires_at > clock_timestamp() as hold_open,
-                d.amount_minor,
-                b.lifecycle_state
-           from bookings b
-           join hotel_destinations d on d.id = b.destination_id
-          where b.id = $1::uuid`,
-        [fixture.bookingId],
-      );
-      const booking = held.rows[0];
-      if (!booking?.assigned || booking.hold_open !== true || Number(booking.amount_minor) !== AMOUNT_MINOR) {
-        throw new Error("fixture_not_payable");
-      }
-      const app = await connectAdmin(APP_URL);
-      try {
-        const who = await app.query<{ current_user: string }>("select current_user");
+      ));
+      const catalogue = await runFixtureStage("catalogue_fixture", () => createCatalogueFixture(active));
+      const fixture = await runFixtureStage("booking", () => createFixtureBooking(active, catalogue.destinationId));
+      await runFixtureStage("hold_verification", async () => {
+        const held = await active.query<{ assigned: boolean; hold_open: boolean; amount_minor: number }>(
+          `select b.vehicle_id is not null as assigned,
+                  b.hold_expires_at > clock_timestamp() as hold_open,
+                  d.amount_minor
+             from bookings b
+             join hotel_destinations d on d.id = b.destination_id
+            where b.id = $1::uuid`,
+          [fixture.bookingId],
+        );
+        const booking = held.rows[0];
+        if (!booking?.assigned || booking.hold_open !== true || Number(booking.amount_minor) !== AMOUNT_MINOR) {
+          throw new Error("fixture_not_payable");
+        }
+      });
+      app = await runFixtureStage("app_role", async () => {
+        const client = await connectAdmin(APP_URL);
+        const who = await client.query<{ current_user: string }>("select current_user");
         if (who.rows[0]?.current_user !== "aether_app") throw new Error("role_not_authorised");
-        const prepared = await app.query<{ payment_id: string; amount_minor: number; currency: string }>(
+        return client;
+      });
+      const payment = await runFixtureStage("payment_prepare", async () => {
+        const prepared = await app!.query<{ payment_id: string; amount_minor: number; currency: string }>(
           `select payment_id, amount_minor, currency from public.sbg_prepare_capacity_guest_payment($1)`,
           [fixture.token],
         );
-        const payment = prepared.rows[0];
-        if (!payment || Number(payment.amount_minor) !== AMOUNT_MINOR || payment.currency !== "EUR") {
-          throw new Error("fixture_not_payable");
-        }
-        const bound = await app.query<{ bound_stripe_account_id: string }>(
+        const row = prepared.rows[0];
+        if (!row || Number(row.amount_minor) !== AMOUNT_MINOR || row.currency !== "EUR") throw new Error("fixture_not_payable");
+        return row;
+      });
+      await runFixtureStage("payee_binding", async () => {
+        const bound = await app!.query<{ bound_stripe_account_id: string }>(
           `select bound_stripe_account_id from public.sbg_bind_payment_authority($1::uuid)`,
           [fixture.bookingId],
         );
         if (bound.rows[0]?.bound_stripe_account_id !== CONNECTED_ACCOUNT) throw new Error("unexpected_payee");
-        const testMode = await app.query<{ test_mode: boolean }>(
+      });
+      await runFixtureStage("test_mode", async () => {
+        const testMode = await app!.query<{ test_mode: boolean }>(
           `select public.sbg_bound_payee_is_test_mode($1::uuid) as test_mode`,
           [payment.payment_id],
         );
         if (testMode.rows[0]?.test_mode !== true) throw new Error("live_payee_rejected");
-        const hidden = await app.query<{ denied: boolean }>(
+      });
+      await runFixtureStage("connection_privilege", async () => {
+        const hidden = await app!.query<{ denied: boolean }>(
           `select has_table_privilege('aether_app', 'public.sbg_organisation_stripe_connections', 'select') as denied`,
         );
         if (hidden.rows[0]?.denied !== false) throw new Error("connection_table_readable");
-      } finally {
-        await app.end();
-      }
+      });
       console.log(JSON.stringify({
         fixture: "payable",
         amountMinor: AMOUNT_MINOR,
@@ -721,12 +795,23 @@ async function verifyDisposableFixture(): Promise<void> {
         vehicleAssigned: true,
         checkoutCreated: false,
       }));
+    } catch (err) {
+      failure = err;
     } finally {
-      await database?.end();
+      try {
+        await runFixtureStage("cleanup", async () => {
+          await app?.end();
+          await database?.end();
+          await root?.end();
+          app = null;
+          database = null;
+          root = null;
+        });
+      } catch (err) {
+        if (!failure) failure = err;
+      }
     }
-  } finally {
-    await root?.end();
-  }
+    if (failure) throw failure;
   } finally {
     globalThis.fetch = originalFetch;
   }
