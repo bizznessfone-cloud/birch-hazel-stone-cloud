@@ -1,0 +1,38 @@
+# Manual non-payment Stripe TEST connectivity check.
+# Not registered on main and not dispatched by this commit.
+# It does not modify or replace the preflight workflow.
+# STRIPE_TEST_EXECUTION_GATE remains closed. This workflow never calls the payment harness.
+name: SBG Stripe TEST connectivity
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sbg-stripe-test-connectivity
+  cancel-in-progress: false
+
+jobs:
+  connectivity:
+    if: github.ref == 'refs/heads/test/stripe-gate2-runner' && github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: sbg-stripe-test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Run Stripe TEST connectivity
+        run: node --experimental-strip-types .github/scripts/stripe-test-connectivity.ts
+        env:
+          DEBUG: ""
+          NODE_DEBUG: ""
+          NODE_OPTIONS: ""
+          STRIPE_SECRET_KEY: ${{ secrets.SBG_STRIPE_TEST_SECRET_KEY }}
