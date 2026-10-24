@@ -1,0 +1,54 @@
+# Manual Stripe TEST preflight. Not registered on main and not dispatched by this commit.
+# It does not replace the credential-free regression workflow.
+# The environment sbg-stripe-test allows only test/stripe-gate2-runner and
+# disables administrator bypass. The approved single-administrator model does
+# not add a second required reviewer.
+# A separately authorised run uses only the environment secret
+# SBG_STRIPE_TEST_SECRET_KEY. Do not create a repository or production secret
+# with that name. The secret must be a platform sk_test_ or rk_test_ key for
+# acct_1UKEDfFHnHXHuPOw.
+# This workflow cannot select or execute a payment. It always runs preflight.
+# STRIPE_TEST_EXECUTION_GATE remains closed.
+name: SBG Stripe TEST checkout
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sbg-stripe-test-checkout
+  cancel-in-progress: false
+
+jobs:
+  stripe-test:
+    if: github.ref == 'refs/heads/test/stripe-gate2-runner' && github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: sbg-stripe-test
+    env:
+      SBG_GUEST_PAYMENT_TEST: "true"
+      SBG_DOMAIN_B_LIVE_CHECKOUT: "false"
+      SBG_SAAS_COMMERCE: "off"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Start disposable PostgreSQL 18
+        run: sh .github/scripts/bootstrap-disposable-postgres.sh
+
+      - name: Run Stripe TEST preflight
+        run: sh .github/scripts/stripe-test-preflight.sh preflight
+        env:
+          DEBUG: ""
+          STRIPE_SECRET_KEY: ${{ secrets.SBG_STRIPE_TEST_SECRET_KEY }}
