@@ -33,6 +33,68 @@ cleanup_disposable_databases() {
     "$BIN/psql" "$DISPOSABLE_URL" -v ON_ERROR_STOP=1 -c "select pg_terminate_backend(pid) from pg_stat_activity where datname = '${database}' and pid <> pg_backend_pid()" >/dev/null
     "$BIN/psql" "$DISPOSABLE_URL" -v ON_ERROR_STOP=1 -c "drop database if exists \"${database}\"" >/dev/null
   done
+  for role in \
+    sbg_fleet_writer \
+    aether_payment_gateway \
+    aether_expiry_runner \
+    aether_expiry \
+    aether_app \
+    aether_runtime \
+    aether_webhook \
+    aether_mailer \
+    sbg_capacity_writer
+  do
+    case "$role" in
+      sbg_fleet_writer|aether_payment_gateway|aether_expiry_runner|aether_expiry|aether_app|aether_runtime|aether_webhook|aether_mailer|sbg_capacity_writer) ;;
+      *)
+        echo "Refusing to drop a role outside the disposable allowlist." >&2
+        exit 1
+        ;;
+    esac
+  done
+  "$BIN/psql" "$DISPOSABLE_URL" -v ON_ERROR_STOP=1 <<'SQL' >/dev/null
+do $$
+begin
+  begin
+    execute 'revoke aether_webhook from aether_payment_gateway';
+  exception
+    when undefined_object or invalid_grant_operation then null;
+  end;
+  begin
+    execute 'revoke aether_expiry from aether_expiry_runner';
+  exception
+    when undefined_object or invalid_grant_operation then null;
+  end;
+end
+$$;
+SQL
+  for role in \
+    sbg_fleet_writer \
+    aether_payment_gateway \
+    aether_expiry_runner \
+    aether_expiry \
+    aether_app \
+    aether_runtime \
+    aether_webhook \
+    aether_mailer \
+    sbg_capacity_writer
+  do
+    exists=$("$BIN/psql" "$DISPOSABLE_URL" -v ON_ERROR_STOP=1 -Atqc "select 1 from pg_roles where rolname = '${role}'")
+    if [ "$exists" != "1" ]; then
+      continue
+    fi
+    "$BIN/psql" "$DISPOSABLE_URL" -v ON_ERROR_STOP=1 -c "drop owned by \"${role}\"" >/dev/null
+    "$BIN/psql" "$DISPOSABLE_URL" -v ON_ERROR_STOP=1 -v role="$role" <<'SQL' >/dev/null
+do $$
+begin
+  execute format('revoke %I from postgres', :'role');
+exception
+  when undefined_object or invalid_grant_operation then null;
+end
+$$;
+SQL
+    "$BIN/psql" "$DISPOSABLE_URL" -v ON_ERROR_STOP=1 -c "drop role \"${role}\"" >/dev/null
+  done
 }
 
 if [ "${1:-}" = "identify" ]; then

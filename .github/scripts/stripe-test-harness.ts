@@ -486,7 +486,11 @@ async function resetAuthorisedDisposableDatabase(): Promise<{ root: QueryClient;
   const root = await connectAdmin(ADMIN_URL);
   try {
     await assertAuthorisedAdminSession(root);
-    await root.query("drop database if exists neondb");
+    await new Promise<void>((resolve, reject) => {
+      const child = spawn("sh", [".github/scripts/bootstrap-disposable-postgres.sh", "cleanup"], { stdio: "ignore" });
+      child.once("error", () => reject(new Error("database_not_authorised")));
+      child.once("exit", (code) => (code === 0 ? resolve() : reject(new Error("database_not_authorised"))));
+    });
     await root.query("create database neondb");
     const database = await connectAdmin(DATABASE_URL);
     try {
