@@ -5,7 +5,6 @@
 import type { BookingErrorCode } from "./booking.ts";
 
 export const THEME_STORAGE_KEY = "aether-theme";
-export const DEFAULT_DURATION_MINUTES = 60;
 
 export type PlaceKind = "airport" | "port" | "hotel" | "other";
 export type Direction = "from_hotel" | "to_hotel";
@@ -18,7 +17,6 @@ export type GuestDraft = {
   destinationText: string;
   transferDate: string;
   pickupTime: string;
-  durationMinutes: number;
   passengerCount: number;
   luggageCount: number;
   guestName: string;
@@ -36,7 +34,6 @@ export function emptyDraft(hotelName: string): GuestDraft {
     destinationText: "",
     transferDate: "",
     pickupTime: "",
-    durationMinutes: DEFAULT_DURATION_MINUTES,
     passengerCount: 1,
     luggageCount: 0,
     guestName: "",
@@ -72,7 +69,9 @@ export function touristMessage(code: string, fallback?: string): string {
     case "ambiguous":
       return "That time is ambiguous on this date. Please choose another time.";
     case "invalid_duration":
-      return "Please choose a duration between 1 and 1440 minutes.";
+      return "That time could not be reserved. Please choose another date and time.";
+    case "duration_not_accepted":
+      return "That booking could not be started. Please review the date and time.";
     case "invalid_party":
       return "Please check the passenger and luggage counts.";
     case "invalid_contact":
