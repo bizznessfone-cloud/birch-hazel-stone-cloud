@@ -2,7 +2,7 @@
 
 Use this only after the drill reports `orphaned_session_possible` or an expiration failure that includes a recovery record. Do not search for or expire any other session.
 
-The recovery record contains `runId`, `connectedAccount`, `githubRunId`, `githubRunAttempt`, `state`, and `sessionId` only when one was obtained. It never contains a key or a Checkout URL.
+The recovery record contains `runId`, `connectedAccount`, `githubRunId`, `githubRunAttempt`, `state`, and `sessionId` only when one was obtained. A failure may also contain sanitised `operationFailure` and `cleanupFailure` codes. It never contains a key or a Checkout URL. `state` remains a failure when cleanup was not verified.
 
 ## Identify one session
 

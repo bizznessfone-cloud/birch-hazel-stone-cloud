@@ -189,6 +189,8 @@ test("successful create, retrieve and expire lifecycle", async () => {
     githubRunId: "40106029723",
     githubRunAttempt: "1",
     state: "expired",
+    operationFailure: null,
+    cleanupFailure: null,
     sessionIdObtained: true,
     sessionId: "cs_test_fixture",
     livemode: false,
@@ -253,6 +255,8 @@ test("retrieval failure still attempts expiration", async () => {
   }));
   assert.equal(calls.includes("expire"), true);
   assert.equal(recoveryOf(lines).state, "retrieve_http_500");
+  assert.equal(recoveryOf(lines).operationFailure, "retrieve_http_500");
+  assert.equal(recoveryOf(lines).cleanupFailure, null);
   assert.equal(recoveryOf(lines).sessionId, "cs_test_fixture");
   assertNoSecrets(lines);
 });
@@ -454,4 +458,131 @@ test("unsafe GitHub identifiers are omitted", async () => {
   assert.equal(body.includes("sbg_github_run_id"), false);
   assertNoSecrets(lines);
 });
+
+function expireCalls(calls: string[]): number {
+  return calls.filter((call) => call === "expire").length;
+}
+
+test("a non-retryable expiration response is attempted once", async () => {
+  const calls: string[] = [];
+  const lines = await settle(openConfig({
+    fetchImpl: async (input, init) => {
+      const expire = String(input).endsWith("/expire");
+      calls.push(expire ? "expire" : String(init?.method));
+      if (expire) return jsonResponse(400, { error: { code: "resource_missing", message: `${SECRET} https://checkout.stripe.com/c/pay/secret` } });
+      if (String(init?.method) === "POST") return jsonResponse(200, session());
+      return jsonResponse(200, session());
+    },
+  }));
+  assert.equal(expireCalls(calls), 1);
+  const recovery = recoveryOf(lines);
+  assert.equal(recovery.state, "expire_http_400");
+  assert.equal(recovery.cleanupFailure, "expire_http_400");
+  assert.equal(recovery.operationFailure, null);
+  assert.equal(recovery.runId, RUN_ID);
+  assert.equal(recovery.sessionId, "cs_test_fixture");
+  assert.equal(recovery.connectedAccount, CONNECTED_ACCOUNT);
+  assertNoSecrets(lines);
+});
+
+test("a retryable expiration failure stops after two attempts", async () => {
+  const keys: string[] = [];
+  const lines = await settle(openConfig({
+    fetchImpl: async (input, init) => {
+      if (String(input).endsWith("/expire")) {
+        keys.push(new Headers(init?.headers).get("Idempotency-Key") ?? "");
+        return jsonResponse(503, { error: { message: "whsec_secret https://checkout.stripe.com/c/pay/secret" } });
+      }
+      if (String(init?.method) === "POST") return jsonResponse(200, session());
+      return jsonResponse(200, session());
+    },
+  }));
+  assert.deepEqual(keys, ["sbg-create-expire-fixture:expire", "sbg-create-expire-fixture:expire"]);
+  assert.equal(recoveryOf(lines).state, "expire_http_503");
+  assert.equal(recoveryOf(lines).cleanupFailure, "expire_http_503");
+  assertNoSecrets(lines);
+});
+
+test("an expiration timeout can be retried once and then verified", async () => {
+  let expires = 0;
+  let gets = 0;
+  const lines = await settle(openConfig({
+    fetchImpl: async (input, init) => {
+      if (String(input).endsWith("/expire")) {
+        expires += 1;
+        if (expires === 1) throw new DOMException("timed out", "TimeoutError");
+        return jsonResponse(200, session({ status: "expired" }));
+      }
+      if (String(init?.method) === "POST") return jsonResponse(200, session());
+      gets += 1;
+      return jsonResponse(200, session({ status: gets === 1 ? "open" : "expired" }));
+    },
+  }));
+  assert.equal(expires, 2);
+  assert.equal(recoveryOf(lines).state, "expired");
+  assert.equal(recoveryOf(lines).cleanupFailure, null);
+});
+
+test("an already-expired response is verified independently", async () => {
+  let expires = 0;
+  let gets = 0;
+  const lines = await settle(openConfig({
+    fetchImpl: async (input, init) => {
+      if (String(input).endsWith("/expire")) {
+        expires += 1;
+        return jsonResponse(400, {
+          error: { code: "checkout_session_expired", message: `${SECRET} https://checkout.stripe.com/c/pay/secret` },
+        });
+      }
+      if (String(init?.method) === "POST") return jsonResponse(200, session());
+      gets += 1;
+      return jsonResponse(200, session({ status: gets === 1 ? "open" : "expired" }));
+    },
+  }));
+  assert.equal(expires, 1);
+  assert.equal(recoveryOf(lines).state, "expired");
+  assert.equal(recoveryOf(lines).finalStatus, "expired");
+  assertNoSecrets(lines);
+
+  let rejectedExpires = 0;
+  const rejected = await settle(openConfig({
+    fetchImpl: async (input, init) => {
+      if (String(input).endsWith("/expire")) {
+        rejectedExpires += 1;
+        return jsonResponse(400, { error: { code: "checkout_session_expired" } });
+      }
+      if (String(init?.method) === "POST") return jsonResponse(200, session());
+      return jsonResponse(200, session({ status: "open" }));
+    },
+  }));
+  assert.equal(rejectedExpires, 1);
+  assert.equal(recoveryOf(rejected).state, "expire_verification_failed");
+});
+
+test("retrieval failure followed by cleanup failure keeps both classifications", async () => {
+  let expires = 0;
+  const lines = await settle(openConfig({
+    fetchImpl: async (input, init) => {
+      if (String(input).endsWith("/expire")) {
+        expires += 1;
+        return jsonResponse(400, { error: { message: "https://checkout.stripe.com/c/pay/secret" } });
+      }
+      if (String(init?.method) === "POST") return jsonResponse(200, session());
+      return jsonResponse(500, { error: { message: SECRET } });
+    },
+  }));
+  assert.equal(expires, 1);
+  const recovery = recoveryOf(lines);
+  assert.equal(recovery.state, "expire_http_400");
+  assert.equal(recovery.operationFailure, "retrieve_http_500");
+  assert.equal(recovery.cleanupFailure, "expire_http_400");
+  assert.equal(recovery.runId, RUN_ID);
+  assert.equal(recovery.sessionId, "cs_test_fixture");
+  assert.equal(recovery.connectedAccount, CONNECTED_ACCOUNT);
+  assert.equal(recovery.githubRunId, "40106029723");
+  assert.equal(recovery.githubRunAttempt, "1");
+  assert.notEqual(recovery.state, "expired");
+  assertNoSecrets(lines);
+});
+
 

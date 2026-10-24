@@ -70,6 +70,8 @@ export type RecoveryRecord = {
   githubRunId: string | null;
   githubRunAttempt: string | null;
   state: string;
+  operationFailure: string | null;
+  cleanupFailure: string | null;
   sessionIdObtained: boolean;
   sessionId: string | null;
   livemode?: false;
@@ -128,7 +130,13 @@ export function safeCode(err: unknown): string {
   return "create_expire_failed";
 }
 
-function recovery(config: DrillConfig, state: string, sessionId: string | null): RecoveryRecord {
+function recovery(
+  config: DrillConfig,
+  state: string,
+  sessionId: string | null,
+  operationFailure: string | null = null,
+  cleanupFailure: string | null = null,
+): RecoveryRecord {
   const safeState = safeCode(new Error(state));
   const safeSession = sessionId != null && SESSION_ID.test(sessionId) ? sessionId : null;
   return {
@@ -138,6 +146,8 @@ function recovery(config: DrillConfig, state: string, sessionId: string | null):
     githubRunId: safeGithubId(config.githubRunId),
     githubRunAttempt: safeGithubId(config.githubRunAttempt),
     state: safeState,
+    operationFailure: operationFailure == null ? null : safeCode(new Error(operationFailure)),
+    cleanupFailure: cleanupFailure == null ? null : safeCode(new Error(cleanupFailure)),
     sessionIdObtained: safeSession != null,
     sessionId: safeSession,
   };
@@ -366,22 +376,39 @@ async function retrieveSession(config: DrillConfig, secret: string, id: string):
   return response;
 }
 
+function alreadyExpiredIndication(id: string, body: unknown): boolean {
+  if (!body || typeof body !== "object") return false;
+  const record = body as {
+    id?: unknown;
+    object?: unknown;
+    status?: unknown;
+    error?: { code?: unknown };
+  };
+  if (record.error?.code === "checkout_session_expired") return true;
+  return record.id === id && record.object === "checkout.session" && record.status === "expired";
+}
+
 async function expireSession(config: DrillConfig, secret: string, id: string): Promise<void> {
+  const idempotencyKey = `${config.idempotencyKey}:expire`;
   let last = "expire_failed";
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      const response = await stripeRequest(
-        config,
-        secret,
-        "POST",
-        checkoutUrl(id, true),
-        `${config.idempotencyKey}:expire`,
-      );
-      if (response.status === 200) return;
-      last = httpToken("expire", response.status);
-      if (response.status < 500) fail(last);
+      const response = await stripeRequest(config, secret, "POST", checkoutUrl(id, true), idempotencyKey);
+      if (response.status === 200 || alreadyExpiredIndication(id, response.body)) return;
+      const token = httpToken("expire", response.status);
+      if (response.status >= 500 && response.status <= 599 && attempt === 0) {
+        last = token;
+        continue;
+      }
+      fail(token);
     } catch (err) {
-      last = safeCode(err) === "request_timeout" ? "request_timeout" : "expire_failed";
+      const code = safeCode(err);
+      if (code === "request_timeout" && attempt === 0) {
+        last = code;
+        continue;
+      }
+      if (code === "request_timeout") fail(code);
+      throw err;
     }
   }
   fail(last);
@@ -393,6 +420,8 @@ export async function runCreateExpireDrill(config: DrillConfig): Promise<Recover
   let sessionIdToExpire: string | null = null;
   let paid = false;
   let failure: Error | null = null;
+  let operationFailure: string | null = null;
+  let cleanupFailure: string | null = null;
   try {
     const id = await createSession(config, secret);
     obtainedId = id;
@@ -410,6 +439,7 @@ export async function runCreateExpireDrill(config: DrillConfig): Promise<Recover
     }
     assertOpenSession(id, retrieved.body, config.runId);
   } catch (err) {
+    operationFailure = safeCode(err);
     failure = err instanceof Error ? err : new Error("create_expire_failed");
   }
   if (sessionIdToExpire && !paid) {
@@ -423,10 +453,11 @@ export async function runCreateExpireDrill(config: DrillConfig): Promise<Recover
       }
     } catch (err) {
       const code = safeCode(err);
-      failure = new Error(code.startsWith("expire_") || code === "request_timeout" ? code : "expire_failed");
+      cleanupFailure = code.startsWith("expire_") || code === "request_timeout" ? code : "expire_failed";
+      failure = new Error(cleanupFailure);
     }
   }
-  if (failure) throw new DrillFailure(recovery(config, safeCode(failure), obtainedId));
+  if (failure) throw new DrillFailure(recovery(config, safeCode(failure), obtainedId, operationFailure, cleanupFailure));
   return {
     ...recovery(config, "expired", obtainedId),
     livemode: false,
