@@ -1,0 +1,41 @@
+# Manual Stripe TEST create-and-expire drill.
+# Not registered on main and not dispatched by this commit.
+# CREATE_EXPIRE_EXECUTION_GATE is closed, so a dispatch fails before Stripe.
+# This workflow does not call the paid payment harness.
+name: SBG Stripe TEST create-expire
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sbg-stripe-test-create-expire
+  cancel-in-progress: false
+
+jobs:
+  create-expire:
+    if: github.ref == 'refs/heads/test/stripe-gate2-runner' && github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: sbg-stripe-test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Run Stripe TEST create-expire drill
+        run: node --experimental-strip-types .github/scripts/stripe-test-create-expire.ts
+        env:
+          DEBUG: ""
+          NODE_DEBUG: ""
+          NODE_OPTIONS: ""
+          SBG_DRILL_ENVIRONMENT: sbg-stripe-test
+          SBG_DOMAIN_B_LIVE_CHECKOUT: "false"
+          SBG_SAAS_COMMERCE: "off"
+          STRIPE_SECRET_KEY: ${{ secrets.SBG_STRIPE_TEST_SECRET_KEY }}
