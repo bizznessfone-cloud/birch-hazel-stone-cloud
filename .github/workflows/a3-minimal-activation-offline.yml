@@ -1,0 +1,31 @@
+name: A3 minimal activation offline certification
+on:
+  push:
+    branches:
+      - prep/a3-0035-0036-minimal-activation
+  pull_request:
+    paths:
+      - scripts/a3-0035-0036-*
+      - .github/workflows/a3-minimal-activation-offline.yml
+permissions:
+  contents: read
+jobs:
+  offline-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Static syntax checks
+        run: |
+          node --check scripts/a3-0035-0036-production-admission.STAGED.mjs
+          node --check scripts/a3-0035-0036-production-admission-entry.STAGED.mjs
+          node --check scripts/a3-0035-0036-minimal-activation.test.mjs
+      - name: Offline admission safety tests (no credentials, no DB)
+        run: node --test scripts/a3-0035-0036-minimal-activation.test.mjs
