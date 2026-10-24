@@ -3,7 +3,7 @@
  * A dispatch cannot bypass CREATE_EXPIRE_EXECUTION_GATE.
  * This file does not call the paid payment harness.
  */
-import { randomUUID } from "node:crypto";
+import { randomBytes } from "node:crypto";
 import { pathToFileURL } from "node:url";
 
 export const CREATE_EXPIRE_EXECUTION_GATE: "closed" | "open" = "closed";
@@ -18,6 +18,8 @@ export const CANCEL_URL = "http://127.0.0.1:9/sbg-create-expire/cancel";
 const CHECKOUT_COLLECTION = "https://api.stripe.com/v1/checkout/sessions";
 const REQUEST_TIMEOUT_MS = 15_000;
 const SESSION_ID = /^cs_(test|live)_[A-Za-z0-9]+$/;
+const RUN_ID = /^sbgce_[0-9a-f]{32}$/;
+const GITHUB_ID = /^\d{1,20}$/;
 const SAFE_CODES = new Set([
   "create_expire_execution_closed",
   "branch_rejected",
@@ -29,6 +31,7 @@ const SAFE_CODES = new Set([
   "account_rejected",
   "amount_rejected",
   "currency_rejected",
+  "run_id_rejected",
   "create_permission_denied",
   "create_rejected",
   "session_id_rejected",
@@ -43,6 +46,7 @@ const SAFE_CODES = new Set([
   "expire_failed",
   "expire_verification_failed",
   "orphaned_session_possible",
+  "expired",
   "redirect_rejected",
   "request_timeout",
   "request_failed",
@@ -59,6 +63,23 @@ export type DrillSummary = {
   paid: false;
 };
 
+export type RecoveryRecord = {
+  drill: "create_expire";
+  runId: string | null;
+  connectedAccount: typeof CONNECTED_ACCOUNT;
+  githubRunId: string | null;
+  githubRunAttempt: string | null;
+  state: string;
+  sessionIdObtained: boolean;
+  sessionId: string | null;
+  livemode?: false;
+  amountMinor?: 4500;
+  currency?: "eur";
+  paymentStatus?: "unpaid";
+  finalStatus?: "expired";
+  paid?: false;
+};
+
 export type DrillConfig = {
   gate: "closed" | "open";
   ref: string | undefined;
@@ -69,9 +90,30 @@ export type DrillConfig = {
   accountId: string;
   amountMinor: number;
   currency: string;
+  runId: string;
   idempotencyKey: string;
+  githubRunId: string | undefined;
+  githubRunAttempt: string | undefined;
   fetchImpl: typeof fetch;
 };
+
+export function createDrillRunId(): string {
+  return `sbgce_${randomBytes(16).toString("hex")}`;
+}
+
+export function safeGithubId(value: string | undefined): string | null {
+  return value != null && GITHUB_ID.test(value) ? value : null;
+}
+
+export class DrillFailure extends Error {
+  readonly recovery: RecoveryRecord;
+
+  constructor(recovery: RecoveryRecord) {
+    super(recovery.state);
+    this.name = "DrillFailure";
+    this.recovery = recovery;
+  }
+}
 
 type StripeResult = { status: number; body: unknown };
 
@@ -86,18 +128,38 @@ export function safeCode(err: unknown): string {
   return "create_expire_failed";
 }
 
+function recovery(config: DrillConfig, state: string, sessionId: string | null): RecoveryRecord {
+  const safeState = safeCode(new Error(state));
+  const safeSession = sessionId != null && SESSION_ID.test(sessionId) ? sessionId : null;
+  return {
+    drill: "create_expire",
+    runId: RUN_ID.test(config.runId) ? config.runId : null,
+    connectedAccount: CONNECTED_ACCOUNT,
+    githubRunId: safeGithubId(config.githubRunId),
+    githubRunAttempt: safeGithubId(config.githubRunAttempt),
+    state: safeState,
+    sessionIdObtained: safeSession != null,
+    sessionId: safeSession,
+  };
+}
+
+function reject(config: DrillConfig, state: string, sessionId: string | null = null): never {
+  throw new DrillFailure(recovery(config, state, sessionId));
+}
+
 function assertReady(config: DrillConfig): string {
-  if (config.gate !== "open") fail("create_expire_execution_closed");
-  if (config.ref !== REQUIRED_REF) fail("branch_rejected");
-  if (config.environment !== REQUIRED_ENVIRONMENT) fail("environment_rejected");
+  if (config.gate !== "open") reject(config, "create_expire_execution_closed");
+  if (!RUN_ID.test(config.runId)) reject(config, "run_id_rejected");
+  if (config.ref !== REQUIRED_REF) reject(config, "branch_rejected");
+  if (config.environment !== REQUIRED_ENVIRONMENT) reject(config, "environment_rejected");
   const secret = config.secret ?? "";
-  if (!secret) fail("credential_absent");
-  if (/^(sk|rk)_live_/.test(secret)) fail("live_credential_rejected");
-  if (!/^rk_test_[A-Za-z0-9]+$/.test(secret) || secret.length < 20) fail("credential_malformed");
-  if (config.liveCheckoutFlag === "true" || config.saasCommerce === "live") fail("live_payment_flag");
-  if (config.accountId !== CONNECTED_ACCOUNT) fail("account_rejected");
-  if (config.amountMinor !== AMOUNT_MINOR) fail("amount_rejected");
-  if (config.currency !== CURRENCY) fail("currency_rejected");
+  if (!secret) reject(config, "credential_absent");
+  if (/^(sk|rk)_live_/.test(secret)) reject(config, "live_credential_rejected");
+  if (!/^rk_test_[A-Za-z0-9]+$/.test(secret) || secret.length < 20) reject(config, "credential_malformed");
+  if (config.liveCheckoutFlag === "true" || config.saasCommerce === "live") reject(config, "live_payment_flag");
+  if (config.accountId !== CONNECTED_ACCOUNT) reject(config, "account_rejected");
+  if (config.amountMinor !== AMOUNT_MINOR) reject(config, "amount_rejected");
+  if (config.currency !== CURRENCY) reject(config, "currency_rejected");
   return secret;
 }
 
@@ -177,7 +239,12 @@ function createBody(config: DrillConfig): URLSearchParams {
     "metadata[sbg_drill]": "create_expire",
     "metadata[sbg_connected_account]": CONNECTED_ACCOUNT,
     "metadata[sbg_synthetic]": "true",
+    "metadata[sbg_drill_run_id]": config.runId,
   });
+  const githubRunId = safeGithubId(config.githubRunId);
+  const githubRunAttempt = safeGithubId(config.githubRunAttempt);
+  if (githubRunId) body.set("metadata[sbg_github_run_id]", githubRunId);
+  if (githubRunAttempt) body.set("metadata[sbg_github_run_attempt]", githubRunAttempt);
   const encoded = body.toString();
   if (encoded.includes("application_fee") || encoded.includes("transfer_data") || encoded.includes("payment_intent_data")) {
     fail("create_rejected");
@@ -227,7 +294,25 @@ async function createSession(config: DrillConfig, secret: string): Promise<strin
   fail("orphaned_session_possible");
 }
 
-function assertOpenSession(id: string, body: unknown): void {
+function assertSyntheticMetadata(metadata: unknown, runId: string): void {
+  if (!metadata || typeof metadata !== "object") fail("session_metadata_rejected");
+  const fields = metadata as {
+    sbg_drill?: unknown;
+    sbg_connected_account?: unknown;
+    sbg_synthetic?: unknown;
+    sbg_drill_run_id?: unknown;
+  };
+  if (
+    fields.sbg_drill !== "create_expire"
+    || fields.sbg_connected_account !== CONNECTED_ACCOUNT
+    || fields.sbg_synthetic !== "true"
+    || fields.sbg_drill_run_id !== runId
+  ) {
+    fail("session_metadata_rejected");
+  }
+}
+
+function assertOpenSession(id: string, body: unknown, runId: string): void {
   if (!body || typeof body !== "object") fail("session_metadata_rejected");
   const session = body as {
     id?: unknown;
@@ -244,21 +329,33 @@ function assertOpenSession(id: string, body: unknown): void {
   if (session.mode !== "payment") fail("session_mode_rejected");
   if (session.amount_total !== AMOUNT_MINOR) fail("session_amount_rejected");
   if (session.currency !== CURRENCY) fail("session_currency_rejected");
-  if (session.payment_status === "paid") fail("session_payment_status_rejected");
   if (session.payment_status !== "unpaid") fail("session_payment_status_rejected");
   if (session.status !== "open") fail("session_status_rejected");
-  const metadata = session.metadata;
-  if (!metadata || typeof metadata !== "object") fail("session_metadata_rejected");
-  const fields = metadata as { sbg_drill?: unknown; sbg_connected_account?: unknown; sbg_synthetic?: unknown };
-  if (fields.sbg_drill !== "create_expire" || fields.sbg_connected_account !== CONNECTED_ACCOUNT || fields.sbg_synthetic !== "true") {
-    fail("session_metadata_rejected");
-  }
+  assertSyntheticMetadata(session.metadata, runId);
 }
 
-function assertExpired(id: string, body: unknown): void {
+function assertExpired(id: string, body: unknown, runId: string): void {
   if (!body || typeof body !== "object") fail("expire_verification_failed");
-  const session = body as { id?: unknown; status?: unknown; payment_status?: unknown };
-  if (session.id !== id || session.status !== "expired" || session.payment_status === "paid") {
+  const session = body as {
+    id?: unknown;
+    livemode?: unknown;
+    mode?: unknown;
+    amount_total?: unknown;
+    currency?: unknown;
+    payment_status?: unknown;
+    status?: unknown;
+    metadata?: unknown;
+  };
+  try {
+    if (session.id !== id) fail("session_id_rejected");
+    if (session.livemode !== false) fail("session_livemode_rejected");
+    if (session.mode !== "payment") fail("session_mode_rejected");
+    if (session.amount_total !== AMOUNT_MINOR) fail("session_amount_rejected");
+    if (session.currency !== CURRENCY) fail("session_currency_rejected");
+    if (session.payment_status !== "unpaid") fail("session_payment_status_rejected");
+    if (session.status !== "expired") fail("session_status_rejected");
+    assertSyntheticMetadata(session.metadata, runId);
+  } catch {
     fail("expire_verification_failed");
   }
 }
@@ -290,13 +387,15 @@ async function expireSession(config: DrillConfig, secret: string, id: string): P
   fail(last);
 }
 
-export async function runCreateExpireDrill(config: DrillConfig): Promise<DrillSummary> {
+export async function runCreateExpireDrill(config: DrillConfig): Promise<RecoveryRecord> {
   const secret = assertReady(config);
+  let obtainedId: string | null = null;
   let sessionIdToExpire: string | null = null;
   let paid = false;
   let failure: Error | null = null;
   try {
     const id = await createSession(config, secret);
+    obtainedId = id;
     sessionIdToExpire = id;
     if (id.startsWith("cs_live_")) fail("session_livemode_rejected");
     let retrieved: StripeResult;
@@ -309,7 +408,7 @@ export async function runCreateExpireDrill(config: DrillConfig): Promise<DrillSu
       paid = true;
       sessionIdToExpire = null;
     }
-    assertOpenSession(id, retrieved.body);
+    assertOpenSession(id, retrieved.body, config.runId);
   } catch (err) {
     failure = err instanceof Error ? err : new Error("create_expire_failed");
   }
@@ -318,7 +417,7 @@ export async function runCreateExpireDrill(config: DrillConfig): Promise<DrillSu
       await expireSession(config, secret, sessionIdToExpire);
       try {
         const after = await retrieveSession(config, secret, sessionIdToExpire);
-        assertExpired(sessionIdToExpire, after.body);
+        assertExpired(sessionIdToExpire, after.body, config.runId);
       } catch {
         fail("expire_verification_failed");
       }
@@ -327,9 +426,9 @@ export async function runCreateExpireDrill(config: DrillConfig): Promise<DrillSu
       failure = new Error(code.startsWith("expire_") || code === "request_timeout" ? code : "expire_failed");
     }
   }
-  if (failure) throw new Error(safeCode(failure));
+  if (failure) throw new DrillFailure(recovery(config, safeCode(failure), obtainedId));
   return {
-    drill: "create_expire",
+    ...recovery(config, "expired", obtainedId),
     livemode: false,
     amountMinor: AMOUNT_MINOR,
     currency: CURRENCY,
@@ -344,12 +443,14 @@ export async function reportDrill(config: DrillConfig, lines: string[]): Promise
     lines.push(JSON.stringify(await runCreateExpireDrill(config)));
     return 0;
   } catch (err) {
-    lines.push(safeCode(err));
+    const record = err instanceof DrillFailure ? err.recovery : recovery(config, safeCode(err), null);
+    lines.push(JSON.stringify(record));
     return 1;
   }
 }
 
 async function main(): Promise<void> {
+  const runId = createDrillRunId();
   const lines: string[] = [];
   const code = await reportDrill({
     gate: CREATE_EXPIRE_EXECUTION_GATE,
@@ -361,7 +462,10 @@ async function main(): Promise<void> {
     accountId: CONNECTED_ACCOUNT,
     amountMinor: AMOUNT_MINOR,
     currency: CURRENCY,
-    idempotencyKey: `sbg-create-expire-${randomUUID()}`,
+    runId,
+    idempotencyKey: `sbg-create-expire-${runId}`,
+    githubRunId: process.env.GITHUB_RUN_ID,
+    githubRunAttempt: process.env.GITHUB_RUN_ATTEMPT,
     fetchImpl: globalThis.fetch,
   }, lines);
   const line = lines[0] ?? "create_expire_failed";

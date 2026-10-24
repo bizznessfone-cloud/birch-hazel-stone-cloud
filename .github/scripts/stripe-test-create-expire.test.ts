@@ -11,10 +11,13 @@ import {
   REQUIRED_REF,
   SUCCESS_URL,
   reportDrill,
+  createDrillRunId,
   type DrillConfig,
+  type RecoveryRecord,
 } from "./stripe-test-create-expire.ts";
 
 const SECRET = "rk_test_drillfixturekey0001";
+const RUN_ID = `sbgce_${"ab".repeat(16)}`;
 
 function openConfig(overrides: Partial<DrillConfig> = {}): DrillConfig {
   return {
@@ -27,7 +30,10 @@ function openConfig(overrides: Partial<DrillConfig> = {}): DrillConfig {
     accountId: CONNECTED_ACCOUNT,
     amountMinor: AMOUNT_MINOR,
     currency: CURRENCY,
+    runId: RUN_ID,
     idempotencyKey: "sbg-create-expire-fixture",
+    githubRunId: "40106029723",
+    githubRunAttempt: "1",
     fetchImpl: async () => {
       throw new Error("unexpected_fetch");
     },
@@ -49,6 +55,7 @@ function session(overrides: Record<string, unknown> = {}): Record<string, unknow
       sbg_drill: "create_expire",
       sbg_connected_account: CONNECTED_ACCOUNT,
       sbg_synthetic: "true",
+      sbg_drill_run_id: RUN_ID,
     },
     ...overrides,
   };
@@ -64,6 +71,19 @@ async function settle(config: DrillConfig): Promise<string[]> {
   return lines;
 }
 
+function recoveryOf(lines: string[]): RecoveryRecord {
+  return JSON.parse(lines[0] ?? "") as RecoveryRecord;
+}
+
+function assertNoSecrets(lines: string[]): void {
+  const text = lines.join("");
+  assert.equal(text.includes(SECRET), false);
+  assert.equal(text.includes("checkout.stripe.com"), false);
+  assert.equal(text.includes("whsec_"), false);
+  assert.equal(text.includes("sk_live"), false);
+  assert.equal(text.includes("rk_live"), false);
+}
+
 test("execution gate is closed and blocks dispatch before Stripe", async () => {
   assert.equal(CREATE_EXPIRE_EXECUTION_GATE, "closed");
   let called = false;
@@ -75,7 +95,12 @@ test("execution gate is closed and blocks dispatch before Stripe", async () => {
     },
   }));
   assert.equal(called, false);
-  assert.deepEqual(lines, ["create_expire_execution_closed"]);
+  const recovery = recoveryOf(lines);
+  assert.equal(recovery.state, "create_expire_execution_closed");
+  assert.equal(recovery.runId, RUN_ID);
+  assert.equal(recovery.sessionIdObtained, false);
+  assert.equal(recovery.githubRunId, "40106029723");
+  assert.equal(recovery.githubRunAttempt, "1");
 });
 
 test("paid harness gate remains closed", () => {
@@ -84,23 +109,23 @@ test("paid harness gate remains closed", () => {
 });
 
 test("wrong branch or environment is rejected", async () => {
-  assert.deepEqual(await settle(openConfig({ ref: "refs/heads/main" })), ["branch_rejected"]);
-  assert.deepEqual(await settle(openConfig({ environment: "production" })), ["environment_rejected"]);
+  assert.equal(recoveryOf(await settle(openConfig({ ref: "refs/heads/main" }))).state, "branch_rejected");
+  assert.equal(recoveryOf(await settle(openConfig({ environment: "production" }))).state, "environment_rejected");
 });
 
 test("missing, malformed and live credentials are rejected", async () => {
-  assert.deepEqual(await settle(openConfig({ secret: undefined })), ["credential_absent"]);
-  assert.deepEqual(await settle(openConfig({ secret: "sk_test_not_restricted_key" })), ["credential_malformed"]);
-  assert.deepEqual(await settle(openConfig({ secret: "rk_live_not_allowed_here" })), ["live_credential_rejected"]);
-  assert.deepEqual(await settle(openConfig({ secret: "sk_live_not_allowed_here" })), ["live_credential_rejected"]);
-  assert.deepEqual(await settle(openConfig({ liveCheckoutFlag: "true" })), ["live_payment_flag"]);
-  assert.deepEqual(await settle(openConfig({ saasCommerce: "live" })), ["live_payment_flag"]);
+  assert.equal(recoveryOf(await settle(openConfig({ secret: undefined }))).state, "credential_absent");
+  assert.equal(recoveryOf(await settle(openConfig({ secret: "sk_test_not_restricted_key" }))).state, "credential_malformed");
+  assert.equal(recoveryOf(await settle(openConfig({ secret: "rk_live_not_allowed_here" }))).state, "live_credential_rejected");
+  assert.equal(recoveryOf(await settle(openConfig({ secret: "sk_live_not_allowed_here" }))).state, "live_credential_rejected");
+  assert.equal(recoveryOf(await settle(openConfig({ liveCheckoutFlag: "true" }))).state, "live_payment_flag");
+  assert.equal(recoveryOf(await settle(openConfig({ saasCommerce: "live" }))).state, "live_payment_flag");
 });
 
 test("incorrect account, amount or currency is rejected before Stripe", async () => {
-  assert.deepEqual(await settle(openConfig({ accountId: "acct_other" })), ["account_rejected"]);
-  assert.deepEqual(await settle(openConfig({ amountMinor: 100 })), ["amount_rejected"]);
-  assert.deepEqual(await settle(openConfig({ currency: "usd" })), ["currency_rejected"]);
+  assert.equal(recoveryOf(await settle(openConfig({ accountId: "acct_other" }))).state, "account_rejected");
+  assert.equal(recoveryOf(await settle(openConfig({ amountMinor: 100 }))).state, "amount_rejected");
+  assert.equal(recoveryOf(await settle(openConfig({ currency: "usd" }))).state, "currency_rejected");
 });
 
 test("permission denial is sanitised and does not expire another session", async () => {
@@ -117,9 +142,10 @@ test("permission denial is sanitised and does not expire another session", async
     },
   }));
   assert.deepEqual(calls, ["POST"]);
-  assert.deepEqual(lines, ["create_permission_denied"]);
-  assert.equal(lines.join("").includes(SECRET), false);
-  assert.equal(lines.join("").includes("checkout.stripe.com"), false);
+  const recovery = recoveryOf(lines);
+  assert.equal(recovery.state, "create_permission_denied");
+  assert.equal(recovery.sessionIdObtained, false);
+  assertNoSecrets(lines);
 });
 
 test("successful create, retrieve and expire lifecycle", async () => {
@@ -152,9 +178,19 @@ test("successful create, retrieve and expire lifecycle", async () => {
   assert.equal(params.get("cancel_url"), CANCEL_URL);
   assert.equal(params.has("application_fee_amount"), false);
   assert.equal([...params.keys()].some((key) => key.includes("transfer_data") || key.includes("application_fee")), false);
+  assert.equal(params.get("metadata[sbg_drill_run_id]"), RUN_ID);
+  assert.equal(params.get("metadata[sbg_github_run_id]"), "40106029723");
+  assert.equal(params.get("metadata[sbg_github_run_attempt]"), "1");
   assert.equal(calls.some((call) => call.url.endsWith("/expire")), true);
-  assert.deepEqual(JSON.parse(lines[0] ?? ""), {
+  assert.deepEqual(recoveryOf(lines), {
     drill: "create_expire",
+    runId: RUN_ID,
+    connectedAccount: CONNECTED_ACCOUNT,
+    githubRunId: "40106029723",
+    githubRunAttempt: "1",
+    state: "expired",
+    sessionIdObtained: true,
+    sessionId: "cs_test_fixture",
     livemode: false,
     amountMinor: 4500,
     currency: "eur",
@@ -162,8 +198,7 @@ test("successful create, retrieve and expire lifecycle", async () => {
     finalStatus: "expired",
     paid: false,
   });
-  assert.equal(lines.join("").includes("cs_test_fixture"), false);
-  assert.equal(lines.join("").includes("checkout.stripe.com"), false);
+  assertNoSecrets(lines);
 });
 
 test("livemode true fails after cleanup", async () => {
@@ -176,11 +211,13 @@ test("livemode true fails after cleanup", async () => {
         return jsonResponse(200, session({ livemode: true, status: "expired" }));
       }
       if (String(init?.method) === "POST") return jsonResponse(200, session({ livemode: true }));
-      return jsonResponse(200, expired ? session({ livemode: true, status: "expired" }) : session({ livemode: true }));
+      return jsonResponse(200, expired ? session({ status: "expired" }) : session({ livemode: true }));
     },
   }));
   assert.equal(expired, true);
-  assert.deepEqual(lines, ["session_livemode_rejected"]);
+  assert.equal(recoveryOf(lines).state, "session_livemode_rejected");
+  assert.equal(recoveryOf(lines).sessionId, "cs_test_fixture");
+  assertNoSecrets(lines);
 });
 
 test("retrieved amount or currency mismatch fails after cleanup", async () => {
@@ -192,10 +229,10 @@ test("retrieved amount or currency mismatch fails after cleanup", async () => {
         if (String(init?.method) === "POST" && url.endsWith("/expire")) return jsonResponse(200, session({ ...field, status: "expired" }));
         if (String(init?.method) === "POST") return jsonResponse(200, session(field));
         gets += 1;
-        return jsonResponse(200, session({ ...field, status: gets === 1 ? "open" : "expired" }));
+        return jsonResponse(200, session({ ...(gets === 1 ? field : {}), status: gets === 1 ? "open" : "expired" }));
       },
     }));
-    assert.equal(lines[0], "amount_total" in field ? "session_amount_rejected" : "session_currency_rejected");
+    assert.equal(recoveryOf(lines).state, "amount_total" in field ? "session_amount_rejected" : "session_currency_rejected");
   }
 });
 
@@ -215,8 +252,9 @@ test("retrieval failure still attempts expiration", async () => {
     },
   }));
   assert.equal(calls.includes("expire"), true);
-  assert.equal(lines[0], "retrieve_http_500");
-  assert.equal(lines.join("").includes(SECRET), false);
+  assert.equal(recoveryOf(lines).state, "retrieve_http_500");
+  assert.equal(recoveryOf(lines).sessionId, "cs_test_fixture");
+  assertNoSecrets(lines);
 });
 
 test("expiration failure is reported", async () => {
@@ -229,8 +267,12 @@ test("expiration failure is reported", async () => {
       return jsonResponse(200, session());
     },
   }));
-  assert.equal(lines[0], "expire_http_500");
-  assert.equal(lines.join("").includes("whsec_secret"), false);
+  const recovery = recoveryOf(lines);
+  assert.equal(recovery.state, "expire_http_500");
+  assert.equal(recovery.sessionIdObtained, true);
+  assert.equal(recovery.sessionId, "cs_test_fixture");
+  assert.equal(recovery.runId, RUN_ID);
+  assertNoSecrets(lines);
 });
 
 test("expiration verification failure is reported", async () => {
@@ -242,13 +284,15 @@ test("expiration verification failure is reported", async () => {
       return jsonResponse(200, session({ status: "open" }));
     },
   }));
-  assert.deepEqual(lines, ["expire_verification_failed"]);
+  assert.equal(recoveryOf(lines).state, "expire_verification_failed");
+  assert.equal(recoveryOf(lines).sessionId, "cs_test_fixture");
 });
 
 test("lost create response retries once with the same idempotency key", async () => {
   const keys: string[] = [];
   let creates = 0;
   let gets = 0;
+  const bodies: string[] = [];
   const lines = await settle(openConfig({
     fetchImpl: async (input, init) => {
       const url = String(input);
@@ -256,6 +300,7 @@ test("lost create response retries once with the same idempotency key", async ()
       if (String(init?.method) === "POST") {
         creates += 1;
         keys.push(new Headers(init?.headers).get("Idempotency-Key") ?? "");
+        bodies.push(String(init?.body ?? ""));
         if (creates === 1) throw new DOMException("timed out", "TimeoutError");
         return jsonResponse(200, session());
       }
@@ -265,7 +310,10 @@ test("lost create response retries once with the same idempotency key", async ()
   }));
   assert.equal(creates, 2);
   assert.deepEqual(keys, ["sbg-create-expire-fixture", "sbg-create-expire-fixture"]);
-  assert.equal(JSON.parse(lines[0] ?? "").finalStatus, "expired");
+  assert.equal(new URLSearchParams(bodies[0]).get("metadata[sbg_drill_run_id]"), RUN_ID);
+  assert.equal(new URLSearchParams(bodies[1]).get("metadata[sbg_drill_run_id]"), RUN_ID);
+  assert.equal(recoveryOf(lines).finalStatus, "expired");
+  assert.equal(recoveryOf(lines).runId, RUN_ID);
 });
 
 test("a second lost create reports a possible orphan without a Checkout URL", async () => {
@@ -274,5 +322,136 @@ test("a second lost create reports a possible orphan without a Checkout URL", as
       throw new DOMException("timed out", "TimeoutError");
     },
   }));
-  assert.deepEqual(lines, ["orphaned_session_possible"]);
+  const recovery = recoveryOf(lines);
+  assert.equal(recovery.state, "orphaned_session_possible");
+  assert.equal(recovery.runId, RUN_ID);
+  assert.equal(recovery.connectedAccount, CONNECTED_ACCOUNT);
+  assert.equal(recovery.sessionIdObtained, false);
+  assert.equal(recovery.sessionId, null);
+  assert.equal(recovery.githubRunId, "40106029723");
+  assert.equal(recovery.githubRunAttempt, "1");
+  assertNoSecrets(lines);
 });
+
+test("run identifiers are unique and preserved", () => {
+  const first = createDrillRunId();
+  const second = createDrillRunId();
+  assert.match(first, /^sbgce_[0-9a-f]{32}$/);
+  assert.notEqual(first, second);
+});
+
+test("mismatched drill-run metadata is rejected", async () => {
+  let gets = 0;
+  const lines = await settle(openConfig({
+    fetchImpl: async (input, init) => {
+      const url = String(input);
+      if (String(init?.method) === "POST" && url.endsWith("/expire")) return jsonResponse(200, session({ status: "expired" }));
+      if (String(init?.method) === "POST") return jsonResponse(200, session());
+      gets += 1;
+      if (gets === 1) {
+        return jsonResponse(200, session({
+          metadata: {
+            sbg_drill: "create_expire",
+            sbg_connected_account: CONNECTED_ACCOUNT,
+            sbg_synthetic: "true",
+            sbg_drill_run_id: `sbgce_${"cd".repeat(16)}`,
+          },
+        }));
+      }
+      return jsonResponse(200, session({ status: "expired" }));
+    },
+  }));
+  assert.equal(recoveryOf(lines).state, "session_metadata_rejected");
+  assert.equal(recoveryOf(lines).runId, RUN_ID);
+});
+
+test("payment statuses other than unpaid are rejected", async () => {
+  const paidCalls: string[] = [];
+  const paid = await settle(openConfig({
+    fetchImpl: async (input, init) => {
+      paidCalls.push(String(input).endsWith("/expire") ? "expire" : String(init?.method));
+      if (String(init?.method) === "POST") return jsonResponse(200, session());
+      return jsonResponse(200, session({ payment_status: "paid" }));
+    },
+  }));
+  assert.equal(paidCalls.includes("expire"), false);
+  assert.equal(recoveryOf(paid).state, "session_payment_status_rejected");
+  assert.equal(recoveryOf(paid).sessionId, "cs_test_fixture");
+
+  let gets = 0;
+  const other = await settle(openConfig({
+    fetchImpl: async (input, init) => {
+      const url = String(input);
+      if (String(init?.method) === "POST" && url.endsWith("/expire")) return jsonResponse(200, session({ status: "expired" }));
+      if (String(init?.method) === "POST") return jsonResponse(200, session());
+      gets += 1;
+      return jsonResponse(200, session({
+        payment_status: gets === 1 ? "no_payment_required" : "unpaid",
+        status: gets === 1 ? "open" : "expired",
+      }));
+    },
+  }));
+  assert.equal(recoveryOf(other).state, "session_payment_status_rejected");
+});
+
+test("incorrect session identity is rejected", async () => {
+  let gets = 0;
+  const lines = await settle(openConfig({
+    fetchImpl: async (input, init) => {
+      const url = String(input);
+      if (String(init?.method) === "POST" && url.endsWith("/expire")) return jsonResponse(200, session({ status: "expired" }));
+      if (String(init?.method) === "POST") return jsonResponse(200, session());
+      gets += 1;
+      return jsonResponse(200, session({ id: gets === 1 ? "cs_test_other" : "cs_test_fixture", status: gets === 1 ? "open" : "expired" }));
+    },
+  }));
+  assert.equal(recoveryOf(lines).state, "session_id_rejected");
+  assert.equal(recoveryOf(lines).sessionId, "cs_test_fixture");
+});
+
+test("final verification rejects mismatched identity, money, mode and status", async () => {
+  const cases: Array<{ field: Record<string, unknown> }> = [
+    { field: { id: "cs_test_other" } },
+    { field: { livemode: true } },
+    { field: { amount_total: 100 } },
+    { field: { currency: "usd" } },
+    { field: { mode: "subscription" } },
+    { field: { status: "open" } },
+    { field: { payment_status: "paid" } },
+    { field: { metadata: { sbg_drill: "create_expire", sbg_connected_account: CONNECTED_ACCOUNT, sbg_synthetic: "true", sbg_drill_run_id: `sbgce_${"ef".repeat(16)}` } } },
+  ];
+  for (const item of cases) {
+    let gets = 0;
+    const lines = await settle(openConfig({
+      fetchImpl: async (input, init) => {
+        const url = String(input);
+        if (String(init?.method) === "POST" && url.endsWith("/expire")) return jsonResponse(200, session({ status: "expired" }));
+        if (String(init?.method) === "POST") return jsonResponse(200, session());
+        gets += 1;
+        return jsonResponse(200, session({ status: gets === 1 ? "open" : "expired", ...(gets === 1 ? {} : item.field) }));
+      },
+    }));
+    assert.equal(recoveryOf(lines).state, "expire_verification_failed", JSON.stringify(item.field));
+    assert.equal(recoveryOf(lines).sessionId, "cs_test_fixture");
+    assertNoSecrets(lines);
+  }
+});
+
+test("unsafe GitHub identifiers are omitted", async () => {
+  let body = "";
+  const lines = await settle(openConfig({
+    githubRunId: "https://checkout.stripe.com/secret",
+    githubRunAttempt: "attempt-one",
+    fetchImpl: async (input, init) => {
+      if (String(init?.method) === "POST" && !String(input).endsWith("/expire")) body = String(init?.body ?? "");
+      throw new DOMException("timed out", "TimeoutError");
+    },
+  }));
+  const recovery = recoveryOf(lines);
+  assert.equal(recovery.githubRunId, null);
+  assert.equal(recovery.githubRunAttempt, null);
+  assert.equal(body.includes("checkout.stripe.com"), false);
+  assert.equal(body.includes("sbg_github_run_id"), false);
+  assertNoSecrets(lines);
+});
+
