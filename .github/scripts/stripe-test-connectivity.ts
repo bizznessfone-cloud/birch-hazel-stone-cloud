@@ -43,6 +43,30 @@ const SAFE_CODES = new Set([
   "listener_cleanup_failed",
 ]);
 
+const STRIPE_ERROR_CODES = new Set([
+  "more_permissions_required",
+  "account_invalid",
+  "api_key_expired",
+  "secret_key_required",
+  "rate_limit",
+]);
+const STRIPE_ERROR_TYPES = new Set([
+  "invalid_request_error",
+  "authentication_error",
+  "api_error",
+  "rate_limit_error",
+  "idempotency_error",
+]);
+const DIAGNOSTIC_CLASSES = new Set([
+  "permission_denied",
+  "authentication_failed",
+  "request_rejected",
+  "rate_limited",
+  "server_error",
+  "forbidden",
+  "rejected",
+]);
+
 type LivemodeEvidence = "livemode_false" | "livemode_unproven";
 
 let listener: Server | null = null;
@@ -54,9 +78,9 @@ function fail(code: string): never {
   throw new Error(code);
 }
 
-function safeCode(err: unknown): string {
+export function safeCode(err: unknown): string {
   const message = err instanceof Error ? err.message : "";
-  return SAFE_CODES.has(message) ? message : "connectivity_check_failed";
+  return SAFE_CODES.has(message) || isConnectedDiagnostic(message) ? message : "connectivity_check_failed";
 }
 
 function assertRestrictedTestKey(value: string | undefined): string {
@@ -104,8 +128,52 @@ async function stripeGet(key: string, account: string | null): Promise<{ status:
   }
 }
 
-function assertConnectedCheckoutList(status: number, body: unknown): LivemodeEvidence {
-  if (status !== 200) fail("connected_checkout_rejected");
+function allowlistedStripeError(body: unknown): { code: string; type: string } {
+  if (!body || typeof body !== "object") return { code: "code_absent", type: "type_absent" };
+  const error = (body as { error?: unknown }).error;
+  if (!error || typeof error !== "object") return { code: "code_absent", type: "type_absent" };
+  const rawCode = (error as { code?: unknown }).code;
+  const rawType = (error as { type?: unknown }).type;
+  const code = typeof rawCode !== "string" ? "code_absent" : STRIPE_ERROR_CODES.has(rawCode) ? rawCode : "code_unrecognised";
+  const type = typeof rawType !== "string" ? "type_absent" : STRIPE_ERROR_TYPES.has(rawType) ? rawType : "type_unrecognised";
+  return { code, type };
+}
+
+export function connectedCheckoutDiagnostic(status: number, body: unknown): string {
+  if (!Number.isInteger(status) || status < 100 || status > 599) return "connected_checkout_http_invalid";
+  const { code, type } = allowlistedStripeError(body);
+  const klass =
+    status === 401 ? "authentication_failed"
+    : status === 400 ? "request_rejected"
+    : status === 429 ? "rate_limited"
+    : status >= 500 ? "server_error"
+    : status === 403 && code === "more_permissions_required" ? "permission_denied"
+    : status === 403 ? "forbidden"
+    : "rejected";
+  return ["connected_checkout", String(status), klass, code, type].join("__");
+}
+
+function isConnectedDiagnostic(message: string): boolean {
+  if (message === "connected_checkout_http_invalid") return true;
+  const parts = message.split("__");
+  if (parts.length !== 5 || parts[0] !== "connected_checkout") return false;
+  const [statusText, klass, code, type] = parts.slice(1);
+  if (!/^[1-5][0-9]{2}$/.test(statusText)) return false;
+  const status = Number(statusText);
+  if (String(status) !== statusText) return false;
+  if (!DIAGNOSTIC_CLASSES.has(klass)) return false;
+  if (!new Set([...STRIPE_ERROR_CODES, "code_absent", "code_unrecognised"]).has(code)) return false;
+  if (!new Set([...STRIPE_ERROR_TYPES, "type_absent", "type_unrecognised"]).has(type)) return false;
+  return message === connectedCheckoutDiagnostic(status, {
+    error: {
+      code: code === "code_absent" ? undefined : code === "code_unrecognised" ? "not-allowlisted" : code,
+      type: type === "type_absent" ? undefined : type === "type_unrecognised" ? "not-allowlisted" : type,
+    },
+  });
+}
+
+export function assessConnectedCheckout(status: number, body: unknown): LivemodeEvidence {
+  if (status !== 200) fail(connectedCheckoutDiagnostic(status, body));
   if (!body || typeof body !== "object") fail("connected_checkout_malformed");
   const record = body as { object?: unknown; data?: unknown };
   if (record.object !== "list" || !Array.isArray(record.data)) fail("connected_checkout_malformed");
@@ -276,7 +344,7 @@ async function proveCliSession(key: string, forwardTo: string): Promise<void> {
 
 async function runChecks(key: string): Promise<{ connectedCheckout: "accepted"; livemode: LivemodeEvidence; platformCheckout: "permission_denied"; cliSession: "ready" }> {
   const connected = await stripeGet(key, CONNECTED_ACCOUNT);
-  const livemode = assertConnectedCheckoutList(connected.status, connected.body);
+  const livemode = assessConnectedCheckout(connected.status, connected.body);
   const platform = await stripeGet(key, null);
   assertPlatformIsolated(platform.status, platform.body);
   const forwardTo = await listenOnLoopback();
