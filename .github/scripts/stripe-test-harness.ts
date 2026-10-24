@@ -121,7 +121,10 @@ export type PaymentRecoveryRecord = {
   idempotencyKey: string | null;
   operationFailure: string | null;
   recoveryFailure: string | null;
+  cleanupFailure: string | null;
+  cleanupFailures: string[];
   creationAmbiguous: boolean;
+  databaseUnreadable: boolean;
 };
 
 export type PaymentBookingEvidence = {
@@ -185,7 +188,10 @@ export function paymentRecoveryRecord(input: {
   idempotencyKey?: string | null;
   operationFailure?: string | null;
   recoveryFailure?: string | null;
+  cleanupFailure?: string | null;
+  cleanupFailures?: string[];
   creationAmbiguous?: boolean;
+  databaseUnreadable?: boolean;
 }): PaymentRecoveryRecord {
   return {
     harness: "stripe_test_payment",
@@ -201,7 +207,10 @@ export function paymentRecoveryRecord(input: {
     idempotencyKey: cleanIdempotency(input.idempotencyKey ?? null),
     operationFailure: cleanFailure(input.operationFailure ?? null),
     recoveryFailure: cleanFailure(input.recoveryFailure ?? null),
+    cleanupFailure: cleanFailure(input.cleanupFailure ?? null),
+    cleanupFailures: (input.cleanupFailures ?? []).map((code) => cleanFailure(code)).filter((code): code is string => code != null),
     creationAmbiguous: input.creationAmbiguous === true,
+    databaseUnreadable: input.databaseUnreadable === true,
   };
 }
 
@@ -908,134 +917,426 @@ function paymentFailureCode(err: unknown): string {
   return FAILURE_CODE.test(message) ? message : "stripe_test_harness_failed";
 }
 
+export type CheckoutAttemptEvidence = {
+  attempted: boolean;
+  ambiguous: boolean;
+  sessionId: string | null;
+  paymentId: string | null;
+  checkoutAttempt: number | null;
+  failure: string | null;
+  lookupUnreadable?: boolean;
+};
+
+export type PaymentLookup =
+  | { state: "absent" }
+  | { state: "unreadable" }
+  | { state: "stored"; paymentId: string | null; sessionId: string | null; checkoutAttempt: number };
+
+const CLEANUP_STEPS = [
+  ["cleanup_listener_failed", "listener"],
+  ["cleanup_proxy_failed", "proxy"],
+  ["cleanup_cli_failed", "cli"],
+  ["cleanup_database_failed", "database"],
+  ["cleanup_temporary_directory_failed", "temporaryDirectory"],
+] as const;
+
+export async function runPaymentHarnessBoundary(input: {
+  secret: string;
+  githubRunId?: string;
+  githubRunAttempt?: string;
+  fetchImpl: typeof fetch;
+  steps: {
+    prepareFixture: () => Promise<{ bookingId: string }>;
+    installCli: () => Promise<void>;
+    startProxy: () => Promise<void>;
+    awaitCli: () => Promise<void>;
+    startListener: () => Promise<void>;
+    createCheckout: () => Promise<CheckoutAttemptEvidence>;
+    retrieveCheckout: () => Promise<void>;
+    completeBrowser: () => Promise<void>;
+    confirmWebhook: () => Promise<void>;
+    replay: () => Promise<void>;
+  };
+  lookupPayment: () => Promise<PaymentLookup>;
+  readBooking: () => Promise<PaymentBookingEvidence | null>;
+  cleanup: Record<(typeof CLEANUP_STEPS)[number][1], () => Promise<void> | void>;
+}): Promise<PaymentRecoveryRecord> {
+  let bookingId: string | null = null;
+  let operationFailure: string | null = null;
+  let checkout: CheckoutAttemptEvidence = {
+    attempted: false,
+    ambiguous: false,
+    sessionId: null,
+    paymentId: null,
+    checkoutAttempt: null,
+    failure: null,
+  };
+  const flags = { databaseUnreadable: false };
+
+  const stop = (err: unknown) => {
+    if (!operationFailure) operationFailure = paymentFailureCode(err);
+  };
+  try {
+    bookingId = (await input.steps.prepareFixture()).bookingId;
+  } catch (err) {
+    stop(err);
+  }
+  if (!operationFailure) {
+    try { await input.steps.installCli(); } catch (err) { stop(err); }
+  }
+  if (!operationFailure) {
+    try { await input.steps.startProxy(); } catch (err) { stop(err); }
+  }
+  if (!operationFailure) {
+    try { await input.steps.awaitCli(); } catch (err) { stop(err); }
+  }
+  if (!operationFailure) {
+    try { await input.steps.startListener(); } catch (err) { stop(err); }
+  }
+  if (!operationFailure) {
+    try {
+      checkout = await input.steps.createCheckout();
+      if (checkout.failure) stop(new Error(checkout.failure));
+      if (!checkout.attempted) checkout.ambiguous = false;
+      if (checkout.lookupUnreadable) flags.databaseUnreadable = true;
+    } catch (err) {
+      stop(err);
+      checkout = {
+        attempted: true,
+        ambiguous: true,
+        sessionId: null,
+        paymentId: null,
+        checkoutAttempt: null,
+        failure: operationFailure,
+      };
+    }
+  }
+  if (!operationFailure && checkout.attempted && checkout.sessionId && !checkout.ambiguous) {
+    for (const step of [
+      input.steps.retrieveCheckout,
+      input.steps.completeBrowser,
+      input.steps.confirmWebhook,
+      input.steps.replay,
+    ]) {
+      try {
+        await step();
+      } catch (err) {
+        stop(err);
+        break;
+      }
+    }
+  }
+
+  let lookup: PaymentLookup = { state: "absent" };
+  if (checkout.attempted) {
+    try {
+      lookup = await input.lookupPayment();
+    } catch {
+      lookup = { state: "unreadable" };
+    }
+    if (lookup.state === "unreadable") flags.databaseUnreadable = true;
+  }
+
+  let sessionId = checkout.sessionId;
+  let paymentId = checkout.paymentId;
+  let attempt = checkout.checkoutAttempt;
+  let ambiguous = checkout.ambiguous || checkout.lookupUnreadable === true;
+  let blocked: "identity_rejected" | null = null;
+  if (lookup.state === "stored") {
+    if (sessionId && lookup.sessionId && sessionId !== lookup.sessionId) blocked = "identity_rejected";
+    sessionId = sessionId ?? lookup.sessionId;
+    paymentId = paymentId ?? lookup.paymentId;
+    attempt = attempt ?? lookup.checkoutAttempt;
+    if (!sessionId && lookup.checkoutAttempt > 0) ambiguous = true;
+  }
+  const idempotencyKey = paymentId != null && attempt != null && attempt > 0 ? `${paymentId}:${attempt}` : null;
+  let record: PaymentRecoveryRecord;
+  if (!checkout.attempted) {
+    record = paymentRecoveryRecord({
+      outcome: "no_session",
+      bookingId,
+      githubRunId: input.githubRunId,
+      githubRunAttempt: input.githubRunAttempt,
+      operationFailure,
+    });
+  } else if (!sessionId && (ambiguous || flags.databaseUnreadable)) {
+    record = paymentRecoveryRecord({
+      outcome: "recovery_required",
+      bookingId,
+      paymentId,
+      idempotencyKey,
+      githubRunId: input.githubRunId,
+      githubRunAttempt: input.githubRunAttempt,
+      operationFailure,
+      recoveryFailure: flags.databaseUnreadable ? "database_unreadable" : "creation_ambiguous",
+      creationAmbiguous: true,
+      databaseUnreadable: flags.databaseUnreadable,
+    });
+  } else if (!sessionId) {
+    record = paymentRecoveryRecord({
+      outcome: "no_session",
+      bookingId,
+      paymentId,
+      githubRunId: input.githubRunId,
+      githubRunAttempt: input.githubRunAttempt,
+      operationFailure,
+    });
+  } else {
+    try {
+      record = await reconcilePaymentRecovery({
+        secret: input.secret,
+        sessionId,
+        creationAmbiguous: ambiguous,
+        bookingId,
+        paymentId,
+        idempotencyKey,
+        githubRunId: input.githubRunId,
+        githubRunAttempt: input.githubRunAttempt,
+        operationFailure,
+        blocked,
+        fetchImpl: input.fetchImpl,
+        readBooking: async () => {
+          try {
+            return await input.readBooking();
+          } catch (err) {
+            flags.databaseUnreadable = true;
+            throw err;
+          }
+        },
+      });
+    } catch (err) {
+      record = paymentRecoveryRecord({
+        outcome: "recovery_required",
+        sessionId,
+        bookingId,
+        paymentId,
+        idempotencyKey,
+        githubRunId: input.githubRunId,
+        githubRunAttempt: input.githubRunAttempt,
+        operationFailure,
+        recoveryFailure: paymentFailureCode(err),
+        creationAmbiguous: ambiguous,
+      });
+    }
+  }
+
+  const cleanupFailures: string[] = [];
+  for (const [code, name] of CLEANUP_STEPS) {
+    try {
+      await input.cleanup[name]();
+    } catch {
+      cleanupFailures.push(code);
+    }
+  }
+  return {
+    ...record,
+    cleanupFailure: cleanupFailures[0] ?? null,
+    cleanupFailures,
+    databaseUnreadable: record.databaseUnreadable || flags.databaseUnreadable,
+    outcome: !sessionId && flags.databaseUnreadable && checkout.attempted ? "recovery_required" : record.outcome,
+  };
+}
+
 async function runAuthorisedHarness(): Promise<void> {
   const { assertGuestPaymentTestProcess } = await import("../../src/lib/aether/guest-payment-test-isolation.ts");
   assertGuestPaymentTestProcess(process.env);
   if (process.env.STRIPE_WEBHOOK_SECRET) throw new Error("saas_webhook_secret_present");
-  const opened = await resetAuthorisedDisposableDatabase();
+  let opened: { root: QueryClient; database: QueryClient };
+  try {
+    opened = await resetAuthorisedDisposableDatabase();
+  } catch (err) {
+    throw new PaymentRecoveryError(paymentRecoveryRecord({
+      outcome: "no_session",
+      githubRunId: process.env.GITHUB_RUN_ID,
+      githubRunAttempt: process.env.GITHUB_RUN_ATTEMPT,
+      operationFailure: paymentFailureCode(err),
+    }));
+  }
   const root = opened.root;
   const database = opened.database;
   let directory = "";
-  try {
-    try {
-      await applyMigrations((sql) => database.query(sql).then(() => undefined));
-      await database.query(
-        `insert into "user" ("id","name","email","emailVerified","createdAt","updatedAt")
-         values ('user-sbg-test','SBG Test','sbg-test@example.com',true,now(),now())`,
-      );
-      const fixture = await createDisposableBooking(database);
-      const stripeBin = await installStripeCli();
-      directory = join(stripeBin, "..");
-      const { startLocalGuestPaymentTestListener } = await import("../../src/lib/aether/guest-payment-test-listener.ts");
-      let listener: Awaited<ReturnType<typeof startLocalGuestPaymentTestListener>> | null = null;
-      let captured: { raw: string; signature: string } | null = null;
-      let failure = "";
-      const proxy = createServer(async (req, res) => {
-        const raw = await readBody(req);
-        const signature = req.headers["stripe-signature"]?.toString() ?? "";
-        if (!listener) {
-          res.writeHead(503, { "content-type": "application/json" });
-          res.end(JSON.stringify({ received: false, outcome: "listener_not_ready" }));
-          return;
+  let stripeBin = "";
+  let listener: { port: number; close: () => Promise<void> } | null = null;
+  let proxy: ReturnType<typeof createServer> | null = null;
+  let proxyPort = 0;
+  let forwarding: { ready: Promise<void>; assertAlive: () => void; stop: () => Promise<void> } | null = null;
+  let webhookSecret = "";
+  let app: QueryClient | null = null;
+  let fixture: { token: string; bookingId: string } | null = null;
+  let captured: { raw: string; signature: string } | null = null;
+  let webhookFailure = "";
+  let checkoutUrl = "";
+  let knownSession: { sessionId: string; paymentId: string | null; checkoutAttempt: number | null } | null = null;
+  const absentCheckout = {
+    attempted: false,
+    ambiguous: false,
+    sessionId: null,
+    paymentId: null,
+    checkoutAttempt: null,
+    failure: "checkout_not_claimed",
+  };
+  const record = await runPaymentHarnessBoundary({
+    secret: process.env.STRIPE_SECRET_KEY ?? "",
+    githubRunId: process.env.GITHUB_RUN_ID,
+    githubRunAttempt: process.env.GITHUB_RUN_ATTEMPT,
+    fetchImpl: globalThis.fetch,
+    lookupPayment: async () => {
+      if (!fixture) return { state: "unreadable" };
+      const stored = await loadHarnessPayment(database, fixture.bookingId);
+      if (stored.checkoutAttempt === null) return { state: "unreadable" };
+      if (!stored.sessionId && stored.checkoutAttempt === 0) return { state: "absent" };
+      return { state: "stored", paymentId: stored.paymentId, sessionId: stored.sessionId, checkoutAttempt: stored.checkoutAttempt };
+    },
+    readBooking: () => fixture ? readHarnessBooking(database, fixture.bookingId) : Promise.resolve(null),
+    cleanup: {
+      listener: async () => { await listener?.close(); },
+      proxy: async () => {
+        if (!proxy) return;
+        await new Promise<void>((resolve, reject) => proxy?.close((err) => err ? reject(err) : resolve()));
+      },
+      cli: async () => { await forwarding?.stop(); },
+      database: async () => {
+        let failed = false;
+        for (const client of [app, database, root]) {
+          try { await client?.end(); } catch { failed = true; }
         }
-        const forwarded = await fetch(`http://127.0.0.1:${listener.port}/`, {
-          method: "POST",
-          headers: { "content-type": "application/json", "stripe-signature": signature },
-          body: raw,
-        });
-        const responseText = await forwarded.text();
-        let outcome = "";
-        try {
-          outcome = String((JSON.parse(responseText) as { outcome?: string }).outcome ?? "");
-        } catch {
-          outcome = "";
-        }
-        if (forwarded.ok && outcome === "confirmed_paid" && !captured) {
-          try {
-            assertPaidConnectEvent(JSON.parse(raw) as Parameters<typeof assertPaidConnectEvent>[0]);
-            captured = { raw, signature };
-          } catch (err) {
-            failure = err instanceof Error && err.message === "webhook_event_rejected" ? err.message : "webhook_event_rejected";
+        if (failed) throw new Error("cleanup_database_failed");
+      },
+      temporaryDirectory: async () => { if (directory) await rm(directory, { recursive: true, force: true }); },
+    },
+    steps: {
+      prepareFixture: async () => {
+        await applyMigrations((sql) => database.query(sql).then(() => undefined));
+        await database.query(
+          `insert into "user" ("id","name","email","emailVerified","createdAt","updatedAt")
+           values ('user-sbg-test','SBG Test','sbg-test@example.com',true,now(),now())`,
+        );
+        fixture = await createDisposableBooking(database);
+        return { bookingId: fixture.bookingId };
+      },
+      installCli: async () => {
+        stripeBin = await installStripeCli();
+        directory = join(stripeBin, "..");
+      },
+      startProxy: async () => {
+        proxy = createServer(async (req, res) => {
+          const raw = await readBody(req);
+          const signature = req.headers["stripe-signature"]?.toString() ?? "";
+          if (!listener) {
+            res.writeHead(503, { "content-type": "application/json" });
+            res.end(JSON.stringify({ received: false, outcome: "listener_not_ready" }));
+            return;
           }
-        }
-        res.writeHead(forwarded.status, { "content-type": "application/json" });
-        res.end(responseText);
-      });
-      await new Promise<void>((resolve) => proxy.listen(0, "127.0.0.1", () => resolve()));
-      const proxyAddress = proxy.address();
-      if (!proxyAddress || typeof proxyAddress === "string") throw new Error("proxy_not_local");
-      let webhookSecret = "";
-      const forwarding = await forwardConnectEvents({
-        stripeBin,
-        listenerPort: proxyAddress.port,
-        secretReady: (secret) => {
-          webhookSecret = secret;
-        },
-      });
-      try {
-      let operationFailure: string | null = null;
-      let knownSessionId: string | null = null;
-      try {
+          const forwarded = await fetch(`http://127.0.0.1:${listener.port}/`, {
+            method: "POST",
+            headers: { "content-type": "application/json", "stripe-signature": signature },
+            body: raw,
+          });
+          const responseText = await forwarded.text();
+          let outcome = "";
+          try { outcome = String((JSON.parse(responseText) as { outcome?: string }).outcome ?? ""); } catch { outcome = ""; }
+          if (forwarded.ok && outcome === "confirmed_paid" && !captured) {
+            try {
+              assertPaidConnectEvent(JSON.parse(raw) as Parameters<typeof assertPaidConnectEvent>[0]);
+              captured = { raw, signature };
+            } catch (err) {
+              webhookFailure = err instanceof Error && err.message === "webhook_event_rejected" ? err.message : "webhook_event_rejected";
+            }
+          }
+          res.writeHead(forwarded.status, { "content-type": "application/json" });
+          res.end(responseText);
+        });
+        await new Promise<void>((resolve) => proxy?.listen(0, "127.0.0.1", () => resolve()));
+        const address = proxy.address();
+        if (!address || typeof address === "string") throw new Error("proxy_not_local");
+        proxyPort = address.port;
+      },
+      awaitCli: async () => {
+        forwarding = await forwardConnectEvents({
+          stripeBin,
+          listenerPort: proxyPort,
+          secretReady: (secret) => { webhookSecret = secret; },
+        });
         await Promise.race([
           forwarding.ready,
           new Promise((_, reject) => setTimeout(() => reject(new Error("webhook_secret_timeout")), 20_000)),
         ]);
         forwarding.assertAlive();
         if (!webhookSecret) throw new Error("webhook_secret_timeout");
+      },
+      startListener: async () => {
+        const { startLocalGuestPaymentTestListener } = await import("../../src/lib/aether/guest-payment-test-listener.ts");
         listener = await startLocalGuestPaymentTestListener({
           connectionString: GATEWAY_URL,
           webhookSecret,
           env: process.env,
         });
+      },
+      createCheckout: async () => {
+        if (!fixture) return absentCheckout;
         const { startGuestPaymentForBooking } = await import("../../src/lib/aether/guest-payment-fns.ts");
-        const app = await connectAdmin(APP_URL);
-        let payment: { url: string; accountId: string };
-        try {
-          const who = await app.query<{ current_user: string }>("select current_user");
-          if (who.rows[0]?.current_user !== "aether_app") throw new Error("role_not_authorised");
-          const db = {
-            query: async <T>(text: string, params?: unknown[]) => (await app.query(text, params)).rows as T[],
-          };
-          payment = await startGuestPaymentForBooking(db, fixture.token, RETURN_ORIGIN, process.env);
-        } finally {
-          await app.end();
+        app = await connectAdmin(APP_URL);
+        const who = await app.query<{ current_user: string }>("select current_user");
+        if (who.rows[0]?.current_user !== "aether_app") {
+          return { ...absentCheckout, attempted: true, ambiguous: true, failure: "role_not_authorised" };
         }
-        if (payment.accountId !== CONNECTED_ACCOUNT) throw new Error("unexpected_payee");
-        const session = await database.query<{
-          session_id: string;
-          account_id: string;
-          amount_minor: number;
-          currency: string;
-        }>(
-          `select p.stripe_checkout_session_id as session_id,
-                  p.payee_stripe_account_id as account_id,
-                  p.amount_minor,
-                  p.currency
-             from sbg_booking_payments p
-            where p.booking_id = $1::uuid`,
+        const db = { query: async <T>(text: string, params?: unknown[]) => (await app!.query(text, params)).rows as T[] };
+        try {
+          const payment = await startGuestPaymentForBooking(db, fixture.token, RETURN_ORIGIN, process.env);
+          if (payment.accountId !== CONNECTED_ACCOUNT) {
+            return { ...absentCheckout, attempted: true, ambiguous: true, failure: "unexpected_payee" };
+          }
+          checkoutUrl = payment.url;
+        } catch (err) {
+          const stored = await loadHarnessPayment(database, fixture.bookingId);
+          if (stored.checkoutAttempt === null) {
+            return { attempted: true, ambiguous: true, sessionId: null, paymentId: null, checkoutAttempt: null, failure: paymentFailureCode(err), lookupUnreadable: true };
+          }
+          if (stored.sessionId || stored.checkoutAttempt > 0) {
+            return { attempted: true, ambiguous: !stored.sessionId, sessionId: stored.sessionId, paymentId: stored.paymentId, checkoutAttempt: stored.checkoutAttempt, failure: paymentFailureCode(err) };
+          }
+          return { ...absentCheckout, failure: "checkout_not_claimed" };
+        }
+        const stored = await loadHarnessPayment(database, fixture.bookingId);
+        if (stored.checkoutAttempt === null) {
+          return { attempted: true, ambiguous: true, sessionId: null, paymentId: null, checkoutAttempt: null, failure: "database_unreadable", lookupUnreadable: true };
+        }
+        if (!stored.sessionId) {
+          return { attempted: true, ambiguous: stored.checkoutAttempt > 0, sessionId: null, paymentId: stored.paymentId, checkoutAttempt: stored.checkoutAttempt, failure: "checkout_authority_mismatch" };
+        }
+        const row = await database.query<{ account_id: string; amount_minor: number; currency: string }>(
+          `select payee_stripe_account_id as account_id, amount_minor, currency
+             from sbg_booking_payments where booking_id = $1::uuid`,
           [fixture.bookingId],
         );
-        const row = session.rows[0];
-        if (!row || row.account_id !== CONNECTED_ACCOUNT || row.amount_minor !== AMOUNT_MINOR || row.currency !== "EUR") {
-          throw new Error("checkout_authority_mismatch");
+        const paymentRow = row.rows[0];
+        if (!paymentRow || paymentRow.account_id !== CONNECTED_ACCOUNT || Number(paymentRow.amount_minor) !== AMOUNT_MINOR || paymentRow.currency !== "EUR") {
+          return { attempted: true, ambiguous: false, sessionId: stored.sessionId, paymentId: stored.paymentId, checkoutAttempt: stored.checkoutAttempt, failure: "checkout_authority_mismatch" };
         }
-        knownSessionId = row.session_id;
-        const retrieved = await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(row.session_id)}`, {
-          headers: {
-            Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}`,
-            "Stripe-Account": CONNECTED_ACCOUNT,
-          },
+        knownSession = { sessionId: stored.sessionId, paymentId: stored.paymentId, checkoutAttempt: stored.checkoutAttempt };
+        return { attempted: true, ambiguous: false, sessionId: stored.sessionId, paymentId: stored.paymentId, checkoutAttempt: stored.checkoutAttempt, failure: null };
+      },
+      retrieveCheckout: async () => {
+        if (!knownSession) throw new Error("checkout_authority_mismatch");
+        const retrieved = await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(knownSession.sessionId)}`, {
+          headers: { Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}`, "Stripe-Account": CONNECTED_ACCOUNT },
         });
         const body = await retrieved.json() as { livemode?: boolean; amount_total?: number; currency?: string };
         if (!retrieved.ok || body.livemode !== false || body.amount_total !== AMOUNT_MINOR || body.currency !== "eur") {
           throw new Error("checkout_not_test_mode");
         }
-        await completeHostedCheckout(payment.url);
+      },
+      completeBrowser: async () => { await completeHostedCheckout(checkoutUrl); },
+      confirmWebhook: async () => {
+        if (!fixture || !forwarding) throw new Error("webhook_not_captured");
         forwarding.assertAlive();
-        const confirmed = await waitForBooking(database, fixture.bookingId, forwarding.assertAlive);
-        if (failure) throw new Error(failure);
+        await waitForBooking(database, fixture.bookingId, forwarding.assertAlive);
+        if (webhookFailure) throw new Error(webhookFailure);
         if (!captured) throw new Error("webhook_not_captured");
         assertPaidConnectEvent(JSON.parse(captured.raw) as Parameters<typeof assertPaidConnectEvent>[0]);
+      },
+      replay: async () => {
+        if (!fixture || !listener || !captured || !forwarding) throw new Error("replay_not_duplicate");
         const replay = await fetch(`http://127.0.0.1:${listener.port}/`, {
           method: "POST",
           headers: { "content-type": "application/json", "stripe-signature": captured.signature },
@@ -1043,47 +1344,19 @@ async function runAuthorisedHarness(): Promise<void> {
         });
         const replayBody = await replay.json() as { outcome?: string };
         if (replayBody.outcome !== "duplicate") throw new Error("replay_not_duplicate");
+        forwarding.assertAlive();
         const afterReplay = await waitForBooking(database, fixture.bookingId, forwarding.assertAlive);
         if (afterReplay.paid_count !== 1) throw new Error("replay_not_duplicate");
-        void confirmed;
-      } catch (err) {
-        operationFailure = paymentFailureCode(err);
-      }
-      const stored = await loadHarnessPayment(database, fixture.bookingId);
-      const sessionId = stored.sessionId ?? knownSessionId;
-      const mismatched = stored.sessionId != null && knownSessionId != null && stored.sessionId !== knownSessionId;
-      const record = await reconcilePaymentRecovery({
-        secret: process.env.STRIPE_SECRET_KEY ?? "",
-        sessionId,
-        creationAmbiguous: !sessionId && stored.checkoutAttempt !== 0,
-        bookingId: fixture.bookingId,
-        paymentId: stored.paymentId,
-        idempotencyKey: stored.paymentId != null && stored.checkoutAttempt != null && stored.checkoutAttempt > 0
-          ? `${stored.paymentId}:${stored.checkoutAttempt}`
-          : null,
-        githubRunId: process.env.GITHUB_RUN_ID,
-        githubRunAttempt: process.env.GITHUB_RUN_ATTEMPT,
-        operationFailure,
-        blocked: mismatched ? "identity_rejected" : null,
-        fetchImpl: globalThis.fetch,
-        readBooking: () => readHarnessBooking(database, fixture.bookingId),
-      });
-      if (record.outcome !== "paid_confirmed" || operationFailure || record.recoveryFailure) {
-        throw new PaymentRecoveryError(record);
-      }
-      console.log(JSON.stringify(record));
-      } finally {
-        proxy.close();
-        await listener?.close();
-        await forwarding.stop();
-      }
-    } finally {
-      await database.end();
-    }
-  } finally {
-    await root.end();
-    if (directory) await rm(directory, { recursive: true, force: true });
-  }
+      },
+    },
+  });
+  const success = record.outcome === "paid_confirmed"
+    && record.operationFailure == null
+    && record.recoveryFailure == null
+    && record.cleanupFailure == null
+    && record.databaseUnreadable === false;
+  if (!success) throw new PaymentRecoveryError(record);
+  console.log(JSON.stringify(record));
 }
 
 async function waitForBooking(

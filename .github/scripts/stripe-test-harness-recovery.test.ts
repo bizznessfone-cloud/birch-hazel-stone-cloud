@@ -6,7 +6,10 @@ import {
   PAYMENT_CONNECTED_ACCOUNT,
   STRIPE_TEST_EXECUTION_GATE,
   reconcilePaymentRecovery,
+  runPaymentHarnessBoundary,
+  type CheckoutAttemptEvidence,
   type PaymentBookingEvidence,
+  type PaymentLookup,
   type PaymentRecoveryRecord,
 } from "./stripe-test-harness.ts";
 import { CREATE_EXPIRE_EXECUTION_GATE } from "./stripe-test-create-expire.ts";
@@ -331,3 +334,288 @@ test("repeated reconciliation does not expire a paid Session", async () => {
   assertRedacted(first.record);
   assertRedacted(second.record);
 });
+
+const storedCheckout: CheckoutAttemptEvidence = {
+  attempted: true,
+  ambiguous: false,
+  sessionId: SESSION,
+  paymentId: PAYMENT,
+  checkoutAttempt: 1,
+  failure: null,
+};
+
+function boundarySteps(overrides: Partial<{
+  prepareFixture: () => Promise<{ bookingId: string }>;
+  installCli: () => Promise<void>;
+  startProxy: () => Promise<void>;
+  awaitCli: () => Promise<void>;
+  startListener: () => Promise<void>;
+  createCheckout: () => Promise<CheckoutAttemptEvidence>;
+  retrieveCheckout: () => Promise<void>;
+  completeBrowser: () => Promise<void>;
+  confirmWebhook: () => Promise<void>;
+  replay: () => Promise<void>;
+}> = {}) {
+  return {
+    prepareFixture: async () => ({ bookingId: BOOKING }),
+    installCli: async () => undefined,
+    startProxy: async () => undefined,
+    awaitCli: async () => undefined,
+    startListener: async () => undefined,
+    createCheckout: async () => storedCheckout,
+    retrieveCheckout: async () => undefined,
+    completeBrowser: async () => undefined,
+    confirmWebhook: async () => undefined,
+    replay: async () => undefined,
+    ...overrides,
+  };
+}
+
+async function boundary(input: {
+  steps?: ReturnType<typeof boundarySteps>;
+  lookup?: PaymentLookup;
+  booking?: PaymentBookingEvidence | null;
+  bookingError?: boolean;
+  fetchImpl?: typeof fetch;
+  cleanup?: Partial<Record<"listener" | "proxy" | "cli" | "database" | "temporaryDirectory", () => Promise<void>>>;
+}): Promise<{ record: PaymentRecoveryRecord; expireCalls: number }> {
+  let expireCalls = 0;
+  const fetchImpl = input.fetchImpl ?? (async (_url, init) => {
+    if ((init?.method ?? "GET") === "POST") expireCalls += 1;
+    return jsonResponse(200, session({ status: "expired" }));
+  });
+  const wrapped: typeof fetch = async (url, init) => {
+    if ((init?.method ?? "GET") === "POST") expireCalls += 1;
+    return fetchImpl(url, init);
+  };
+  const record = await runPaymentHarnessBoundary({
+    secret: SECRET,
+    githubRunId: "40114158363",
+    githubRunAttempt: "1",
+    fetchImpl: wrapped,
+    steps: input.steps ?? boundarySteps(),
+    lookupPayment: async () => input.lookup ?? { state: "stored", paymentId: PAYMENT, sessionId: SESSION, checkoutAttempt: 1 },
+    readBooking: async () => {
+      if (input.bookingError) throw new Error("database_unreadable");
+      return input.booking === undefined ? confirmedBooking() : input.booking;
+    },
+    cleanup: {
+      listener: async () => undefined,
+      proxy: async () => undefined,
+      cli: async () => undefined,
+      database: async () => undefined,
+      temporaryDirectory: async () => undefined,
+      ...input.cleanup,
+    },
+  });
+  return { record, expireCalls };
+}
+
+test("fixture creation failure reports no_session without Stripe", async () => {
+  const { record, expireCalls } = await boundary({
+    steps: boundarySteps({ prepareFixture: async () => { throw new Error("fixture_not_payable"); } }),
+  });
+  assert.equal(record.outcome, "no_session");
+  assert.equal(record.operationFailure, "fixture_not_payable");
+  assert.equal(expireCalls, 0);
+  assertRedacted(record);
+});
+
+test("Stripe CLI installation failure reports no_session without Stripe", async () => {
+  const { record, expireCalls } = await boundary({
+    steps: boundarySteps({ installCli: async () => { throw new Error("stripe_cli_download_failed"); } }),
+  });
+  assert.equal(record.outcome, "no_session");
+  assert.equal(record.operationFailure, "stripe_cli_download_failed");
+  assert.equal(expireCalls, 0);
+});
+
+test("proxy startup failure reports no_session without Stripe", async () => {
+  const { record, expireCalls } = await boundary({
+    steps: boundarySteps({ startProxy: async () => { throw new Error("proxy_not_local"); } }),
+  });
+  assert.equal(record.outcome, "no_session");
+  assert.equal(record.operationFailure, "proxy_not_local");
+  assert.equal(expireCalls, 0);
+});
+
+test("CLI readiness timeout reports no_session without Stripe", async () => {
+  const { record, expireCalls } = await boundary({
+    steps: boundarySteps({ awaitCli: async () => { throw new Error("webhook_secret_timeout"); } }),
+  });
+  assert.equal(record.outcome, "no_session");
+  assert.equal(record.operationFailure, "webhook_secret_timeout");
+  assert.equal(expireCalls, 0);
+});
+
+test("listener startup failure reports no_session without Stripe", async () => {
+  const { record, expireCalls } = await boundary({
+    steps: boundarySteps({ startListener: async () => { throw new Error("listener_not_ready"); } }),
+  });
+  assert.equal(record.outcome, "no_session");
+  assert.equal(record.operationFailure, "listener_not_ready");
+  assert.equal(expireCalls, 0);
+});
+
+test("Checkout failure before a claim reports no_session", async () => {
+  const { record, expireCalls } = await boundary({
+    steps: boundarySteps({
+      createCheckout: async () => ({ attempted: false, ambiguous: false, sessionId: null, paymentId: null, checkoutAttempt: 0, failure: "checkout_not_claimed" }),
+    }),
+    lookup: { state: "absent" },
+  });
+  assert.equal(record.outcome, "no_session");
+  assert.equal(record.creationAmbiguous, false);
+  assert.equal(record.operationFailure, "checkout_not_claimed");
+  assert.equal(expireCalls, 0);
+});
+
+test("ambiguous Checkout creation stays unresolved", async () => {
+  const { record, expireCalls } = await boundary({
+    steps: boundarySteps({
+      createCheckout: async () => ({ attempted: true, ambiguous: true, sessionId: null, paymentId: PAYMENT, checkoutAttempt: 1, failure: "stripe_test_harness_failed" }),
+    }),
+    lookup: { state: "stored", paymentId: PAYMENT, sessionId: null, checkoutAttempt: 1 },
+  });
+  assert.equal(record.outcome, "recovery_required");
+  assert.notEqual(record.outcome, "no_session");
+  assert.equal(record.creationAmbiguous, true);
+  assert.equal(record.idempotencyKey, IDEMPOTENCY);
+  assert.equal(expireCalls, 0);
+  assertRedacted(record);
+});
+
+test("database lookup failure cannot invent no_session", async () => {
+  let gets = 0;
+  const { record, expireCalls } = await boundary({
+    lookup: { state: "unreadable" },
+    fetchImpl: async (_url, init) => {
+      if ((init?.method ?? "GET") === "POST") return jsonResponse(200, session({ status: "expired" }));
+      gets += 1;
+      return jsonResponse(200, session({ status: gets === 1 ? "open" : "expired" }));
+    },
+  });
+  assert.notEqual(record.outcome, "no_session");
+  assert.equal(record.databaseUnreadable, true);
+  assert.equal(record.outcome, "unpaid_expired");
+  assert.equal(record.sessionId, SESSION);
+  assert.equal(expireCalls, 1);
+  const missing = await boundary({
+    steps: boundarySteps({
+      createCheckout: async () => ({ attempted: true, ambiguous: true, sessionId: null, paymentId: PAYMENT, checkoutAttempt: null, failure: "stripe_test_harness_failed", lookupUnreadable: true }),
+    }),
+    lookup: { state: "unreadable" },
+  });
+  assert.equal(missing.record.outcome, "recovery_required");
+  assert.equal(missing.record.databaseUnreadable, true);
+  assert.equal(missing.record.recoveryFailure, "database_unreadable");
+  assert.equal(missing.expireCalls, 0);
+});
+
+test("browser failure before payment expires the unpaid Session", async () => {
+  let gets = 0;
+  const { record, expireCalls } = await boundary({
+    steps: boundarySteps({ completeBrowser: async () => { throw new Error("checkout_browser_failed"); } }),
+    booking: null,
+    fetchImpl: async (_url, init) => {
+      if ((init?.method ?? "GET") === "POST") return jsonResponse(200, session({ status: "expired" }));
+      gets += 1;
+      return jsonResponse(200, session({ status: gets === 1 ? "open" : "expired" }));
+    },
+  });
+  assert.equal(record.outcome, "unpaid_expired");
+  assert.equal(record.operationFailure, "checkout_browser_failed");
+  assert.equal(expireCalls, 1);
+});
+
+test("browser failure after payment preserves the paid Session", async () => {
+  const { record, expireCalls } = await boundary({
+    steps: boundarySteps({ completeBrowser: async () => { throw new Error("checkout_browser_failed"); } }),
+    booking: null,
+    fetchImpl: async () => jsonResponse(200, session({ status: "complete", payment_status: "paid" })),
+  });
+  assert.equal(record.outcome, "paid_unconfirmed");
+  assert.equal(expireCalls, 0);
+  assert.equal(record.operationFailure, "checkout_browser_failed");
+});
+
+test("webhook confirmation timeout preserves a paid Session", async () => {
+  const { record, expireCalls } = await boundary({
+    steps: boundarySteps({ confirmWebhook: async () => { throw new Error("payment_not_confirmed"); } }),
+    booking: confirmedBooking({ lifecycleState: "awaiting_payment", paymentStatus: "pending", paidCount: 0 }),
+    fetchImpl: async () => jsonResponse(200, session({ status: "complete", payment_status: "paid" })),
+  });
+  assert.equal(record.outcome, "paid_unconfirmed");
+  assert.equal(record.operationFailure, "payment_not_confirmed");
+  assert.equal(expireCalls, 0);
+});
+
+test("duplicate replay failure keeps the paid confirmation", async () => {
+  const { record, expireCalls } = await boundary({
+    steps: boundarySteps({ replay: async () => { throw new Error("replay_not_duplicate"); } }),
+    fetchImpl: async () => jsonResponse(200, session({ status: "complete", payment_status: "paid" })),
+  });
+  assert.equal(record.outcome, "paid_confirmed");
+  assert.equal(record.operationFailure, "replay_not_duplicate");
+  assert.equal(expireCalls, 0);
+});
+
+test("recovery API timeout stays unresolved", async () => {
+  const { record, expireCalls } = await boundary({
+    fetchImpl: async () => { throw timeoutError(); },
+  });
+  assert.equal(record.outcome, "recovery_required");
+  assert.equal(record.recoveryFailure, "request_timeout");
+  assert.equal(record.sessionId, SESSION);
+  assert.equal(expireCalls, 0);
+  assertRedacted(record);
+});
+
+test("PostgreSQL unavailable during reconciliation stays unresolved", async () => {
+  const { record } = await boundary({
+    lookup: { state: "unreadable" },
+    bookingError: true,
+    fetchImpl: async () => { throw timeoutError(); },
+  });
+  assert.equal(record.outcome, "recovery_required");
+  assert.notEqual(record.outcome, "no_session");
+  assert.equal(record.databaseUnreadable, true);
+  assert.equal(record.recoveryFailure, "request_timeout");
+  assert.equal(record.sessionId, SESSION);
+});
+
+for (const [name, cleanupName, code] of [
+  ["webhook listener cleanup failure", "listener", "cleanup_listener_failed"],
+  ["proxy cleanup failure", "proxy", "cleanup_proxy_failed"],
+  ["CLI subprocess termination failure", "cli", "cleanup_cli_failed"],
+  ["PostgreSQL connection cleanup failure", "database", "cleanup_database_failed"],
+  ["temporary-directory cleanup failure", "temporaryDirectory", "cleanup_temporary_directory_failed"],
+] as const) {
+  test(`${name} is recorded separately`, async () => {
+    const { record } = await boundary({
+      fetchImpl: async () => jsonResponse(200, session({ status: "complete", payment_status: "paid" })),
+      cleanup: { [cleanupName]: async () => { throw new Error("https://checkout.stripe.com/c/pay/secret"); } },
+    });
+    assert.equal(record.outcome, "paid_confirmed");
+    assert.equal(record.cleanupFailure, code);
+    assert.deepEqual(record.cleanupFailures, [code]);
+    assert.equal(record.operationFailure, null);
+    assertRedacted(record);
+  });
+}
+
+test("operation, recovery and cleanup failures stay distinguishable", async () => {
+  const { record, expireCalls } = await boundary({
+    steps: boundarySteps({ completeBrowser: async () => { throw new Error("checkout_browser_failed"); } }),
+    fetchImpl: async () => { throw timeoutError(); },
+    cleanup: { listener: async () => { throw new Error("listener down"); } },
+  });
+  assert.equal(record.outcome, "recovery_required");
+  assert.equal(record.operationFailure, "checkout_browser_failed");
+  assert.equal(record.recoveryFailure, "request_timeout");
+  assert.equal(record.cleanupFailure, "cleanup_listener_failed");
+  assert.equal(expireCalls, 0);
+  assert.equal(record.sessionId, SESSION);
+  assertRedacted(record);
+});
+
