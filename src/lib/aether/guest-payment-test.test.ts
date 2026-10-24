@@ -124,6 +124,9 @@ test("stage 6D source stays test-only and off the SaaS webhook", () => {
   assert.match(payment, /bound\.stripeAccountId/);
   assert.doesNotMatch(payment, /sbg_prepare_booking_payment|SBG_SAAS_COMMERCE|SBG_DOMAIN_B_LIVE_CHECKOUT/);
   assert.match(entry, /handleGuestPaymentWebhook/);
+  assert.match(entry, /verifyGuestPaymentSignature/);
+  assert.match(entry, /live_event_rejected/);
+  assert.doesNotMatch(readFileSync(new URL("./payment-gateway.ts", import.meta.url), "utf8"), /live_event_rejected/);
   assert.doesNotMatch(webhook, /acceptIsolatedGuestPaymentTest|handleGuestPaymentWebhook/);
   assert.match(webhook, /capacity_payment_unmounted/);
   assert.doesNotMatch(webhook, /startLocalGuestPaymentTestListener|runLocalExpiryOnce/);
@@ -222,6 +225,89 @@ test("isolated entry refuses the SaaS secret before the database", async () => {
   });
   assert.equal(empty.status, 503);
   assert.equal(empty.body.outcome, "secret_unavailable");
+});
+
+test("a signed LIVE event cannot mutate a TEST booking", async () => {
+  let queries = 0;
+  const db = {
+    async query() {
+      queries += 1;
+      return [];
+    },
+  };
+  const now = 1_700_000_000;
+  const live = JSON.stringify({
+    id: "evt_live_mode",
+    type: "checkout.session.completed",
+    account: "acct_1UKEFuFHnHoOWAJE",
+    livemode: true,
+    data: {
+      object: {
+        id: "cs_live",
+        object: "checkout.session",
+        mode: "payment",
+        livemode: true,
+        amount_total: 4500,
+        currency: "eur",
+        payment_status: "paid",
+        metadata: {
+          booking_id: "00000000-0000-4000-8000-000000000010",
+          payment_id: "00000000-0000-4000-8000-000000000011",
+        },
+      },
+    },
+  });
+  const rejected = await acceptIsolatedGuestPaymentTest({
+    rawBody: live,
+    signatureHeader: sign(live, WEBHOOK_SECRET, now),
+    webhookSecret: WEBHOOK_SECRET,
+    db,
+    env: TEST_ENV,
+    nowMs: now * 1000,
+  });
+  assert.equal(rejected.status, 409);
+  assert.equal(rejected.body.outcome, "live_event_rejected");
+  const mismatchedObject = JSON.stringify({
+    ...JSON.parse(live),
+    livemode: false,
+    data: { object: { ...JSON.parse(live).data.object, livemode: true } },
+  });
+  const objectRejected = await acceptIsolatedGuestPaymentTest({
+    rawBody: mismatchedObject,
+    signatureHeader: sign(mismatchedObject, WEBHOOK_SECRET, now),
+    webhookSecret: WEBHOOK_SECRET,
+    db,
+    env: TEST_ENV,
+    nowMs: now * 1000,
+  });
+  assert.equal(objectRejected.body.outcome, "live_event_rejected");
+  const forged = JSON.stringify({
+    ...JSON.parse(live),
+    livemode: false,
+    data: { object: { ...JSON.parse(live).data.object, livemode: false } },
+  });
+  const invalid = await acceptIsolatedGuestPaymentTest({
+    rawBody: forged,
+    signatureHeader: "t=1,v1=dead",
+    webhookSecret: WEBHOOK_SECRET,
+    db,
+    env: TEST_ENV,
+    nowMs: now * 1000,
+  });
+  assert.equal(invalid.status, 400);
+  assert.equal(invalid.body.outcome, "invalid_signature");
+  assert.equal(queries, 0);
+  const accepted = await acceptIsolatedGuestPaymentTest({
+    rawBody: forged,
+    signatureHeader: sign(forged, WEBHOOK_SECRET, now),
+    webhookSecret: WEBHOOK_SECRET,
+    db,
+    env: TEST_ENV,
+    nowMs: now * 1000,
+  });
+  assert.equal(accepted.status, 409);
+  assert.equal(accepted.body.outcome, "uncorrelated");
+  assert.equal(queries, 1);
 });
 
 test("bound payee, concurrency, and mocked payment lifecycle", { timeout: 180_000 }, async () => {
@@ -537,6 +623,7 @@ test("bound payee, concurrency, and mocked payment lifecycle", { timeout: 180_00
       return JSON.stringify({
         id: eventId,
         type,
+        livemode: false,
         account,
         data: {
           object: {
@@ -616,6 +703,7 @@ test("bound payee, concurrency, and mocked payment lifecycle", { timeout: 180_00
     const lateRaw = JSON.stringify({
       id: "evt_late_1",
       type: "checkout.session.completed",
+      livemode: false,
       account: "acct_inhouse",
       data: {
         object: {
@@ -656,6 +744,7 @@ test("bound payee, concurrency, and mocked payment lifecycle", { timeout: 180_00
     const failRaw = JSON.stringify({
       id: "evt_fail_1",
       type: "checkout.session.async_payment_failed",
+      livemode: false,
       account: "acct_inhouse",
       data: {
         object: {
@@ -693,6 +782,7 @@ test("bound payee, concurrency, and mocked payment lifecycle", { timeout: 180_00
     const abandonRaw = JSON.stringify({
       id: "evt_abandon_1",
       type: "checkout.session.expired",
+      livemode: false,
       account: "acct_inhouse",
       data: {
         object: {
@@ -748,6 +838,7 @@ test("bound payee, concurrency, and mocked payment lifecycle", { timeout: 180_00
     const refundRaw = JSON.stringify({
       id: "evt_refund_early",
       type: "charge.refunded",
+      livemode: false,
       account: "acct_inhouse",
       data: { object: { payment_intent: null } },
     });
