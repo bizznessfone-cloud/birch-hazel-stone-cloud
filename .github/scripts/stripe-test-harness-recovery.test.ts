@@ -411,6 +411,61 @@ async function boundary(input: {
   return { record, expireCalls };
 }
 
+test("attempted Checkout with an absent lookup stays unresolved", async () => {
+  const { record, expireCalls } = await boundary({
+    steps: boundarySteps({
+      createCheckout: async () => ({
+        attempted: true,
+        ambiguous: false,
+        sessionId: null,
+        paymentId: PAYMENT,
+        checkoutAttempt: 1,
+        failure: "stripe_test_harness_failed",
+      }),
+    }),
+    lookup: { state: "absent" },
+  });
+  assert.equal(record.outcome, "recovery_required");
+  assert.equal(record.creationAmbiguous, true);
+  assert.notEqual(record.outcome, "no_session");
+  assert.equal(record.idempotencyKey, IDEMPOTENCY);
+  assert.equal(record.githubRunId, "40114158363");
+  assert.equal(expireCalls, 0);
+  assertRedacted(record);
+});
+
+test("attempted Checkout with an unreadable lookup stays unresolved", async () => {
+  const { record, expireCalls } = await boundary({
+    steps: boundarySteps({
+      createCheckout: async () => ({
+        attempted: true,
+        ambiguous: false,
+        sessionId: null,
+        paymentId: PAYMENT,
+        checkoutAttempt: 1,
+        failure: "stripe_test_harness_failed",
+      }),
+    }),
+    lookup: { state: "unreadable" },
+  });
+  assert.equal(record.outcome, "recovery_required");
+  assert.equal(record.creationAmbiguous, true);
+  assert.equal(record.databaseUnreadable, true);
+  assert.equal(record.recoveryFailure, "database_unreadable");
+  assert.equal(expireCalls, 0);
+});
+
+test("failure before Checkout creation still reports no_session", async () => {
+  const { record, expireCalls } = await boundary({
+    steps: boundarySteps({ prepareFixture: async () => { throw new Error("fixture_not_payable"); } }),
+    lookup: { state: "absent" },
+  });
+  assert.equal(record.outcome, "no_session");
+  assert.equal(record.creationAmbiguous, false);
+  assert.equal(record.operationFailure, "fixture_not_payable");
+  assert.equal(expireCalls, 0);
+});
+
 test("fixture creation failure reports no_session without Stripe", async () => {
   const { record, expireCalls } = await boundary({
     steps: boundarySteps({ prepareFixture: async () => { throw new Error("fixture_not_payable"); } }),

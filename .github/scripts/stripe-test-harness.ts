@@ -1059,7 +1059,7 @@ export async function runPaymentHarnessBoundary(input: {
       githubRunAttempt: input.githubRunAttempt,
       operationFailure,
     });
-  } else if (!sessionId && (ambiguous || flags.databaseUnreadable)) {
+  } else if (!sessionId) {
     record = paymentRecoveryRecord({
       outcome: "recovery_required",
       bookingId,
@@ -1071,15 +1071,6 @@ export async function runPaymentHarnessBoundary(input: {
       recoveryFailure: flags.databaseUnreadable ? "database_unreadable" : "creation_ambiguous",
       creationAmbiguous: true,
       databaseUnreadable: flags.databaseUnreadable,
-    });
-  } else if (!sessionId) {
-    record = paymentRecoveryRecord({
-      outcome: "no_session",
-      bookingId,
-      paymentId,
-      githubRunId: input.githubRunId,
-      githubRunAttempt: input.githubRunAttempt,
-      operationFailure,
     });
   } else {
     try {
@@ -1302,7 +1293,14 @@ async function runAuthorisedHarness(): Promise<void> {
           return { attempted: true, ambiguous: true, sessionId: null, paymentId: null, checkoutAttempt: null, failure: "database_unreadable", lookupUnreadable: true };
         }
         if (!stored.sessionId) {
-          return { attempted: true, ambiguous: stored.checkoutAttempt > 0, sessionId: null, paymentId: stored.paymentId, checkoutAttempt: stored.checkoutAttempt, failure: "checkout_authority_mismatch" };
+          return {
+            attempted: true,
+            ambiguous: true,
+            sessionId: null,
+            paymentId: stored.paymentId,
+            checkoutAttempt: stored.checkoutAttempt,
+            failure: "checkout_authority_mismatch",
+          };
         }
         const row = await database.query<{ account_id: string; amount_minor: number; currency: string }>(
           `select payee_stripe_account_id as account_id, amount_minor, currency
