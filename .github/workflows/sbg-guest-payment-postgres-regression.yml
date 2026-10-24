@@ -1,0 +1,64 @@
+# Manual guest-payment regression on the proven disposable PostgreSQL cluster.
+# Not registered on main and not dispatched by this commit.
+# No Stripe credential, payment harness, CLI listener, or browser.
+name: SBG guest-payment PostgreSQL regression
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sbg-guest-payment-postgres-regression
+  cancel-in-progress: false
+
+jobs:
+  guest-payment-regression:
+    if: github.ref == 'refs/heads/test/stripe-gate2-runner' && github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Start disposable PostgreSQL 18
+        run: sh .github/scripts/bootstrap-disposable-postgres.sh
+
+      - name: Verify disposable cluster before reset
+        run: |
+          set -eu
+          sh .github/scripts/bootstrap-disposable-postgres.sh identify
+          /usr/lib/postgresql/18/bin/postgres -V | grep -q 'PostgreSQL) 18\.'
+          python3 - <<'PY'
+          import os
+          from urllib.parse import urlparse
+          for name in ("STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "SBG_STRIPE_TEST_SECRET_KEY"):
+              if os.environ.get(name):
+                  raise SystemExit(f"Stripe credential is present in {name}.")
+          for name, value in os.environ.items():
+              lower = value.lower()
+              if "neon.tech" in lower:
+                  raise SystemExit(f"Neon endpoint rejected in {name}.")
+              if "postgres://" in lower or "postgresql://" in lower:
+                  for part in value.replace(";", " ").split():
+                      if "://" not in part:
+                          continue
+                      host = (urlparse(part).hostname or "").lower()
+                      if host not in ("127.0.0.1", "localhost"):
+                          raise SystemExit(f"Remote database URL rejected in {name}.")
+          PY
+
+      - name: Run guest-payment PostgreSQL regression
+        env:
+          STAGE_G2S5_PG_URL: postgresql://postgres@127.0.0.1:54329/postgres
+        run: node --experimental-strip-types --test --test-concurrency=1 --test-force-exit src/lib/aether/guest-payment-test.test.ts
