@@ -126,6 +126,13 @@ test("stage 6D source stays test-only and off the SaaS webhook", () => {
   assert.match(entry, /handleGuestPaymentWebhook/);
   assert.match(entry, /verifyGuestPaymentSignature/);
   assert.match(entry, /live_event_rejected/);
+  const suite = readFileSync(new URL("./guest-payment-test.test.ts", import.meta.url), "utf8");
+  assert.match(suite, /signed LIVE webhook leaves the PostgreSQL booking unchanged/);
+  assert.match(suite, /exactly one paid record survives replay/);
+  assert.match(suite, /wrong connected account cannot confirm/);
+  assert.match(suite, /wrong Checkout Session cannot confirm/);
+  assert.match(suite, /wrong amount cannot confirm/);
+  assert.match(suite, /wrong currency cannot confirm/);
   assert.doesNotMatch(readFileSync(new URL("./payment-gateway.ts", import.meta.url), "utf8"), /live_event_rejected/);
   assert.doesNotMatch(webhook, /acceptIsolatedGuestPaymentTest|handleGuestPaymentWebhook/);
   assert.match(webhook, /capacity_payment_unmounted/);
@@ -310,7 +317,7 @@ test("a signed LIVE event cannot mutate a TEST booking", async () => {
   assert.equal(queries, 1);
 });
 
-test("bound payee, concurrency, and mocked payment lifecycle", { timeout: 180_000 }, async () => {
+test("bound payee, concurrency, and mocked payment lifecycle", { timeout: 180_000 }, async (t) => {
   if (!ADMIN_URL) assert.fail("BLOCKED — LOCAL POSTGRESQL TEST NOT RUN");
   const adminUrl = new URL(ADMIN_URL);
   if (adminUrl.hostname !== "127.0.0.1" && adminUrl.hostname !== "localhost") {
@@ -638,27 +645,149 @@ test("bound payee, concurrency, and mocked payment lifecycle", { timeout: 180_00
       });
     }
     const now = 1_700_000_000_000;
+    type PaymentSnapshot = {
+      booking_id: string;
+      lifecycle_state: string;
+      vehicle_id: string | null;
+      confirmed_paid_at: string | null;
+      status: string;
+      session_id: string;
+      amount_minor: number;
+      currency: string;
+      account_id: string;
+      paid_count: number;
+    };
+    async function paymentSnapshot(paymentId: string): Promise<PaymentSnapshot> {
+      const row = (await root.query<PaymentSnapshot>(
+        `select b.id::text as booking_id,
+                b.lifecycle_state,
+                b.vehicle_id::text as vehicle_id,
+                b.confirmed_paid_at::text as confirmed_paid_at,
+                p.status,
+                p.stripe_checkout_session_id as session_id,
+                p.amount_minor,
+                p.currency,
+                p.payee_stripe_account_id as account_id,
+                (select count(*)::int
+                   from public.sbg_booking_payments paid
+                  where paid.booking_id = b.id
+                    and paid.stripe_checkout_session_id = p.stripe_checkout_session_id
+                    and paid.status = 'paid') as paid_count
+           from public.sbg_booking_payments p
+           join public.bookings b on b.id = p.booking_id
+          where p.id = $1::uuid`,
+        [paymentId],
+      )).rows[0];
+      assert.ok(row);
+      return row;
+    }
+    function signedCheckout(args: {
+      eventId: string;
+      bookingId: string;
+      paymentId: string;
+      sessionId: string;
+      account: string;
+      amount: number;
+      currency: string;
+      livemode?: boolean;
+    }): string {
+      const livemode = args.livemode ?? false;
+      return JSON.stringify({
+        id: args.eventId,
+        type: "checkout.session.completed",
+        livemode,
+        account: args.account,
+        data: {
+          object: {
+            id: args.sessionId,
+            livemode,
+            amount_total: args.amount,
+            currency: args.currency,
+            payment_status: "paid",
+            payment_intent: `pi_${args.eventId}`,
+            metadata: { booking_id: args.bookingId, payment_id: args.paymentId },
+          },
+        },
+      });
+    }
+    await t.test("signed LIVE webhook leaves the PostgreSQL booking unchanged", async () => {
+      const booking = await createBooking(db, input("s6din", inDestination, "2026-07-28"));
+      const payment = await startGuestPaymentForBooking(db, booking.confirmationToken, "https://guest.test", TEST_ENV, deps);
+      const before = await paymentSnapshot(payment.paymentId);
+      assert.equal(before.lifecycle_state, "awaiting_payment");
+      assert.equal(before.status, "pending");
+      assert.equal(before.paid_count, 0);
+      assert.equal(before.confirmed_paid_at, null);
+      assert.ok(before.vehicle_id);
+      const raw = signedCheckout({
+        eventId: "evt_live_pg_1",
+        bookingId: before.booking_id,
+        paymentId: payment.paymentId,
+        sessionId: before.session_id,
+        account: before.account_id,
+        amount: before.amount_minor,
+        currency: "eur",
+        livemode: true,
+      });
+      const rejected = await asGateway(() => acceptIsolatedGuestPaymentTest({
+        rawBody: raw,
+        signatureHeader: sign(raw, WEBHOOK_SECRET, now / 1000),
+        webhookSecret: WEBHOOK_SECRET,
+        db: gateway,
+        env: TEST_ENV,
+        nowMs: now,
+      }));
+      assert.equal(rejected.status, 409);
+      assert.equal(rejected.body.outcome, "live_event_rejected");
+      assert.deepEqual(await paymentSnapshot(payment.paymentId), before);
+      const recorded = await root.query<{ n: number }>(
+        `select count(*)::int as n from public.sbg_stripe_events where event_id = 'evt_live_pg_1'`,
+      );
+      assert.equal(recorded.rows[0]!.n, 0);
+    });
     const completed = checkoutEvent("evt_paid_1", "checkout.session.completed", "paid", "pi_paid_1");
-    const confirmed = await asGateway(() => acceptIsolatedGuestPaymentTest({
-      rawBody: completed,
-      signatureHeader: sign(completed, WEBHOOK_SECRET, now / 1000),
-      webhookSecret: WEBHOOK_SECRET,
-      db: gateway,
-      env: TEST_ENV,
-      nowMs: now,
-    }));
-    assert.equal(confirmed.status, 200);
-    assert.equal(confirmed.body.outcome, "confirmed_paid");
-    const duplicate = await asGateway(() => acceptIsolatedGuestPaymentTest({
-      rawBody: completed,
-      signatureHeader: sign(completed, WEBHOOK_SECRET, now / 1000),
-      webhookSecret: WEBHOOK_SECRET,
-      db: gateway,
-      env: TEST_ENV,
-      nowMs: now,
-    }));
-    assert.equal(duplicate.status, 200);
-    assert.equal(duplicate.body.outcome, "duplicate");
+    await t.test("exactly one paid record survives replay", async () => {
+      const confirmed = await asGateway(() => acceptIsolatedGuestPaymentTest({
+        rawBody: completed,
+        signatureHeader: sign(completed, WEBHOOK_SECRET, now / 1000),
+        webhookSecret: WEBHOOK_SECRET,
+        db: gateway,
+        env: TEST_ENV,
+        nowMs: now,
+      }));
+      assert.equal(confirmed.status, 200);
+      assert.equal(confirmed.body.outcome, "confirmed_paid");
+      const paidOnce = await paymentSnapshot(session.paymentId);
+      assert.equal(paidOnce.lifecycle_state, "confirmed_paid");
+      assert.equal(paidOnce.status, "paid");
+      assert.equal(paidOnce.paid_count, 1);
+      assert.equal(paidOnce.amount_minor, 4500);
+      assert.equal(paidOnce.currency.toLowerCase(), "eur");
+      assert.equal(paidOnce.session_id, storedSession);
+      assert.equal(paidOnce.account_id, "acct_inhouse");
+      assert.ok(paidOnce.vehicle_id);
+      assert.ok(paidOnce.confirmed_paid_at);
+      const duplicate = await asGateway(() => acceptIsolatedGuestPaymentTest({
+        rawBody: completed,
+        signatureHeader: sign(completed, WEBHOOK_SECRET, now / 1000),
+        webhookSecret: WEBHOOK_SECRET,
+        db: gateway,
+        env: TEST_ENV,
+        nowMs: now,
+      }));
+      assert.equal(duplicate.status, 200);
+      assert.equal(duplicate.body.outcome, "duplicate");
+      const paidAgain = await paymentSnapshot(session.paymentId);
+      assert.equal(paidAgain.paid_count, 1);
+      assert.equal(paidAgain.lifecycle_state, "confirmed_paid");
+      assert.equal(paidAgain.status, "paid");
+      assert.equal(paidAgain.vehicle_id, paidOnce.vehicle_id);
+      assert.equal(paidAgain.confirmed_paid_at, paidOnce.confirmed_paid_at);
+      const recorded = await root.query<{ n: number }>(
+        `select count(*)::int as n from public.sbg_stripe_events where event_id = 'evt_paid_1'`,
+      );
+      assert.equal(recorded.rows[0]!.n, 1);
+    });
     const bad = await asGateway(() => acceptIsolatedGuestPaymentTest({
       rawBody: completed,
       signatureHeader: "t=1,v1=dead",
@@ -668,6 +797,74 @@ test("bound payee, concurrency, and mocked payment lifecycle", { timeout: 180_00
       nowMs: now,
     }));
     assert.equal(bad.status, 400);
+    async function rejectAuthorityMismatch(
+      name: string,
+      date: string,
+      eventId: string,
+      outcome: string,
+      patch: (before: PaymentSnapshot) => { account: string; sessionId: string; amount: number; currency: string },
+    ) {
+      await t.test(name, async () => {
+        const booking = await createBooking(db, input("s6din", inDestination, date));
+        const payment = await startGuestPaymentForBooking(db, booking.confirmationToken, "https://guest.test", TEST_ENV, deps);
+        const before = await paymentSnapshot(payment.paymentId);
+        assert.equal(before.lifecycle_state, "awaiting_payment");
+        assert.equal(before.status, "pending");
+        assert.equal(before.paid_count, 0);
+        assert.equal(before.confirmed_paid_at, null);
+        assert.ok(before.vehicle_id);
+        const changed = patch(before);
+        const raw = signedCheckout({
+          eventId,
+          bookingId: before.booking_id,
+          paymentId: payment.paymentId,
+          sessionId: changed.sessionId,
+          account: changed.account,
+          amount: changed.amount,
+          currency: changed.currency,
+        });
+        const rejected = await asGateway(() => acceptIsolatedGuestPaymentTest({
+          rawBody: raw,
+          signatureHeader: sign(raw, WEBHOOK_SECRET, now / 1000),
+          webhookSecret: WEBHOOK_SECRET,
+          db: gateway,
+          env: TEST_ENV,
+          nowMs: now,
+        }));
+        assert.equal(rejected.status, 409);
+        assert.notEqual(rejected.body.outcome, "confirmed_paid");
+        assert.equal(rejected.body.outcome, outcome);
+        assert.deepEqual(await paymentSnapshot(payment.paymentId), before);
+      });
+    }
+    await rejectAuthorityMismatch(
+      "wrong connected account cannot confirm",
+      "2026-07-29",
+      "evt_wrong_account_1",
+      "wrong_account",
+      (before) => ({ account: "acct_not_bound", sessionId: before.session_id, amount: before.amount_minor, currency: "eur" }),
+    );
+    await rejectAuthorityMismatch(
+      "wrong Checkout Session cannot confirm",
+      "2026-07-30",
+      "evt_wrong_session_1",
+      "session",
+      (before) => ({ account: before.account_id, sessionId: "cs_not_the_stored_session", amount: before.amount_minor, currency: "eur" }),
+    );
+    await rejectAuthorityMismatch(
+      "wrong amount cannot confirm",
+      "2026-07-31",
+      "evt_wrong_amount_1",
+      "amount",
+      (before) => ({ account: before.account_id, sessionId: before.session_id, amount: before.amount_minor + 1, currency: "eur" }),
+    );
+    await rejectAuthorityMismatch(
+      "wrong currency cannot confirm",
+      "2026-08-01",
+      "evt_wrong_currency_1",
+      "currency",
+      (before) => ({ account: before.account_id, sessionId: before.session_id, amount: before.amount_minor, currency: "usd" }),
+    );
     const liveEntry = await acceptIsolatedGuestPaymentTest({
       rawBody: completed,
       signatureHeader: sign(completed, WEBHOOK_SECRET, now / 1000),
