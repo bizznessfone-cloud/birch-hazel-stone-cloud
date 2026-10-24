@@ -1,27 +1,18 @@
-# Manual Stripe TEST skeleton. Not registered on main and not dispatched by this commit.
+# Manual Stripe TEST preflight. Not registered on main and not dispatched by this commit.
 # It does not replace the credential-free regression workflow.
-# Before any future dispatch, create the GitHub Environment sbg-stripe-test with:
-# - a required reviewer
-# - deployment branches limited to test/stripe-gate2-runner
-# - one environment secret, SBG_STRIPE_TEST_SECRET_KEY
-# Do not create a repository or production secret with that name.
-# The secret must be a platform sk_test_ or rk_test_ key for acct_1UKEDfFHnHXHuPOw.
-# stripe listen needs permission to open an ephemeral Connect webhook.
-# execute-test-payment loads the harness, which returns before any Stripe API call
-# while STRIPE_TEST_EXECUTION_GATE remains closed.
+# The environment sbg-stripe-test allows only test/stripe-gate2-runner and
+# disables administrator bypass. The approved single-administrator model does
+# not add a second required reviewer.
+# A separately authorised run uses only the environment secret
+# SBG_STRIPE_TEST_SECRET_KEY. Do not create a repository or production secret
+# with that name. The secret must be a platform sk_test_ or rk_test_ key for
+# acct_1UKEDfFHnHXHuPOw.
+# This workflow cannot select or execute a payment. It always runs preflight.
+# STRIPE_TEST_EXECUTION_GATE remains closed.
 name: SBG Stripe TEST checkout
 
 on:
   workflow_dispatch:
-    inputs:
-      phase:
-        description: Preflight checks the runner only. Payment execution is refused.
-        required: true
-        default: preflight
-        type: choice
-        options:
-          - preflight
-          - execute-test-payment
 
 permissions:
   contents: read
@@ -63,6 +54,6 @@ jobs:
         run: sh .github/scripts/bootstrap-disposable-postgres.sh
 
       - name: Run Stripe TEST preflight
-        run: sh .github/scripts/stripe-test-preflight.sh "${{ inputs.phase }}"
+        run: sh .github/scripts/stripe-test-preflight.sh preflight
         env:
           DEBUG: ""
