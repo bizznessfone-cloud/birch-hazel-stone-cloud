@@ -84,8 +84,8 @@ function assertNoSecrets(lines: string[]): void {
   assert.equal(text.includes("rk_live"), false);
 }
 
-test("execution gate is open and a closed gate still blocks before Stripe", async () => {
-  assert.equal(CREATE_EXPIRE_EXECUTION_GATE, "open");
+test("execution gate is closed and a closed gate still blocks before Stripe", async () => {
+  assert.equal(CREATE_EXPIRE_EXECUTION_GATE, "closed");
   let called = false;
   const lines = await settle(openConfig({
     gate: "closed",

@@ -6,7 +6,7 @@
 import { randomBytes } from "node:crypto";
 import { pathToFileURL } from "node:url";
 
-export const CREATE_EXPIRE_EXECUTION_GATE: "closed" | "open" = "open";
+export const CREATE_EXPIRE_EXECUTION_GATE: "closed" | "open" = "closed";
 export const CONNECTED_ACCOUNT = "acct_1UKEFuFHnHoOWAJE";
 export const AMOUNT_MINOR = 4500;
 export const CURRENCY = "eur";
