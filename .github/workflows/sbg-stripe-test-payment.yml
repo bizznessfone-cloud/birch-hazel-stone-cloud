@@ -1,0 +1,52 @@
+# Manual Stripe TEST card-payment harness.
+# Not registered on main and not dispatched by this commit.
+# STRIPE_TEST_EXECUTION_GATE is closed, so the harness exits before Stripe.
+# This workflow does not replace the preflight-only checkout workflow.
+name: SBG Stripe TEST payment
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sbg-stripe-test-payment
+  cancel-in-progress: false
+
+jobs:
+  payment:
+    if: github.ref == 'refs/heads/test/stripe-gate2-runner' && github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: sbg-stripe-test
+    env:
+      SBG_GUEST_PAYMENT_TEST: "true"
+      SBG_DOMAIN_B_LIVE_CHECKOUT: "false"
+      SBG_SAAS_COMMERCE: "off"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Install Playwright Chromium
+        run: npx --no-install playwright install --with-deps chromium
+
+      - name: Start disposable PostgreSQL 18
+        run: sh .github/scripts/bootstrap-disposable-postgres.sh
+
+      - name: Run closed Stripe TEST payment harness
+        run: sh .github/scripts/stripe-test-preflight.sh execute-test-payment
+        env:
+          DEBUG: ""
+          NODE_DEBUG: ""
+          NODE_OPTIONS: ""
+          STRIPE_SECRET_KEY: ${{ secrets.SBG_STRIPE_TEST_SECRET_KEY }}
