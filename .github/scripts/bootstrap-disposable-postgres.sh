@@ -51,48 +51,27 @@ cleanup_disposable_databases() {
         exit 1
         ;;
     esac
-  done
-  "$BIN/psql" "$DISPOSABLE_URL" -v ON_ERROR_STOP=1 <<'SQL' >/dev/null
-do $$
-begin
-  begin
-    execute 'revoke aether_webhook from aether_payment_gateway';
-  exception
-    when undefined_object or invalid_grant_operation then null;
-  end;
-  begin
-    execute 'revoke aether_expiry from aether_expiry_runner';
-  exception
-    when undefined_object or invalid_grant_operation then null;
-  end;
-end
-$$;
-SQL
-  for role in \
-    sbg_fleet_writer \
-    aether_payment_gateway \
-    aether_expiry_runner \
-    aether_expiry \
-    aether_app \
-    aether_runtime \
-    aether_webhook \
-    aether_mailer \
-    sbg_capacity_writer
-  do
     exists=$("$BIN/psql" "$DISPOSABLE_URL" -v ON_ERROR_STOP=1 -Atqc "select 1 from pg_roles where rolname = '${role}'")
     if [ "$exists" != "1" ]; then
       continue
     fi
+    members=$("$BIN/psql" "$DISPOSABLE_URL" -v ON_ERROR_STOP=1 -Atqc "select member.rolname from pg_auth_members membership join pg_roles granted on granted.oid = membership.roleid join pg_roles member on member.oid = membership.member where granted.rolname = '${role}' order by 1")
+    for member in $members; do
+      case "$member" in
+        postgres|sbg_fleet_writer|aether_payment_gateway|aether_expiry_runner|aether_expiry|aether_app|aether_runtime|aether_webhook|aether_mailer|sbg_capacity_writer) ;;
+        *)
+          echo "Refusing to revoke an unexpected role membership." >&2
+          exit 1
+          ;;
+      esac
+      "$BIN/psql" "$DISPOSABLE_URL" -v ON_ERROR_STOP=1 -c "revoke \"${role}\" from \"${member}\"" >/dev/null
+    done
     "$BIN/psql" "$DISPOSABLE_URL" -v ON_ERROR_STOP=1 -c "drop owned by \"${role}\"" >/dev/null
-    "$BIN/psql" "$DISPOSABLE_URL" -v ON_ERROR_STOP=1 -v role="$role" <<'SQL' >/dev/null
-do $$
-begin
-  execute format('revoke %I from postgres', :'role');
-exception
-  when undefined_object or invalid_grant_operation then null;
-end
-$$;
-SQL
+    remaining=$("$BIN/psql" "$DISPOSABLE_URL" -v ON_ERROR_STOP=1 -Atqc "select count(*) from pg_shdepend where refclassid = 'pg_authid'::regclass and refobjid = (select oid from pg_roles where rolname = '${role}') and deptype in ('a', 'o')")
+    if [ "$remaining" != "0" ]; then
+      echo "Refusing to drop a role that still owns shared objects." >&2
+      exit 1
+    fi
     "$BIN/psql" "$DISPOSABLE_URL" -v ON_ERROR_STOP=1 -c "drop role \"${role}\"" >/dev/null
   done
 }
