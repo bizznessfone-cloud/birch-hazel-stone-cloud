@@ -14,6 +14,7 @@ import { pathToFileURL } from "node:url";
 const STRIPE_TEST_EXECUTION_GATE = "closed";
 const CONNECTED_ACCOUNT = "acct_1UKEFuFHnHoOWAJE";
 const AMOUNT_MINOR = 4500;
+export { STRIPE_TEST_EXECUTION_GATE, CONNECTED_ACCOUNT as PAYMENT_CONNECTED_ACCOUNT, AMOUNT_MINOR as PAYMENT_AMOUNT_MINOR };
 const CLI_VERSION = "1.55.0";
 const CLI_SHA256 = "95b028177e12d5e5537a9d62366dce852bd78e104599bdc067268fe68dad1083";
 const CLI_ARCHIVE = `stripe_${CLI_VERSION}_linux_x86_64.tar.gz`;
@@ -97,6 +98,336 @@ async function runFixtureStage<T>(stage: string, fn: () => Promise<T>): Promise<
 export function safeCode(err: unknown): string {
   const message = err instanceof Error ? err.message : "";
   return /^[a-z0-9_]+$/.test(message) ? message : "stripe_test_harness_failed";
+}
+
+export type PaymentRecoveryOutcome =
+  | "no_session"
+  | "unpaid_expired"
+  | "paid_confirmed"
+  | "paid_unconfirmed"
+  | "recovery_required";
+
+export type PaymentRecoveryRecord = {
+  harness: "stripe_test_payment";
+  outcome: PaymentRecoveryOutcome;
+  connectedAccount: typeof CONNECTED_ACCOUNT;
+  sessionId: string | null;
+  bookingId: string | null;
+  paymentId: string | null;
+  githubRunId: string | null;
+  githubRunAttempt: string | null;
+  amountMinor: typeof AMOUNT_MINOR;
+  currency: "EUR";
+  idempotencyKey: string | null;
+  operationFailure: string | null;
+  recoveryFailure: string | null;
+  creationAmbiguous: boolean;
+};
+
+export type PaymentBookingEvidence = {
+  lifecycleState: string;
+  paymentStatus: string;
+  paidCount: number;
+  sessionId: string;
+  accountId: string;
+  amountMinor: number;
+  currency: string;
+};
+
+export class PaymentRecoveryError extends Error {
+  readonly record: PaymentRecoveryRecord;
+
+  constructor(record: PaymentRecoveryRecord) {
+    super(record.outcome);
+    this.name = "PaymentRecoveryError";
+    this.record = record;
+  }
+}
+
+const SESSION_ID = /^cs_(test|live)_[A-Za-z0-9]+$/;
+const TEST_SESSION_ID = /^cs_test_[A-Za-z0-9]+$/;
+const UUID_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const IDEMPOTENCY_KEY = /^[0-9a-f-]{36}:[1-9][0-9]{0,5}$/i;
+const GITHUB_ID = /^\d{1,20}$/;
+const FAILURE_CODE = /^(?:[a-z0-9_]{1,80}|fixture_[a-z0-9_]{1,80})$/;
+const CHECKOUT_COLLECTION = "https://api.stripe.com/v1/checkout/sessions";
+
+type SessionVerdict = "paid" | "unpaid_open" | "unpaid_expired" | "rejected";
+
+function cleanFailure(value: string | null): string | null {
+  if (value == null) return null;
+  return FAILURE_CODE.test(value) ? value : "stripe_test_harness_failed";
+}
+
+function cleanSession(value: string | null): string | null {
+  return value != null && SESSION_ID.test(value) ? value : null;
+}
+
+function cleanUuid(value: string | null): string | null {
+  return value != null && UUID_ID.test(value) ? value : null;
+}
+
+function cleanIdempotency(value: string | null): string | null {
+  return value != null && IDEMPOTENCY_KEY.test(value) ? value : null;
+}
+
+function cleanGithub(value: string | undefined): string | null {
+  return value != null && GITHUB_ID.test(value) ? value : null;
+}
+
+export function paymentRecoveryRecord(input: {
+  outcome: PaymentRecoveryOutcome;
+  sessionId?: string | null;
+  bookingId?: string | null;
+  paymentId?: string | null;
+  githubRunId?: string;
+  githubRunAttempt?: string;
+  idempotencyKey?: string | null;
+  operationFailure?: string | null;
+  recoveryFailure?: string | null;
+  creationAmbiguous?: boolean;
+}): PaymentRecoveryRecord {
+  return {
+    harness: "stripe_test_payment",
+    outcome: input.outcome,
+    connectedAccount: CONNECTED_ACCOUNT,
+    sessionId: cleanSession(input.sessionId ?? null),
+    bookingId: cleanUuid(input.bookingId ?? null),
+    paymentId: cleanUuid(input.paymentId ?? null),
+    githubRunId: cleanGithub(input.githubRunId),
+    githubRunAttempt: cleanGithub(input.githubRunAttempt),
+    amountMinor: AMOUNT_MINOR,
+    currency: "EUR",
+    idempotencyKey: cleanIdempotency(input.idempotencyKey ?? null),
+    operationFailure: cleanFailure(input.operationFailure ?? null),
+    recoveryFailure: cleanFailure(input.recoveryFailure ?? null),
+    creationAmbiguous: input.creationAmbiguous === true,
+  };
+}
+
+function classifySession(id: string, body: unknown): SessionVerdict {
+  if (!body || typeof body !== "object") return "rejected";
+  const session = body as {
+    id?: unknown;
+    livemode?: unknown;
+    mode?: unknown;
+    amount_total?: unknown;
+    currency?: unknown;
+    payment_status?: unknown;
+    status?: unknown;
+    account?: unknown;
+  };
+  if (session.id !== id || session.livemode !== false) return "rejected";
+  if (session.amount_total !== AMOUNT_MINOR || session.currency !== "eur") return "rejected";
+  if (session.mode != null && session.mode !== "payment") return "rejected";
+  if (typeof session.account === "string" && session.account !== CONNECTED_ACCOUNT) return "rejected";
+  if (session.payment_status === "paid") return "paid";
+  if (session.payment_status === "unpaid" && session.status === "open") return "unpaid_open";
+  if (session.payment_status === "unpaid" && session.status === "expired") return "unpaid_expired";
+  return "rejected";
+}
+
+function bookingConfirms(evidence: PaymentBookingEvidence | null, sessionId: string): boolean {
+  return evidence != null
+    && evidence.lifecycleState === "confirmed_paid"
+    && evidence.paymentStatus === "paid"
+    && evidence.paidCount === 1
+    && evidence.sessionId === sessionId
+    && evidence.accountId === CONNECTED_ACCOUNT
+    && evidence.amountMinor === AMOUNT_MINOR
+    && evidence.currency.toUpperCase() === "EUR";
+}
+
+async function stripeRecoveryRequest(
+  fetchImpl: typeof fetch,
+  secret: string,
+  method: "GET" | "POST",
+  url: string,
+  idempotencyKey?: string,
+): Promise<{ status: number; body: unknown }> {
+  if (!url.startsWith(`${CHECKOUT_COLLECTION}/`)) throw new Error("retrieve_failed");
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${secret}`,
+    Accept: "application/json",
+    "Stripe-Account": CONNECTED_ACCOUNT,
+  };
+  if (method === "POST") headers["Content-Type"] = "application/x-www-form-urlencoded";
+  if (idempotencyKey) headers["Idempotency-Key"] = idempotencyKey;
+  let response: Response;
+  try {
+    response = await fetchImpl(url, {
+      method,
+      headers,
+      redirect: "error",
+      signal: AbortSignal.timeout(10_000),
+    });
+  } catch (err) {
+    const name = err instanceof Error ? err.name : "";
+    if (name === "TimeoutError" || name === "AbortError") throw new Error("request_timeout");
+    throw new Error(method === "POST" ? "expire_failed" : "retrieve_failed");
+  }
+  const text = await response.text();
+  let body: unknown = null;
+  if (text) {
+    try {
+      body = JSON.parse(text) as unknown;
+    } catch {
+      body = null;
+    }
+  }
+  return { status: response.status, body };
+}
+
+async function paidOutcome(
+  input: {
+    sessionId: string;
+    bookingId: string | null;
+    paymentId: string | null;
+    githubRunId?: string;
+    githubRunAttempt?: string;
+    idempotencyKey: string | null;
+    operationFailure: string | null;
+    recoveryFailure: string | null;
+    readBooking: () => Promise<PaymentBookingEvidence | null>;
+  },
+): Promise<PaymentRecoveryRecord> {
+  let evidence: PaymentBookingEvidence | null = null;
+  try {
+    evidence = await input.readBooking();
+  } catch {
+    evidence = null;
+  }
+  return paymentRecoveryRecord({
+    outcome: bookingConfirms(evidence, input.sessionId) ? "paid_confirmed" : "paid_unconfirmed",
+    sessionId: input.sessionId,
+    bookingId: input.bookingId,
+    paymentId: input.paymentId,
+    githubRunId: input.githubRunId,
+    githubRunAttempt: input.githubRunAttempt,
+    idempotencyKey: input.idempotencyKey,
+    operationFailure: input.operationFailure,
+    recoveryFailure: input.recoveryFailure,
+  });
+}
+
+export async function reconcilePaymentRecovery(input: {
+  secret: string;
+  sessionId: string | null;
+  creationAmbiguous: boolean;
+  bookingId: string | null;
+  paymentId: string | null;
+  idempotencyKey: string | null;
+  githubRunId?: string;
+  githubRunAttempt?: string;
+  operationFailure: string | null;
+  blocked?: "identity_rejected" | null;
+  fetchImpl: typeof fetch;
+  readBooking: () => Promise<PaymentBookingEvidence | null>;
+}): Promise<PaymentRecoveryRecord> {
+  const common = {
+    sessionId: input.sessionId,
+    bookingId: input.bookingId,
+    paymentId: input.paymentId,
+    githubRunId: input.githubRunId,
+    githubRunAttempt: input.githubRunAttempt,
+    idempotencyKey: input.idempotencyKey,
+    operationFailure: input.operationFailure,
+    creationAmbiguous: input.creationAmbiguous,
+  };
+  if (input.blocked === "identity_rejected") {
+    return paymentRecoveryRecord({ ...common, outcome: "recovery_required", recoveryFailure: "identity_rejected" });
+  }
+  const sessionId = cleanSession(input.sessionId);
+  if (!sessionId) {
+    return paymentRecoveryRecord({
+      ...common,
+      sessionId: null,
+      outcome: input.creationAmbiguous ? "recovery_required" : "no_session",
+      recoveryFailure: input.creationAmbiguous ? "creation_ambiguous" : null,
+    });
+  }
+  if (!TEST_SESSION_ID.test(sessionId) || !input.secret.startsWith("rk_test_")) {
+    return paymentRecoveryRecord({
+      ...common,
+      sessionId,
+      outcome: "recovery_required",
+      recoveryFailure: "identity_rejected",
+    });
+  }
+
+  const retrieveUrl = `${CHECKOUT_COLLECTION}/${encodeURIComponent(sessionId)}`;
+  let retrieved: { status: number; body: unknown };
+  try {
+    retrieved = await stripeRecoveryRequest(input.fetchImpl, input.secret, "GET", retrieveUrl);
+    if (retrieved.status !== 200) throw new Error("retrieve_failed");
+  } catch (err) {
+    return paymentRecoveryRecord({
+      ...common,
+      sessionId,
+      outcome: "recovery_required",
+      recoveryFailure: cleanFailure(err instanceof Error ? err.message : null) ?? "retrieve_failed",
+    });
+  }
+
+  const verdict = classifySession(sessionId, retrieved.body);
+  if (verdict === "rejected") {
+    return paymentRecoveryRecord({
+      ...common,
+      sessionId,
+      outcome: "recovery_required",
+      recoveryFailure: "identity_rejected",
+    });
+  }
+  if (verdict === "paid") {
+    return paidOutcome({ ...input, sessionId, recoveryFailure: null });
+  }
+  if (verdict === "unpaid_expired") {
+    return paymentRecoveryRecord({ ...common, sessionId, outcome: "unpaid_expired" });
+  }
+
+  let expireFailure: string | null = null;
+  try {
+    const expired = await stripeRecoveryRequest(
+      input.fetchImpl,
+      input.secret,
+      "POST",
+      `${retrieveUrl}/expire`,
+      `${sessionId}:expire`,
+    );
+    if (expired.status !== 200) expireFailure = "expire_failed";
+  } catch (err) {
+    expireFailure = cleanFailure(err instanceof Error ? err.message : null) ?? "expire_failed";
+  }
+
+  try {
+    const finalView = await stripeRecoveryRequest(input.fetchImpl, input.secret, "GET", retrieveUrl);
+    if (finalView.status !== 200) throw new Error("retrieve_failed");
+    const finalVerdict = classifySession(sessionId, finalView.body);
+    if (finalVerdict === "paid") {
+      return paidOutcome({ ...input, sessionId, recoveryFailure: expireFailure });
+    }
+    if (finalVerdict === "unpaid_expired") {
+      return paymentRecoveryRecord({
+        ...common,
+        sessionId,
+        outcome: "unpaid_expired",
+        recoveryFailure: expireFailure,
+      });
+    }
+    return paymentRecoveryRecord({
+      ...common,
+      sessionId,
+      outcome: "recovery_required",
+      recoveryFailure: expireFailure ?? "expire_unverified",
+    });
+  } catch (err) {
+    return paymentRecoveryRecord({
+      ...common,
+      sessionId,
+      outcome: "recovery_required",
+      recoveryFailure: expireFailure ?? (cleanFailure(err instanceof Error ? err.message : null) ?? "retrieve_failed"),
+    });
+  }
 }
 
 function athensTransferDate(): string {
@@ -509,6 +840,74 @@ async function resetAuthorisedDisposableDatabase(): Promise<{ root: QueryClient;
   }
 }
 
+async function createDisposableBooking(admin: QueryClient): Promise<{ token: string; bookingId: string }> {
+  const catalogue = await createCatalogueFixture(admin);
+  return createFixtureBooking(admin, catalogue.destinationId);
+}
+
+async function loadHarnessPayment(database: QueryClient, bookingId: string): Promise<{
+  paymentId: string | null;
+  sessionId: string | null;
+  checkoutAttempt: number | null;
+}> {
+  try {
+    const rows = await database.query<{ payment_id: string; session_id: string | null; checkout_attempt: number }>(
+      `select p.id::text as payment_id,
+              p.stripe_checkout_session_id as session_id,
+              p.checkout_attempt
+         from sbg_booking_payments p
+        where p.booking_id = $1::uuid`,
+      [bookingId],
+    );
+    const row = rows.rows[0];
+    if (!row) return { paymentId: null, sessionId: null, checkoutAttempt: 0 };
+    return { paymentId: row.payment_id, sessionId: row.session_id, checkoutAttempt: Number(row.checkout_attempt) };
+  } catch {
+    return { paymentId: null, sessionId: null, checkoutAttempt: null };
+  }
+}
+
+async function readHarnessBooking(database: QueryClient, bookingId: string): Promise<PaymentBookingEvidence | null> {
+  const rows = await database.query<{
+    lifecycle_state: string;
+    payment_status: string;
+    session_id: string;
+    account_id: string;
+    amount_minor: number;
+    currency: string;
+    paid_count: number;
+  }>(
+    `select b.lifecycle_state,
+            p.status as payment_status,
+            p.stripe_checkout_session_id as session_id,
+            p.payee_stripe_account_id as account_id,
+            p.amount_minor,
+            p.currency,
+            (select count(*)::int from sbg_booking_payments paid
+              where paid.booking_id = b.id and paid.status = 'paid') as paid_count
+       from bookings b
+       join sbg_booking_payments p on p.booking_id = b.id
+      where b.id = $1::uuid`,
+    [bookingId],
+  );
+  const row = rows.rows[0];
+  if (!row?.session_id || !row.account_id) return null;
+  return {
+    lifecycleState: row.lifecycle_state,
+    paymentStatus: row.payment_status,
+    paidCount: Number(row.paid_count),
+    sessionId: row.session_id,
+    accountId: row.account_id,
+    amountMinor: Number(row.amount_minor),
+    currency: row.currency,
+  };
+}
+
+function paymentFailureCode(err: unknown): string {
+  const message = err instanceof Error ? err.message : "";
+  return FAILURE_CODE.test(message) ? message : "stripe_test_harness_failed";
+}
+
 async function runAuthorisedHarness(): Promise<void> {
   const { assertGuestPaymentTestProcess } = await import("../../src/lib/aether/guest-payment-test-isolation.ts");
   assertGuestPaymentTestProcess(process.env);
@@ -574,6 +973,9 @@ async function runAuthorisedHarness(): Promise<void> {
         },
       });
       try {
+      let operationFailure: string | null = null;
+      let knownSessionId: string | null = null;
+      try {
         await Promise.race([
           forwarding.ready,
           new Promise((_, reject) => setTimeout(() => reject(new Error("webhook_secret_timeout")), 20_000)),
@@ -617,6 +1019,7 @@ async function runAuthorisedHarness(): Promise<void> {
         if (!row || row.account_id !== CONNECTED_ACCOUNT || row.amount_minor !== AMOUNT_MINOR || row.currency !== "EUR") {
           throw new Error("checkout_authority_mismatch");
         }
+        knownSessionId = row.session_id;
         const retrieved = await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(row.session_id)}`, {
           headers: {
             Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}`,
@@ -642,20 +1045,33 @@ async function runAuthorisedHarness(): Promise<void> {
         if (replayBody.outcome !== "duplicate") throw new Error("replay_not_duplicate");
         const afterReplay = await waitForBooking(database, fixture.bookingId, forwarding.assertAlive);
         if (afterReplay.paid_count !== 1) throw new Error("replay_not_duplicate");
-        console.log(JSON.stringify({
-          connectedAccount: CONNECTED_ACCOUNT,
-          livemode: false,
-          amountMinor: afterReplay.amount_minor,
-          currency: afterReplay.currency,
-          bookingState: afterReplay.lifecycle_state,
-          confirmations: afterReplay.paid_count,
-          vehicleAssigned: afterReplay.vehicle_id != null,
-          replay: "duplicate",
-          eventType: "checkout.session.completed",
-          eventMode: "payment",
-          subscriptionCheckout: false,
-          saasWebhook: false,
-        }));
+        void confirmed;
+      } catch (err) {
+        operationFailure = paymentFailureCode(err);
+      }
+      const stored = await loadHarnessPayment(database, fixture.bookingId);
+      const sessionId = stored.sessionId ?? knownSessionId;
+      const mismatched = stored.sessionId != null && knownSessionId != null && stored.sessionId !== knownSessionId;
+      const record = await reconcilePaymentRecovery({
+        secret: process.env.STRIPE_SECRET_KEY ?? "",
+        sessionId,
+        creationAmbiguous: !sessionId && stored.checkoutAttempt !== 0,
+        bookingId: fixture.bookingId,
+        paymentId: stored.paymentId,
+        idempotencyKey: stored.paymentId != null && stored.checkoutAttempt != null && stored.checkoutAttempt > 0
+          ? `${stored.paymentId}:${stored.checkoutAttempt}`
+          : null,
+        githubRunId: process.env.GITHUB_RUN_ID,
+        githubRunAttempt: process.env.GITHUB_RUN_ATTEMPT,
+        operationFailure,
+        blocked: mismatched ? "identity_rejected" : null,
+        fetchImpl: globalThis.fetch,
+        readBooking: () => readHarnessBooking(database, fixture.bookingId),
+      });
+      if (record.outcome !== "paid_confirmed" || operationFailure || record.recoveryFailure) {
+        throw new PaymentRecoveryError(record);
+      }
+      console.log(JSON.stringify(record));
       } finally {
         proxy.close();
         await listener?.close();
@@ -832,6 +1248,10 @@ async function main(): Promise<void> {
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
   main().catch((err) => {
+    if (err instanceof PaymentRecoveryError) {
+      console.error(JSON.stringify(err.record));
+      process.exit(1);
+    }
     console.error(safeCode(err));
     process.exit(err instanceof HarnessClosed ? 2 : 1);
   });
