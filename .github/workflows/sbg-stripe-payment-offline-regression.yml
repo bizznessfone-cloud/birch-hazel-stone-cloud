@@ -1,0 +1,41 @@
+# Manual offline payment-recovery regression.
+# Not registered on main and not dispatched by this commit.
+# No Stripe credential, GitHub environment, database, CLI, browser, or payment harness.
+name: SBG Stripe payment offline regression
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sbg-stripe-payment-offline-regression
+  cancel-in-progress: false
+
+jobs:
+  offline-regression:
+    if: github.ref == 'refs/heads/test/stripe-gate2-runner' && github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Check offline workflow cannot reach Stripe
+        run: node --experimental-strip-types --test .github/scripts/stripe-payment-offline-regression-workflow.test.ts
+
+      - name: Run offline payment recovery tests
+        run: |
+          node --experimental-strip-types --test \
+            .github/scripts/stripe-test-harness-recovery.test.ts \
+            .github/scripts/stripe-test-payment-workflow.test.ts
