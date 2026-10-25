@@ -15,6 +15,39 @@ const STRIPE_TEST_EXECUTION_GATE = "closed";
 const CONNECTED_ACCOUNT = "acct_1UKEFuFHnHoOWAJE";
 const AMOUNT_MINOR = 4500;
 export { STRIPE_TEST_EXECUTION_GATE, CONNECTED_ACCOUNT as PAYMENT_CONNECTED_ACCOUNT, AMOUNT_MINOR as PAYMENT_AMOUNT_MINOR };
+
+const PAYMENT_SHA = /^[0-9a-f]{40}$/;
+const PAYMENT_REPOSITORY = "bizznessfone-cloud/birch-hazel-stone-cloud";
+const PAYMENT_REF = "refs/heads/test/stripe-gate2-runner";
+const PAYMENT_WORKFLOW = "SBG Stripe TEST payment";
+const PAYMENT_WORKFLOW_REF =
+  `${PAYMENT_REPOSITORY}/.github/workflows/sbg-stripe-test-payment.yml@${PAYMENT_REF}`;
+
+function permitValue(env: { [key: string]: string | undefined }, name: string): string {
+  const value = env[name];
+  return typeof value === "string" ? value : "";
+}
+
+/**
+ * GitHub's GITHUB_SHA is 40 lowercase hex characters. Comparison is exact.
+ * A repeated match stays authorised: this permit is not single-use.
+ * The function reads no credentials and does not contact Stripe.
+ */
+export function paymentExecutionAuthorised(
+  env: { [key: string]: string | undefined },
+  sourceGate: string = STRIPE_TEST_EXECUTION_GATE,
+): boolean {
+  if (sourceGate !== "closed") return false;
+  const permit = permitValue(env, "SBG_AUTHORISED_PAYMENT_SHA");
+  const sha = permitValue(env, "GITHUB_SHA");
+  if (!PAYMENT_SHA.test(permit) || !PAYMENT_SHA.test(sha) || permit !== sha) return false;
+  return permitValue(env, "GITHUB_REF") === PAYMENT_REF
+    && permitValue(env, "GITHUB_EVENT_NAME") === "workflow_dispatch"
+    && permitValue(env, "GITHUB_WORKFLOW") === PAYMENT_WORKFLOW
+    && permitValue(env, "GITHUB_WORKFLOW_REF") === PAYMENT_WORKFLOW_REF
+    && permitValue(env, "GITHUB_REPOSITORY") === PAYMENT_REPOSITORY
+    && permitValue(env, "GITHUB_ACTIONS") === "true";
+}
 const CLI_VERSION = "1.55.0";
 const CLI_SHA256 = "95b028177e12d5e5537a9d62366dce852bd78e104599bdc067268fe68dad1083";
 const CLI_ARCHIVE = `stripe_${CLI_VERSION}_linux_x86_64.tar.gz`;
@@ -1513,7 +1546,7 @@ async function main(): Promise<void> {
     await verifyDisposableFixture();
     return;
   }
-  if (STRIPE_TEST_EXECUTION_GATE !== "open") throw new HarnessClosed();
+  if (!paymentExecutionAuthorised(process.env)) throw new HarnessClosed();
   await runAuthorisedHarness();
 }
 

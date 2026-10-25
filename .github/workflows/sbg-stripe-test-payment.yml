@@ -50,3 +50,4 @@ jobs:
           NODE_DEBUG: ""
           NODE_OPTIONS: ""
           STRIPE_SECRET_KEY: ${{ secrets.SBG_STRIPE_TEST_SECRET_KEY }}
+          SBG_AUTHORISED_PAYMENT_SHA: ${{ vars.SBG_AUTHORISED_PAYMENT_SHA }}
