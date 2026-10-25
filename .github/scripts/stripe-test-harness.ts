@@ -68,6 +68,80 @@ export function sanitiseBrowserFailure(): Error {
   return new Error("checkout_browser_failed");
 }
 
+export const BROWSER_STAGES = [
+  "chromium_launch",
+  "checkout_navigation",
+  "card_field_discovery",
+  "card_number_entry",
+  "expiry_entry",
+  "cvc_entry",
+  "payment_submission",
+  "completion_redirect",
+  "challenge_detection",
+] as const;
+
+export const BROWSER_FAILURES = [
+  "browser_launch_failed",
+  "checkout_navigation_failed",
+  "checkout_field_missing",
+  "checkout_field_timeout",
+  "checkout_card_entry_failed",
+  "checkout_submission_failed",
+  "checkout_redirect_failed",
+  "checkout_challenge",
+  "checkout_browser_unknown",
+] as const;
+
+export type BrowserStage = (typeof BROWSER_STAGES)[number];
+export type BrowserFailure = (typeof BROWSER_FAILURES)[number];
+
+export class HostedCheckoutBrowserError extends Error {
+  readonly browserStage: BrowserStage;
+  readonly browserFailure: BrowserFailure;
+
+  constructor(stage: BrowserStage, failure: BrowserFailure) {
+    super(failure === "checkout_challenge" ? "checkout_challenge" : "checkout_browser_failed");
+    this.name = "HostedCheckoutBrowserError";
+    this.browserStage = stage;
+    this.browserFailure = failure;
+  }
+}
+
+function browserStageOf(value: string | null | undefined): BrowserStage | null {
+  return BROWSER_STAGES.find((stage) => stage === value) ?? null;
+}
+
+function browserFailureOf(value: string | null | undefined): BrowserFailure | null {
+  return BROWSER_FAILURES.find((failure) => failure === value) ?? null;
+}
+
+function classifyBrowserFailure(stage: BrowserStage, err: unknown): BrowserFailure {
+  if (err instanceof HostedCheckoutBrowserError) return err.browserFailure;
+  if (err instanceof Error && err.message === "checkout_challenge") return "checkout_challenge";
+  const name = err instanceof Error ? err.name : "";
+  const timeout = name === "TimeoutError";
+  const missing = name === "FieldMissing";
+  if (stage === "chromium_launch") return "browser_launch_failed";
+  if (stage === "checkout_navigation") return "checkout_navigation_failed";
+  if (stage === "payment_submission") return "checkout_submission_failed";
+  if (stage === "completion_redirect") return "checkout_redirect_failed";
+  if (stage === "challenge_detection") return "checkout_browser_unknown";
+  if (stage === "card_field_discovery") {
+    if (missing) return "checkout_field_missing";
+    if (timeout) return "checkout_field_timeout";
+    return "checkout_browser_unknown";
+  }
+  if (timeout) return "checkout_field_timeout";
+  if (missing) return "checkout_field_missing";
+  if (name === "Error") return "checkout_card_entry_failed";
+  return "checkout_browser_unknown";
+}
+
+function browserDiagnostic(stage: BrowserStage, err: unknown): HostedCheckoutBrowserError {
+  if (err instanceof HostedCheckoutBrowserError) return err;
+  return new HostedCheckoutBrowserError(stage, classifyBrowserFailure(stage, err));
+}
+
 const FIXTURE_STAGES = new Set([
   "cluster_identity",
   "migrations",
@@ -158,6 +232,8 @@ export type PaymentRecoveryRecord = {
   cleanupFailures: string[];
   creationAmbiguous: boolean;
   databaseUnreadable: boolean;
+  browserStage: BrowserStage | null;
+  browserFailure: BrowserFailure | null;
 };
 
 export type PaymentBookingEvidence = {
@@ -225,6 +301,8 @@ export function paymentRecoveryRecord(input: {
   cleanupFailures?: string[];
   creationAmbiguous?: boolean;
   databaseUnreadable?: boolean;
+  browserStage?: string | null;
+  browserFailure?: string | null;
 }): PaymentRecoveryRecord {
   return {
     harness: "stripe_test_payment",
@@ -244,6 +322,8 @@ export function paymentRecoveryRecord(input: {
     cleanupFailures: (input.cleanupFailures ?? []).map((code) => cleanFailure(code)).filter((code): code is string => code != null),
     creationAmbiguous: input.creationAmbiguous === true,
     databaseUnreadable: input.databaseUnreadable === true,
+    browserStage: browserStageOf(input.browserStage),
+    browserFailure: browserFailureOf(input.browserFailure),
   };
 }
 
@@ -647,10 +727,15 @@ async function createFixtureBooking(admin: QueryClient, destinationId: string): 
 type BrowserPage = {
   goto(url: string, options: { timeout: number; waitUntil: "domcontentloaded" }): Promise<unknown>;
   locator(selector: string): { count(): Promise<number> };
-  frameLocator(selector: string): { locator(selector: string): { fill(value: string, options: { timeout: number }): Promise<void> } };
+  frameLocator(selector: string): { locator(selector: string): { count(): Promise<number>; fill(value: string, options: { timeout: number }): Promise<void> } };
   getByRole(role: "button", options: { name: RegExp }): { click(options: { timeout: number }): Promise<void> };
   on?(event: "console" | "request" | "response", listener: () => void): void;
   waitForURL(predicate: (url: URL) => boolean, options: { timeout: number }): Promise<void>;
+};
+
+export type HostedCheckoutBrowser = {
+  newPage(): Promise<BrowserPage>;
+  close(): Promise<void>;
 };
 
 async function assertNoChallenge(page: BrowserPage): Promise<void> {
@@ -660,35 +745,110 @@ async function assertNoChallenge(page: BrowserPage): Promise<void> {
   if (challenges > 0) throw new Error("checkout_challenge");
 }
 
-async function completeHostedCheckout(checkoutUrl: string): Promise<void> {
+async function requireCardFields(page: BrowserPage): Promise<{
+  card: { fill(value: string, options: { timeout: number }): Promise<void> };
+  expiry: { fill(value: string, options: { timeout: number }): Promise<void> };
+  cvc: { fill(value: string, options: { timeout: number }): Promise<void> };
+}> {
+  const card = page.frameLocator('iframe[title*="card number" i]').locator("input");
+  const expiry = page.frameLocator('iframe[title*="expir" i]').locator("input");
+  const cvc = page.frameLocator('iframe[title*="CVC" i]').locator("input");
+  const counts = await Promise.all([card.count(), expiry.count(), cvc.count()]);
+  if (counts.some((count) => count < 1)) {
+    const missing = new Error("checkout_field_missing");
+    missing.name = "FieldMissing";
+    throw missing;
+  }
+  if (counts.some((count) => count !== 1)) throw new Error("checkout_field_ambiguous");
+  return { card, expiry, cvc };
+}
+
+export async function runHostedCheckout(
+  checkoutUrl: string,
+  launch: () => Promise<HostedCheckoutBrowser>,
+): Promise<void> {
   process.env.DEBUG = "";
-  const { chromium } = await import("playwright");
-  const browser = await chromium.launch({ headless: true });
+  let browser: HostedCheckoutBrowser;
   try {
-    const context = await browser.newContext();
-    const page = await context.newPage() as BrowserPage;
+    browser = await launch();
+  } catch (err) {
+    throw browserDiagnostic("chromium_launch", err);
+  }
+  let page: BrowserPage;
+  try {
+    page = await browser.newPage();
+  } catch (err) {
+    await browser.close().catch(() => undefined);
+    throw browserDiagnostic("chromium_launch", err);
+  }
+  try {
     page.on?.("console", () => undefined);
     page.on?.("request", () => undefined);
     page.on?.("response", () => undefined);
     try {
       await page.goto(checkoutUrl, { timeout: 30_000, waitUntil: "domcontentloaded" });
+    } catch (err) {
+      throw browserDiagnostic("checkout_navigation", err);
+    }
+    try {
       await assertNoChallenge(page);
-      const card = page.frameLocator('iframe[title*="card number" i]').locator("input");
-      const expiry = page.frameLocator('iframe[title*="expir" i]').locator("input");
-      const cvc = page.frameLocator('iframe[title*="CVC" i]').locator("input");
-      await card.fill("4242424242424242", { timeout: 20_000 });
-      await expiry.fill("1234", { timeout: 20_000 });
-      await cvc.fill("123", { timeout: 20_000 });
+    } catch (err) {
+      throw browserDiagnostic("challenge_detection", err);
+    }
+    let fields: Awaited<ReturnType<typeof requireCardFields>>;
+    try {
+      fields = await requireCardFields(page);
+    } catch (err) {
+      throw browserDiagnostic("card_field_discovery", err);
+    }
+    try {
+      await fields.card.fill("4242424242424242", { timeout: 20_000 });
+    } catch (err) {
+      throw browserDiagnostic("card_number_entry", err);
+    }
+    try {
+      await fields.expiry.fill("1234", { timeout: 20_000 });
+    } catch (err) {
+      throw browserDiagnostic("expiry_entry", err);
+    }
+    try {
+      await fields.cvc.fill("123", { timeout: 20_000 });
+    } catch (err) {
+      throw browserDiagnostic("cvc_entry", err);
+    }
+    try {
       await assertNoChallenge(page);
+    } catch (err) {
+      throw browserDiagnostic("challenge_detection", err);
+    }
+    try {
       await page.getByRole("button", { name: /pay/i }).click({ timeout: 20_000 });
+    } catch (err) {
+      throw browserDiagnostic("payment_submission", err);
+    }
+    try {
       await page.waitForURL((url) => url.hostname !== "checkout.stripe.com", { timeout: 60_000 });
     } catch (err) {
-      if (err instanceof Error && err.message === "checkout_challenge") throw err;
-      throw sanitiseBrowserFailure();
+      throw browserDiagnostic("completion_redirect", err);
     }
   } finally {
     await browser.close();
   }
+}
+
+async function completeHostedCheckout(checkoutUrl: string): Promise<void> {
+  await runHostedCheckout(checkoutUrl, async () => {
+    const { chromium } = await import("playwright");
+    const browser = await chromium.launch({ headless: true });
+    return {
+      async newPage() {
+        return await browser.newPage() as BrowserPage;
+      },
+      async close() {
+        await browser.close();
+      },
+    };
+  });
 }
 
 function readBody(req: IncomingMessage): Promise<string> {
@@ -996,6 +1156,8 @@ export async function runPaymentHarnessBoundary(input: {
 }): Promise<PaymentRecoveryRecord> {
   let bookingId: string | null = null;
   let operationFailure: string | null = null;
+  let browserStage: string | null = null;
+  let browserFailure: string | null = null;
   let checkout: CheckoutAttemptEvidence = {
     attempted: false,
     ambiguous: false,
@@ -1008,6 +1170,10 @@ export async function runPaymentHarnessBoundary(input: {
 
   const stop = (err: unknown) => {
     if (!operationFailure) operationFailure = paymentFailureCode(err);
+    if (browserStage == null && err instanceof HostedCheckoutBrowserError) {
+      browserStage = err.browserStage;
+      browserFailure = err.browserFailure;
+    }
   };
   try {
     bookingId = (await input.steps.prepareFixture()).bookingId;
@@ -1158,6 +1324,8 @@ export async function runPaymentHarnessBoundary(input: {
     cleanupFailures,
     databaseUnreadable: record.databaseUnreadable || flags.databaseUnreadable,
     outcome: !sessionId && flags.databaseUnreadable && checkout.attempted ? "recovery_required" : record.outcome,
+    browserStage: browserStageOf(browserStage),
+    browserFailure: browserFailureOf(browserFailure),
   };
 }
 
