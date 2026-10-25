@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  CARD_FIELD_DISCOVERY_BUDGET_MS,
   PAYMENT_AMOUNT_MINOR,
   STRIPE_TEST_EXECUTION_GATE,
   paymentExecutionAuthorised,
   runHostedCheckout,
   runPaymentHarnessBoundary,
+  type CheckoutClock,
   type HostedCheckoutBrowser,
 } from "./stripe-test-harness.ts";
 
@@ -20,15 +22,32 @@ function named(name: string): Error {
   return error;
 }
 
+function virtualClock(): CheckoutClock & { elapsed(): number } {
+  let time = 0;
+  return {
+    now: () => time,
+    async wait(ms: number) {
+      time += ms;
+    },
+    elapsed: () => time,
+  };
+}
+
+type FieldSpec = { count?: number; appearAt?: number; missing?: boolean; wait?: boolean };
+
 function page(input: {
   goto?: () => Promise<void>;
   challengeCount?: number;
   fieldCounts?: number[];
+  fields?: FieldSpec[];
+  clock?: CheckoutClock;
   fill?: (value: string) => Promise<void>;
   click?: () => Promise<void>;
   redirect?: () => Promise<void>;
 } = {}): HostedCheckoutBrowser {
-  let challengeChecks = 0;
+  const clock = input.clock ?? { now: () => 0, async wait() { return undefined; } };
+  const fields: FieldSpec[] = input.fields ?? (input.fieldCounts ?? [1, 1, 1]).map((count) => ({ count }));
+  let fieldIndex = 0;
   return {
     async newPage() {
       return {
@@ -39,17 +58,37 @@ function page(input: {
           return { async count() { return input.challengeCount ?? 0; } };
         },
         frameLocator() {
-          const counts = input.fieldCounts ?? [1, 1, 1];
-          const count = counts[challengeChecks] ?? counts[counts.length - 1] ?? 1;
-          challengeChecks += 1;
+          const spec = fields[fieldIndex] ?? { count: 1 };
+          fieldIndex += 1;
           return {
             locator() {
-              return {
-                async count() { return count; },
+              const field: {
+                count: () => Promise<number>;
+                fill: (value: string) => Promise<void>;
+                waitFor?: (options: { timeout: number }) => Promise<void>;
+              } = {
+                async count() {
+                  if (spec.missing) throw named("FieldMissing");
+                  if (spec.appearAt != null) return clock.now() >= spec.appearAt ? 1 : 0;
+                  return spec.count ?? 1;
+                },
                 async fill(value: string) {
                   if (input.fill) await input.fill(value);
                 },
               };
+              if (spec.appearAt != null && spec.wait !== false) {
+                field.waitFor = async (options: { timeout: number }) => {
+                  const now = clock.now();
+                  if (spec.appearAt != null && now >= spec.appearAt) return;
+                  const need = (spec.appearAt ?? now) - now;
+                  if (need > options.timeout) {
+                    await clock.wait(options.timeout);
+                    throw named("TimeoutError");
+                  }
+                  await clock.wait(need);
+                };
+              }
+              return field;
             },
           };
         },
@@ -65,9 +104,9 @@ function page(input: {
   };
 }
 
-async function fail(browser: HostedCheckoutBrowser): Promise<unknown> {
+async function fail(browser: HostedCheckoutBrowser, clock?: CheckoutClock): Promise<unknown> {
   try {
-    await runHostedCheckout("https://checkout.stripe.com/c/pay/secret-url?card=4242424242424242", async () => browser);
+    await runHostedCheckout("https://checkout.stripe.com/c/pay/secret-url?card=4242424242424242", async () => browser, clock ?? virtualClock());
     return null;
   } catch (err) {
     return err;
@@ -103,21 +142,58 @@ test("navigation failure is classified without the raw error", async () => {
   assertSafe(err);
 });
 
-test("missing card field is distinguishable from a timeout", async () => {
-  const missing = await fail(page({ fieldCounts: [0, 1, 1] }));
-  assert.equal((missing as { browserStage: string }).browserStage, "card_field_discovery");
-  assert.equal((missing as { browserFailure: string }).browserFailure, "checkout_field_missing");
+test("card fields available immediately complete checkout", async () => {
+  const clock = virtualClock();
+  const err = await fail(page({ clock, fields: [{ count: 1 }, { count: 1 }, { count: 1 }] }), clock);
+  assert.equal(err, null);
+  assert.equal(clock.elapsed(), 0);
+});
+
+test("card fields appearing after a zero count are not missing", async () => {
+  const clock = virtualClock();
+  const err = await fail(page({
+    clock,
+    fields: [{ appearAt: 100, wait: false }, { appearAt: 150, wait: false }, { appearAt: 200, wait: false }],
+  }), clock);
+  assert.equal(err, null);
+  assert.equal(clock.elapsed(), 200);
+});
+
+test("card fields that never appear time out on the shared budget", async () => {
+  const clock = virtualClock();
+  const err = await fail(page({
+    clock,
+    fields: [{ count: 1 }, { appearAt: 5_000 }, { appearAt: Number.POSITIVE_INFINITY }],
+  }), clock);
+  assert.equal((err as { browserStage: string }).browserStage, "card_field_discovery");
+  assert.equal((err as { browserFailure: string }).browserFailure, "checkout_field_timeout");
+  assert.equal(clock.elapsed(), CARD_FIELD_DISCOVERY_BUDGET_MS);
+  assertSafe(err);
+});
+
+test("a demonstrably absent card field is not a timeout", async () => {
+  const clock = virtualClock();
+  const err = await fail(page({ clock, fields: [{ missing: true }, { count: 1 }, { count: 1 }] }), clock);
+  assert.equal((err as { browserStage: string }).browserStage, "card_field_discovery");
+  assert.equal((err as { browserFailure: string }).browserFailure, "checkout_field_missing");
+  assert.equal(clock.elapsed(), 0);
+  assertSafe(err);
+});
+
+test("ambiguous card field matches are distinct", async () => {
+  const clock = virtualClock();
+  const err = await fail(page({ clock, fields: [{ count: 2 }, { count: 1 }, { count: 1 }] }), clock);
+  assert.equal((err as { browserStage: string }).browserStage, "card_field_discovery");
+  assert.equal((err as { browserFailure: string }).browserFailure, "checkout_field_ambiguous");
+  assert.equal(clock.elapsed(), 0);
+  assertSafe(err);
+});
+
+test("card entry timeout remains distinct from discovery", async () => {
   const timeout = await fail(page({ fill: async () => { throw named("TimeoutError"); } }));
   assert.equal((timeout as { browserStage: string }).browserStage, "card_number_entry");
   assert.equal((timeout as { browserFailure: string }).browserFailure, "checkout_field_timeout");
-  assertSafe(missing);
   assertSafe(timeout);
-});
-
-test("ambiguous field discovery stays unknown", async () => {
-  const err = await fail(page({ fieldCounts: [2, 1, 1] }));
-  assert.equal((err as { browserFailure: string }).browserFailure, "checkout_browser_unknown");
-  assertSafe(err);
 });
 
 test("card entry failure is classified separately", async () => {
@@ -176,7 +252,12 @@ test("browser diagnostics do not change unpaid recovery", async () => {
       createCheckout: async () => ({ attempted: true, ambiguous: false, sessionId: SESSION, paymentId: PAYMENT, checkoutAttempt: 1, failure: null }),
       retrieveCheckout: async () => undefined,
       completeBrowser: async () => {
-        await runHostedCheckout("https://checkout.stripe.com/c/pay/secret-url", async () => page({ fieldCounts: [0, 1, 1] }));
+        const clock = virtualClock();
+        await runHostedCheckout(
+          "https://checkout.stripe.com/c/pay/secret-url",
+          async () => page({ clock, fields: [{ missing: true }, { count: 1 }, { count: 1 }] }),
+          clock,
+        );
       },
       confirmWebhook: async () => undefined,
       replay: async () => undefined,

@@ -85,6 +85,7 @@ export const BROWSER_FAILURES = [
   "checkout_navigation_failed",
   "checkout_field_missing",
   "checkout_field_timeout",
+  "checkout_field_ambiguous",
   "checkout_card_entry_failed",
   "checkout_submission_failed",
   "checkout_redirect_failed",
@@ -121,6 +122,7 @@ function classifyBrowserFailure(stage: BrowserStage, err: unknown): BrowserFailu
   const name = err instanceof Error ? err.name : "";
   const timeout = name === "TimeoutError";
   const missing = name === "FieldMissing";
+  const ambiguous = name === "FieldAmbiguous";
   if (stage === "chromium_launch") return "browser_launch_failed";
   if (stage === "checkout_navigation") return "checkout_navigation_failed";
   if (stage === "payment_submission") return "checkout_submission_failed";
@@ -129,6 +131,7 @@ function classifyBrowserFailure(stage: BrowserStage, err: unknown): BrowserFailu
   if (stage === "card_field_discovery") {
     if (missing) return "checkout_field_missing";
     if (timeout) return "checkout_field_timeout";
+    if (ambiguous) return "checkout_field_ambiguous";
     return "checkout_browser_unknown";
   }
   if (timeout) return "checkout_field_timeout";
@@ -724,10 +727,16 @@ async function createFixtureBooking(admin: QueryClient, destinationId: string): 
   return { token: created.confirmationToken, bookingId: stored.rows[0]!.id };
 }
 
+type CardFieldLocator = {
+  count(): Promise<number>;
+  waitFor?(options: { state: "visible"; timeout: number }): Promise<void>;
+  fill(value: string, options: { timeout: number }): Promise<void>;
+};
+
 type BrowserPage = {
   goto(url: string, options: { timeout: number; waitUntil: "domcontentloaded" }): Promise<unknown>;
   locator(selector: string): { count(): Promise<number> };
-  frameLocator(selector: string): { locator(selector: string): { count(): Promise<number>; fill(value: string, options: { timeout: number }): Promise<void> } };
+  frameLocator(selector: string): { locator(selector: string): CardFieldLocator };
   getByRole(role: "button", options: { name: RegExp }): { click(options: { timeout: number }): Promise<void> };
   on?(event: "console" | "request" | "response", listener: () => void): void;
   waitForURL(predicate: (url: URL) => boolean, options: { timeout: number }): Promise<void>;
@@ -738,6 +747,80 @@ export type HostedCheckoutBrowser = {
   close(): Promise<void>;
 };
 
+export const CARD_FIELD_DISCOVERY_BUDGET_MS = 20_000;
+
+export type CheckoutClock = {
+  now(): number;
+  wait(ms: number): Promise<void>;
+};
+
+const realCheckoutClock: CheckoutClock = {
+  now: () => Date.now(),
+  wait: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+};
+
+function discoveryError(kind: "timeout" | "missing" | "ambiguous"): Error {
+  const error = new Error(
+    kind === "timeout" ? "checkout_field_timeout" : kind === "missing" ? "checkout_field_missing" : "checkout_field_ambiguous",
+  );
+  error.name = kind === "timeout" ? "TimeoutError" : kind === "missing" ? "FieldMissing" : "FieldAmbiguous";
+  return error;
+}
+
+async function readFieldCount(field: CardFieldLocator): Promise<number> {
+  try {
+    return await field.count();
+  } catch (err) {
+    if (err instanceof Error && err.name === "FieldMissing") throw discoveryError("missing");
+    throw err;
+  }
+}
+
+async function awaitCardField(field: CardFieldLocator, deadline: number, clock: CheckoutClock): Promise<void> {
+  const initial = await readFieldCount(field);
+  if (initial > 1) throw discoveryError("ambiguous");
+  if (initial === 1) return;
+  const remaining = deadline - clock.now();
+  if (remaining <= 0) throw discoveryError("timeout");
+  if (field.waitFor) {
+    const before = clock.now();
+    try {
+      await field.waitFor({ state: "visible", timeout: remaining });
+    } catch (err) {
+      if (err instanceof Error && err.name === "FieldMissing") throw discoveryError("missing");
+      if (err instanceof Error && err.name === "TimeoutError") {
+        if (clock.now() === before) await clock.wait(remaining);
+        throw discoveryError("timeout");
+      }
+      let count = 0;
+      try {
+        count = await field.count();
+      } catch (countError) {
+        if (countError instanceof Error && countError.name === "FieldMissing") throw discoveryError("missing");
+        throw err;
+      }
+      if (count > 1) throw discoveryError("ambiguous");
+      throw err;
+    }
+    const count = await readFieldCount(field);
+    if (count === 1) return;
+    if (count > 1) throw discoveryError("ambiguous");
+    throw discoveryError("missing");
+  }
+  while (clock.now() < deadline) {
+    const count = await readFieldCount(field);
+    if (count === 1) return;
+    if (count > 1) throw discoveryError("ambiguous");
+    const slice = Math.min(50, deadline - clock.now());
+    if (slice <= 0) break;
+    await clock.wait(slice);
+  }
+  const count = await readFieldCount(field);
+  if (count === 1) return;
+  if (count > 1) throw discoveryError("ambiguous");
+  throw discoveryError("timeout");
+}
+
 async function assertNoChallenge(page: BrowserPage): Promise<void> {
   const challenges = await page.locator(
     'iframe[src*="hcaptcha"], iframe[src*="3ds"], iframe[title*="3D Secure" i], iframe[title*="captcha" i]',
@@ -745,27 +828,25 @@ async function assertNoChallenge(page: BrowserPage): Promise<void> {
   if (challenges > 0) throw new Error("checkout_challenge");
 }
 
-async function requireCardFields(page: BrowserPage): Promise<{
-  card: { fill(value: string, options: { timeout: number }): Promise<void> };
-  expiry: { fill(value: string, options: { timeout: number }): Promise<void> };
-  cvc: { fill(value: string, options: { timeout: number }): Promise<void> };
+async function requireCardFields(page: BrowserPage, clock: CheckoutClock): Promise<{
+  card: CardFieldLocator;
+  expiry: CardFieldLocator;
+  cvc: CardFieldLocator;
 }> {
   const card = page.frameLocator('iframe[title*="card number" i]').locator("input");
   const expiry = page.frameLocator('iframe[title*="expir" i]').locator("input");
   const cvc = page.frameLocator('iframe[title*="CVC" i]').locator("input");
-  const counts = await Promise.all([card.count(), expiry.count(), cvc.count()]);
-  if (counts.some((count) => count < 1)) {
-    const missing = new Error("checkout_field_missing");
-    missing.name = "FieldMissing";
-    throw missing;
-  }
-  if (counts.some((count) => count !== 1)) throw new Error("checkout_field_ambiguous");
+  const deadline = clock.now() + CARD_FIELD_DISCOVERY_BUDGET_MS;
+  await awaitCardField(card, deadline, clock);
+  await awaitCardField(expiry, deadline, clock);
+  await awaitCardField(cvc, deadline, clock);
   return { card, expiry, cvc };
 }
 
 export async function runHostedCheckout(
   checkoutUrl: string,
   launch: () => Promise<HostedCheckoutBrowser>,
+  clock: CheckoutClock = realCheckoutClock,
 ): Promise<void> {
   process.env.DEBUG = "";
   let browser: HostedCheckoutBrowser;
@@ -797,7 +878,7 @@ export async function runHostedCheckout(
     }
     let fields: Awaited<ReturnType<typeof requireCardFields>>;
     try {
-      fields = await requireCardFields(page);
+      fields = await requireCardFields(page, clock);
     } catch (err) {
       throw browserDiagnostic("card_field_discovery", err);
     }
