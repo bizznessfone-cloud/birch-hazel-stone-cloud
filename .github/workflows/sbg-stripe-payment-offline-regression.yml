@@ -38,4 +38,5 @@ jobs:
         run: |
           node --experimental-strip-types --test \
             .github/scripts/stripe-test-harness-recovery.test.ts \
-            .github/scripts/stripe-test-payment-workflow.test.ts
+            .github/scripts/stripe-test-payment-workflow.test.ts \
+            .github/scripts/stripe-test-browser-diagnostic.test.ts
