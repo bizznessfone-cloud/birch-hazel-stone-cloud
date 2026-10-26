@@ -14,7 +14,7 @@ import {
   type StructureFrame,
 } from "./stripe-test-checkout-structure.ts";
 
-export const CHECKOUT_DIAGNOSTIC_EXECUTION_GATE = "closed" as const;
+export const CHECKOUT_DIAGNOSTIC_EXECUTION_GATE = "open" as const;
 export const DIAGNOSTIC_CONNECTED_ACCOUNT = "acct_1UKEFuFHnHoOWAJE";
 export const DIAGNOSTIC_AMOUNT_MINOR = 4500;
 export const DIAGNOSTIC_CURRENCY = "eur";
