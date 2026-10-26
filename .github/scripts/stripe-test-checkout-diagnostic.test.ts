@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { test } from "node:test";
 import {
   CHECKOUT_DIAGNOSTIC_EXECUTION_GATE,
@@ -417,5 +418,41 @@ test("the diagnostic workflow is manual and separate from payment", () => {
   assert.equal(source.includes(".click("), false);
   assert.equal(source.includes("refund"), false);
   assert.equal(source.includes('sourceGate: "open"'), false);
+  assert.equal(source.includes("sourceGate: CHECKOUT_DIAGNOSTIC_EXECUTION_GATE"), true);
+  assert.equal(source.includes('value(env, "CHECKOUT_DIAGNOSTIC_EXECUTION_GATE")'), false);
+  assert.equal(source.includes("process.env.CHECKOUT_DIAGNOSTIC_EXECUTION_GATE"), false);
   assert.equal(source.includes('CHECKOUT_DIAGNOSTIC_EXECUTION_GATE = "closed"'), true);
+  assert.equal(source.includes("stripe-test-harness"), false);
+});
+
+test("the committed command line stays closed when the environment says open", () => {
+  const result = spawnSync(process.execPath, [
+    "--experimental-strip-types",
+    ".github/scripts/stripe-test-checkout-diagnostic.ts",
+  ], {
+    encoding: "utf8",
+    env: {
+      ...process.env,
+      CHECKOUT_DIAGNOSTIC_EXECUTION_GATE: "open",
+      SBG_AUTHORISED_DIAGNOSTIC_SHA: SHA,
+      GITHUB_SHA: SHA,
+      GITHUB_REF: "refs/heads/test/stripe-gate2-runner",
+      GITHUB_EVENT_NAME: "workflow_dispatch",
+      GITHUB_WORKFLOW: "SBG Stripe TEST checkout diagnostic",
+      GITHUB_WORKFLOW_REF: "bizznessfone-cloud/birch-hazel-stone-cloud/.github/workflows/sbg-stripe-test-checkout-diagnostic.yml@refs/heads/test/stripe-gate2-runner",
+      GITHUB_REPOSITORY: "bizznessfone-cloud/birch-hazel-stone-cloud",
+      GITHUB_ACTIONS: "true",
+      GITHUB_RUN_ID: "40170003536",
+      STRIPE_SECRET_KEY: "rk_test_diagnostickeyvalue0001",
+      SBG_DOMAIN_B_LIVE_CHECKOUT: "false",
+      SBG_SAAS_COMMERCE: "off",
+    },
+  });
+  assert.equal(result.status, 1);
+  const report = JSON.parse(result.stdout) as { status: string; failure: string | null; structure: unknown };
+  assert.equal(report.status, "closed");
+  assert.equal(report.failure, "diagnostic_closed");
+  assert.equal(report.structure, null);
+  assert.equal(result.stdout.includes("cs_test_"), false);
+  assert.equal(result.stdout.includes("checkout.stripe.com"), false);
 });

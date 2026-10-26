@@ -1,6 +1,7 @@
 /**
  * Closed Stripe TEST Checkout structure diagnostic.
- * It cannot run unless a separate diagnostic permit matches the exact commit.
+ * The command line uses CHECKOUT_DIAGNOSTIC_EXECUTION_GATE. An environment
+ * variable cannot open it. An open gate still requires the exact SHA permit.
  * It does not enter card details or submit payment.
  */
 import { pathToFileURL } from "node:url";
@@ -389,6 +390,7 @@ async function main(): Promise<void> {
   const secret = process.env.STRIPE_SECRET_KEY ?? "";
   const result = await runCheckoutDiagnostic({
     env: process.env,
+    sourceGate: CHECKOUT_DIAGNOSTIC_EXECUTION_GATE,
     stripe: secret ? realStripe(secret) : undefined,
     launch: launchPlaywright,
   });
