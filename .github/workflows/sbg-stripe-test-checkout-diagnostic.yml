@@ -1,0 +1,18 @@
+# Registration-only workflow stub.
+# Permanently disabled on main. No Stripe execution. No payment capability.
+# Merge requires separate explicit owner approval.
+name: SBG Stripe TEST checkout diagnostic
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  disabled:
+    if: ${{ false }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Permanently disabled
+        run: 'exit 1'
