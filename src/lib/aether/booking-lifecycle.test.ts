@@ -302,7 +302,9 @@ test("current engine still lacks the lifecycle; the gap register must stay expli
   assert.doesNotMatch(confirmed, /Your transfer is booked/);
   assert.doesNotMatch(confirmed, /Pay for transfer/);
   assert.match(confirmed, /guestStatus/);
-  assert.doesNotMatch(confirmed, /startGuestPayment/);
+  assert.match(confirmed, /startGuestPayment/);
+  assert.match(confirmed, /guestCanStartPayment/);
+  assert.doesNotMatch(confirmed, /payment=success/);
   assert.match(domainB, /c\.hotel_id = b\.hotel_id/);
   assert.doesNotMatch(paymentSql, /received_after_expiry/);
   assert.match(paymentSql, /status = p_status/);

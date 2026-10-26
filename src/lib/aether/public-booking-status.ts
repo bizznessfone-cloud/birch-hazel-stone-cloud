@@ -106,7 +106,7 @@ export function projectPublicGuestStatus(facts: PublicLifecycleFacts): PublicGue
         detail: "This transfer is not confirmed. The reference below is only so you can find this booking.",
         tone: "attention",
         refresh: "poll",
-        paymentNote: "Online payment is not open on this page. Nothing has been charged.",
+        paymentNote: "Nothing has been charged. Opening secure payment does not confirm this transfer.",
       };
     case "payment_processing":
       return {
@@ -157,4 +157,52 @@ export function projectPublicGuestStatus(facts: PublicLifecycleFacts): PublicGue
 
 export function shouldPollGuestStatus(status: PublicGuestStatus, attempts: number): boolean {
   return status.refresh === "poll" && attempts < GUEST_STATUS_POLL_LIMIT;
+}
+
+/** Only an unpaid booking that has not started payment may offer Checkout. */
+export function guestCanStartPayment(status: PublicGuestStatus): boolean {
+  return status.code === "complete_payment";
+}
+
+export const GUEST_PAYMENT_ACTION_LABEL = "Continue to secure payment";
+
+const PAYMENT_CLOSED = "Online payment is not open for this booking. Nothing has been charged.";
+const PAYMENT_EXPIRED = "This booking is no longer held. Nothing has been charged.";
+const PAYMENT_IN_PROGRESS =
+  "A payment is already being started. Refresh this page in a moment. Nothing has been charged yet.";
+const PAYMENT_UNAVAILABLE = "Payment cannot be started from this page. Nothing has been charged.";
+
+const PAYMENT_FAILURES = {
+  guest_checkout_closed: PAYMENT_CLOSED,
+  hold_expired: PAYMENT_EXPIRED,
+  checkout_in_progress: PAYMENT_IN_PROGRESS,
+} as const;
+
+type PaymentFailureCode = keyof typeof PAYMENT_FAILURES;
+
+function paymentFailureCode(error: unknown): PaymentFailureCode | null {
+  if (error === null || typeof error !== "object") return null;
+  const record = error as { code?: unknown; message?: unknown };
+  if (typeof record.code === "string" && record.code in PAYMENT_FAILURES) {
+    return record.code as PaymentFailureCode;
+  }
+  if (record.message === "Online payment is not open for this booking.") return "guest_checkout_closed";
+  if (typeof record.message === "string" && record.message in PAYMENT_FAILURES) {
+    return record.message as PaymentFailureCode;
+  }
+  return null;
+}
+
+/** Maps only known payment-start outcomes. Never returns a raw error message. */
+export function guestPaymentFailureMessage(error: unknown): string {
+  const code = paymentFailureCode(error);
+  return code ? PAYMENT_FAILURES[code] : PAYMENT_UNAVAILABLE;
+}
+
+/** Accepts only the Checkout URL. Ignores every other field on the result. */
+export function guestCheckoutUrl(result: unknown): string | null {
+  if (result === null || typeof result !== "object") return null;
+  const url = (result as { url?: unknown }).url;
+  if (typeof url !== "string" || !url.startsWith("https://")) return null;
+  return url;
 }

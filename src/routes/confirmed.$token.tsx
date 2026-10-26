@@ -1,10 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { getPublicBooking } from "@/lib/aether/booking-fns";
+import { startGuestPayment } from "@/lib/aether/guest-payment-fns";
 import { formatQuotedPrice, touristMessage } from "@/lib/aether/guest";
 import {
   shouldPollGuestStatus,
   GUEST_STATUS_POLL_INTERVAL_MS,
+  GUEST_PAYMENT_ACTION_LABEL,
+  guestCanStartPayment,
+  guestCheckoutUrl,
+  guestPaymentFailureMessage,
   type PublicGuestBooking,
 } from "@/lib/aether/public-booking-status";
 import { GuestHeader } from "@/components/aether/guest-header";
@@ -63,7 +68,11 @@ function BookingStatusCard({ initial, token }: { initial: PublicGuestBooking; to
   const [booking, setBooking] = useState(initial);
   const [polls, setPolls] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [paying, setPaying] = useState(false);
+  const [paymentMessage, setPaymentMessage] = useState<string | null>(null);
+  const paymentPending = useRef(false);
   const status = booking.guestStatus;
+  const canPay = guestCanStartPayment(status);
 
   useEffect(() => {
     if (!shouldPollGuestStatus(status, polls)) return;
@@ -90,6 +99,28 @@ function BookingStatusCard({ initial, token }: { initial: PublicGuestBooking; to
     }
   }
 
+  async function continueToPayment() {
+    if (paymentPending.current || !guestCanStartPayment(booking.guestStatus)) return;
+    paymentPending.current = true;
+    setPaying(true);
+    setPaymentMessage(null);
+    try {
+      const result = await startGuestPayment({ data: { token } });
+      const url = guestCheckoutUrl(result);
+      if (!url) {
+        paymentPending.current = false;
+        setPaying(false);
+        setPaymentMessage(guestPaymentFailureMessage(null));
+        return;
+      }
+      window.location.assign(url);
+    } catch (error) {
+      paymentPending.current = false;
+      setPaying(false);
+      setPaymentMessage(guestPaymentFailureMessage(error));
+    }
+  }
+
   return (
     <div className="flex min-h-dvh flex-col bg-canvas text-ink">
       <GuestHeader hotelName={booking.hotelName} />
@@ -99,6 +130,23 @@ function BookingStatusCard({ initial, token }: { initial: PublicGuestBooking; to
         <p className="mt-3 text-base leading-relaxed text-muted">{status.detail}</p>
         {status.paymentNote ? (
           <p className="mt-3 text-base leading-relaxed text-muted">{status.paymentNote}</p>
+        ) : null}
+        {canPay ? (
+          <button
+            type="button"
+            className="mt-6 flex min-h-14 w-full items-center justify-center bg-ink text-base font-medium text-canvas disabled:opacity-40"
+            onClick={() => {
+              void continueToPayment();
+            }}
+            disabled={paying}
+          >
+            {paying ? "Opening secure payment…" : GUEST_PAYMENT_ACTION_LABEL}
+          </button>
+        ) : null}
+        {paymentMessage ? (
+          <p className="mt-3 text-base leading-relaxed text-muted" role="status">
+            {paymentMessage}
+          </p>
         ) : null}
         <p className="mt-8 text-4xl font-semibold tracking-tight">{booking.humanReference}</p>
         <dl className="mt-8 divide-y divide-line border border-line bg-surface">

@@ -5,7 +5,11 @@ import { PGlite } from "@electric-sql/pglite";
 import { BookingError } from "./booking.ts";
 import { getPublicGuestBooking } from "./public-booking-read.ts";
 import {
+  GUEST_PAYMENT_ACTION_LABEL,
   GUEST_STATUS_POLL_LIMIT,
+  guestCanStartPayment,
+  guestCheckoutUrl,
+  guestPaymentFailureMessage,
   projectPublicGuestStatus,
   shouldPollGuestStatus,
   type PublicLifecycleFacts,
@@ -111,7 +115,12 @@ test("public status uses the server lifecycle and ignores a return url", () => {
   ]) {
     assert.equal(shouldPollGuestStatus(status, 0), false);
   }
-  assert.doesNotMatch(page, /startGuestPayment|Pay for transfer|sbg_prepare_booking_payment/);
+  assert.match(page, /startGuestPayment/);
+  assert.match(page, /guestCanStartPayment/);
+  assert.match(page, /GUEST_PAYMENT_ACTION_LABEL/);
+  assert.equal(GUEST_PAYMENT_ACTION_LABEL, "Continue to secure payment");
+  assert.doesNotMatch(page, /Pay for transfer|sbg_prepare_booking_payment/);
+  assert.doesNotMatch(page, /paymentId|accountId/);
   assert.doesNotMatch(page, /payment=success|useSearch|searchParams/);
   assert.doesNotMatch(page, /confirmed_paid|hold_expires_at|webhook|Stripe Connect|entitlement/);
   assert.doesNotMatch(page, /durationMinutes|label="Duration"|confirmation email/i);
@@ -125,6 +134,46 @@ test("public status uses the server lifecycle and ignores a return url", () => {
   assert.doesNotMatch(schema, /revoke select \(lifecycle_state/);
   const projected = JSON.stringify(projectPublicGuestStatus(facts(PAID)));
   assert.doesNotMatch(projected, /confirmed_paid|acct_|payee_|webhook/);
+});
+
+test("payment action is offered only for an unpaid booking", () => {
+  assert.equal(guestCanStartPayment(projectPublicGuestStatus(facts({ lifecycle: "awaiting_payment" }))), true);
+  for (const status of [
+    projectPublicGuestStatus(facts({ lifecycle: "payment_processing" })),
+    projectPublicGuestStatus(facts(PAID)),
+    projectPublicGuestStatus(facts({ lifecycle: "expired" })),
+    projectPublicGuestStatus(facts({ lifecycle: "failed" })),
+    projectPublicGuestStatus(facts({ lifecycle: "cancelled" })),
+    projectPublicGuestStatus(facts({ lifecycle: "refunded" })),
+    projectPublicGuestStatus(facts()),
+  ]) {
+    assert.equal(guestCanStartPayment(status), false);
+  }
+  assert.equal(projectPublicGuestStatus(facts(PAID)).code, "confirmed");
+  assert.match(
+    projectPublicGuestStatus(facts({ lifecycle: "awaiting_payment" })).paymentNote ?? "",
+    /does not confirm this transfer/,
+  );
+});
+
+test("payment start failures stay on the allowlisted guest messages", () => {
+  assert.match(guestPaymentFailureMessage({ code: "guest_checkout_closed" }), /not open/);
+  assert.match(guestPaymentFailureMessage({ message: "Online payment is not open for this booking." }), /not open/);
+  assert.match(guestPaymentFailureMessage({ code: "hold_expired" }), /no longer held/);
+  assert.match(guestPaymentFailureMessage({ message: "hold_expired" }), /no longer held/);
+  assert.match(guestPaymentFailureMessage({ code: "checkout_in_progress" }), /already being started/);
+  const leaked = guestPaymentFailureMessage({
+    message: "duplicate key acct_1UKEFuFHnHoOWAJE payment_id secret sk_test_value",
+  });
+  assert.equal(leaked, "Payment cannot be started from this page. Nothing has been charged.");
+  assert.doesNotMatch(leaked, /acct_|sk_test_|payment_id/);
+  assert.equal(guestCheckoutUrl({ url: "https://checkout.stripe.com/c/pay/cs_test_example", paymentId: "pay", accountId: "acct" }), "https://checkout.stripe.com/c/pay/cs_test_example");
+  assert.equal(guestCheckoutUrl({ url: "http://checkout.stripe.com/c/pay/cs_test_example" }), null);
+  assert.equal(guestCheckoutUrl({ url: "/confirmed/token?payment=success" }), null);
+  const page = readFileSync(new URL("../../routes/confirmed.$token.tsx", import.meta.url), "utf8");
+  assert.match(page, /paymentPending\.current/);
+  assert.match(page, /disabled=\{paying\}/);
+  assert.doesNotMatch(page, /payment=success|result\.paymentId|result\.accountId/);
 });
 
 test("token lookup follows payment evidence and does not confirm a legacy row", async () => {
