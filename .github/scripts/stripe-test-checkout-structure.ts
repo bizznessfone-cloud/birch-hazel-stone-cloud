@@ -46,6 +46,7 @@ export type CheckoutStructureReport = {
 export type StructureClock = {
   now(): number;
   wait(ms: number): Promise<void>;
+  limit<T>(operation: () => Promise<T>, ms: number): Promise<T>;
 };
 
 export type StructureSignals = {
@@ -54,23 +55,70 @@ export type StructureSignals = {
   controls: { card: boolean; expiry: boolean; cvc: boolean; link: boolean; wallet: boolean; challenge: boolean };
 };
 
+export type StructureReadContext = {
+  deadline: number;
+  clock: StructureClock;
+};
+
 export type StructureSource = {
-  read(): Promise<StructureSignals>;
+  read(context: StructureReadContext): Promise<StructureSignals>;
 };
 
 type Countable = { count(): Promise<number> };
 
-export type StructureBrowserPage = {
-  locator(selector: string): Countable;
-  getByRole(role: "button" | "link" | "textbox", options: { name: RegExp }): Countable;
-  frameLocator(selector: string): {
-    getByRole(role: "button" | "link" | "textbox", options: { name: RegExp }): Countable;
-  };
+export type StructureFrame = {
+  getByRole(role: "button" | "textbox", options: { name: RegExp }): Countable;
+  isDetached(): boolean;
+  identity(): string;
 };
 
-const realClock: StructureClock = {
+export type StructureBrowserPage = {
+  locator(selector: string): Countable;
+  mainFrame(): StructureFrame;
+  childFrames(): StructureFrame[];
+};
+
+class DeadlineExceeded extends Error {
+  constructor() {
+    super("structure_observation_timeout");
+    this.name = "DeadlineExceeded";
+  }
+}
+
+function isDeadline(err: unknown): boolean {
+  return err instanceof DeadlineExceeded || (err instanceof Error && err.name === "DeadlineExceeded");
+}
+
+class StructureFrameLost extends Error {
+  constructor() {
+    super("structure_frame_lost");
+    this.name = "StructureFrameLost";
+  }
+}
+
+export const realStructureClock: StructureClock = {
   now: () => Date.now(),
   wait: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+  async limit(operation, ms) {
+    if (ms <= 0) throw new DeadlineExceeded();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const pending = operation().then(
+      (value) => ({ ok: true as const, value }),
+      (error: unknown) => ({ ok: false as const, error }),
+    );
+    try {
+      const result = await Promise.race([
+        pending,
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => reject(new DeadlineExceeded()), ms);
+        }),
+      ]);
+      if (!result.ok) throw result.error;
+      return result.value;
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  },
 };
 
 function capSmall(count: number): number {
@@ -123,58 +171,92 @@ function reportFrom(signals: StructureSignals | null, observation: StructureObse
   };
 }
 
-async function rolePresent(
-  page: StructureBrowserPage,
-  role: "button" | "link" | "textbox",
-  name: RegExp,
-): Promise<boolean> {
-  const direct = await page.getByRole(role, { name }).count();
-  const framed = await page.frameLocator(STRUCTURE_SELECTORS.iframe).getByRole(role, { name }).count();
-  return direct > 0 || framed > 0;
+async function bounded<T>(operation: () => Promise<T>, deadline: number, clock: StructureClock): Promise<T> {
+  const remaining = deadline - clock.now();
+  if (remaining <= 0) throw new DeadlineExceeded();
+  return clock.limit(operation, remaining);
 }
 
-export async function readPlaywrightStructure(page: StructureBrowserPage): Promise<StructureSignals> {
-  const [iframeCount, card, expiry, cvc, challenge] = await Promise.all([
-    page.locator(STRUCTURE_SELECTORS.iframe).count(),
-    page.locator(STRUCTURE_SELECTORS.cardTitle).count(),
-    page.locator(STRUCTURE_SELECTORS.expiryTitle).count(),
-    page.locator(STRUCTURE_SELECTORS.cvcTitle).count(),
-    page.locator(STRUCTURE_SELECTORS.challenge).count(),
-  ]);
+async function rolePresent(frame: StructureFrame, role: "button" | "textbox", name: RegExp, deadline: number, clock: StructureClock): Promise<boolean> {
+  const before = frame.identity();
+  if (frame.isDetached()) throw new StructureFrameLost();
+  const count = await bounded(() => frame.getByRole(role, { name }).count(), deadline, clock);
+  if (frame.isDetached() || frame.identity() !== before) throw new StructureFrameLost();
+  return count > 0;
+}
+
+async function controlsIn(frame: StructureFrame, deadline: number, clock: StructureClock): Promise<StructureSignals["controls"]> {
   return {
-    iframeCount,
-    titleCounts: { card, expiry, cvc },
-    controls: {
-      card: await rolePresent(page, "textbox", CARD_NAME),
-      expiry: await rolePresent(page, "textbox", EXPIRY_NAME),
-      cvc: await rolePresent(page, "textbox", CVC_NAME),
-      link: await rolePresent(page, "button", LINK_NAME),
-      wallet: await rolePresent(page, "button", WALLET_NAME),
-      challenge: challenge > 0,
-    },
+    card: await rolePresent(frame, "textbox", CARD_NAME, deadline, clock),
+    expiry: await rolePresent(frame, "textbox", EXPIRY_NAME, deadline, clock),
+    cvc: await rolePresent(frame, "textbox", CVC_NAME, deadline, clock),
+    link: await rolePresent(frame, "button", LINK_NAME, deadline, clock),
+    wallet: await rolePresent(frame, "button", WALLET_NAME, deadline, clock),
+    challenge: false,
   };
+}
+
+function mergeControls(frames: StructureSignals["controls"][]): StructureSignals["controls"] {
+  return {
+    card: frames.some((frame) => frame.card),
+    expiry: frames.some((frame) => frame.expiry),
+    cvc: frames.some((frame) => frame.cvc),
+    link: frames.some((frame) => frame.link),
+    wallet: frames.some((frame) => frame.wallet),
+    challenge: false,
+  };
+}
+
+export async function readPlaywrightStructure(
+  page: StructureBrowserPage,
+  deadline: number,
+  clock: StructureClock,
+): Promise<StructureSignals> {
+  const iframeCount = await bounded(() => page.locator(STRUCTURE_SELECTORS.iframe).count(), deadline, clock);
+  const card = await bounded(() => page.locator(STRUCTURE_SELECTORS.cardTitle).count(), deadline, clock);
+  const expiry = await bounded(() => page.locator(STRUCTURE_SELECTORS.expiryTitle).count(), deadline, clock);
+  const cvc = await bounded(() => page.locator(STRUCTURE_SELECTORS.cvcTitle).count(), deadline, clock);
+  const challenge = await bounded(() => page.locator(STRUCTURE_SELECTORS.challenge).count(), deadline, clock);
+  const children = page.childFrames();
+  if (children.length !== iframeCount) throw new StructureFrameLost();
+  const frames = [page.mainFrame(), ...children];
+  const seen = new Set<string>();
+  const collected: StructureSignals["controls"][] = [];
+  for (const frame of frames) {
+    const identity = frame.identity();
+    if (seen.has(identity)) throw new StructureFrameLost();
+    seen.add(identity);
+    collected.push(await controlsIn(frame, deadline, clock));
+  }
+  const controls = mergeControls(collected);
+  controls.challenge = challenge > 0;
+  return { iframeCount, titleCounts: { card, expiry, cvc }, controls };
 }
 
 export async function observeCheckoutStructure(
   source: StructureSource,
-  clock: StructureClock = realClock,
+  clock: StructureClock = realStructureClock,
+  budgetMs = STRUCTURE_OBSERVATION_BUDGET_MS,
 ): Promise<CheckoutStructureReport> {
-  const deadline = clock.now() + STRUCTURE_OBSERVATION_BUDGET_MS;
-  while (true) {
-    let signals: StructureSignals;
+  const deadline = clock.now() + budgetMs;
+  let last: StructureSignals | null = null;
+  while (clock.now() <= deadline) {
     try {
-      signals = await source.read();
-    } catch {
+      const signals = await source.read({ deadline, clock });
+      last = signals;
+      if (signals.controls.challenge) return reportFrom(signals, "challenge");
+      if (titleAmbiguous(signals)) return reportFrom(signals, "ambiguous");
+      if (formReady(signals)) return reportFrom(signals, "ready");
+    } catch (err) {
+      if (isDeadline(err)) return reportFrom(last, "timeout");
       return reportFrom(null, "unexpected");
     }
-    if (signals.controls.challenge) return reportFrom(signals, "challenge");
-    if (titleAmbiguous(signals)) return reportFrom(signals, "ambiguous");
-    if (formReady(signals)) return reportFrom(signals, "ready");
-    if (clock.now() >= deadline) return reportFrom(signals, "timeout");
+    if (clock.now() >= deadline) return reportFrom(last, "timeout");
     const slice = Math.min(50, deadline - clock.now());
-    if (slice <= 0) return reportFrom(signals, "timeout");
+    if (slice <= 0) return reportFrom(last, "timeout");
     await clock.wait(slice);
   }
+  return reportFrom(last, "timeout");
 }
 
 /**
