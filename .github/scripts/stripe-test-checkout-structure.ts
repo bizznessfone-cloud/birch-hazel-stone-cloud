@@ -69,13 +69,11 @@ type Countable = { count(): Promise<number> };
 export type StructureFrame = {
   getByRole(role: "button" | "textbox", options: { name: RegExp }): Countable;
   isDetached(): boolean;
-  identity(): string;
 };
 
 export type StructureBrowserPage = {
   locator(selector: string): Countable;
-  mainFrame(): StructureFrame;
-  childFrames(): StructureFrame[];
+  frames(): StructureFrame[];
 };
 
 class DeadlineExceeded extends Error {
@@ -178,10 +176,9 @@ async function bounded<T>(operation: () => Promise<T>, deadline: number, clock: 
 }
 
 async function rolePresent(frame: StructureFrame, role: "button" | "textbox", name: RegExp, deadline: number, clock: StructureClock): Promise<boolean> {
-  const before = frame.identity();
   if (frame.isDetached()) throw new StructureFrameLost();
   const count = await bounded(() => frame.getByRole(role, { name }).count(), deadline, clock);
-  if (frame.isDetached() || frame.identity() !== before) throw new StructureFrameLost();
+  if (frame.isDetached()) throw new StructureFrameLost();
   return count > 0;
 }
 
@@ -217,15 +214,12 @@ export async function readPlaywrightStructure(
   const expiry = await bounded(() => page.locator(STRUCTURE_SELECTORS.expiryTitle).count(), deadline, clock);
   const cvc = await bounded(() => page.locator(STRUCTURE_SELECTORS.cvcTitle).count(), deadline, clock);
   const challenge = await bounded(() => page.locator(STRUCTURE_SELECTORS.challenge).count(), deadline, clock);
-  const children = page.childFrames();
-  if (children.length !== iframeCount) throw new StructureFrameLost();
-  const frames = [page.mainFrame(), ...children];
-  const seen = new Set<string>();
+  const frames = page.frames();
+  const seen = new Set<StructureFrame>();
   const collected: StructureSignals["controls"][] = [];
   for (const frame of frames) {
-    const identity = frame.identity();
-    if (seen.has(identity)) throw new StructureFrameLost();
-    seen.add(identity);
+    if (seen.has(frame)) throw new StructureFrameLost();
+    seen.add(frame);
     collected.push(await controlsIn(frame, deadline, clock));
   }
   const controls = mergeControls(collected);

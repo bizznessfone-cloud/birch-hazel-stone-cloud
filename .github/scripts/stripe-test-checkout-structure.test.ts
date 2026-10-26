@@ -46,17 +46,16 @@ const LINK_NAME = /^link$/i;
 const WALLET_NAME = /google pay|apple pay|paypal/i;
 
 function frame(input: {
-  id: string;
   controls?: Partial<Record<"card" | "expiry" | "cvc" | "link" | "wallet", number>>;
   detached?: boolean;
-  navigate?: boolean;
-} ): StructureFrame & { inspected: number } {
-  let generation = 0;
+  detachOnRead?: boolean;
+} = {}): StructureFrame & { inspected: number } {
+  let detached = input.detached === true;
   let inspected = 0;
   const controls = { card: 0, expiry: 0, cvc: 0, link: 0, wallet: 0, ...input.controls };
   const countFor = (name: RegExp) => {
     inspected += 1;
-    if (input.navigate) generation += 1;
+    if (input.detachOnRead) detached = true;
     if (name.source === CARD_NAME.source) return controls.card;
     if (name.source === EXPIRY_NAME.source) return controls.expiry;
     if (name.source === CVC_NAME.source) return controls.cvc;
@@ -68,8 +67,7 @@ function frame(input: {
     getByRole(_role, options) {
       return { async count() { return countFor(options.name); } };
     },
-    isDetached: () => input.detached === true,
-    identity: () => `${input.id}:${generation}`,
+    isDetached: () => detached,
     get inspected() { return inspected; },
   };
 }
@@ -77,16 +75,16 @@ function frame(input: {
 function page(input: {
   titles?: Partial<Record<"card" | "expiry" | "cvc", number>>;
   challenge?: number;
-  children?: Array<ReturnType<typeof frame>>;
-  main?: ReturnType<typeof frame>;
+  frames?: StructureFrame[];
+  domIframes?: number;
   stallAt?: number;
   slowFirst?: number;
   clock?: StructureClock;
   fail?: boolean;
 } = {}): StructureBrowserPage & { forbidden: number } {
   const titles = { card: 0, expiry: 0, cvc: 0, ...input.titles };
-  const children = input.children ?? [];
-  const main = input.main ?? frame({ id: "main" });
+  const frames = input.frames ?? [frame()];
+  const domIframes = input.domIframes ?? Math.max(0, frames.length - 1);
   let calls = 0;
   let forbidden = 0;
   const countFor = async (selector: string) => {
@@ -94,7 +92,7 @@ function page(input: {
     if (input.fail) throw new Error(SECRET);
     if (input.slowFirst && calls === 1) await input.clock?.wait(input.slowFirst);
     if (input.stallAt === calls) throw Object.assign(new Error(SECRET), { name: "StallError" });
-    if (selector === STRUCTURE_SELECTORS.iframe) return children.length;
+    if (selector === STRUCTURE_SELECTORS.iframe) return domIframes;
     if (selector === STRUCTURE_SELECTORS.cardTitle) return titles.card;
     if (selector === STRUCTURE_SELECTORS.expiryTitle) return titles.expiry;
     if (selector === STRUCTURE_SELECTORS.cvcTitle) return titles.cvc;
@@ -106,8 +104,7 @@ function page(input: {
     locator(selector: string) {
       return { count: () => countFor(selector) };
     },
-    mainFrame: () => main,
-    childFrames: () => children,
+    frames: () => frames,
     get forbidden() { return forbidden; },
   };
 }
@@ -130,8 +127,8 @@ async function observe(source: StructureBrowserPage, time = clock()) {
   };
 }
 
-test("no iframes time out without payment controls", async () => {
-  const { report, time } = await observe(page());
+test("main frame only times out without payment controls", async () => {
+  const { report, time } = await observe(page({ domIframes: 0 }));
   assert.equal(report.observation, "timeout");
   assert.equal(report.formDetected, false);
   assert.equal(report.iframeCount, 0);
@@ -139,21 +136,21 @@ test("no iframes time out without payment controls", async () => {
   assertRedacted(report);
 });
 
-test("one iframe with card controls is detected", async () => {
-  const child = frame({ id: "only", controls: { card: 1, expiry: 1, cvc: 1 } });
-  const { report } = await observe(page({ children: [child] }));
+test("one child frame with card controls is detected", async () => {
+  const child = frame({ controls: { card: 1, expiry: 1, cvc: 1 } });
+  const { report } = await observe(page({ frames: [frame(), child] }));
   assert.equal(report.observation, "ready");
   assert.equal(report.iframeCount, 1);
   assert.equal(report.formDetected, true);
   assert.ok(child.inspected > 0);
 });
 
-test("multiple independent iframes are inspected separately", async () => {
-  const first = frame({ id: "a" });
-  const second = frame({ id: "b" });
-  const third = frame({ id: "c" });
+test("multiple sibling frames are inspected separately", async () => {
+  const first = frame();
+  const second = frame();
+  const third = frame();
   const { report } = await observe(page({
-    children: [first, second, third],
+    frames: [frame(), first, second, third],
     titles: { card: 1, expiry: 1, cvc: 1 },
   }));
   assert.equal(report.observation, "ready");
@@ -163,34 +160,48 @@ test("multiple independent iframes are inspected separately", async () => {
   assert.ok(third.inspected > 0);
 });
 
-test("card controls distributed across frames are combined", async () => {
+test("nested grandchild frames are inspected", async () => {
+  const grandchild = frame({ controls: { card: 1, expiry: 1, cvc: 1 } });
   const { report } = await observe(page({
-    children: [
-      frame({ id: "card", controls: { card: 1 } }),
-      frame({ id: "expiry", controls: { expiry: 1 } }),
-      frame({ id: "cvc", controls: { cvc: 1 } }),
-    ],
+    frames: [frame(), frame(), grandchild],
+    domIframes: 1,
   }));
   assert.equal(report.observation, "ready");
-  assert.equal(report.cardNumberTitle, false);
+  assert.equal(report.iframeCount, 1);
+  assert.equal(report.formDetected, true);
+  assert.ok(grandchild.inspected > 0);
+});
+
+test("controls inside nested frames are combined", async () => {
+  const { report } = await observe(page({
+    frames: [
+      frame(),
+      frame({ controls: { card: 1 } }),
+      frame({ controls: { expiry: 1, cvc: 1 } }),
+    ],
+    domIframes: 1,
+  }));
+  assert.equal(report.observation, "ready");
   assert.equal(report.cardNumberControl, true);
   assert.equal(report.expiryControl, true);
   assert.equal(report.cvcControl, true);
+  assert.equal(report.iframeCount, 1);
 });
 
-test("one unified payment iframe is detected from accessible controls", async () => {
+test("a DOM iframe count may differ from the attached frame count", async () => {
   const { report } = await observe(page({
-    children: [frame({ id: "payment", controls: { card: 1, expiry: 1, cvc: 1 } })],
+    frames: [frame(), frame({ controls: { card: 1, expiry: 1, cvc: 1 } })],
+    domIframes: 4,
   }));
   assert.equal(report.observation, "ready");
-  assert.equal(report.cardNumberTitle, false);
+  assert.equal(report.iframeCount, 4);
   assert.equal(report.formDetected, true);
 });
 
 test("a detached frame stops as unexpected", async () => {
   const time = clock();
   const { report } = await observe(page({
-    children: [frame({ id: SECRET, detached: true })],
+    frames: [frame(), frame({ detachOnRead: true })],
   }), time);
   assert.equal(report.observation, "unexpected");
   assert.equal(report.formDetected, false);
@@ -198,12 +209,12 @@ test("a detached frame stops as unexpected", async () => {
   assertRedacted(report);
 });
 
-test("frame navigation during inspection stops as unexpected", async () => {
-  const { report } = await observe(page({
-    children: [frame({ id: SECRET, navigate: true, controls: { card: 1, expiry: 1, cvc: 1 } })],
-  }));
+test("duplicate frame references stop as unexpected", async () => {
+  const child = frame({ controls: { card: 1, expiry: 1, cvc: 1 } });
+  const time = clock();
+  const { report } = await observe(page({ frames: [frame(), child, child] }), time);
   assert.equal(report.observation, "unexpected");
-  assertRedacted(report);
+  assert.equal(time.elapsed(), 0);
 });
 
 test("a stalled browser read times out once on the shared deadline", async () => {
@@ -261,9 +272,9 @@ test("a challenge stops observation", async () => {
 });
 
 test("multiple title matches are ambiguous and capped", async () => {
-  const children = Array.from({ length: 12 }, (_, index) => frame({ id: `f${index}` }));
+  const frames = [frame(), ...Array.from({ length: 12 }, () => frame())];
   const { report } = await observe(page({
-    children,
+    frames,
     titles: { card: 4, expiry: 1, cvc: 1 },
   }));
   assert.equal(report.observation, "ambiguous");
@@ -285,7 +296,7 @@ test("unexpected browser errors expose no raw message", async () => {
 
 test("Link and wallet controls are reported and not activated", async () => {
   const fake = page({
-    children: [frame({ id: "pay", controls: { card: 1, expiry: 1, cvc: 1, link: 1, wallet: 1 } })],
+    frames: [frame(), frame({ controls: { card: 1, expiry: 1, cvc: 1, link: 1, wallet: 1 } })],
   });
   const { report } = await observe(fake);
   assert.equal(report.linkControl, true);
@@ -294,7 +305,6 @@ test("Link and wallet controls are reported and not activated", async () => {
 });
 
 test("a real stalled read is bounded and cannot reject later", async () => {
-  let late: unknown = null;
   const report = await observeCheckoutStructure({
     read: ({ deadline, clock: active }) => active.limit(
       () => new Promise((_, reject) => {
@@ -305,7 +315,6 @@ test("a real stalled read is bounded and cannot reject later", async () => {
   }, realStructureClock, 40);
   await new Promise((resolve) => setTimeout(resolve, 300));
   assert.equal(report.observation, "timeout");
-  assert.equal(late, null);
   assertRedacted(report);
 });
 
@@ -323,5 +332,7 @@ test("the structure probe is disabled and has no payment entry", async () => {
   assert.equal(source.includes(".fill("), false);
   assert.equal(source.includes(".click("), false);
   assert.equal(source.includes("frameLocator("), false);
+  assert.equal(source.includes(".url("), false);
   assert.equal(source.includes("checkout.sessions"), false);
+  assert.equal(source.includes("!== iframeCount"), false);
 });
