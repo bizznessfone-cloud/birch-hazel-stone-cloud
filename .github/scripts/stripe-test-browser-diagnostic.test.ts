@@ -4,9 +4,14 @@ import {
   CARD_FIELD_DISCOVERY_BUDGET_MS,
   PAYMENT_AMOUNT_MINOR,
   STRIPE_TEST_EXECUTION_GATE,
+  adaptPlaywrightCheckoutPage,
+  classifyChallengeFrames,
+  inspectPlaywrightChallenges,
   paymentExecutionAuthorised,
+  readIframeMeasurement,
   runHostedCheckout,
   runPaymentHarnessBoundary,
+  type ChallengeInspection,
   type CheckoutClock,
   type HostedCheckoutBrowser,
 } from "./stripe-test-harness.ts";
@@ -285,4 +290,407 @@ test("browser diagnostics do not change unpaid recovery", async () => {
 test("closed harness remains unauthorised without the permit", () => {
   assert.equal(STRIPE_TEST_EXECUTION_GATE, "closed");
   assert.equal(paymentExecutionAuthorised({}), false);
+  assert.equal(PAYMENT_AMOUNT_MINOR, 4500);
+});
+
+const CLEAR_CHALLENGE: ChallengeInspection = {
+  visibleHcaptcha: 0,
+  visibleThreeDs: 0,
+  visibleCaptcha: 0,
+  backgroundThreeDs: 0,
+  ambiguous: 0,
+};
+
+function roleFrame(input: {
+  card?: number;
+  expiry?: number;
+  cvc?: number;
+  detached?: boolean;
+  appearAt?: number;
+  clock?: CheckoutClock;
+  missing?: boolean;
+  stall?: boolean;
+  onFill?: (value: string) => void;
+}) {
+  return {
+    isDetached: () => input.detached === true,
+    getByRole(_role: "textbox", options: { name: RegExp }) {
+      const key = options.name.test("card number") ? "card" : options.name.test("expir") ? "expiry" : "cvc";
+      return {
+        async count(options?: { timeout?: number }) {
+          if (input.stall) {
+            await input.clock?.wait(options?.timeout ?? 0);
+            return input[key] ?? 1;
+          }
+          if (input.missing) {
+            const error = new Error("missing");
+            error.name = "FieldMissing";
+            throw error;
+          }
+          if (input.appearAt != null && (input.clock?.now() ?? 0) < input.appearAt) return 0;
+          return input[key] ?? 0;
+        },
+        async fill(value: string) {
+          input.onFill?.(value);
+        },
+      };
+    },
+  };
+}
+
+function framed(input: {
+  titles?: [number, number, number];
+  frames: ReturnType<typeof roleFrame>[];
+  challenges?: (options?: { timeout?: number }) => Promise<ChallengeInspection>;
+  clock?: CheckoutClock;
+  onTitleFill?: (value: string) => void;
+  click?: () => Promise<void>;
+}): HostedCheckoutBrowser {
+  const titles = input.titles ?? [0, 0, 0];
+  return {
+    async newPage() {
+      return {
+        async goto() { return undefined; },
+        locator() { return { async count() { return 0; } }; },
+        frameLocator() {
+          const count = titles.shift() ?? 0;
+          return {
+            locator() {
+              return {
+                async count() { return count; },
+                async fill(value: string) { input.onTitleFill?.(value); },
+              };
+            },
+          };
+        },
+        frames: () => input.frames,
+        inspectChallenges: input.challenges ?? (async () => CLEAR_CHALLENGE),
+        getByRole() { return { async click() { if (input.click) await input.click(); } }; },
+        async waitForURL() { return undefined; },
+      };
+    },
+    async close() { return undefined; },
+  };
+}
+
+test("legacy titled iframes are used when frames are also attached", async () => {
+  const clock = virtualClock();
+  const filled: string[] = [];
+  const err = await fail(framed({
+    clock,
+    titles: [1, 1, 1],
+    onTitleFill: (value) => filled.push(value),
+    frames: [roleFrame({ card: 1, expiry: 1, cvc: 1, onFill: () => filled.push("role") })],
+  }), clock);
+  assert.equal(err, null);
+  assert.deepEqual(filled, ["4242424242424242", "1234", "123"]);
+  assert.equal(clock.elapsed(), 0);
+});
+
+test("accessible controls in separate nested frames are used when titles are absent", async () => {
+  const clock = virtualClock();
+  const filled: string[] = [];
+  const err = await fail(framed({
+    clock,
+    frames: [
+      roleFrame({}),
+      roleFrame({ card: 1, onFill: (value) => filled.push(`card:${value}`) }),
+      roleFrame({ expiry: 1, onFill: (value) => filled.push(`expiry:${value}`) }),
+      roleFrame({ cvc: 1, onFill: (value) => filled.push(`cvc:${value}`) }),
+    ],
+  }), clock);
+  assert.equal(err, null);
+  assert.deepEqual(filled, ["card:4242424242424242", "expiry:1234", "cvc:123"]);
+  assert.equal(clock.elapsed(), 0);
+});
+
+test("zero title matches with three accessible controls complete discovery", async () => {
+  const err = await fail(framed({
+    frames: [roleFrame({ card: 1, expiry: 1, cvc: 1 })],
+  }));
+  assert.equal(err, null);
+});
+
+test("missing accessible controls fail closed", async () => {
+  const err = await fail(framed({
+    frames: [roleFrame({ missing: true })],
+  }));
+  assert.equal((err as { browserStage: string }).browserStage, "card_field_discovery");
+  assert.equal((err as { browserFailure: string }).browserFailure, "checkout_field_missing");
+  assertSafe(err);
+});
+
+test("duplicate accessible controls are ambiguous", async () => {
+  const duplicateFrame = await fail(framed({
+    frames: [roleFrame({ card: 2, expiry: 1, cvc: 1 })],
+  }));
+  assert.equal((duplicateFrame as { browserFailure: string }).browserFailure, "checkout_field_ambiguous");
+  const duplicateAcrossFrames = await fail(framed({
+    frames: [roleFrame({ card: 1, expiry: 1, cvc: 1 }), roleFrame({ card: 1 })],
+  }));
+  assert.equal((duplicateAcrossFrames as { browserFailure: string }).browserFailure, "checkout_field_ambiguous");
+  const repeated = roleFrame({ card: 1, expiry: 1, cvc: 1 });
+  const duplicateReference = await fail(framed({ frames: [repeated, repeated] }));
+  assert.equal((duplicateReference as { browserFailure: string }).browserFailure, "checkout_field_ambiguous");
+  assertSafe(duplicateReference);
+});
+
+test("a detached frame cannot be used for payment", async () => {
+  const err = await fail(framed({
+    frames: [roleFrame({ card: 1, expiry: 1, cvc: 1, detached: true })],
+  }));
+  assert.equal((err as { browserFailure: string }).browserFailure, "checkout_field_missing");
+  assertSafe(err);
+});
+
+test("accessible discovery shares one 20 second budget", async () => {
+  const clock = virtualClock();
+  const err = await fail(framed({
+    clock,
+    frames: [roleFrame({ card: 1, expiry: 1, cvc: 1, appearAt: 20_000, clock })],
+  }), clock);
+  assert.equal(err, null);
+  assert.equal(clock.elapsed(), CARD_FIELD_DISCOVERY_BUDGET_MS);
+  const timeout = await fail(framed({
+    clock: virtualClock(),
+    frames: [roleFrame({ clock: virtualClock() })],
+  }));
+  assert.equal((timeout as { browserFailure: string }).browserFailure, "checkout_field_timeout");
+});
+
+test("visible hCaptcha and 3-D Secure challenges block payment", async () => {
+  const captcha = await fail(framed({
+    challenges: async () => ({ ...CLEAR_CHALLENGE, visibleHcaptcha: 1 }),
+    frames: [roleFrame({ card: 1, expiry: 1, cvc: 1 })],
+  }));
+  assert.equal((captcha as { browserStage: string }).browserStage, "challenge_detection");
+  assert.equal((captcha as { browserFailure: string }).browserFailure, "checkout_challenge");
+  const threeDs = await fail(framed({
+    challenges: async () => ({ ...CLEAR_CHALLENGE, visibleThreeDs: 1 }),
+    frames: [roleFrame({ card: 1, expiry: 1, cvc: 1 })],
+  }));
+  assert.equal((threeDs as { browserFailure: string }).browserFailure, "checkout_challenge");
+  assertSafe(captcha);
+});
+
+test("a background 3ds frame does not override valid card controls", async () => {
+  const err = await fail(framed({
+    challenges: async () => ({ ...CLEAR_CHALLENGE, backgroundThreeDs: 1 }),
+    frames: [roleFrame({ card: 1, expiry: 1, cvc: 1 })],
+  }));
+  assert.equal(err, null);
+});
+
+test("an ambiguous challenge fails closed", async () => {
+  const err = await fail(framed({
+    challenges: async () => ({ ...CLEAR_CHALLENGE, ambiguous: 1 }),
+    frames: [roleFrame({ card: 1, expiry: 1, cvc: 1 })],
+  }));
+  assert.equal((err as { browserStage: string }).browserStage, "challenge_detection");
+  assert.equal((err as { browserFailure: string }).browserFailure, "checkout_challenge");
+  assertSafe(err);
+});
+
+test("challenge state is checked again after discovery and before submission", async () => {
+  let calls = 0;
+  let clicked = false;
+  const err = await fail(framed({
+    frames: [roleFrame({ card: 1, expiry: 1, cvc: 1 })],
+    challenges: async () => {
+      calls += 1;
+      return calls < 4 ? CLEAR_CHALLENGE : { ...CLEAR_CHALLENGE, visibleCaptcha: 1 };
+    },
+    click: async () => { clicked = true; },
+  }));
+  assert.equal((err as { browserStage: string }).browserStage, "challenge_detection");
+  assert.equal(clicked, false);
+  assert.ok(calls >= 4);
+});
+
+test("challenge inspection errors do not leak sensitive output", async () => {
+  const err = await fail(framed({
+    frames: [roleFrame({ card: 1, expiry: 1, cvc: 1 })],
+    challenges: async () => { throw named("Error"); },
+  }));
+  assert.equal((err as { browserFailure: string }).browserFailure, "checkout_challenge");
+  assertSafe(err);
+});
+
+test("challenge classification separates background infrastructure from an active challenge", () => {
+  const hidden = readIframeMeasurement({
+    getAttribute: (name) => name === "src" ? "https://js.stripe.com/v3/3ds2-method.html" : null,
+    getBoundingClientRect: () => ({ width: 0, height: 0 }),
+    ownerDocument: { defaultView: { getComputedStyle: () => ({ display: "none", visibility: "hidden" }) } },
+  });
+  assert.equal(hidden.visible, false);
+  assert.equal(classifyChallengeFrames([hidden]).backgroundThreeDs, 1);
+  const ariaHiddenBackground = readIframeMeasurement({
+    getAttribute: (name) => name === "src" ? "https://js.stripe.com/v3/3ds2-method.html" : name === "aria-hidden" ? "true" : null,
+    getBoundingClientRect: () => ({ width: 0, height: 0 }),
+    ownerDocument: { defaultView: { getComputedStyle: () => ({ display: "none", visibility: "hidden" }) } },
+  });
+  assert.equal(ariaHiddenBackground.visible, false);
+  assert.equal(classifyChallengeFrames([ariaHiddenBackground]).backgroundThreeDs, 1);
+  assert.equal(classifyChallengeFrames([ariaHiddenBackground]).ambiguous, 0);
+  const conflicting = readIframeMeasurement({
+    getAttribute: (name) => name === "src" ? "https://js.stripe.com/v3/3ds2-challenge.html" : name === "aria-hidden" ? "true" : null,
+    getBoundingClientRect: () => ({ width: 400, height: 600 }),
+    ownerDocument: { defaultView: { getComputedStyle: () => ({ display: "block", visibility: "visible" }) } },
+  });
+  assert.equal(conflicting.visible, null);
+  assert.equal(classifyChallengeFrames([conflicting]).ambiguous, 1);
+  assert.equal(classifyChallengeFrames([conflicting]).backgroundThreeDs, 0);
+  assert.equal(classifyChallengeFrames([conflicting]).visibleThreeDs, 0);
+  const cssHiddenBox = readIframeMeasurement({
+    getAttribute: (name) => name === "src" ? "https://js.stripe.com/v3/3ds2-method.html" : name === "aria-hidden" ? "true" : null,
+    getBoundingClientRect: () => ({ width: 1, height: 1 }),
+    ownerDocument: { defaultView: { getComputedStyle: () => ({ display: "block", visibility: "hidden" }) } },
+  });
+  assert.equal(cssHiddenBox.visible, false);
+  assert.equal(classifyChallengeFrames([cssHiddenBox]).backgroundThreeDs, 1);
+  assert.equal(classifyChallengeFrames([cssHiddenBox]).ambiguous, 0);
+  const visible = readIframeMeasurement({
+    title: "3D Secure",
+    getAttribute: () => "https://hooks.stripe.com/3d-secure",
+    getBoundingClientRect: () => ({ width: 400, height: 600 }),
+    ownerDocument: { defaultView: { getComputedStyle: () => ({ display: "block", visibility: "visible" }) } },
+  });
+  assert.equal(classifyChallengeFrames([visible]).visibleThreeDs, 1);
+  const hiddenCaptcha = readIframeMeasurement({
+    getAttribute: (name) => name === "src" ? "https://hcaptcha.com/widget" : null,
+    getBoundingClientRect: () => ({ width: 0, height: 0 }),
+    ownerDocument: { defaultView: { getComputedStyle: () => ({ display: "none", visibility: "hidden" }) } },
+  });
+  assert.equal(classifyChallengeFrames([hiddenCaptcha]).ambiguous, 1);
+  const unknown = readIframeMeasurement({
+    getAttribute: () => null,
+    getBoundingClientRect: () => ({ width: 10, height: 10 }),
+  });
+  assert.equal(unknown.visible, null);
+  assert.equal(classifyChallengeFrames([unknown]).ambiguous, 0);
+});
+
+test("playwright frame identity stays stable and an unreadable frame fails closed", async () => {
+  const child = {
+    isDetached: () => false,
+    parentFrame: () => ({}) as never,
+    getByRole: () => ({ async count() { return 0; }, async fill() { return undefined; } }),
+    async frameElement() {
+      return { async evaluate(fn: typeof readIframeMeasurement) {
+        return fn({
+          getAttribute: (name) => name === "src" ? "https://js.stripe.com/v3/3ds2.html" : null,
+          getBoundingClientRect: () => ({ width: 0, height: 0 }),
+          ownerDocument: { defaultView: { getComputedStyle: () => ({ display: "none", visibility: "hidden" }) } },
+        });
+      } };
+    },
+  };
+  const main = {
+    isDetached: () => false,
+    parentFrame: () => null,
+    getByRole: () => ({ async count() { return 0; }, async fill() { return undefined; } }),
+    async frameElement() { throw new Error("Frame is not an iframe"); },
+  };
+  const raw = {
+    async goto() { return undefined; },
+    locator: () => ({ async count() { return 0; } }),
+    frameLocator: () => ({ locator: () => ({ async count() { return 0; }, async fill() { return undefined; } }) }),
+    getByRole: () => ({ async click() { return undefined; } }),
+    async waitForURL() { return undefined; },
+    frames: () => [main, child],
+  };
+  const adapted = adaptPlaywrightCheckoutPage(raw as never);
+  const first = adapted.frames?.() ?? [];
+  const second = adapted.frames?.() ?? [];
+  assert.equal(first[1], second[1]);
+  const inspection = await inspectPlaywrightChallenges(raw as never);
+  assert.equal(inspection.backgroundThreeDs, 1);
+  assert.equal(inspection.ambiguous, 0);
+  child.frameElement = async () => { throw new Error(SECRET_TEXT); };
+  const blocked = await inspectPlaywrightChallenges(raw as never);
+  assert.equal(blocked.ambiguous, 1);
+  assert.equal(JSON.stringify(blocked).includes("4242"), false);
+  assert.equal(JSON.stringify(blocked).includes("secret"), false);
+});
+
+test("a visibly sized aria-hidden challenge iframe blocks payment", async () => {
+  let filled = false;
+  const err = await fail(framed({
+    frames: [roleFrame({ card: 1, expiry: 1, cvc: 1, onFill: () => { filled = true; } })],
+    challenges: async () => classifyChallengeFrames([readIframeMeasurement({
+      getAttribute: (name) => name === "src" ? "https://js.stripe.com/v3/3ds2.html" : name === "aria-hidden" ? "true" : null,
+      getBoundingClientRect: () => ({ width: 400, height: 600 }),
+      ownerDocument: { defaultView: { getComputedStyle: () => ({ display: "block", visibility: "visible" }) } },
+    })]),
+  }));
+  assert.equal((err as { browserStage: string }).browserStage, "challenge_detection");
+  assert.equal((err as { browserFailure: string }).browserFailure, "checkout_challenge");
+  assert.equal(filled, false);
+  assertSafe(err);
+});
+
+test("a stalled locator cannot be used after the shared discovery deadline", async () => {
+  const clock = virtualClock();
+  let filled = false;
+  let clicked = false;
+  let seenTimeout = -1;
+  let titles = 0;
+  const err = await fail({
+    async newPage() {
+      return {
+        async goto() { return undefined; },
+        locator: () => ({ async count() { return 0; } }),
+        frameLocator: () => ({
+          locator: () => ({
+            async count() {
+              titles += 1;
+              if (titles === 1) await clock.wait(15_000);
+              return 0;
+            },
+            async fill() { filled = true; },
+          }),
+        }),
+        frames: () => [{
+          isDetached: () => false,
+          getByRole: () => ({
+            async count(options?: { timeout?: number }) {
+              seenTimeout = options?.timeout ?? -1;
+              await clock.wait(options?.timeout ?? 0);
+              return 1;
+            },
+            async fill() { filled = true; },
+          }),
+        }],
+        inspectChallenges: async () => CLEAR_CHALLENGE,
+        getByRole: () => ({ async click() { clicked = true; } }),
+        async waitForURL() { return undefined; },
+      };
+    },
+    async close() { return undefined; },
+  }, clock);
+  assert.equal((err as { browserStage: string }).browserStage, "card_field_discovery");
+  assert.equal((err as { browserFailure: string }).browserFailure, "checkout_field_timeout");
+  assert.equal(filled, false);
+  assert.equal(clicked, false);
+  assert.equal(seenTimeout, 5_000);
+  assert.equal(clock.elapsed(), CARD_FIELD_DISCOVERY_BUDGET_MS);
+  assertSafe(err);
+});
+
+test("a stalled challenge inspection cannot fall through to payment", async () => {
+  const clock = virtualClock();
+  let filled = false;
+  const err = await fail(framed({
+    clock,
+    frames: [roleFrame({ card: 1, expiry: 1, cvc: 1, onFill: () => { filled = true; } })],
+    challenges: async (options) => {
+      if ((options?.timeout ?? 0) > 0) await clock.wait(options?.timeout ?? 0);
+      return CLEAR_CHALLENGE;
+    },
+  }), clock);
+  assert.equal((err as { browserStage: string }).browserStage, "card_field_discovery");
+  assert.equal((err as { browserFailure: string }).browserFailure, "checkout_field_timeout");
+  assert.equal(filled, false);
+  assert.equal(clock.elapsed(), CARD_FIELD_DISCOVERY_BUDGET_MS);
+  assertSafe(err);
 });

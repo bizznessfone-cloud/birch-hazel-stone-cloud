@@ -728,9 +728,29 @@ async function createFixtureBooking(admin: QueryClient, destinationId: string): 
 }
 
 type CardFieldLocator = {
-  count(): Promise<number>;
+  count(options?: { timeout: number }): Promise<number>;
   waitFor?(options: { state: "visible"; timeout: number }): Promise<void>;
   fill(value: string, options: { timeout: number }): Promise<void>;
+};
+
+type CheckoutFrame = {
+  isDetached(): boolean;
+  getByRole(role: "textbox", options: { name: RegExp }): CardFieldLocator;
+};
+
+export type ChallengeFrameFact = {
+  src: string;
+  title: string;
+  visible: boolean | null;
+  unreadable?: boolean;
+};
+
+export type ChallengeInspection = {
+  visibleHcaptcha: number;
+  visibleThreeDs: number;
+  visibleCaptcha: number;
+  backgroundThreeDs: number;
+  ambiguous: number;
 };
 
 type BrowserPage = {
@@ -740,6 +760,8 @@ type BrowserPage = {
   getByRole(role: "button", options: { name: RegExp }): { click(options: { timeout: number }): Promise<void> };
   on?(event: "console" | "request" | "response", listener: () => void): void;
   waitForURL(predicate: (url: URL) => boolean, options: { timeout: number }): Promise<void>;
+  frames?(): CheckoutFrame[];
+  inspectChallenges?(options?: { timeout: number }): Promise<ChallengeInspection>;
 };
 
 export type HostedCheckoutBrowser = {
@@ -748,6 +770,13 @@ export type HostedCheckoutBrowser = {
 };
 
 export const CARD_FIELD_DISCOVERY_BUDGET_MS = 20_000;
+const TITLE_CARD = 'iframe[title*="card number" i]';
+const TITLE_EXPIRY = 'iframe[title*="expir" i]';
+const TITLE_CVC = 'iframe[title*="CVC" i]';
+const CARD_NAME = /card number/i;
+const EXPIRY_NAME = /expir/i;
+const CVC_NAME = /cvc|security code/i;
+const CHALLENGE_SELECTOR = 'iframe[src*="hcaptcha"], iframe[src*="3ds"], iframe[title*="3D Secure" i], iframe[title*="captcha" i]';
 
 export type CheckoutClock = {
   now(): number;
@@ -767,10 +796,66 @@ function discoveryError(kind: "timeout" | "missing" | "ambiguous"): Error {
   return error;
 }
 
-async function readFieldCount(field: CardFieldLocator): Promise<number> {
+function discoveryCrossed(clock: CheckoutClock, before: number, deadline: number): boolean {
+  const now = clock.now();
+  return now > deadline || (now >= deadline && now > before);
+}
+
+async function withinDeadline<T>(deadline: number, clock: CheckoutClock, run: (timeout: number) => Promise<T>): Promise<T> {
+  if (clock.now() > deadline) throw discoveryError("timeout");
+  const before = clock.now();
+  const timeout = Math.max(0, deadline - before);
+  if (clock === realCheckoutClock && timeout > 0) return preemptDeadline(deadline, timeout, () => run(timeout));
+  let value: T;
   try {
-    return await field.count();
+    value = await run(timeout);
   } catch (err) {
+    if (discoveryCrossed(clock, before, deadline)) throw discoveryError("timeout");
+    if (err instanceof Error && (err.name === "TimeoutError" || err.message === "checkout_field_timeout")) {
+      if (clock.now() === before && timeout > 0) await clock.wait(timeout);
+      throw discoveryError("timeout");
+    }
+    throw err;
+  }
+  if (discoveryCrossed(clock, before, deadline)) throw discoveryError("timeout");
+  return value;
+}
+
+async function preemptDeadline<T>(deadline: number, timeout: number, run: () => Promise<T>): Promise<T> {
+  const operation = run().then(
+    (value) => ({ ok: true as const, value }),
+    (error) => ({ ok: false as const, error }),
+  );
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let closed = false;
+  try {
+    const outcome = await new Promise<{ ok: true; value: T } | { ok: false; error: unknown }>((resolve, reject) => {
+      timer = setTimeout(() => {
+        closed = true;
+        reject(discoveryError("timeout"));
+      }, timeout);
+      operation.then((result) => {
+        if (closed) return;
+        if (timer !== undefined) clearTimeout(timer);
+        resolve(result);
+      });
+    });
+    if (Date.now() >= deadline) throw discoveryError("timeout");
+    if (!outcome.ok) throw outcome.error;
+    return outcome.value;
+  } finally {
+    closed = true;
+    if (timer !== undefined) clearTimeout(timer);
+  }
+}
+
+async function readFieldCount(field: CardFieldLocator, deadline?: number, clock?: CheckoutClock): Promise<number> {
+  try {
+    return deadline != null && clock != null
+      ? await withinDeadline(deadline, clock, (timeout) => field.count({ timeout }))
+      : await field.count();
+  } catch (err) {
+    if (err instanceof Error && err.message === "checkout_field_timeout") throw err;
     if (err instanceof Error && err.name === "FieldMissing") throw discoveryError("missing");
     throw err;
   }
@@ -821,22 +906,171 @@ async function awaitCardField(field: CardFieldLocator, deadline: number, clock: 
   throw discoveryError("timeout");
 }
 
-async function assertNoChallenge(page: BrowserPage): Promise<void> {
-  const challenges = await page.locator(
-    'iframe[src*="hcaptcha"], iframe[src*="3ds"], iframe[title*="3D Secure" i], iframe[title*="captcha" i]',
-  ).count();
+export function readIframeMeasurement(element: {
+  getAttribute(name: string): string | null;
+  title?: string;
+  getBoundingClientRect(): { width: number; height: number };
+  ownerDocument?: { defaultView?: { getComputedStyle?(element: unknown): { display: string; visibility: string } | null } | null };
+}): ChallengeFrameFact {
+  const style = element.ownerDocument?.defaultView?.getComputedStyle?.(element) ?? null;
+  const rect = element.getBoundingClientRect();
+  if (style == null || rect == null) {
+    return {
+      src: element.getAttribute("src") ?? "",
+      title: element.title || element.getAttribute("title") || "",
+      visible: null,
+    };
+  }
+  const ariaHidden = element.getAttribute("aria-hidden") === "true";
+  const cssHidden = style.display === "none" || style.visibility === "hidden";
+  const sized = rect.width > 0 && rect.height > 0;
+  const presented = !cssHidden && sized;
+  const visible = ariaHidden && presented ? null : presented;
+  return {
+    src: element.getAttribute("src") ?? "",
+    title: element.title || element.getAttribute("title") || "",
+    visible,
+  };
+}
+
+export function classifyChallengeFrames(frames: ChallengeFrameFact[]): ChallengeInspection {
+  const result: ChallengeInspection = {
+    visibleHcaptcha: 0,
+    visibleThreeDs: 0,
+    visibleCaptcha: 0,
+    backgroundThreeDs: 0,
+    ambiguous: 0,
+  };
+  for (const fact of frames) {
+    if (fact.unreadable) {
+      result.ambiguous += 1;
+      continue;
+    }
+    const src = fact.src.toLowerCase();
+    const title = fact.title.toLowerCase();
+    const hcaptcha = src.includes("hcaptcha") || title.includes("hcaptcha");
+    const captcha = title.includes("captcha") || src.includes("captcha");
+    const titledThreeDs = title.includes("3d secure");
+    const srcThreeDs = src.includes("3ds");
+    if (!hcaptcha && !captcha && !titledThreeDs && !srcThreeDs) continue;
+    if (fact.visible == null) {
+      result.ambiguous += 1;
+      continue;
+    }
+    if (hcaptcha) {
+      if (fact.visible) result.visibleHcaptcha += 1;
+      else result.ambiguous += 1;
+      continue;
+    }
+    if (captcha || titledThreeDs) {
+      if (!fact.visible) result.ambiguous += 1;
+      else if (titledThreeDs) result.visibleThreeDs += 1;
+      else result.visibleCaptcha += 1;
+      continue;
+    }
+    if (fact.visible) result.visibleThreeDs += 1;
+    else result.backgroundThreeDs += 1;
+  }
+  return result;
+}
+
+function challengeBlocks(inspection: ChallengeInspection): boolean {
+  return inspection.visibleHcaptcha > 0
+    || inspection.visibleThreeDs > 0
+    || inspection.visibleCaptcha > 0
+    || inspection.ambiguous > 0;
+}
+
+async function assertNoChallenge(page: BrowserPage, deadline?: number, clock?: CheckoutClock): Promise<void> {
+  if (page.inspectChallenges) {
+    let inspection: ChallengeInspection;
+    try {
+      inspection = deadline != null && clock != null
+        ? await withinDeadline(deadline, clock, (timeout) => page.inspectChallenges!({ timeout }))
+        : await page.inspectChallenges();
+    } catch (err) {
+      if (err instanceof Error && err.message === "checkout_field_timeout") throw err;
+      throw new Error("checkout_challenge");
+    }
+    if (challengeBlocks(inspection)) throw new Error("checkout_challenge");
+    return;
+  }
+  const challenges = deadline != null && clock != null
+    ? await withinDeadline(deadline, clock, () => page.locator(CHALLENGE_SELECTOR).count())
+    : await page.locator(CHALLENGE_SELECTOR).count();
   if (challenges > 0) throw new Error("checkout_challenge");
 }
 
-async function requireCardFields(page: BrowserPage, clock: CheckoutClock): Promise<{
+async function readAccessibleFields(page: BrowserPage, deadline: number, clock: CheckoutClock): Promise<
+  { card: CardFieldLocator; expiry: CardFieldLocator; cvc: CardFieldLocator } | "none" | "ambiguous" | "detached"
+> {
+  if (!page.frames) return "none";
+  const seen = new Set<CheckoutFrame>();
+  const found: { card: CardFieldLocator[]; expiry: CardFieldLocator[]; cvc: CardFieldLocator[] } = {
+    card: [],
+    expiry: [],
+    cvc: [],
+  };
+  for (const frame of page.frames()) {
+    if (seen.has(frame)) return "ambiguous";
+    seen.add(frame);
+    if (frame.isDetached()) return "detached";
+    const candidates: Array<["card" | "expiry" | "cvc", RegExp]> = [
+      ["card", CARD_NAME],
+      ["expiry", EXPIRY_NAME],
+      ["cvc", CVC_NAME],
+    ];
+    for (const [key, name] of candidates) {
+      const locator = frame.getByRole("textbox", { name });
+      const count = await readFieldCount(locator, deadline, clock);
+      if (count > 1) return "ambiguous";
+      if (count === 1) found[key].push(locator);
+    }
+  }
+  if (found.card.length > 1 || found.expiry.length > 1 || found.cvc.length > 1) return "ambiguous";
+  if (found.card.length === 1 && found.expiry.length === 1 && found.cvc.length === 1) {
+    return { card: found.card[0]!, expiry: found.expiry[0]!, cvc: found.cvc[0]! };
+  }
+  return "none";
+}
+
+async function discoverCardFields(page: BrowserPage, clock: CheckoutClock, deadline: number): Promise<{
   card: CardFieldLocator;
   expiry: CardFieldLocator;
   cvc: CardFieldLocator;
 }> {
-  const card = page.frameLocator('iframe[title*="card number" i]').locator("input");
-  const expiry = page.frameLocator('iframe[title*="expir" i]').locator("input");
-  const cvc = page.frameLocator('iframe[title*="CVC" i]').locator("input");
-  const deadline = clock.now() + CARD_FIELD_DISCOVERY_BUDGET_MS;
+  const card = page.frameLocator(TITLE_CARD).locator("input");
+  const expiry = page.frameLocator(TITLE_EXPIRY).locator("input");
+  const cvc = page.frameLocator(TITLE_CVC).locator("input");
+  while (true) {
+    await assertNoChallenge(page, deadline, clock);
+    const titleCounts = [
+      await readFieldCount(card, deadline, clock),
+      await readFieldCount(expiry, deadline, clock),
+      await readFieldCount(cvc, deadline, clock),
+    ];
+    if (titleCounts.some((count) => count > 1)) throw discoveryError("ambiguous");
+    if (titleCounts.every((count) => count === 1)) return { card, expiry, cvc };
+    const accessible = await readAccessibleFields(page, deadline, clock);
+    if (accessible === "ambiguous") throw discoveryError("ambiguous");
+    if (accessible === "detached") throw discoveryError("missing");
+    if (accessible !== "none" && titleCounts.every((count) => count === 0)) return accessible;
+    if (clock.now() >= deadline) throw discoveryError("timeout");
+    const slice = Math.min(50, deadline - clock.now());
+    if (slice <= 0) throw discoveryError("timeout");
+    await clock.wait(slice);
+  }
+}
+
+async function requireCardFields(page: BrowserPage, clock: CheckoutClock, deadline: number): Promise<{
+  card: CardFieldLocator;
+  expiry: CardFieldLocator;
+  cvc: CardFieldLocator;
+}> {
+  if (page.frames) return discoverCardFields(page, clock, deadline);
+  const card = page.frameLocator(TITLE_CARD).locator("input");
+  const expiry = page.frameLocator(TITLE_EXPIRY).locator("input");
+  const cvc = page.frameLocator(TITLE_CVC).locator("input");
   await awaitCardField(card, deadline, clock);
   await awaitCardField(expiry, deadline, clock);
   await awaitCardField(cvc, deadline, clock);
@@ -877,10 +1111,18 @@ export async function runHostedCheckout(
       throw browserDiagnostic("challenge_detection", err);
     }
     let fields: Awaited<ReturnType<typeof requireCardFields>>;
+    const discoveryDeadline = clock.now() + CARD_FIELD_DISCOVERY_BUDGET_MS;
     try {
-      fields = await requireCardFields(page, clock);
+      fields = await requireCardFields(page, clock, discoveryDeadline);
     } catch (err) {
+      if (err instanceof Error && err.message === "checkout_challenge") throw browserDiagnostic("challenge_detection", err);
       throw browserDiagnostic("card_field_discovery", err);
+    }
+    try {
+      await assertNoChallenge(page, discoveryDeadline, clock);
+    } catch (err) {
+      if (err instanceof Error && err.message === "checkout_field_timeout") throw browserDiagnostic("card_field_discovery", err);
+      throw browserDiagnostic("challenge_detection", err);
     }
     try {
       await fields.card.fill("4242424242424242", { timeout: 20_000 });
@@ -917,13 +1159,80 @@ export async function runHostedCheckout(
   }
 }
 
+type PlaywrightCheckoutFrame = {
+  isDetached(): boolean;
+  parentFrame(): PlaywrightCheckoutFrame | null;
+  getByRole(role: "textbox", options: { name: RegExp }): CardFieldLocator;
+  frameElement(): Promise<{ evaluate(fn: typeof readIframeMeasurement): Promise<ChallengeFrameFact> }>;
+};
+
+function adaptPlaywrightFrame(frame: PlaywrightCheckoutFrame, cache: WeakMap<PlaywrightCheckoutFrame, CheckoutFrame>): CheckoutFrame {
+  const cached = cache.get(frame);
+  if (cached) return cached;
+  const adapted: CheckoutFrame = {
+    isDetached: () => frame.isDetached(),
+    getByRole: (role, options) => frame.getByRole(role, options),
+  };
+  cache.set(frame, adapted);
+  return adapted;
+}
+
+export async function inspectPlaywrightChallenges(
+  page: { frames(): PlaywrightCheckoutFrame[] },
+  options?: { timeout: number },
+): Promise<ChallengeInspection> {
+  const facts: ChallengeFrameFact[] = [];
+  const seen = new Set<PlaywrightCheckoutFrame>();
+  const started = Date.now();
+  const deadline = options == null ? null : started + options.timeout;
+  const assertInspectionTime = () => {
+    if (deadline != null && Date.now() > started && Date.now() >= deadline) throw discoveryError("timeout");
+  };
+  for (const frame of page.frames()) {
+    assertInspectionTime();
+    if (seen.has(frame)) {
+      facts.push({ src: "", title: "", visible: null, unreadable: true });
+      continue;
+    }
+    seen.add(frame);
+    if (frame.parentFrame() == null) continue;
+    try {
+      const element = await frame.frameElement();
+      assertInspectionTime();
+      facts.push(await element.evaluate(readIframeMeasurement));
+      assertInspectionTime();
+    } catch (err) {
+      if (err instanceof Error && err.message === "checkout_field_timeout") throw err;
+      facts.push({ src: "", title: "", visible: null, unreadable: true });
+    }
+  }
+  return classifyChallengeFrames(facts);
+}
+
+export function adaptPlaywrightCheckoutPage(page: BrowserPage & {
+  frames(): PlaywrightCheckoutFrame[];
+}): BrowserPage {
+  const cache = new WeakMap<PlaywrightCheckoutFrame, CheckoutFrame>();
+  return {
+    goto: (url, options) => page.goto(url, options),
+    locator: (selector) => page.locator(selector),
+    frameLocator: (selector) => page.frameLocator(selector),
+    getByRole: (role, options) => page.getByRole(role, options),
+    on: page.on?.bind(page),
+    waitForURL: (predicate, options) => page.waitForURL(predicate, options),
+    frames: () => page.frames().map((frame) => adaptPlaywrightFrame(frame, cache)),
+    inspectChallenges: (options) => inspectPlaywrightChallenges(page, options),
+  };
+}
+
 async function completeHostedCheckout(checkoutUrl: string): Promise<void> {
   await runHostedCheckout(checkoutUrl, async () => {
     const { chromium } = await import("playwright");
     const browser = await chromium.launch({ headless: true });
     return {
       async newPage() {
-        return await browser.newPage() as BrowserPage;
+        const page = await browser.newPage();
+        return adaptPlaywrightCheckoutPage(page as unknown as BrowserPage & { frames(): PlaywrightCheckoutFrame[] });
       },
       async close() {
         await browser.close();
