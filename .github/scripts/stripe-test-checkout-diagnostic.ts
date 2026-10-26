@@ -10,6 +10,7 @@ import {
   type CheckoutStructureReport,
   type StructureBrowserPage,
   type StructureClock,
+  type StructureFrame,
 } from "./stripe-test-checkout-structure.ts";
 
 export const CHECKOUT_DIAGNOSTIC_EXECUTION_GATE = "closed" as const;
@@ -79,7 +80,7 @@ function value(env: Env, name: string): string {
 }
 
 export function diagnosticAuthorisationFailure(env: Env, sourceGate: string = CHECKOUT_DIAGNOSTIC_EXECUTION_GATE): string | null {
-  if (sourceGate !== "closed") return "diagnostic_closed";
+  if (sourceGate !== "open") return "diagnostic_closed";
   const permit = value(env, "SBG_AUTHORISED_DIAGNOSTIC_SHA");
   const sha = value(env, "GITHUB_SHA");
   if (!SHA.test(permit) || !SHA.test(sha) || permit !== sha) {
@@ -156,13 +157,22 @@ function unpaidExpired(session: DiagnosticSession, id: string): boolean {
 }
 
 async function closeBrowser(page: DiagnosticPage | null, browser: DiagnosticBrowser | null): Promise<string | null> {
-  try {
-    await page?.close();
-    await browser?.close();
-    return null;
-  } catch {
-    return "browser_close_failed";
+  let failure: string | null = null;
+  if (page) {
+    try {
+      await page.close();
+    } catch {
+      failure = "browser_close_failed";
+    }
   }
+  if (browser) {
+    try {
+      await browser.close();
+    } catch {
+      failure = failure ?? "browser_close_failed";
+    }
+  }
+  return failure;
 }
 
 async function cleanupSession(stripe: DiagnosticStripe, id: string): Promise<{ cleanup: DiagnosticCleanup; failure: string | null }> {
@@ -337,22 +347,38 @@ function realStripe(secret: string): DiagnosticStripe {
   };
 }
 
+type RawFrame = {
+  getByRole(role: "button" | "textbox", options: { name: RegExp }): { count(): Promise<number> };
+  isDetached(): boolean;
+};
+
+export function adaptFrames(frames: RawFrame[], cache: WeakMap<RawFrame, StructureFrame>): StructureFrame[] {
+  return frames.map((frame) => {
+    const existing = cache.get(frame);
+    if (existing) return existing;
+    const adapter: StructureFrame = {
+      getByRole: (role, options) => frame.getByRole(role, options),
+      isDetached: () => frame.isDetached(),
+    };
+    cache.set(frame, adapter);
+    return adapter;
+  });
+}
+
 async function launchPlaywright(): Promise<DiagnosticBrowser> {
   const { chromium } = await import("playwright");
   const browser = await chromium.launch({ headless: true });
   return {
     async newPage() {
       const page = await browser.newPage();
+      const cache = new WeakMap<RawFrame, StructureFrame>();
       return {
         goto: async (url: string) => {
           await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30_000 });
         },
         close: () => page.close(),
         locator: (selector: string) => page.locator(selector),
-        frames: () => page.frames().map((frame) => ({
-          getByRole: (role: "button" | "textbox", options: { name: RegExp }) => frame.getByRole(role, options),
-          isDetached: () => frame.isDetached(),
-        })),
+        frames: () => adaptFrames(page.frames(), cache),
       };
     },
     close: () => browser.close(),

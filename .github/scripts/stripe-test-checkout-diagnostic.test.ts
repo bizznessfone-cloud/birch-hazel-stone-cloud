@@ -5,6 +5,7 @@ import {
   CHECKOUT_DIAGNOSTIC_EXECUTION_GATE,
   DIAGNOSTIC_AMOUNT_MINOR,
   DIAGNOSTIC_CONNECTED_ACCOUNT,
+  adaptFrames,
   diagnosticCheckoutBody,
   runCheckoutDiagnostic,
   type DiagnosticBrowser,
@@ -12,7 +13,6 @@ import {
   type DiagnosticPage,
   type DiagnosticSession,
   type DiagnosticStripe,
-  type StructureClock,
 } from "./stripe-test-checkout-diagnostic.ts";
 import { STRUCTURE_SELECTORS, type StructureClock, type StructureFrame } from "./stripe-test-checkout-structure.ts";
 
@@ -151,7 +151,11 @@ function assertRedacted(value: unknown): void {
   assert.equal(text.includes(SECRET), false);
 }
 
-async function run(overrides: Partial<DiagnosticInput> = {}, envOverrides: Record<string, string> = {}) {
+async function run(
+  overrides: Partial<DiagnosticInput> = {},
+  envOverrides: Record<string, string> = {},
+  sourceGate: string = CHECKOUT_DIAGNOSTIC_EXECUTION_GATE,
+) {
   const payments = stripe();
   const chrome = browser();
   const result = await runCheckoutDiagnostic({
@@ -161,44 +165,51 @@ async function run(overrides: Partial<DiagnosticInput> = {}, envOverrides: Recor
     clock: clock(),
     budgetMs: 100,
     ...overrides,
+    sourceGate,
   });
   return { result, payments, chrome };
 }
 
-test("a closed diagnostic permit does not create a Session", async () => {
+test("a closed source gate rejects a valid SHA permit", async () => {
   assert.equal(CHECKOUT_DIAGNOSTIC_EXECUTION_GATE, "closed");
-  const { result, payments } = await run({}, { SBG_AUTHORISED_DIAGNOSTIC_SHA: "" });
+  const { result, payments } = await run();
   assert.equal(result.status, "closed");
+  assert.equal(result.failure, "diagnostic_closed");
+  assert.equal(payments.creates, 0);
+});
+
+test("an open gate without a permit is rejected", async () => {
+  const { result, payments } = await run({}, { SBG_AUTHORISED_DIAGNOSTIC_SHA: "" }, "open");
   assert.equal(result.failure, "authorisation_missing");
   assert.equal(payments.creates, 0);
 });
 
 test("the wrong branch is rejected", async () => {
-  const { result, payments } = await run({}, { GITHUB_REF: "refs/heads/main" });
+  const { result, payments } = await run({}, { GITHUB_REF: "refs/heads/main" }, "open");
   assert.equal(result.failure, "branch_rejected");
   assert.equal(payments.creates, 0);
 });
 
 test("the wrong commit is rejected", async () => {
-  const { result, payments } = await run({}, { GITHUB_SHA: `${"a".repeat(40)}` });
+  const { result, payments } = await run({}, { GITHUB_SHA: `${"a".repeat(40)}` }, "open");
   assert.equal(result.failure, "commit_rejected");
   assert.equal(payments.creates, 0);
 });
 
 test("a missing permit is rejected", async () => {
-  const { result, payments } = await run({}, { SBG_AUTHORISED_DIAGNOSTIC_SHA: "" });
+  const { result, payments } = await run({}, { SBG_AUTHORISED_DIAGNOSTIC_SHA: "" }, "open");
   assert.equal(result.failure, "authorisation_missing");
   assert.equal(payments.creates, 0);
 });
 
 test("the wrong workflow is rejected", async () => {
-  const { result, payments } = await run({}, { GITHUB_WORKFLOW: "SBG Stripe TEST payment" });
+  const { result, payments } = await run({}, { GITHUB_WORKFLOW: "SBG Stripe TEST payment" }, "open");
   assert.equal(result.failure, "workflow_rejected");
   assert.equal(payments.creates, 0);
 });
 
 test("a live credential is rejected before Session creation", async () => {
-  const { result, payments } = await run({}, { STRIPE_SECRET_KEY: "sk_live_notallowed000000" });
+  const { result, payments } = await run({}, { STRIPE_SECRET_KEY: "sk_live_notallowed000000" }, "open");
   assert.equal(result.failure, "live_credential_rejected");
   assert.equal(payments.creates, 0);
   assertRedacted(result);
@@ -210,7 +221,7 @@ test("one authorised run creates one Session and verifies expiry", async () => {
   assert.equal(body.get("line_items[0][price_data][currency]"), "eur");
   assert.equal(body.get("metadata[sbg_connected_account]"), DIAGNOSTIC_CONNECTED_ACCOUNT);
   assert.equal(body.toString().includes("application_fee"), false);
-  const { result, payments, chrome } = await run();
+  const { result, payments, chrome } = await run({}, {}, "open");
   assert.equal(result.status, "completed");
   assert.equal(result.cleanup, "verified");
   assert.equal(payments.creates, 1);
@@ -232,7 +243,7 @@ test("ambiguous Session creation is not retried", async () => {
       async retrieve() { throw new Error("retrieve"); },
       async expire() { throw new Error("expire"); },
     },
-  });
+  }, {}, "open");
   assert.equal(creates, 1);
   assert.equal(result.status, "blocked");
   assert.equal(result.cleanup, "ambiguous");
@@ -245,7 +256,7 @@ test("browser launch failure still attempts cleanup", async () => {
   const { result } = await run({
     stripe: payments,
     launch: async () => browser({ fail: "launch" }),
-  });
+  }, {}, "open");
   assert.equal(result.failure, "browser_failed");
   assert.equal(result.cleanup, "verified");
   assert.equal(payments.creates, 1);
@@ -256,7 +267,7 @@ test("browser launch failure still attempts cleanup", async () => {
 test("observation timeout closes the browser and expires the Session", async () => {
   const payments = stripe();
   const chrome = browser({ frames: [frame()] });
-  const { result } = await run({ stripe: payments, launch: async () => chrome });
+  const { result } = await run({ stripe: payments, launch: async () => chrome }, {}, "open");
   assert.equal(result.structure?.observation, "timeout");
   assert.equal(result.cleanup, "verified");
   assert.equal(chrome.closed, true);
@@ -267,7 +278,7 @@ test("nested frames are reported by the existing probe", async () => {
   const grandchild = frame({ card: 1, expiry: 1, cvc: 1 });
   const { result } = await run({
     launch: async () => browser({ frames: [frame(), frame(), grandchild] }),
-  });
+  }, {}, "open");
   assert.equal(result.structure?.formDetected, true);
   assert.equal(result.structure?.iframeCount, 1);
 });
@@ -275,7 +286,7 @@ test("nested frames are reported by the existing probe", async () => {
 test("a challenge is reported without payment submission", async () => {
   const { result, payments } = await run({
     launch: async () => browser({ challenge: 1, frames: [frame()] }),
-  });
+  }, {}, "open");
   assert.equal(result.structure?.observation, "challenge");
   assert.equal(payments.expires, 1);
   assert.equal(result.status, "completed");
@@ -298,7 +309,7 @@ test("expiry failure stays blocked and is not retried", async () => {
         throw new Error(SECRET);
       },
     },
-  });
+  }, {}, "open");
   assert.equal(creates, 1);
   assert.equal(expires, 1);
   assert.equal(result.cleanup, "failed");
@@ -314,10 +325,83 @@ test("unverified expiry is blocked for manual investigation", async () => {
       async retrieve() { return session({ status: "open" }); },
       async expire() { return session({ status: "open" }); },
     },
-  });
+  }, {}, "open");
   assert.equal(result.cleanup, "ambiguous");
   assert.equal(result.failure, "expire_unverified");
   assert.equal(result.status, "blocked");
+});
+
+test("frame adapters keep a stable identity", () => {
+  const cache = new WeakMap<object, StructureFrame>();
+  const parent = { getByRole: () => ({ async count() { return 0; } }), isDetached: () => false };
+  const child = { getByRole: () => ({ async count() { return 0; } }), isDetached: () => false };
+  const first = adaptFrames([parent, child], cache);
+  const second = adaptFrames([parent, child], cache);
+  assert.equal(first[0], second[0]);
+  assert.equal(first[1], second[1]);
+  assert.notEqual(first[0], first[1]);
+});
+
+test("a duplicated underlying frame is reported as unexpected", async () => {
+  const cache = new WeakMap<object, StructureFrame>();
+  const raw = { getByRole: () => ({ async count() { return 1; } }), isDetached: () => false };
+  const payments = stripe();
+  const { result } = await run({
+    stripe: payments,
+    launch: async () => ({
+      async newPage() {
+        return {
+          async goto() {},
+          async close() {},
+          locator: () => ({ async count() { return 1; } }),
+          frames: () => adaptFrames([raw, raw], cache),
+        };
+      },
+      async close() {},
+    }),
+  }, {}, "open");
+  assert.equal(result.structure?.observation, "unexpected");
+  assert.equal(payments.creates, 1);
+  assert.equal(payments.expires, 1);
+});
+
+test("page closure failure still closes the browser and expires the Session", async () => {
+  let browserClosed = false;
+  const payments = stripe();
+  const { result } = await run({
+    stripe: payments,
+    launch: async () => ({
+      async newPage() {
+        return { ...page(), async close() { throw new Error(SECRET); } };
+      },
+      async close() { browserClosed = true; },
+    }),
+  }, {}, "open");
+  assert.equal(browserClosed, true);
+  assert.equal(result.failure, "browser_close_failed");
+  assert.equal(result.status, "blocked");
+  assert.equal(payments.expires, 1);
+  assert.equal(payments.creates, 1);
+  assertRedacted(result);
+});
+
+test("browser closure failure is reported and Session cleanup still runs", async () => {
+  let pageClosed = false;
+  const payments = stripe();
+  const { result } = await run({
+    stripe: payments,
+    launch: async () => ({
+      async newPage() {
+        return { ...page(), async close() { pageClosed = true; } };
+      },
+      async close() { throw new Error(SECRET); },
+    }),
+  }, {}, "open");
+  assert.equal(pageClosed, true);
+  assert.equal(result.failure, "browser_close_failed");
+  assert.equal(payments.creates, 1);
+  assert.equal(payments.expires, 1);
+  assertRedacted(result);
 });
 
 test("the diagnostic workflow is manual and separate from payment", () => {
@@ -332,4 +416,6 @@ test("the diagnostic workflow is manual and separate from payment", () => {
   assert.equal(source.includes(".fill("), false);
   assert.equal(source.includes(".click("), false);
   assert.equal(source.includes("refund"), false);
+  assert.equal(source.includes('sourceGate: "open"'), false);
+  assert.equal(source.includes('CHECKOUT_DIAGNOSTIC_EXECUTION_GATE = "closed"'), true);
 });
