@@ -99,12 +99,20 @@ export type BrowserFailure = (typeof BROWSER_FAILURES)[number];
 export class HostedCheckoutBrowserError extends Error {
   readonly browserStage: BrowserStage;
   readonly browserFailure: BrowserFailure;
+  readonly challengeCheck: ChallengeCheck | null;
+  readonly challengeCounts: ChallengeCountReport | null;
 
-  constructor(stage: BrowserStage, failure: BrowserFailure) {
+  constructor(
+    stage: BrowserStage,
+    failure: BrowserFailure,
+    diagnostic?: { challengeCheck: ChallengeCheck; challengeCounts: ChallengeCountReport },
+  ) {
     super(failure === "checkout_challenge" ? "checkout_challenge" : "checkout_browser_failed");
     this.name = "HostedCheckoutBrowserError";
     this.browserStage = stage;
     this.browserFailure = failure;
+    this.challengeCheck = failure === "checkout_challenge" ? diagnostic?.challengeCheck ?? null : null;
+    this.challengeCounts = failure === "checkout_challenge" ? diagnostic?.challengeCounts ?? "unavailable" : null;
   }
 }
 
@@ -143,6 +151,15 @@ function classifyBrowserFailure(stage: BrowserStage, err: unknown): BrowserFailu
 function browserDiagnostic(stage: BrowserStage, err: unknown): HostedCheckoutBrowserError {
   if (err instanceof HostedCheckoutBrowserError) return err;
   return new HostedCheckoutBrowserError(stage, classifyBrowserFailure(stage, err));
+}
+
+function challengeDiagnostic(check: ChallengeCheck, err: unknown): HostedCheckoutBrowserError {
+  if (err instanceof HostedCheckoutBrowserError && err.browserFailure === "checkout_challenge") return err;
+  const counts = err instanceof ChallengeDetected ? err.counts : "unavailable";
+  return new HostedCheckoutBrowserError("challenge_detection", "checkout_challenge", {
+    challengeCheck: check,
+    challengeCounts: counts,
+  });
 }
 
 const FIXTURE_STAGES = new Set([
@@ -237,6 +254,8 @@ export type PaymentRecoveryRecord = {
   databaseUnreadable: boolean;
   browserStage: BrowserStage | null;
   browserFailure: BrowserFailure | null;
+  challengeCheck: ChallengeCheck | null;
+  challengeCounts: ChallengeCountReport | null;
 };
 
 export type PaymentBookingEvidence = {
@@ -306,7 +325,11 @@ export function paymentRecoveryRecord(input: {
   databaseUnreadable?: boolean;
   browserStage?: string | null;
   browserFailure?: string | null;
+  challengeCheck?: unknown;
+  challengeCounts?: unknown;
 }): PaymentRecoveryRecord {
+  const browserFailure = browserFailureOf(input.browserFailure);
+  const challenge = browserFailure === "checkout_challenge";
   return {
     harness: "stripe_test_payment",
     outcome: input.outcome,
@@ -326,7 +349,9 @@ export function paymentRecoveryRecord(input: {
     creationAmbiguous: input.creationAmbiguous === true,
     databaseUnreadable: input.databaseUnreadable === true,
     browserStage: browserStageOf(input.browserStage),
-    browserFailure: browserFailureOf(input.browserFailure),
+    browserFailure,
+    challengeCheck: challenge ? challengeCheckOf(input.challengeCheck) : null,
+    challengeCounts: challenge ? challengeCountReport(input.challengeCounts) ?? "unavailable" : null,
   };
 }
 
@@ -753,6 +778,58 @@ export type ChallengeInspection = {
   ambiguous: number;
 };
 
+export const CHALLENGE_CHECKS = [
+  "post_navigation",
+  "during_discovery",
+  "post_discovery",
+  "pre_submit",
+] as const;
+
+export type ChallengeCheck = (typeof CHALLENGE_CHECKS)[number];
+export type ChallengeCounts = {
+  visibleHcaptcha: number;
+  visibleThreeDs: number;
+  visibleCaptcha: number;
+  backgroundThreeDs: number;
+  ambiguous: number;
+};
+export type ChallengeCountReport = ChallengeCounts | "unavailable";
+
+const CHALLENGE_COUNT_KEYS = [
+  "visibleHcaptcha",
+  "visibleThreeDs",
+  "visibleCaptcha",
+  "backgroundThreeDs",
+  "ambiguous",
+] as const;
+
+export function challengeCountReport(value: unknown): ChallengeCountReport | null {
+  if (value === "unavailable") return "unavailable";
+  if (value == null || typeof value !== "object") return null;
+  const source = value as Record<string, unknown>;
+  const counts = {} as ChallengeCounts;
+  for (const key of CHALLENGE_COUNT_KEYS) {
+    const count = source[key];
+    if (typeof count !== "number" || !Number.isInteger(count) || count < 0) return null;
+    counts[key] = count;
+  }
+  return counts;
+}
+
+function challengeCheckOf(value: unknown): ChallengeCheck | null {
+  return CHALLENGE_CHECKS.find((check) => check === value) ?? null;
+}
+
+class ChallengeDetected extends Error {
+  readonly counts: ChallengeCountReport;
+
+  constructor(counts: ChallengeCountReport) {
+    super("checkout_challenge");
+    this.name = "ChallengeDetected";
+    this.counts = counts;
+  }
+}
+
 type BrowserPage = {
   goto(url: string, options: { timeout: number; waitUntil: "domcontentloaded" }): Promise<unknown>;
   locator(selector: string): { count(): Promise<number> };
@@ -990,15 +1067,15 @@ async function assertNoChallenge(page: BrowserPage, deadline?: number, clock?: C
         : await page.inspectChallenges();
     } catch (err) {
       if (err instanceof Error && err.message === "checkout_field_timeout") throw err;
-      throw new Error("checkout_challenge");
+      throw new ChallengeDetected("unavailable");
     }
-    if (challengeBlocks(inspection)) throw new Error("checkout_challenge");
+    if (challengeBlocks(inspection)) throw new ChallengeDetected(challengeCountReport(inspection) ?? "unavailable");
     return;
   }
   const challenges = deadline != null && clock != null
     ? await withinDeadline(deadline, clock, () => page.locator(CHALLENGE_SELECTOR).count())
     : await page.locator(CHALLENGE_SELECTOR).count();
-  if (challenges > 0) throw new Error("checkout_challenge");
+  if (challenges > 0) throw new ChallengeDetected("unavailable");
 }
 
 async function readAccessibleFields(page: BrowserPage, deadline: number, clock: CheckoutClock): Promise<
@@ -1108,6 +1185,7 @@ export async function runHostedCheckout(
     try {
       await assertNoChallenge(page);
     } catch (err) {
+      if (err instanceof Error && err.message === "checkout_challenge") throw challengeDiagnostic("post_navigation", err);
       throw browserDiagnostic("challenge_detection", err);
     }
     let fields: Awaited<ReturnType<typeof requireCardFields>>;
@@ -1115,13 +1193,14 @@ export async function runHostedCheckout(
     try {
       fields = await requireCardFields(page, clock, discoveryDeadline);
     } catch (err) {
-      if (err instanceof Error && err.message === "checkout_challenge") throw browserDiagnostic("challenge_detection", err);
+      if (err instanceof Error && err.message === "checkout_challenge") throw challengeDiagnostic("during_discovery", err);
       throw browserDiagnostic("card_field_discovery", err);
     }
     try {
       await assertNoChallenge(page, discoveryDeadline, clock);
     } catch (err) {
       if (err instanceof Error && err.message === "checkout_field_timeout") throw browserDiagnostic("card_field_discovery", err);
+      if (err instanceof Error && err.message === "checkout_challenge") throw challengeDiagnostic("post_discovery", err);
       throw browserDiagnostic("challenge_detection", err);
     }
     try {
@@ -1142,6 +1221,7 @@ export async function runHostedCheckout(
     try {
       await assertNoChallenge(page);
     } catch (err) {
+      if (err instanceof Error && err.message === "checkout_challenge") throw challengeDiagnostic("pre_submit", err);
       throw browserDiagnostic("challenge_detection", err);
     }
     try {
@@ -1548,6 +1628,8 @@ export async function runPaymentHarnessBoundary(input: {
   let operationFailure: string | null = null;
   let browserStage: string | null = null;
   let browserFailure: string | null = null;
+  let challengeCheck: ChallengeCheck | null = null;
+  let challengeCounts: ChallengeCountReport | null = null;
   let checkout: CheckoutAttemptEvidence = {
     attempted: false,
     ambiguous: false,
@@ -1563,6 +1645,8 @@ export async function runPaymentHarnessBoundary(input: {
     if (browserStage == null && err instanceof HostedCheckoutBrowserError) {
       browserStage = err.browserStage;
       browserFailure = err.browserFailure;
+      challengeCheck = err.challengeCheck;
+      challengeCounts = err.challengeCounts;
     }
   };
   try {
@@ -1716,6 +1800,10 @@ export async function runPaymentHarnessBoundary(input: {
     outcome: !sessionId && flags.databaseUnreadable && checkout.attempted ? "recovery_required" : record.outcome,
     browserStage: browserStageOf(browserStage),
     browserFailure: browserFailureOf(browserFailure),
+    challengeCheck: browserFailureOf(browserFailure) === "checkout_challenge" ? challengeCheckOf(challengeCheck) : null,
+    challengeCounts: browserFailureOf(browserFailure) === "checkout_challenge"
+      ? challengeCountReport(challengeCounts) ?? "unavailable"
+      : null,
   };
 }
 

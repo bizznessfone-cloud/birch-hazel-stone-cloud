@@ -120,13 +120,27 @@ async function fail(browser: HostedCheckoutBrowser, clock?: CheckoutClock): Prom
 
 function assertSafe(err: unknown): void {
   assert.equal(err instanceof Error, true);
-  const error = err as Error & { browserStage?: string; browserFailure?: string };
-  const text = JSON.stringify({ message: error.message, stage: error.browserStage, failure: error.browserFailure, stack: error.stack });
+  const error = err as Error & {
+    browserStage?: string;
+    browserFailure?: string;
+    challengeCheck?: unknown;
+    challengeCounts?: unknown;
+  };
+  const text = JSON.stringify({
+    message: error.message,
+    stage: error.browserStage,
+    failure: error.browserFailure,
+    stack: error.stack,
+    challengeCheck: error.challengeCheck,
+    challengeCounts: error.challengeCounts,
+  });
   assert.equal(text.includes("checkout.stripe.com"), false);
   assert.equal(text.includes("4242"), false);
   assert.equal(text.includes("rk_test_"), false);
   assert.equal(text.includes("whsec_"), false);
   assert.equal(text.includes("secret-url"), false);
+  assert.equal(text.includes("cs_test_"), false);
+  assert.equal(text.includes("<iframe"), false);
 }
 
 test("browser launch failure remains distinguishable", async () => {
@@ -281,6 +295,8 @@ test("browser diagnostics do not change unpaid recovery", async () => {
   assert.equal(record.operationFailure, "checkout_browser_failed");
   assert.equal(record.browserStage, "card_field_discovery");
   assert.equal(record.browserFailure, "checkout_field_missing");
+  assert.equal(record.challengeCheck, null);
+  assert.equal(record.challengeCounts, null);
   assert.equal(record.recoveryFailure, null);
   const text = JSON.stringify(record);
   assert.equal(text.includes("checkout.stripe.com"), false);
@@ -693,4 +709,142 @@ test("a stalled challenge inspection cannot fall through to payment", async () =
   assert.equal(filled, false);
   assert.equal(clock.elapsed(), CARD_FIELD_DISCOVERY_BUDGET_MS);
   assertSafe(err);
+});
+
+test("challenge telemetry names the check and retains the five counts", async () => {
+  const counts = {
+    visibleHcaptcha: 2,
+    visibleThreeDs: 0,
+    visibleCaptcha: 4,
+    backgroundThreeDs: 7,
+    ambiguous: 1,
+    src: SECRET_TEXT,
+    title: "3D Secure",
+  };
+  const sites = [
+    ["post_navigation", 1],
+    ["during_discovery", 2],
+    ["post_discovery", 3],
+    ["pre_submit", 4],
+  ] as const;
+  for (const [check, failAt] of sites) {
+    let calls = 0;
+    const err = await fail(framed({
+      frames: [roleFrame({ card: 1, expiry: 1, cvc: 1 })],
+      challenges: async () => {
+        calls += 1;
+        return calls === failAt ? counts : CLEAR_CHALLENGE;
+      },
+    }));
+    const diagnostic = err as {
+      browserStage: string;
+      browserFailure: string;
+      challengeCheck: string;
+      challengeCounts: unknown;
+    };
+    assert.equal(diagnostic.browserStage, "challenge_detection");
+    assert.equal(diagnostic.browserFailure, "checkout_challenge");
+    assert.equal(diagnostic.challengeCheck, check);
+    assert.deepEqual(diagnostic.challengeCounts, {
+      visibleHcaptcha: 2,
+      visibleThreeDs: 0,
+      visibleCaptcha: 4,
+      backgroundThreeDs: 7,
+      ambiguous: 1,
+    });
+    assertSafe(err);
+  }
+});
+
+test("challenge inspection failure reports unavailable counts", async () => {
+  const err = await fail(framed({
+    frames: [roleFrame({ card: 1, expiry: 1, cvc: 1 })],
+    challenges: async () => { throw named("Error"); },
+  }));
+  const diagnostic = err as { challengeCheck: string; challengeCounts: unknown };
+  assert.equal(diagnostic.challengeCheck, "post_navigation");
+  assert.equal(diagnostic.challengeCounts, "unavailable");
+  assert.equal(JSON.stringify(diagnostic.challengeCounts).includes("0"), false);
+  assertSafe(err);
+});
+
+test("invalid challenge counters are unavailable rather than invented zeros", async () => {
+  const err = await fail(framed({
+    frames: [roleFrame({ card: 1, expiry: 1, cvc: 1 })],
+    challenges: async () => ({ ...CLEAR_CHALLENGE, visibleHcaptcha: 1.5 }),
+  }));
+  const diagnostic = err as { challengeCheck: string; challengeCounts: unknown; browserFailure: string };
+  assert.equal(diagnostic.browserFailure, "checkout_challenge");
+  assert.equal(diagnostic.challengeCheck, "post_navigation");
+  assert.equal(diagnostic.challengeCounts, "unavailable");
+  assertSafe(err);
+});
+
+test("selector-only challenge evidence does not invent classified counts", async () => {
+  const err = await fail(page({ challengeCount: 1 }));
+  const diagnostic = err as { challengeCheck: string; challengeCounts: unknown };
+  assert.equal(diagnostic.challengeCheck, "post_navigation");
+  assert.equal(diagnostic.challengeCounts, "unavailable");
+  assertSafe(err);
+});
+
+test("challenge telemetry reaches recovery without changing expiry", async () => {
+  let gets = 0;
+  const record = await runPaymentHarnessBoundary({
+    secret: "rk_test_harnessfixturekey01",
+    githubRunId: "40365389787",
+    githubRunAttempt: "1",
+    fetchImpl: async (_url, init) => {
+      const status = (init?.method ?? "GET") === "POST" || gets++ > 0 ? "expired" : "open";
+      return new Response(JSON.stringify({
+        id: SESSION,
+        livemode: false,
+        mode: "payment",
+        amount_total: PAYMENT_AMOUNT_MINOR,
+        currency: "eur",
+        payment_status: "unpaid",
+        status,
+      }), { status: 200 });
+    },
+    steps: {
+      prepareFixture: async () => ({ bookingId: BOOKING }),
+      installCli: async () => undefined,
+      startProxy: async () => undefined,
+      awaitCli: async () => undefined,
+      startListener: async () => undefined,
+      createCheckout: async () => ({ attempted: true, ambiguous: false, sessionId: SESSION, paymentId: PAYMENT, checkoutAttempt: 1, failure: null }),
+      retrieveCheckout: async () => undefined,
+      completeBrowser: async () => {
+        await runHostedCheckout("https://checkout.stripe.com/c/pay/secret-url", async () => framed({
+          frames: [roleFrame({ card: 1, expiry: 1, cvc: 1 })],
+          challenges: async () => ({ ...CLEAR_CHALLENGE, ambiguous: 3, visibleThreeDs: 1 }),
+        }));
+      },
+      confirmWebhook: async () => undefined,
+      replay: async () => undefined,
+    },
+    lookupPayment: async () => ({ state: "stored", paymentId: PAYMENT, sessionId: SESSION, checkoutAttempt: 1 }),
+    readBooking: async () => null,
+    cleanup: {
+      listener: async () => undefined,
+      proxy: async () => undefined,
+      cli: async () => undefined,
+      database: async () => undefined,
+      temporaryDirectory: async () => undefined,
+    },
+  });
+  assert.equal(record.outcome, "unpaid_expired");
+  assert.equal(record.operationFailure, "checkout_challenge");
+  assert.equal(record.challengeCheck, "post_navigation");
+  assert.deepEqual(record.challengeCounts, {
+    visibleHcaptcha: 0,
+    visibleThreeDs: 1,
+    visibleCaptcha: 0,
+    backgroundThreeDs: 0,
+    ambiguous: 3,
+  });
+  const diagnostic = JSON.stringify({ check: record.challengeCheck, counts: record.challengeCounts });
+  assert.equal(diagnostic.includes(SESSION), false);
+  assert.equal(diagnostic.includes("checkout.stripe.com"), false);
+  assert.equal(record.recoveryFailure, null);
 });
