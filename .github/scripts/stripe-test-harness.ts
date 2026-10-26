@@ -1051,7 +1051,7 @@ export function classifyChallengeFrames(frames: ChallengeFrameFact[]): Challenge
   return result;
 }
 
-function challengeBlocks(inspection: ChallengeInspection): boolean {
+export function challengeBlocks(inspection: ChallengeInspection): boolean {
   return inspection.visibleHcaptcha > 0
     || inspection.visibleThreeDs > 0
     || inspection.visibleCaptcha > 0

@@ -9,6 +9,7 @@ import {
   adaptFrames,
   diagnosticCheckoutBody,
   runCheckoutDiagnostic,
+  type ChallengeClassification,
   type DiagnosticBrowser,
   type DiagnosticInput,
   type DiagnosticPage,
@@ -16,6 +17,7 @@ import {
   type DiagnosticStripe,
 } from "./stripe-test-checkout-diagnostic.ts";
 import { STRUCTURE_SELECTORS, type StructureClock, type StructureFrame } from "./stripe-test-checkout-structure.ts";
+import { challengeBlocks, inspectPlaywrightChallenges, type ChallengeInspection } from "./stripe-test-harness.ts";
 
 const SHA = "3acc7c209856679302174ae872399360cf3c20f9";
 const SECRET = "https://checkout.stripe.com/c/pay/secret rk_test_secret 4242424242424242";
@@ -51,6 +53,14 @@ function clock(): StructureClock {
   };
 }
 
+const CLEAR_INSPECTION: ChallengeInspection = {
+  visibleHcaptcha: 0,
+  visibleThreeDs: 0,
+  visibleCaptcha: 0,
+  backgroundThreeDs: 0,
+  ambiguous: 0,
+};
+
 function frame(controls: Partial<Record<"card" | "expiry" | "cvc", number>> = {}): StructureFrame {
   const values = { card: 0, expiry: 0, cvc: 0, ...controls };
   return {
@@ -68,7 +78,13 @@ function frame(controls: Partial<Record<"card" | "expiry" | "cvc", number>> = {}
   };
 }
 
-function page(input: { challenge?: number; frames?: StructureFrame[]; clicks?: { count: number } } = {}): DiagnosticPage {
+function page(input: {
+  challenge?: number;
+  frames?: StructureFrame[];
+  inspection?: unknown;
+  inspect?: () => Promise<unknown>;
+  actions?: { fill: number; click: number };
+} = {}): DiagnosticPage {
   const frames = input.frames ?? [frame(), frame({ card: 1, expiry: 1, cvc: 1 })];
   return {
     async goto() {},
@@ -84,10 +100,29 @@ function page(input: { challenge?: number; frames?: StructureFrame[]; clicks?: {
         },
       };
     },
-  };
+    async inspectChallenges() {
+      if (input.inspect) return input.inspect() as Promise<ChallengeInspection>;
+      return (input.inspection ?? CLEAR_INSPECTION) as ChallengeInspection;
+    },
+    async fill() {
+      if (input.actions) input.actions.fill += 1;
+      throw new Error("card_entry");
+    },
+    async click() {
+      if (input.actions) input.actions.click += 1;
+      throw new Error("pay_click");
+    },
+  } as DiagnosticPage;
 }
 
-function browser(input: { fail?: "launch" | "goto"; challenge?: number; frames?: StructureFrame[] } = {}): DiagnosticBrowser & { closed: boolean } {
+function browser(input: {
+  fail?: "launch" | "goto";
+  challenge?: number;
+  frames?: StructureFrame[];
+  inspection?: unknown;
+  inspect?: () => Promise<unknown>;
+  actions?: { fill: number; click: number };
+} = {}): DiagnosticBrowser & { closed: boolean } {
   let closed = false;
   return {
     async newPage() {
@@ -172,10 +207,10 @@ async function run(
 }
 
 test("a closed source gate rejects a valid SHA permit", async () => {
-  assert.equal(CHECKOUT_DIAGNOSTIC_EXECUTION_GATE, "closed");
-  const { result, payments } = await run();
+  const { result, payments } = await run({}, {}, "closed");
   assert.equal(result.status, "closed");
   assert.equal(result.failure, "diagnostic_closed");
+  assert.equal(result.challengeClassification, null);
   assert.equal(payments.creates, 0);
 });
 
@@ -289,6 +324,9 @@ test("a challenge is reported without payment submission", async () => {
     launch: async () => browser({ challenge: 1, frames: [frame()] }),
   }, {}, "open");
   assert.equal(result.structure?.observation, "challenge");
+  assert.equal(result.structure?.challenge, true);
+  assert.equal(result.challengeClassification?.evidence, "classified");
+  assert.equal(result.challengeClassification?.wouldBlock, false);
   assert.equal(payments.expires, 1);
   assert.equal(result.status, "completed");
 });
@@ -421,19 +459,29 @@ test("the diagnostic workflow is manual and separate from payment", () => {
   assert.equal(source.includes("sourceGate: CHECKOUT_DIAGNOSTIC_EXECUTION_GATE"), true);
   assert.equal(source.includes('value(env, "CHECKOUT_DIAGNOSTIC_EXECUTION_GATE")'), false);
   assert.equal(source.includes("process.env.CHECKOUT_DIAGNOSTIC_EXECUTION_GATE"), false);
-  assert.equal(source.includes('CHECKOUT_DIAGNOSTIC_EXECUTION_GATE = "closed"'), true);
-  assert.equal(source.includes("stripe-test-harness"), false);
+  assert.equal(source.includes('CHECKOUT_DIAGNOSTIC_EXECUTION_GATE = "open"'), true);
+  assert.equal(source.includes("inspectPlaywrightChallenges"), true);
+  assert.equal(source.includes("challengeBlocks"), true);
+  assert.equal(source.includes("runHostedCheckout"), false);
+  assert.equal(source.includes("completeHostedCheckout"), false);
+  assert.equal(source.includes("runPaymentHarnessBoundary"), false);
+  assert.equal(source.includes("runAuthorisedHarness"), false);
+  assert.equal(CHECKOUT_DIAGNOSTIC_EXECUTION_GATE, "open");
 });
 
-test("the committed command line stays closed when the environment says open", () => {
+test("the command line ignores an environment gate and stops before Stripe", () => {
+  const childEnv = { ...process.env };
+  delete childEnv.STRIPE_SECRET_KEY;
+  delete childEnv.SBG_STRIPE_TEST_SECRET_KEY;
   const result = spawnSync(process.execPath, [
     "--experimental-strip-types",
     ".github/scripts/stripe-test-checkout-diagnostic.ts",
   ], {
     encoding: "utf8",
     env: {
-      ...process.env,
-      CHECKOUT_DIAGNOSTIC_EXECUTION_GATE: "open",
+      ...childEnv,
+      CHECKOUT_DIAGNOSTIC_EXECUTION_GATE: "closed",
+      STRIPE_SECRET_KEY: "",
       SBG_AUTHORISED_DIAGNOSTIC_SHA: SHA,
       GITHUB_SHA: SHA,
       GITHUB_REF: "refs/heads/test/stripe-gate2-runner",
@@ -443,16 +491,202 @@ test("the committed command line stays closed when the environment says open", (
       GITHUB_REPOSITORY: "bizznessfone-cloud/birch-hazel-stone-cloud",
       GITHUB_ACTIONS: "true",
       GITHUB_RUN_ID: "40170003536",
-      STRIPE_SECRET_KEY: "rk_test_diagnostickeyvalue0001",
       SBG_DOMAIN_B_LIVE_CHECKOUT: "false",
       SBG_SAAS_COMMERCE: "off",
     },
   });
   assert.equal(result.status, 1);
   const report = JSON.parse(result.stdout) as { status: string; failure: string | null; structure: unknown };
-  assert.equal(report.status, "closed");
-  assert.equal(report.failure, "diagnostic_closed");
+  assert.equal(report.status, "blocked");
+  assert.equal(report.failure, "credential_absent");
   assert.equal(report.structure, null);
   assert.equal(result.stdout.includes("cs_test_"), false);
   assert.equal(result.stdout.includes("checkout.stripe.com"), false);
 });
+
+const SECRET_URL = "https://checkout.stripe.com/c/pay/secret-frame";
+const SECRET_TITLE = "3D Secure customer card 4242424242424242";
+
+function measuredPage(elements: Array<Record<string, unknown>>, actions = { fill: 0, click: 0 }) {
+  const frames = [
+    { parentFrame: () => null, isDetached: () => false, async frameElement() { throw new Error(SECRET_URL); } },
+    ...elements.map((element) => ({
+      parentFrame: () => ({}),
+      isDetached: () => false,
+      async frameElement() {
+        if (element.unreadable) throw new Error(String(element.secret ?? SECRET_URL));
+        return {
+          async evaluate(fn: (node: unknown) => unknown) {
+            return fn({
+              getAttribute(name: string) {
+                if (name === "src") return String(element.src ?? "");
+                if (name === "aria-hidden") return element.ariaHidden === true ? "true" : null;
+                if (name === "title") return String(element.title ?? "");
+                return null;
+              },
+              title: String(element.title ?? ""),
+              getBoundingClientRect: () => ({ width: Number(element.width ?? 320), height: Number(element.height ?? 180) }),
+              ownerDocument: {
+                defaultView: {
+                  getComputedStyle: () => ({
+                    display: String(element.display ?? "block"),
+                    visibility: String(element.visibility ?? "visible"),
+                  }),
+                },
+              },
+            });
+          },
+        };
+      },
+    })),
+  ];
+  return browser({
+    actions,
+    frames: [frame({ card: 1, expiry: 1, cvc: 1 })],
+    inspect: () => inspectPlaywrightChallenges({ frames: () => frames as never }, { timeout: 1000 }),
+  });
+}
+
+function classified(value: ChallengeClassification | null): Extract<ChallengeClassification, { evidence: "classified" }> {
+  assert.equal(value?.evidence, "classified");
+  assert.notEqual(value, null);
+  return value as Extract<ChallengeClassification, { evidence: "classified" }>;
+}
+
+test("visible hCaptcha, CAPTCHA and 3DS use the harness blocking rule", async () => {
+  const cases = [
+    { title: "hCaptcha", src: SECRET_URL, expected: "visibleHcaptcha" },
+    { title: "captcha challenge", src: SECRET_URL, expected: "visibleCaptcha" },
+    { title: "3D Secure", src: SECRET_URL, expected: "visibleThreeDs" },
+  ] as const;
+  for (const item of cases) {
+    const actions = { fill: 0, click: 0 };
+    const { result, payments } = await run({ launch: async () => measuredPage([item], actions) }, {}, "open");
+    const counts = classified(result.challengeClassification);
+    assert.equal(counts[item.expected], 1);
+    assert.equal(counts.wouldBlock, true);
+    assert.equal(counts.wouldBlock, challengeBlocks(counts));
+    assert.equal(result.status, "blocked");
+    assert.equal(result.failure, "challenge_blocked");
+    assert.equal(result.cleanup, "verified");
+    assert.equal(payments.expires, 1);
+    assert.equal(actions.fill, 0);
+    assert.equal(actions.click, 0);
+    assertRedacted(result);
+    assert.equal(JSON.stringify(result).includes(SECRET_TITLE), false);
+  }
+});
+
+test("background 3DS infrastructure does not block", async () => {
+  const actions = { fill: 0, click: 0 };
+  const { result, payments } = await run({
+    launch: async () => measuredPage([{
+      src: `${SECRET_URL}/3ds-hidden`,
+      title: "",
+      display: "none",
+      width: 0,
+      height: 0,
+    }], actions),
+  }, {}, "open");
+  const counts = classified(result.challengeClassification);
+  assert.equal(counts.backgroundThreeDs, 1);
+  assert.equal(counts.visibleThreeDs, 0);
+  assert.equal(counts.ambiguous, 0);
+  assert.equal(counts.wouldBlock, false);
+  assert.equal(result.status, "completed");
+  assert.equal(result.cleanup, "verified");
+  assert.equal(payments.expires, 1);
+  assert.equal(actions.fill, 0);
+  assert.equal(actions.click, 0);
+  assertRedacted(result);
+});
+
+test("ambiguous visibility blocks without copying frame metadata", async () => {
+  const { result } = await run({
+    launch: async () => measuredPage([{
+      src: SECRET_URL,
+      title: SECRET_TITLE,
+      ariaHidden: true,
+      width: 400,
+      height: 300,
+    }]),
+  }, {}, "open");
+  const counts = classified(result.challengeClassification);
+  assert.equal(counts.ambiguous, 1);
+  assert.equal(counts.wouldBlock, true);
+  assert.equal(result.status, "blocked");
+  assert.equal(result.failure, "challenge_blocked");
+  assert.equal(JSON.stringify(result).includes(SECRET_URL), false);
+  assert.equal(JSON.stringify(result).includes(SECRET_TITLE), false);
+  assert.equal(JSON.stringify(result).includes("<iframe"), false);
+});
+
+test("an unreadable frame is ambiguous and blocks", async () => {
+  const { result, payments } = await run({
+    launch: async () => measuredPage([{ unreadable: true, secret: SECRET_URL }]),
+  }, {}, "open");
+  const counts = classified(result.challengeClassification);
+  assert.equal(counts.ambiguous, 1);
+  assert.equal(counts.wouldBlock, true);
+  assert.equal(result.failure, "challenge_blocked");
+  assert.equal(result.cleanup, "verified");
+  assert.equal(payments.expires, 1);
+  assertRedacted(result);
+});
+
+test("inspection failure reports unavailable evidence and still expires", async () => {
+  const { result, payments } = await run({
+    launch: async () => browser({
+      inspect: async () => { throw new Error(SECRET_URL); },
+    }),
+  }, {}, "open");
+  assert.deepEqual(result.challengeClassification, { evidence: "unavailable", wouldBlock: null });
+  assert.equal(JSON.stringify(result.challengeClassification).includes("visibleHcaptcha"), false);
+  assert.equal(result.status, "blocked");
+  assert.equal(result.failure, "challenge_unavailable");
+  assert.equal(result.cleanup, "verified");
+  assert.equal(payments.creates, 1);
+  assert.equal(payments.expires, 1);
+  assertRedacted(result);
+});
+
+test("invalid counters are unavailable rather than fabricated zeros", async () => {
+  const { result } = await run({
+    launch: async () => browser({
+      inspection: { ...CLEAR_INSPECTION, visibleHcaptcha: 1.5, src: SECRET_URL, title: SECRET_TITLE },
+    }),
+  }, {}, "open");
+  assert.deepEqual(result.challengeClassification, { evidence: "unavailable", wouldBlock: null });
+  assert.equal(result.status, "blocked");
+  assert.equal(JSON.stringify(result).includes("1.5"), false);
+  assert.equal(JSON.stringify(result).includes(SECRET_URL), false);
+});
+
+test("selector evidence stays distinct from a non-blocking classifier result", async () => {
+  const { result } = await run({
+    launch: async () => browser({
+      challenge: 1,
+      frames: [frame()],
+      inspection: { ...CLEAR_INSPECTION, backgroundThreeDs: 2 },
+    }),
+  }, {}, "open");
+  assert.equal(result.structure?.challenge, true);
+  assert.equal(result.structure?.observation, "challenge");
+  const counts = classified(result.challengeClassification);
+  assert.equal(counts.backgroundThreeDs, 2);
+  assert.equal(counts.wouldBlock, false);
+  assert.equal(result.status, "completed");
+});
+
+test("importing the payment harness does not execute its payment entrypoint", () => {
+  const result = spawnSync(process.execPath, [
+    "--experimental-strip-types",
+    "--input-type=module",
+    "--eval",
+    'import { challengeBlocks } from "./.github/scripts/stripe-test-harness.ts"; if (typeof challengeBlocks !== "function") process.exit(3); console.log("imported");',
+  ], { encoding: "utf8" });
+  assert.equal(result.status, 0);
+  assert.match(result.stdout, /imported/);
+  assert.doesNotMatch(`${result.stdout}\n${result.stderr}`, /stripe_test_execution_closed|checkout\.stripe\.com/);
+});
+

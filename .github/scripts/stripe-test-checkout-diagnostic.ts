@@ -6,6 +6,12 @@
  */
 import { pathToFileURL } from "node:url";
 import {
+  challengeBlocks,
+  challengeCountReport,
+  inspectPlaywrightChallenges,
+  type ChallengeInspection,
+} from "./stripe-test-harness.ts";
+import {
   observeCheckoutStructure,
   readPlaywrightStructure,
   type CheckoutStructureReport,
@@ -30,6 +36,19 @@ const SESSION_ID = /^cs_test_[A-Za-z0-9]+$/;
 export type DiagnosticStatus = "closed" | "completed" | "blocked";
 export type DiagnosticCleanup = "not_started" | "verified" | "failed" | "ambiguous";
 
+export type ChallengeClassification = {
+  evidence: "classified";
+  wouldBlock: boolean;
+  visibleHcaptcha: number;
+  visibleThreeDs: number;
+  visibleCaptcha: number;
+  backgroundThreeDs: number;
+  ambiguous: number;
+} | {
+  evidence: "unavailable";
+  wouldBlock: null;
+};
+
 export type DiagnosticReport = {
   diagnostic: "checkout_structure";
   status: DiagnosticStatus;
@@ -38,6 +57,7 @@ export type DiagnosticReport = {
   githubRunId: string | null;
   commitSha: string | null;
   structure: CheckoutStructureReport | null;
+  challengeClassification: ChallengeClassification | null;
 };
 
 type Env = { [key: string]: string | undefined };
@@ -59,6 +79,7 @@ export type DiagnosticStripe = {
 export type DiagnosticPage = StructureBrowserPage & {
   goto(url: string): Promise<void>;
   close(): Promise<void>;
+  inspectChallenges?(timeoutMs: number): Promise<ChallengeInspection>;
 };
 
 export type DiagnosticBrowser = {
@@ -134,8 +155,44 @@ function report(input: {
   githubRunId: string | null;
   commitSha: string | null;
   structure: CheckoutStructureReport | null;
+  challengeClassification?: ChallengeClassification | null;
 }): DiagnosticReport {
-  return { diagnostic: "checkout_structure", ...input };
+  return {
+    diagnostic: "checkout_structure",
+    status: input.status,
+    cleanup: input.cleanup,
+    failure: input.failure,
+    githubRunId: input.githubRunId,
+    commitSha: input.commitSha,
+    structure: input.structure,
+    challengeClassification: input.challengeClassification ?? null,
+  };
+}
+
+function classificationFrom(value: unknown): ChallengeClassification {
+  const counts = challengeCountReport(value);
+  if (counts == null || counts === "unavailable") return { evidence: "unavailable", wouldBlock: null };
+  return {
+    evidence: "classified",
+    wouldBlock: challengeBlocks(counts),
+    visibleHcaptcha: counts.visibleHcaptcha,
+    visibleThreeDs: counts.visibleThreeDs,
+    visibleCaptcha: counts.visibleCaptcha,
+    backgroundThreeDs: counts.backgroundThreeDs,
+    ambiguous: counts.ambiguous,
+  };
+}
+
+async function classifyPage(page: DiagnosticPage, deadline: number, clock: StructureClock): Promise<ChallengeClassification> {
+  const remaining = deadline - clock.now();
+  if (remaining <= 0 || typeof page.inspectChallenges !== "function") {
+    return { evidence: "unavailable", wouldBlock: null };
+  }
+  try {
+    return classificationFrom(await clock.limit(() => page.inspectChallenges!(remaining), remaining));
+  } catch {
+    return { evidence: "unavailable", wouldBlock: null };
+  }
 }
 
 function safeRunId(env: Env): string | null {
@@ -247,6 +304,8 @@ export async function runCheckoutDiagnostic(input: DiagnosticInput): Promise<Dia
   let browser: DiagnosticBrowser | null = null;
   let page: DiagnosticPage | null = null;
   let structure: CheckoutStructureReport | null = null;
+  let classification: ChallengeClassification | null = null;
+  let sawRead = false;
   let failure: string | null = null;
   try {
     session = await stripe.create({ idempotencyKey });
@@ -261,9 +320,20 @@ export async function runCheckoutDiagnostic(input: DiagnosticInput): Promise<Dia
     browser = await launch();
     page = await browser.newPage();
     const checkoutUrl = session.url;
-    await page.goto(checkoutUrl);
+    const currentPage = page;
+    await currentPage.goto(checkoutUrl);
     structure = await observeCheckoutStructure({
-      read: (context) => readPlaywrightStructure(page as DiagnosticPage, context.deadline, context.clock),
+      read: async (context) => {
+        sawRead = true;
+        try {
+          const signals = await readPlaywrightStructure(currentPage, context.deadline, context.clock);
+          classification = await classifyPage(currentPage, context.deadline, context.clock);
+          return signals;
+        } catch (err) {
+          classification = { evidence: "unavailable", wouldBlock: null };
+          throw err;
+        }
+      },
     }, input.clock, input.budgetMs);
   } catch (err) {
     failure = err instanceof DiagnosticStop
@@ -273,6 +343,7 @@ export async function runCheckoutDiagnostic(input: DiagnosticInput): Promise<Dia
     const closeFailure = await closeBrowser(page, browser);
     if (closeFailure && !failure) failure = closeFailure;
   }
+  if (sawRead && classification == null) classification = { evidence: "unavailable", wouldBlock: null };
   if (!session) {
     return report({
       status: "blocked",
@@ -281,16 +352,25 @@ export async function runCheckoutDiagnostic(input: DiagnosticInput): Promise<Dia
       githubRunId: runId,
       commitSha: value(input.env, "GITHUB_SHA"),
       structure: null,
+      challengeClassification: classification,
     });
   }
   const cleaned = await cleanupSession(stripe, session.id);
+  const classificationFailure = classification?.evidence === "unavailable"
+    ? "challenge_unavailable"
+    : classification?.wouldBlock === true
+      ? "challenge_blocked"
+      : null;
+  const outcomeFailure = cleaned.failure ?? failure ?? classificationFailure;
+  const blocksCompletion = classification?.evidence === "unavailable" || classification?.wouldBlock === true;
   return report({
-    status: cleaned.cleanup === "verified" && failure == null ? "completed" : "blocked",
+    status: cleaned.cleanup === "verified" && outcomeFailure == null && !blocksCompletion ? "completed" : "blocked",
     cleanup: cleaned.cleanup,
-    failure: cleaned.failure ?? failure,
+    failure: outcomeFailure,
     githubRunId: runId,
     commitSha: value(input.env, "GITHUB_SHA"),
     structure,
+    challengeClassification: classification,
   });
 }
 
@@ -380,6 +460,7 @@ async function launchPlaywright(): Promise<DiagnosticBrowser> {
         close: () => page.close(),
         locator: (selector: string) => page.locator(selector),
         frames: () => adaptFrames(page.frames(), cache),
+        inspectChallenges: (timeoutMs: number) => inspectPlaywrightChallenges(page, { timeout: timeoutMs }),
       };
     },
     close: () => browser.close(),
