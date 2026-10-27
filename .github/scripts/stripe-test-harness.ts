@@ -2187,6 +2187,56 @@ async function verifyDisposableFixture(): Promise<void> {
   }
 }
 
+async function prepareDisposableGuestFixture(): Promise<{ token: string; bookingId: string }> {
+  const { database, root } = await resetAuthorisedDisposableDatabase();
+  try {
+    await applyMigrations((sql) => database.query(sql).then(() => undefined));
+    await database.query(
+      `insert into "user" ("id","name","email","emailVerified","createdAt","updatedAt")
+       values ('user-sbg-test','SBG Test','sbg-test@example.com',true,now(),now())`,
+    );
+    const booking = await createDisposableBooking(database);
+    const check = await database.query<{
+      lifecycle: string;
+      amount: number;
+      account: string;
+      livemode: boolean;
+      payments: number;
+    }>(
+      `select b.lifecycle_state as lifecycle,
+              d.amount_minor as amount,
+              c.stripe_account_id as account,
+              c.livemode as livemode,
+              (select count(*)::int from sbg_booking_payments p where p.booking_id = b.id) as payments
+         from bookings b
+         join hotels h on h.id = b.hotel_id
+         join hotel_destinations d on d.hotel_id = h.id
+         join sbg_organisation_stripe_connections c
+           on c.organisation_id = h.organisation_id
+          and c.disconnected_at is null
+        where b.id = $1::uuid`,
+      [booking.bookingId],
+    );
+    const row = check.rows[0];
+    if (
+      !row
+      || row.lifecycle !== "awaiting_payment"
+      || Number(row.amount) !== AMOUNT_MINOR
+      || row.account !== CONNECTED_ACCOUNT
+      || row.livemode !== false
+      || Number(row.payments) !== 0
+    ) {
+      throw new Error("fixture_not_payable");
+    }
+    return booking;
+  } finally {
+    await database.end().catch(() => undefined);
+    await root.end().catch(() => undefined);
+  }
+}
+
+export { prepareDisposableGuestFixture, forwardConnectEvents };
+
 async function main(): Promise<void> {
   if (process.argv[2] === "fixture-check") {
     await verifyDisposableFixture();
