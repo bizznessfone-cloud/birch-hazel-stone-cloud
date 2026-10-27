@@ -22,6 +22,7 @@ import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as AppBillingRouteImport } from './routes/app.billing'
 import { Route as AppFoundingRouteImport } from './routes/app.founding'
 import { Route as AppOnboardingRouteImport } from './routes/app.onboarding'
+import { Route as AppOperatorRouteImport } from './routes/app.operator'
 import { Route as BookHotelCodeRouteImport } from './routes/book.$hotelCode'
 import { Route as ConfirmedTokenRouteImport } from './routes/confirmed.$token'
 import { Route as OpsIndexRouteImport } from './routes/ops.index'
@@ -35,6 +36,7 @@ import { Route as OwnerPlansRouteImport } from './routes/owner.plans'
 import { Route as OwnerRevenueRouteImport } from './routes/owner.revenue'
 import { Route as OwnerSystemRouteImport } from './routes/owner.system'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiStripeGuestPaymentRouteImport } from './routes/api/stripe/guest-payment'
 import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe/webhook'
 import { Route as AppHotelsHotelIdRouteImport } from './routes/app.hotels.$hotelId'
 import { Route as OpsBookingsIndexRouteImport } from './routes/ops.bookings.index'
@@ -111,6 +113,11 @@ const AppOnboardingRoute = AppOnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => AppRoute,
 } as any)
+const AppOperatorRoute = AppOperatorRouteImport.update({
+  id: '/operator',
+  path: '/operator',
+  getParentRoute: () => AppRoute,
+} as any)
 const BookHotelCodeRoute = BookHotelCodeRouteImport.update({
   id: '/book/$hotelCode',
   path: '/book/$hotelCode',
@@ -174,6 +181,11 @@ const OwnerSystemRoute = OwnerSystemRouteImport.update({
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiStripeGuestPaymentRoute = ApiStripeGuestPaymentRouteImport.update({
+  id: '/api/stripe/guest-payment',
+  path: '/api/stripe/guest-payment',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiStripeWebhookRoute = ApiStripeWebhookRouteImport.update({
@@ -242,6 +254,7 @@ export interface FileRoutesByFullPath {
   '/app/billing': typeof AppBillingRoute
   '/app/founding': typeof AppFoundingRoute
   '/app/onboarding': typeof AppOnboardingRoute
+  '/app/operator': typeof AppOperatorRoute
   '/book/$hotelCode': typeof BookHotelCodeRoute
   '/confirmed/$token': typeof ConfirmedTokenRoute
   '/ops/drivers': typeof OpsDriversRoute
@@ -256,6 +269,7 @@ export interface FileRoutesByFullPath {
   '/ops/': typeof OpsIndexRoute
   '/owner/': typeof OwnerIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/stripe/guest-payment': typeof ApiStripeGuestPaymentRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/app/hotels/$hotelId': typeof AppHotelsHotelIdRouteWithChildren
   '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
@@ -277,6 +291,7 @@ export interface FileRoutesByTo {
   '/app/billing': typeof AppBillingRoute
   '/app/founding': typeof AppFoundingRoute
   '/app/onboarding': typeof AppOnboardingRoute
+  '/app/operator': typeof AppOperatorRoute
   '/book/$hotelCode': typeof BookHotelCodeRoute
   '/confirmed/$token': typeof ConfirmedTokenRoute
   '/ops/drivers': typeof OpsDriversRoute
@@ -291,6 +306,7 @@ export interface FileRoutesByTo {
   '/ops': typeof OpsIndexRoute
   '/owner': typeof OwnerIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/stripe/guest-payment': typeof ApiStripeGuestPaymentRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/app/hotels/$hotelId': typeof AppHotelsHotelIdRouteWithChildren
   '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
@@ -316,6 +332,7 @@ export interface FileRoutesById {
   '/app/billing': typeof AppBillingRoute
   '/app/founding': typeof AppFoundingRoute
   '/app/onboarding': typeof AppOnboardingRoute
+  '/app/operator': typeof AppOperatorRoute
   '/book/$hotelCode': typeof BookHotelCodeRoute
   '/confirmed/$token': typeof ConfirmedTokenRoute
   '/ops/drivers': typeof OpsDriversRoute
@@ -330,6 +347,7 @@ export interface FileRoutesById {
   '/ops/': typeof OpsIndexRoute
   '/owner/': typeof OwnerIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/stripe/guest-payment': typeof ApiStripeGuestPaymentRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/app/hotels/$hotelId': typeof AppHotelsHotelIdRouteWithChildren
   '/ops/bookings/$bookingId': typeof OpsBookingsBookingIdRoute
@@ -356,6 +374,7 @@ export interface FileRouteTypes {
     | '/app/billing'
     | '/app/founding'
     | '/app/onboarding'
+    | '/app/operator'
     | '/book/$hotelCode'
     | '/confirmed/$token'
     | '/ops/drivers'
@@ -370,6 +389,7 @@ export interface FileRouteTypes {
     | '/ops/'
     | '/owner/'
     | '/api/auth/$'
+    | '/api/stripe/guest-payment'
     | '/api/stripe/webhook'
     | '/app/hotels/$hotelId'
     | '/ops/bookings/$bookingId'
@@ -391,6 +411,7 @@ export interface FileRouteTypes {
     | '/app/billing'
     | '/app/founding'
     | '/app/onboarding'
+    | '/app/operator'
     | '/book/$hotelCode'
     | '/confirmed/$token'
     | '/ops/drivers'
@@ -405,6 +426,7 @@ export interface FileRouteTypes {
     | '/ops'
     | '/owner'
     | '/api/auth/$'
+    | '/api/stripe/guest-payment'
     | '/api/stripe/webhook'
     | '/app/hotels/$hotelId'
     | '/ops/bookings/$bookingId'
@@ -429,6 +451,7 @@ export interface FileRouteTypes {
     | '/app/billing'
     | '/app/founding'
     | '/app/onboarding'
+    | '/app/operator'
     | '/book/$hotelCode'
     | '/confirmed/$token'
     | '/ops/drivers'
@@ -443,6 +466,7 @@ export interface FileRouteTypes {
     | '/ops/'
     | '/owner/'
     | '/api/auth/$'
+    | '/api/stripe/guest-payment'
     | '/api/stripe/webhook'
     | '/app/hotels/$hotelId'
     | '/ops/bookings/$bookingId'
@@ -468,6 +492,7 @@ export interface RootRouteChildren {
   BookHotelCodeRoute: typeof BookHotelCodeRoute
   ConfirmedTokenRoute: typeof ConfirmedTokenRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiStripeGuestPaymentRoute: typeof ApiStripeGuestPaymentRoute
   ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
   ApiStripeConnectCallbackRoute: typeof ApiStripeConnectCallbackRoute
 }
@@ -565,6 +590,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOnboardingRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/operator': {
+      id: '/app/operator'
+      path: '/operator'
+      fullPath: '/app/operator'
+      preLoaderRoute: typeof AppOperatorRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/book/$hotelCode': {
       id: '/book/$hotelCode'
       path: '/book/$hotelCode'
@@ -654,6 +686,13 @@ declare module '@tanstack/react-router' {
       path: '/api/auth/$'
       fullPath: '/api/auth/$'
       preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/stripe/guest-payment': {
+      id: '/api/stripe/guest-payment'
+      path: '/api/stripe/guest-payment'
+      fullPath: '/api/stripe/guest-payment'
+      preLoaderRoute: typeof ApiStripeGuestPaymentRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/stripe/webhook': {
@@ -746,6 +785,7 @@ interface AppRouteChildren {
   AppBillingRoute: typeof AppBillingRoute
   AppFoundingRoute: typeof AppFoundingRoute
   AppOnboardingRoute: typeof AppOnboardingRoute
+  AppOperatorRoute: typeof AppOperatorRoute
   AppIndexRoute: typeof AppIndexRoute
   AppHotelsHotelIdRoute: typeof AppHotelsHotelIdRouteWithChildren
 }
@@ -754,6 +794,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppBillingRoute: AppBillingRoute,
   AppFoundingRoute: AppFoundingRoute,
   AppOnboardingRoute: AppOnboardingRoute,
+  AppOperatorRoute: AppOperatorRoute,
   AppIndexRoute: AppIndexRoute,
   AppHotelsHotelIdRoute: AppHotelsHotelIdRouteWithChildren,
 }
@@ -819,6 +860,7 @@ const rootRouteChildren: RootRouteChildren = {
   BookHotelCodeRoute: BookHotelCodeRoute,
   ConfirmedTokenRoute: ConfirmedTokenRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiStripeGuestPaymentRoute: ApiStripeGuestPaymentRoute,
   ApiStripeWebhookRoute: ApiStripeWebhookRoute,
   ApiStripeConnectCallbackRoute: ApiStripeConnectCallbackRoute,
 }

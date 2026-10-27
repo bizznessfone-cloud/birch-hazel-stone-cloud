@@ -13,6 +13,14 @@ export const AUTHORISED_DISPOSABLE_CONTROL_FILE = "/tmp/s1pg/data/global/pg_cont
 /** Database created by the local reset harness. The admin database is not accepted. */
 export const AUTHORISED_DISPOSABLE_DATABASE = "neondb";
 export const AUTHORISED_DISPOSABLE_LISTEN = "127.0.0.1";
+/** Known Neon production endpoint. A preview URL must not contain it. */
+export const PRODUCTION_NEON_ENDPOINT = "ep-withered-haze-b1fd9hse";
+
+export function guestPaymentTargetsProduction(env: NodeJS.Dict<string>): boolean {
+  if (env.VERCEL_ENV === "production" || env.AETHER_RESTORE_TARGET === "production") return true;
+  return (env.DATABASE_URL ?? "").includes(PRODUCTION_NEON_ENDPOINT)
+    || (env.SBG_PAYMENT_GATEWAY_URL ?? "").includes(PRODUCTION_NEON_ENDPOINT);
+}
 
 export class GuestPaymentIsolationError extends Error {
   readonly code: string;
@@ -117,6 +125,40 @@ export async function assertConnectedDisposableDatabase(db: QueryDb): Promise<vo
     if (code !== "42501") throw new GuestPaymentIsolationError("database_not_authorised");
   }
   assertDisposableDatabaseIdentity({ ...facts, dataDirectory });
+}
+
+/**
+ * Disposable loopback remains valid. An explicit preview database is also
+ * valid when it is not production. Anything else stays unauthorised.
+ */
+export async function assertGuestPaymentDatabase(db: QueryDb, env: NodeJS.Dict<string>): Promise<void> {
+  if (guestPaymentTargetsProduction(env)) {
+    throw new GuestPaymentIsolationError("database_not_authorised");
+  }
+  try {
+    await assertConnectedDisposableDatabase(db);
+    return;
+  } catch (err) {
+    if (!(err instanceof GuestPaymentIsolationError)) throw err;
+  }
+  if (env.SBG_GUEST_PAYMENT_DATABASE !== "preview" || !env.DATABASE_URL) {
+    throw new GuestPaymentIsolationError("database_not_authorised");
+  }
+  let rows: Array<{ inRecovery: boolean | null; databaseName: string | null; systemIdentifier: string | null }>;
+  try {
+    rows = await db.query(
+      `select pg_is_in_recovery() as "inRecovery",
+              current_database() as "databaseName",
+              system_identifier::text as "systemIdentifier"
+         from pg_control_system()`,
+    );
+  } catch {
+    throw new GuestPaymentIsolationError("database_not_authorised");
+  }
+  const row = rows[0];
+  if (!row || row.inRecovery !== false || !row.databaseName || !row.systemIdentifier) {
+    throw new GuestPaymentIsolationError("database_not_authorised");
+  }
 }
 
 export async function assertBoundPayeeIsTestMode(db: QueryDb, paymentId: string): Promise<void> {

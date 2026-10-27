@@ -19,8 +19,10 @@ import { runLocalExpiryOnce } from "./expiry-runner-local.ts";
 import { startLocalGuestPaymentTestListener } from "./guest-payment-test-listener.ts";
 import {
   assertDisposableDatabaseIdentity,
+  assertGuestPaymentDatabase,
   assertGuestPaymentTestProcess,
   GuestPaymentIsolationError,
+  guestPaymentTargetsProduction,
   readAuthorisedClusterSystemIdentifier,
 } from "./guest-payment-test-isolation.ts";
 
@@ -136,12 +138,49 @@ test("stage 6D source stays test-only and off the SaaS webhook", () => {
   assert.doesNotMatch(readFileSync(new URL("./payment-gateway.ts", import.meta.url), "utf8"), /live_event_rejected/);
   assert.doesNotMatch(webhook, /acceptIsolatedGuestPaymentTest|handleGuestPaymentWebhook/);
   assert.match(webhook, /capacity_payment_unmounted/);
+  const guestRoute = readFileSync(new URL("../../routes/api/stripe/guest-payment.ts", import.meta.url), "utf8");
+  assert.match(guestRoute, /aether_payment_gateway/);
+  assert.match(guestRoute, /SBG_PAYMENT_GATEWAY_URL/);
+  assert.match(guestRoute, /VERCEL_ENV === "production"/);
+  assert.doesNotMatch(guestRoute, /DATABASE_URL/);
   assert.doesNotMatch(webhook, /startLocalGuestPaymentTestListener|runLocalExpiryOnce/);
   const listener = readFileSync(new URL("./guest-payment-test-listener.ts", import.meta.url), "utf8");
   const expiry = readFileSync(new URL("./expiry-runner.ts", import.meta.url), "utf8");
   assert.match(listener, /host: LOCAL_TEST_LISTENER_HOST/);
   assert.doesNotMatch(listener, /0\.0\.0\.0/);
   assert.doesNotMatch(expiry, /pg_cron|cron\.schedule|runLocalExpiryOnce/);
+});
+
+test("preview payment database rejects production and accepts only an explicit non-production session", async () => {
+  const production = "postgres://aether_app:secret@ep-withered-haze-b1fd9hse.eu-central-1.aws.neon.tech/neondb";
+  assert.equal(guestPaymentTargetsProduction({ DATABASE_URL: production, SBG_GUEST_PAYMENT_DATABASE: "preview" }), true);
+  assert.equal(guestPaymentTargetsProduction({ VERCEL_ENV: "production", SBG_GUEST_PAYMENT_DATABASE: "preview" }), true);
+  assert.equal(guestPaymentTargetsProduction({
+    DATABASE_URL: "postgres://aether_app:secret@ep-preview.eu-central-1.aws.neon.tech/neondb",
+    SBG_GUEST_PAYMENT_DATABASE: "preview",
+  }), false);
+  const db = {
+    async query() {
+      return [{ inRecovery: false, databaseName: "neondb", systemIdentifier: "99" }];
+    },
+  };
+  await assert.rejects(
+    () => assertGuestPaymentDatabase(db, {
+      ...TEST_ENV,
+      DATABASE_URL: production,
+      SBG_GUEST_PAYMENT_DATABASE: "preview",
+    }),
+    (err: unknown) => err instanceof GuestPaymentIsolationError && err.code === "database_not_authorised",
+  );
+  await assert.rejects(
+    () => assertGuestPaymentDatabase(db, { ...TEST_ENV, SBG_GUEST_PAYMENT_DATABASE: "preview" }),
+    (err: unknown) => err instanceof GuestPaymentIsolationError && err.code === "database_not_authorised",
+  );
+  await assert.doesNotReject(() => assertGuestPaymentDatabase(db, {
+    ...TEST_ENV,
+    DATABASE_URL: "postgres://aether_app:secret@ep-preview.eu-central-1.aws.neon.tech/neondb",
+    SBG_GUEST_PAYMENT_DATABASE: "preview",
+  }));
 });
 
 test("TEST guards reject live credentials, live flags, and an unauthorised database", () => {

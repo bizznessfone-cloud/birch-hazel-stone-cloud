@@ -10,7 +10,7 @@ import type { Sql } from "../db.ts";
 import { bindPaymentAuthority } from "./payment-authority.ts";
 import {
   assertBoundPayeeIsTestMode,
-  assertConnectedDisposableDatabase,
+  assertGuestPaymentDatabase,
   assertGuestPaymentTestProcess,
   GuestPaymentIsolationError,
 } from "./guest-payment-test-isolation.ts";
@@ -117,7 +117,7 @@ export async function startGuestPaymentForBooking(
   if (!guestPaymentTestEnabled(env)) throw new GuestCheckoutClosed();
   try {
     assertGuestPaymentTestProcess(env);
-    await assertConnectedDisposableDatabase(db);
+    await assertGuestPaymentDatabase(db, env);
   } catch (err) {
     rejectIsolation(err);
   }
