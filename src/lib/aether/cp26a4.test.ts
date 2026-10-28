@@ -386,9 +386,9 @@ test("CP26A.4 Domain B guest payments stay separate from Domain A and publicatio
   const commerce = read("src/lib/aether/saas-commerce.server.ts");
   const entitlement = read("migrations/0023_cp26a2_entitlement_publication_decoupling.sql");
 
-  assert.match(guestFns, /sbg_prepare_booking_payment/);
+  assert.doesNotMatch(guestFns, /sbg_prepare_booking_payment/);
   assert.doesNotMatch(guestFns, /sbg_billing_accounts/);
-  assert.doesNotMatch(guestFns, /SBG_SAAS_COMMERCE|assertDomainACommerceAllowed/);
+  assert.doesNotMatch(guestFns, /SBG_SAAS_COMMERCE|assertDomainACommerceAllowed|SBG_DOMAIN_B/);
   assert.match(stripe, /createGuestTransferCheckout/);
   const guestFn = stripe.slice(stripe.indexOf("export async function createGuestTransferCheckout"));
   assert.match(guestFn, /Stripe-Account|accountId/);

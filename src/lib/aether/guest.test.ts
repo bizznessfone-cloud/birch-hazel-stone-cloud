@@ -167,5 +167,14 @@ describe("Phase 6 guest UX helpers", () => {
     assert.match(wizard, /formatQuotedPrice/);
     assert.match(wizard, /Quoted price/);
     assert.doesNotMatch(wizard, /<Field label="Destination">[\s\S]*<input/);
+    assert.doesNotMatch(wizard, /Duration \(minutes\)/);
+    assert.doesNotMatch(wizard, /durationMinutes/);
+    assert.doesNotMatch(wizard, /onDuration/);
+    assert.match(wizard, /label="Passengers"/);
+    assert.match(wizard, /label="Luggage"/);
+    assert.doesNotMatch(confirmed, /label="Duration"/);
+    assert.doesNotMatch(confirmed, /durationMinutes/);
+    const draft = emptyDraft("Gate Hotel");
+    assert.equal("durationMinutes" in draft, false);
   });
 });

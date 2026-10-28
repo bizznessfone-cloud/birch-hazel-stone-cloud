@@ -12,7 +12,12 @@ import {
   foundingGate,
 } from "@/lib/aether/founding-journey";
 import type { FoundingOrganisationType } from "@/lib/aether/founding-onboarding";
+import { foundingPropertyPreviewReady, validateFoundingPropertyDraft } from "@/lib/aether/founding-property-draft";
 import { getOnboardingState } from "@/lib/aether/onboarding-fns";
+import { readFoundingPropertyEligibilityFn } from "@/lib/aether/founding-property-eligibility-fns";
+import { createFoundingPropertyFn } from "@/lib/aether/founding-property-fns";
+import { foundingPropertyRegistrationMessage } from "@/lib/aether/founding-property-message";
+import type { FoundingPropertyEligibility } from "@/lib/aether/founding-property-eligibility";
 
 export const Route = createFileRoute("/app/founding")({
   loader: async () => {
@@ -25,7 +30,16 @@ export const Route = createFileRoute("/app/founding")({
     }
     try {
       const founding = await readFoundingOnboardingStateFn();
-      return { screen: "journey" as const, gate: foundingGate({ hotelCount: 0, founding }) };
+      const gate = foundingGate({ hotelCount: 0, founding });
+      let eligibility: FoundingPropertyEligibility = { eligible: false, reason: "unavailable" };
+      if (gate.kind === "terms-pending" && gate.organisationType === "hotel") {
+        try {
+          eligibility = await readFoundingPropertyEligibilityFn();
+        } catch {
+          // Unavailable eligibility must never unlock registration.
+        }
+      }
+      return { screen: "journey" as const, gate, eligibility };
     } catch {
       return { screen: "unavailable" as const, message: UNAVAILABLE_MESSAGE };
     }
@@ -41,7 +55,7 @@ function FoundingJourney() {
   }
   if (data.gate.kind === "ambiguous") return <Status title="We need to check this account" body={AMBIGUOUS_MESSAGE} />;
   if (data.gate.kind === "classify") return <ClassifyStep />;
-  if (data.gate.kind === "terms-pending") return <TermsPending organisationType={data.gate.organisationType} />;
+  if (data.gate.kind === "terms-pending") return <TermsPending organisationType={data.gate.organisationType} eligibility={data.eligibility} />;
   return <BusinessNameStep />;
 }
 
@@ -67,6 +81,7 @@ function BusinessNameStep() {
 
   return (
     <form className="mx-auto max-w-lg" onSubmit={(event) => void submit(event)} aria-busy={busy}>
+      <FoundingProgress current={1} />
       <p className="text-xs font-medium tracking-[0.2em] text-muted uppercase">Your business</p>
       <h1 className="mt-3 text-4xl font-semibold tracking-tight">{BUSINESS_QUESTION}</h1>
       <p className="mt-4 text-sm leading-relaxed text-muted">
@@ -121,6 +136,7 @@ function ClassifyStep() {
 
   return (
     <section className="mx-auto max-w-lg" aria-busy={busy}>
+      <FoundingProgress current={2} />
       <p className="text-xs font-medium tracking-[0.2em] text-muted uppercase">Your business</p>
       <h1 className="mt-3 text-4xl font-semibold tracking-tight">{TYPE_QUESTION}</h1>
       <p className="mt-4 text-sm leading-relaxed text-muted">
@@ -155,24 +171,192 @@ function ClassifyStep() {
   );
 }
 
-function TermsPending({ organisationType }: { organisationType: FoundingOrganisationType }) {
+function TermsPending({ organisationType, eligibility }: { organisationType: FoundingOrganisationType; eligibility: FoundingPropertyEligibility }) {
+  const [propertyName, setPropertyName] = useState("");
+  const [locality, setLocality] = useState("");
+  const [propertyCode, setPropertyCode] = useState("");
+  const [ianaTimezone, setIanaTimezone] = useState("");
+  const [currency, setCurrency] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [registrationError, setRegistrationError] = useState<string | null>(null);
+  const [createdHotelId, setCreatedHotelId] = useState<string | null>(null);
+  const router = useRouter();
+  async function registerProperty(event: FormEvent) {
+    event.preventDefault();
+    if (!eligibility.eligible || submitting || createdHotelId || !foundingPropertyPreviewReady({ name: propertyName, locality, code: propertyCode }) || !timezoneValid || !currencyValid) return;
+    setSubmitting(true);
+    setRegistrationError(null);
+    let hotelId: string;
+    try {
+      const created = await createFoundingPropertyFn({
+        data: { name: propertyName.trim(), locality: locality.trim(), code: propertyCode.trim(), ianaTimezone, currency },
+      });
+      hotelId = created.hotelId;
+      // A successful server write must not be reported as failed if navigation fails.
+      setCreatedHotelId(hotelId);
+    } catch (error) {
+      setRegistrationError(foundingPropertyRegistrationMessage(error));
+      setSubmitting(false);
+      return;
+    }
+    try {
+      await router.invalidate();
+      await router.navigate({ to: "/app/hotels/$hotelId", params: { hotelId } });
+    } catch {
+      setRegistrationError("Your property was created successfully, but the workspace could not open automatically. Use the link below to continue.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+  const draft = { name: propertyName, locality, code: propertyCode };
+  const errors = validateFoundingPropertyDraft(draft);
+  const previewReady = foundingPropertyPreviewReady(draft);
+  const timezoneValid = (() => {
+    try {
+      new Intl.DateTimeFormat("en-US", { timeZone: ianaTimezone });
+      return true;
+    } catch {
+      return false;
+    }
+  })();
+  const currencyValid = /^[A-Z]{3}$/.test(currency) && Intl.supportedValuesOf("currency").includes(currency);
   const label = organisationType === "hotel" ? "Hotel / Accommodation" : "Independent Transfer Operator";
   return (
-    <Status
-      title={TERMS_PENDING_TITLE}
-      body="Your account setup is saved. Terms are not yet available for acceptance, so this step cannot be completed. You will stay here until Terms are ready."
-      detail={`Business type: ${label}.`}
-    />
+    <div className="mx-auto max-w-lg space-y-8">
+      <Status
+        title={eligibility.eligible ? "Agreement verified" : TERMS_PENDING_TITLE}
+        body={eligibility.eligible ? "Your approved agreement has been verified. You can register your first property." : "Your business setup is saved. An approved agreement is required before registering your first property."}
+        detail={`Business type: ${label}.`}
+        progress={3}
+      />
+      {organisationType === "transfer_operator" ? (
+        <section className="border border-line bg-surface p-5" aria-labelledby="operator-next-title">
+          <p className="text-xs font-medium tracking-[0.2em] text-muted uppercase">Independent operator setup</p>
+          <h2 id="operator-next-title" className="mt-2 text-2xl font-semibold tracking-tight">Your operator workspace</h2>
+          <p className="mt-3 text-sm leading-relaxed text-muted">
+            Your transfer business classification is saved. Operator workspace activation is not yet available.
+            Your business does not register or own a hotel through this journey.
+          </p>
+          <p className="mt-3 text-sm leading-relaxed text-muted">
+            Before an operator can manage transfers for a hotel, the hotel must explicitly authorise that operator
+            and the executing transport provider. An approved operating agreement is also required.
+            These approvals are separate from your business classification.
+          </p>
+          <p className="mt-3 text-sm leading-relaxed text-muted" role="status">
+            Setup is paused pending approved agreements and activation. No agreement has been accepted;
+            no hotel access, guest booking access, payment account or subscription has been granted by this step.
+          </p>
+          <a href="/app/operator" className="mt-5 inline-block border border-line px-4 py-3 text-sm font-semibold underline-offset-4 hover:underline">
+            Open operator workspace (read-only)
+          </a>
+        </section>
+      ) : null}
+      {organisationType === "hotel" ? (
+        <form onSubmit={(event) => void registerProperty(event)} className="border border-line bg-surface p-5" aria-labelledby="property-preview-title" aria-busy={submitting}>
+          <p className="text-xs font-medium tracking-[0.2em] text-muted uppercase">{eligibility.eligible ? "Next step · Register property" : "Next step · Preview only"}</p>
+          <h2 id="property-preview-title" className="mt-2 text-2xl font-semibold tracking-tight">Your first property</h2>
+          <p className="mt-3 text-sm leading-relaxed text-muted">
+            {eligibility.eligible ? "Register your hotel to open its workspace." : "Preview the details needed to register your hotel. Nothing is saved or submitted. Legal agreements are being finalised; this preview is not an acceptance of any agreement."}
+          </p>
+          <label className="mt-6 block" htmlFor="preview-property-name">
+            <span className="mb-2 block text-xs font-medium tracking-widest text-muted uppercase">Property name</span>
+            <input id="preview-property-name" maxLength={120} autoComplete="off"
+              className="min-h-12 w-full border border-line bg-transparent px-3"
+              value={propertyName} onChange={event => setPropertyName(event.target.value)}
+              placeholder="e.g. Aegean Bay Hotel" />
+            {propertyName && errors.name ? <p className="mt-1 text-xs text-danger">{errors.name}</p> : null}
+          </label>
+          <label className="mt-4 block" htmlFor="preview-property-location">
+            <span className="mb-2 block text-xs font-medium tracking-widest text-muted uppercase">Location</span>
+            <input id="preview-property-location" maxLength={160} autoComplete="off"
+              className="min-h-12 w-full border border-line bg-transparent px-3"
+              value={locality} onChange={event => setLocality(event.target.value)}
+              placeholder="e.g. Kos, Greece" />
+            {locality && errors.locality ? <p className="mt-1 text-xs text-danger">{errors.locality}</p> : null}
+          </label>
+          <label className="mt-4 block" htmlFor="preview-property-code">
+            <span className="mb-2 block text-xs font-medium tracking-widest text-muted uppercase">Booking code</span>
+            <input id="preview-property-code" maxLength={32} autoComplete="off"
+              className="min-h-12 w-full border border-line bg-transparent px-3"
+              value={propertyCode} onChange={event => setPropertyCode(event.target.value.toLowerCase().replace(/\s+/g, "-"))}
+              placeholder="e.g. aegean-bay" />
+            <p className="mt-1 text-xs text-muted">This becomes part of the hotel’s booking link. Use lowercase letters, numbers and hyphens.</p>
+            {propertyCode && errors.code ? <p role="alert" className="mt-1 text-xs text-danger">{errors.code}</p> : null}
+          </label>
+          <label className="mt-4 block" htmlFor="property-timezone">
+            <span className="mb-2 block text-xs font-medium tracking-widest text-muted uppercase">Property timezone</span>
+            <input id="property-timezone" required maxLength={120} autoComplete="off"
+              className="min-h-12 w-full border border-line bg-transparent px-3"
+              value={ianaTimezone} onChange={event => setIanaTimezone(event.target.value)}
+              placeholder="e.g. Europe/Athens" />
+            <p className="mt-1 text-xs text-muted">Use the property's IANA timezone, such as Europe/London.</p>
+            {ianaTimezone && !timezoneValid ? <p role="alert" className="mt-1 text-xs text-danger">Enter a recognised IANA timezone, such as Europe/Athens or Europe/London.</p> : null}
+          </label>
+          <label className="mt-4 block" htmlFor="property-currency">
+            <span className="mb-2 block text-xs font-medium tracking-widest text-muted uppercase">Property currency</span>
+            <input id="property-currency" required maxLength={3} autoComplete="off"
+              className="min-h-12 w-full border border-line bg-transparent px-3 uppercase"
+              value={currency} onChange={event => setCurrency(event.target.value.toUpperCase())}
+              placeholder="e.g. EUR" />
+            <p className="mt-1 text-xs text-muted">Three-letter ISO currency code, such as EUR or GBP.</p>
+            {currency && !currencyValid ? <p role="alert" className="mt-1 text-xs text-danger">Enter a recognised currency code.</p> : null}
+          </label>
+          <p className="mt-5 text-xs leading-relaxed text-muted" role="status">
+            {!previewReady || !timezoneValid || !currencyValid
+              ? "Complete the property name, location, booking code, valid timezone and currency. Nothing is saved until registration is available and you submit."
+              : eligibility.eligible
+                ? "All property details are valid. You can register your property."
+                : "All property details are valid. Registration remains unavailable until an approved agreement has been explicitly accepted."}
+          </p>
+          {registrationError ? <p role="alert" className="mt-3 text-sm text-danger">{registrationError}</p> : null}
+          {createdHotelId ? (
+            <a className="mt-4 block text-sm font-semibold underline underline-offset-4" href={`/app/hotels/${encodeURIComponent(createdHotelId)}`}>
+              Open your new property's workspace
+            </a>
+          ) : null}
+          <button type="submit" disabled={!eligibility.eligible || !previewReady || submitting || !!createdHotelId || !timezoneValid || !currencyValid}
+            className="mt-4 min-h-12 w-full bg-ink px-4 text-sm font-semibold tracking-wide text-canvas uppercase disabled:opacity-50">
+            {submitting ? "Creating property…" : eligibility.eligible ? "Create property" : "Create property · Not yet available"}
+          </button>
+        </form>
+      ) : null}
+    </div>
   );
 }
 
-function Status({ title, body, detail }: { title: string; body: string; detail?: string }) {
+function Status({ title, body, detail, progress }: { title: string; body: string; detail?: string; progress?: 1 | 2 | 3 }) {
   return (
     <section className="mx-auto max-w-lg">
+      {progress ? <FoundingProgress current={progress} /> : null}
       <p className="text-xs font-medium tracking-[0.2em] text-muted uppercase">Your business</p>
       <h1 className="mt-3 text-4xl font-semibold tracking-tight">{title}</h1>
       <p className="mt-4 text-sm leading-relaxed text-muted">{body}</p>
       {detail ? <p className="mt-4 text-sm">{detail}</p> : null}
     </section>
+  );
+}
+
+/** Visual progress only. Never treats provisional Terms as accepted. */
+function FoundingProgress({ current }: { current: 1 | 2 | 3 }) {
+  const steps = ["Business", "Business type", "Agreement"] as const;
+  return (
+    <nav aria-label="Account setup progress" className="mb-8">
+      <ol className="grid grid-cols-3 gap-2">
+        {steps.map((step, index) => {
+          const number = index + 1;
+          const active = number === current;
+          const complete = number < current;
+          return (
+            <li key={step} aria-current={active ? "step" : undefined} className="min-w-0">
+              <div className={`h-1 w-full ${complete || active ? "bg-ink" : "bg-line"}`} aria-hidden="true" />
+              <span className={`mt-2 block text-[11px] leading-snug ${active ? "font-semibold text-ink" : "text-muted"}`}>
+                {number}. {step}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+      <p className="sr-only">Step {current} of 3. {steps[current - 1]}.</p>
+    </nav>
   );
 }

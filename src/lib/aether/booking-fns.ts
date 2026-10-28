@@ -4,24 +4,42 @@
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { touristMessage } from "./guest";
+import { touristMessage } from "./guest.ts";
 
-const createInput = z.object({
-  hotelCode: z.string(),
-  destinationId: z.string(),
-  transferDate: z.string(),
-  pickupTime: z.string(),
-  durationMinutes: z.number(),
-  guestName: z.string(),
-  guestPhone: z.string(),
-  guestEmail: z.string(),
-  passengerCount: z.number(),
-  luggageCount: z.number(),
-  pickupText: z.string(),
-  destinationText: z.string().nullable().optional(),
-  specialRequirements: z.string().nullable().optional(),
-  idempotencyKey: z.string().nullable().optional(),
-});
+function rejectGuestDuration(value: unknown): unknown {
+  if (
+    value !== null &&
+    typeof value === "object" &&
+    Object.prototype.hasOwnProperty.call(value, "durationMinutes")
+  ) {
+    const error = new Error("duration is assigned by the server");
+    error.name = "BookingError";
+    Object.assign(error, { code: "duration_not_accepted", status: 400 });
+    throw error;
+  }
+  return value;
+}
+
+const createInput = z.preprocess(
+  rejectGuestDuration,
+  z.object({
+    hotelCode: z.string(),
+    destinationId: z.string(),
+    transferDate: z.string(),
+    pickupTime: z.string(),
+    guestName: z.string(),
+    guestPhone: z.string(),
+    guestEmail: z.string(),
+    passengerCount: z.number(),
+    luggageCount: z.number(),
+    pickupText: z.string(),
+    destinationText: z.string().nullable().optional(),
+    specialRequirements: z.string().nullable().optional(),
+    idempotencyKey: z.string().nullable().optional(),
+  }),
+);
+
+export { createInput as createPublicBookingInput };
 
 const tokenInput = z.object({
   token: z.string(),

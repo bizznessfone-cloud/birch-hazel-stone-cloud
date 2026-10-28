@@ -88,7 +88,6 @@ export function GuestBook({
           destinationId: draft.destinationId,
           transferDate: draft.transferDate,
           pickupTime: draft.pickupTime,
-          durationMinutes: draft.durationMinutes,
           guestName: draft.guestName,
           guestPhone: draft.guestPhone,
           guestEmail: draft.guestEmail,
@@ -204,7 +203,6 @@ export function GuestBook({
                 draft={draft}
                 onDate={(transferDate) => patch({ transferDate })}
                 onTime={(pickupTime) => patch({ pickupTime })}
-                onDuration={(durationMinutes) => patch({ durationMinutes })}
                 onNext={() => setStep("party")}
                 onBack={() => setStep("journey")}
               />
@@ -414,11 +412,10 @@ function WhenStep(props: {
   draft: GuestDraft;
   onDate: (value: string) => void;
   onTime: (value: string) => void;
-  onDuration: (value: number) => void;
   onNext: () => void;
   onBack: () => void;
 }) {
-  const ready = props.draft.transferDate && props.draft.pickupTime && props.draft.durationMinutes >= 1;
+  const ready = props.draft.transferDate && props.draft.pickupTime;
   return (
     <form
       className="flex flex-1 flex-col gap-6"
@@ -445,13 +442,6 @@ function WhenStep(props: {
           onChange={(event) => props.onTime(event.target.value)}
         />
       </Field>
-      <Stepper
-        label="Duration (minutes)"
-        value={props.draft.durationMinutes}
-        min={1}
-        max={1440}
-        onChange={props.onDuration}
-      />
       <Actions back={props.onBack} nextDisabled={!ready} />
     </form>
   );
@@ -553,7 +543,7 @@ function ReviewStep(props: {
   const destinationName = selected?.name ?? props.draft.destinationText;
   const priceLabel = selected
     ? formatQuotedPrice(props.currency, selected.amountMinor)
-    : "To be confirmed";
+    : "Quoted by the hotel";
   return (
     <form
       className="flex flex-1 flex-col gap-6"
@@ -569,7 +559,7 @@ function ReviewStep(props: {
         <DefinitionRow label="Direction" value={props.draft.direction === "from_hotel" ? `From ${props.hotelName}` : `To ${props.hotelName}`} />
         <DefinitionRow label="Pickup" value={props.draft.pickupText} />
         <DefinitionRow label="Destination" value={destinationName} />
-        <DefinitionRow label="When" value={`${props.draft.transferDate} · ${props.draft.pickupTime} · ${props.draft.durationMinutes} min`} />
+        <DefinitionRow label="When" value={`${props.draft.transferDate} · ${props.draft.pickupTime}`} />
         <DefinitionRow label="Party" value={`${props.draft.passengerCount} passengers · ${props.draft.luggageCount} bags`} />
         <DefinitionRow label="Guest" value={props.draft.guestName} />
         <DefinitionRow label="Price" value={priceLabel} />
