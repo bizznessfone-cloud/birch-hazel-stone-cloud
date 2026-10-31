@@ -1,0 +1,32 @@
+name: A3 fresh disposable rehearsal offline tests
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'scripts/a3-0035-0036-fresh-disposable-rehearsal.mjs'
+      - 'scripts/a3-0035-0036-fresh-disposable-rehearsal.test.mjs'
+      - '.github/workflows/a3-fresh-disposable-rehearsal-offline.yml'
+permissions:
+  contents: read
+jobs:
+  offline-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      DATABASE_URL: ""
+      AETHER_DATABASE_OWNER_URL: ""
+      A3_REHEARSAL_OWNER_URL: ""
+      A3_COMMIT_REHEARSAL_OWNER_URL: ""
+      A3_FRESH_REHEARSAL_OWNER_URL: ""
+      NEON_API_KEY: ""
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Run offline tests without database credentials
+        run: node --test scripts/a3-0035-0036-fresh-disposable-rehearsal.test.mjs

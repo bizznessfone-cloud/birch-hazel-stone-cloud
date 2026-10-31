@@ -1,0 +1,60 @@
+name: SBG CP28 encrypted archive (manual, no deletion)
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Type ARCHIVE-CP28-NO-DELETE'
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  archive:
+    if: ${{ inputs.confirmation == 'ARCHIVE-CP28-NO-DELETE' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CP28_ARCHIVE_DATABASE_URL: ${{ secrets.CP28_ARCHIVE_DATABASE_URL }}
+      CP28_ARCHIVE_PASSPHRASE: ${{ secrets.CP28_ARCHIVE_PASSPHRASE }}
+    steps:
+      - name: Verify credentials and exact CP28 endpoint (no secrets printed)
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$CP28_ARCHIVE_DATABASE_URL" || { echo 'BLOCKED: CP28 archive URL missing'; exit 2; }
+          test -n "$CP28_ARCHIVE_PASSPHRASE" || { echo 'BLOCKED: archive encryption passphrase missing'; exit 2; }
+          python3 - <<'PY'
+          import os, urllib.parse, sys
+          u = urllib.parse.urlparse(os.environ["CP28_ARCHIVE_DATABASE_URL"])
+          if u.scheme not in ("postgres", "postgresql") or u.hostname != "ep-cool-hat-b1c0q4qc.c-5.eu-central-1.aws.neon.tech" or u.path != "/neondb":
+              sys.exit("BLOCKED: URL must point to exact CP28 unpooled endpoint and neondb")
+          PY
+      - name: Export PostgreSQL 18 archive and verify TOC
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p "$RUNNER_TEMP/cp28"
+          docker run --rm --network host \
+            -e DATABASE_URL="$CP28_ARCHIVE_DATABASE_URL" \
+            -v "$RUNNER_TEMP/cp28:/archive" \
+            postgres:18 bash -ec 'pg_dump --dbname="$DATABASE_URL" --format=custom --no-owner --no-acl --file=/archive/cp28.dump && pg_restore --list /archive/cp28.dump >/archive/cp28.toc'
+          (cd "$RUNNER_TEMP/cp28" && sha256sum cp28.dump > cp28.sha256)
+          date -u +'%Y-%m-%dT%H:%M:%SZ' > "$RUNNER_TEMP/cp28/captured-at-utc.txt"
+          printf '%s\n' 'project=quiet-sound-53513710' 'branch=br-icy-shadow-b1fh96gk' 'database=neondb' 'format=pg_dump_custom' 'full_restore=NOT_VERIFIED' > "$RUNNER_TEMP/cp28/manifest.txt"
+      - name: Encrypt backup and remove plaintext
+        shell: bash
+        run: |
+          set -euo pipefail
+          openssl enc -aes-256-cbc -pbkdf2 -iter 250000 -salt \
+            -in "$RUNNER_TEMP/cp28/cp28.dump" -out "$RUNNER_TEMP/cp28/cp28.dump.enc" \
+            -pass env:CP28_ARCHIVE_PASSPHRASE
+          rm -f "$RUNNER_TEMP/cp28/cp28.dump"
+          (cd "$RUNNER_TEMP/cp28" && sha256sum cp28.dump.enc > cp28.dump.enc.sha256)
+      - name: Upload encrypted artifact (temporary retention)
+        uses: actions/upload-artifact@v4
+        with:
+          name: SBG-ARCHIVE-CP28-RACE-GATE-20261014
+          path: ${{ runner.temp }}/cp28/
+          retention-days: 7
+          if-no-files-found: error
